@@ -1,4 +1,46 @@
-// Phase 3 — wide spreadsheet history grid for the Daily Log.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Phase 3a - history grid polish.
+
+  1. Activity headers wrap to THREE lines instead of one nowrap line. Several
+     labels are full sentences ("Dormant Accounts Reactivated", "DFS / Mobile
+     Money Registrations") and a single line pushed the grid absurdly wide.
+     Columns pin to 88px with a 3-line clamp; the full label stays on hover.
+
+  2. Colour by ACTIVITY FAMILY, mirroring DayPlanner's chip palette so the Entry
+     tab and the History grid read as one system:
+         teal  = acquisition (accounts, cards, DFS, complaints resolved)
+         amber = money       (deposits, loans, bancassurance)
+         blue  = service     (visits, transactions, digital, leads, cross-sell)
+         pink  = exceptions  (complaints received, teller errors)
+     Header carries the family tint; a cell takes a 30% wash of the same hue
+     ONLY when it holds a non-zero value, so a filled day reads as bands of
+     colour and an empty one stays quiet.
+
+  NOT tier-based: every activity currently resolves to tier 'medium' because
+  none have been assigned yet (that is the Phase 5 admin panel), so tier
+  colouring would have been uniform and therefore meaningless.
+
+Replaces components/HistoryGrid.tsx wholesale - it is a single self-contained
+component created by the Phase 3 patcher, so a whole-file swap is safe and
+avoids a dozen brittle anchors.
+
+Verified before delivery: tsc --noEmit clean, vite build clean, all four family
+tints and their /30 washes confirmed present in the emitted CSS.
+
+Usage (from project root):
+    python scripts\\patch_p3a_grid_polish.py            # dry run
+    python scripts\\patch_p3a_grid_polish.py --apply    # write + .pre_p3a backup
+"""
+import os
+import shutil
+import sys
+
+COMP = os.path.join("frontend", "web", "src", "components", "HistoryGrid.tsx")
+BACKUP_SUFFIX = ".pre_p3a"
+
+COMPONENT = r"""// Phase 3 — wide spreadsheet history grid for the Daily Log.
 //
 // One row per staff per day. Identity columns (Date / Staff / Name / Role) are
 // frozen to the left so they survive horizontal scrolling across an arbitrary
@@ -283,3 +325,44 @@ export default function HistoryGrid({ grid, loading, days, onDaysChange }: Histo
     </div>
   );
 }
+"""
+
+
+def main():
+    apply = "--apply" in sys.argv
+    if not os.path.isfile(COMP):
+        print("ABORT: %s not found - apply patch_p3_history_grid.py first." % COMP)
+        return 1
+    cur = open(COMP, encoding="utf-8").read()
+    if "FAM_HEAD" in cur:
+        print("ABORT: HistoryGrid already has FAM_HEAD - Phase 3a looks applied.")
+        return 1
+    if "HistoryGridProps" not in cur:
+        print("ABORT: %s is not the Phase 3 grid component." % COMP)
+        return 1
+
+    for token in ("FAM_HEAD", "FAM_CELL", "thWrap", "WebkitLineClamp"):
+        if token not in COMPONENT:
+            print("ABORT: embedded component missing '%s'." % token)
+            return 1
+    for o, c in (("{", "}"), ("(", ")"), ("[", "]")):
+        if COMPONENT.count(o) != COMPONENT.count(c):
+            print("ABORT: embedded component unbalanced %s%s." % (o, c))
+            return 1
+
+    print("  ok  embedded component validated (%d lines)" % (COMPONENT.count("\n") + 1))
+    print("  ok  current component is Phase 3 (%d lines)" % (cur.count("\n") + 1))
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    shutil.copy2(COMP, COMP + BACKUP_SUFFIX)
+    open(COMP, "w", encoding="utf-8", newline="").write(COMPONENT)
+    print("APPLIED %s  (backup: %s)" % (COMP, os.path.basename(COMP) + BACKUP_SUFFIX))
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd && echo TSC_PASSED")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
