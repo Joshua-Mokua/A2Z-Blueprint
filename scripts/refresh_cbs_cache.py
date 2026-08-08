@@ -38,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--no-trigger",  action="store_true", help="Skip GET /command/export:customers")
+    p.add_argument("--no-trigger",  action="store_true", help="Skip POST /command/export:customers")
     p.add_argument("--status",      action="store_true", help="Print ETL + cache stats and exit")
     p.add_argument("--cache-only",  action="store_true", help="Only refresh stale on-demand cache rows")
     p.add_argument("--cache-limit", type=int, default=200, help="Max stale cache rows to refresh")
