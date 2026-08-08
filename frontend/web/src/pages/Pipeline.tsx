@@ -39,6 +39,7 @@ import { Button } from '@/components/Button';
 import { Table, type Column } from '@/components/Table';
 import { PermissionBadges } from '@/components/PermissionBadges';
 import { PipelineFunnel } from '@/components/PipelineFunnel';
+import { parseTs } from '@/lib/datetime';
 import {
   stageTone,
   type PipelineDeal,
@@ -63,7 +64,11 @@ function formatValue(v: number, symbol: string): string {
 function daysOpen(deal: PipelineDeal): number | null {
   const raw = deal.created_at || deal.open_date || deal.updated_at;
   if (!raw) return null;
-  const start = new Date(raw).getTime();
+  // parseTs, not new Date: a date-only open_date must anchor to LOCAL midnight,
+  // otherwise the age is measured from 03:00 and can round down a whole day.
+  const parsed = parseTs(raw);
+  if (!parsed) return null;
+  const start = parsed.getTime();
   if (!Number.isFinite(start)) return null;
   const diff = Date.now() - start;
   if (diff < 0) return 0;

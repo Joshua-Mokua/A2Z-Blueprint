@@ -24,6 +24,7 @@ type Tab = 'overview' | 'incoming' | 'returned' | 'following' | 'team';
 
 import { StaffPicker } from '@/components/StaffPicker';
 import { Table, type Column } from '@/components/Table';
+import { fmtDate } from '@/lib/datetime';
 
 const inputCls =
   'w-full px-3 py-1.5 rounded-md border border-gray-300 text-sm focus:outline-none ' +
@@ -33,11 +34,7 @@ function formatKes(n: number | undefined): string {
   if (typeof n !== 'number' || !isFinite(n)) return '—';
   return `KES ${Math.round(n).toLocaleString()}`;
 }
-function formatDate(s: string | undefined): string {
-  if (!s) return '';
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? '' : d.toLocaleDateString();
-}
+const formatDate = fmtDate;
 function statusTone(s: string | undefined): BadgeTone {
   if (s === 'accepted') return 'success';
   if (s === 'pending') return 'info';
