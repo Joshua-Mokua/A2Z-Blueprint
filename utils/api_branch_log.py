@@ -271,76 +271,67 @@ def branch_log_ranking(days: int = 30, user: dict = Depends(get_current_user)):
     return {"ranking": rows, "days": days, "daily_index_target": target}
 
 
-_ROSTER_DIMS_CACHE = None
-_ROSTER_DIMS_MTIME = None
-
-
 def _roster_dims() -> dict:
-    """Canonical {staff_code -> (department, branch, full_name)} from the roster.
+    """Canonical {canon(staff_code) -> {department, branch, full_name, role}}.
 
-    The Daily Log record carries a free-text `unit` typed at submit time, which
-    in live data is inconsistent ("Fortis" / "Fortis Branch" / "Consumer" /
-    "EKE-CONSUMER BANKING DEPARTMENT"). The roster is the source of truth and
-    holds BOTH dimensions properly: `department` is the function (Commercial
-    Banking, Treasury, Internal Audit...) and `unit` is the branch (Fortis,
-    Westlands, Head Office...). Grid filters must use these, not the free text.
+    SOURCE OF TRUTH: data/staff_register.xlsx, read through
+    utils.api_pipeline_scope.get_staff_roster() — the SAME loader the pipeline
+    hierarchy and visibility engine uses. It carries Department, Branch, Unit,
+    Region and Reports To Code, so the grid's dimensions cannot drift from the
+    hierarchy the rest of the system reports against.
 
-    Keyed on utils.staff_code.canon so KE0439/KE439/439 all resolve, plus a
-    whitespace-stripped fallback for codes stored as "CN 272".
-    Cached on file mtime; a roster edit is picked up without a restart.
+    (An earlier revision of this joined data/staff_roster.json — a 362-row
+    shadow of the same population without the reporting column. Two readers,
+    two files, one concept: exactly the drift this codebase keeps paying for.)
+
+    The Daily Log record's own `unit` is free text typed at submit time and is
+    inconsistent in live data ("Fortis" / "Fortis Branch" / "Consumer" /
+    "EKE-CONSUMER BANKING DEPARTMENT"); it is used only as a fallback.
+
+    Keyed on utils.staff_code.canon so KE0439 / KE439 / 439 all resolve.
     """
-    global _ROSTER_DIMS_CACHE, _ROSTER_DIMS_MTIME
-    import json as _json
-    import os as _os
-    from pathlib import Path as _Path
-    from utils.core import DATA_DIR as _DATA_DIR
     from utils.staff_code import canon as _canon
-
-    p = str(_Path(_DATA_DIR) / "staff_roster.json")
+    out: dict = {}
     try:
-        mtime = _os.path.getmtime(p)
-    except OSError:
-        # Roster missing is a real condition, not a silent one: the grid still
-        # renders, it just falls back to the log's own free-text unit.
-        return _ROSTER_DIMS_CACHE or {}
+        from utils.api_pipeline_scope import get_staff_roster
+        df = get_staff_roster()
+        if df is None or len(df) == 0:
+            return out
+        cols = set(df.columns)
 
-    if _ROSTER_DIMS_CACHE is not None and _ROSTER_DIMS_MTIME == mtime:
-        return _ROSTER_DIMS_CACHE
+        def pick(row, *names):
+            for n in names:
+                if n in cols:
+                    v = row.get(n)
+                    if v is not None and str(v).strip() and str(v) != "nan":
+                        return str(v).strip()
+            return ""
 
-    out = {}
-    try:
-        raw = _json.loads(open(p, encoding="utf-8").read())
-        rows = raw if isinstance(raw, list) else next(
-            (v for v in raw.values() if isinstance(v, list)), [])
-        for r in rows:
-            if not isinstance(r, dict):
+        for _, row in df.iterrows():
+            code = pick(row, "Staff Code", "staff_code")
+            if not code:
                 continue
-            rec = {
-                "department": str(r.get("department") or "").strip(),
-                "branch":     str(r.get("unit") or "").strip(),
-                "full_name":  str(r.get("full_name") or "").strip(),
+            out[_canon(code)] = {
+                "department": pick(row, "Department", "department"),
+                "branch":     pick(row, "Branch", "Unit", "branch", "unit"),
+                "full_name":  pick(row, "Staff Name", "staff_name", "full_name"),
+                "role":       pick(row, "Role", "role"),
+                "code":       code,
             }
-            code = str(r.get("staff_code") or "")
-            for key in {_canon(code), "".join(code.split()).upper()}:
-                if key:
-                    out.setdefault(key, rec)
     except Exception:
-        return _ROSTER_DIMS_CACHE or {}
-
-    _ROSTER_DIMS_CACHE, _ROSTER_DIMS_MTIME = out, mtime
+        return out
     return out
 
 
 def _dims_for(staff_code) -> dict:
     """Roster dimensions for a staff code, empty dict when unmatched."""
     from utils.staff_code import canon as _canon
-    dims = _roster_dims()
-    code = str(staff_code or "")
-    return dims.get(_canon(code)) or dims.get("".join(code.split()).upper()) or {}
+    return _roster_dims().get(_canon(staff_code)) or {}
 
 
 @router.get("/history-grid")
-def branch_log_history_grid(days: int = 30, unit: str = "", user: dict = Depends(get_current_user)):
+def branch_log_history_grid(days: int = 30, unit: str = "", include_missing: bool = True,
+                            user: dict = Depends(get_current_user)):
     """Wide history grid: one row per staff per day with all metric columns, the daily index,
     target, variance, and the running CARRIED-FORWARD variance (per staff). Scope-aware:
     admin sees all; a manager sees their reporting subtree; everyone else sees themselves.
@@ -370,6 +361,107 @@ def branch_log_history_grid(days: int = 30, unit: str = "", user: dict = Depends
         by_staff.setdefault(str(l.get("staff_code") or ""), []).append(l)
 
     mkeys = metric_keys()
+
+    if include_missing:
+        from datetime import date as _date, timedelta as _td
+        from utils.staff_code import canon as _canon
+        try:
+            from utils import workcal as _wc
+        except Exception:
+            _wc = None
+
+        dims = _roster_dims()
+        if _is_admin(user):
+            scope_codes = set(dims.keys())
+        elif _is_manager(user):
+            try:
+                from utils.api_pipeline_scope import get_visible_staff_codes
+                scope_codes = {_canon(c) for c in get_visible_staff_codes({
+                    "staff_code": me.get("staff_code", ""),
+                    "role": me.get("role", ""),
+                    "is_admin": bool(user.get("is_admin")),
+                })}
+            except Exception:
+                scope_codes = {_canon(c) for c in by_staff}
+        else:
+            scope_codes = {_canon(me.get("staff_code", ""))}
+        scope_codes.discard("")
+
+        # Working days in the window, newest-inclusive.
+        today = _date.today()
+        window = [today - _td(days=i) for i in range(int(days))]
+        work_days = [d for d in window if (_wc.is_working_day(d) if _wc else d.weekday() != 6)]
+
+        # Index existing logs by canonical code + date so the fill never
+        # duplicates a day someone actually filed.
+        filed = {}
+        for code, ls in by_staff.items():
+            for l in ls:
+                filed.setdefault(_canon(code), set()).add(str(l.get("log_date"))[:10])
+
+        for ck in scope_codes:
+            d = dims.get(ck) or {}
+            have = filed.get(ck, set())
+            bucket = by_staff.setdefault(d.get("code") or ck, [])
+            for day in work_days:
+                iso = day.isoformat()
+                if iso in have:
+                    continue
+                blank = {
+                    "log_date": iso,
+                    "staff_code": d.get("code") or ck,
+                    "staff_name": d.get("full_name", ""),
+                    "role": d.get("role", ""),
+                    "unit": d.get("branch", ""),
+                    "status": "missing",
+                    "validated": False,
+                    "auto_submitted": False,
+                    "index": 0.0,
+                    "remarks": "",
+                    "manager_note": "",
+                }
+                for k in mkeys:
+                    blank[k] = 0
+                bucket.append(blank)
+    rows = []
+    for sc, staff_logs in by_staff.items():
+        annotated = carried_forward(staff_logs)  # sorted asc, adds target/variance/cf_variance
+        for r in annotated:
+            row = {
+                "log_date":   r.get("log_date"),
+                "staff_code": r.get("staff_code"),
+                "staff_name": r.get("staff_name"),
+                "role":       r.get("role"),
+                "unit":       r.get("unit"),
+                "status":     r.get("status", "submitted"),
+                "validated":  bool(r.get("validated")),
+                "auto_submitted": bool(r.get("auto_submitted")),
+                "index":      round(float(r.get("index") or 0), 2),
+                "target":     r.get("target"),
+                "variance":   r.get("variance"),
+                "cf_variance": r.get("cf_variance"),
+                # WC-2b sets working_day on the annotated row (false on Sundays
+                # and gazetted holidays). The endpoint was dropping it, so the
+                # grid could never distinguish a rest day from a missed one and
+                # rendered every Sunday as 0/0/0.
+                "working_day":  bool(r.get("working_day", True)),
+                # P3b: the day's note travels with the row so a manager reading
+                # the spreadsheet sees the context without opening each entry.
+                "remarks":      str(r.get("remarks") or ""),
+                "manager_note": str(r.get("manager_note") or ""),
+            }
+            # P3c: canonical dimensions from the roster. The log's own free-text
+            # `unit` stays on the row for backward compatibility, but the grid
+            # filters on department/branch because those are the structure the
+            # bank actually reports against.
+            _d = _dims_for(r.get("staff_code"))
+            row["department"] = _d.get("department", "")
+            row["branch"] = _d.get("branch", "") or str(r.get("unit") or "")
+            if _d.get("full_name"):
+                row["staff_name"] = _d["full_name"]
+            for k in mkeys:
+                row[k] = r.get(k, 0)
+            rows.append(row)
     rows = []
     for sc, staff_logs in by_staff.items():
         annotated = carried_forward(staff_logs)  # sorted asc, adds target/variance/cf_variance

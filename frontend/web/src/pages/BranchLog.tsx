@@ -49,7 +49,9 @@ export default function BranchLog() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [dayCtx, setDayCtx] = useState<DayContext | null>(null);
   const [grid, setGrid] = useState<HistoryGridData | null>(null);
-  const [gridDays, setGridDays] = useState(30);
+  // 7 by default: the grid is now roster-complete (every scoped staff member
+  // for every working day), so 30 days is ~9,500 rows before filtering.
+  const [gridDays, setGridDays] = useState(7);
   const [gridLoading, setGridLoading] = useState(false);
   const [mine, setMine] = useState<BranchLogEntry[]>([]);
   const [pending, setPending] = useState<BranchLogEntry[]>([]);

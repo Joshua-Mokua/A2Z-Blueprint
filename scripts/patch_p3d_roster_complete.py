@@ -1,4 +1,237 @@
-// Phase 3 — wide spreadsheet history grid for the Daily Log.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Phase 3d - roster-complete grid on the canonical hierarchy source.
+
+TWO FIXES.
+
+1. WRONG SOURCE (my error in 3c). The roster join read data/staff_roster.json -
+   a 362-row shadow file. The canonical source is data/staff_register.xlsx, read
+   through utils.api_pipeline_scope.get_staff_roster(), which is the SAME loader
+   the pipeline hierarchy and visibility engine uses. It carries 363 rows with
+   Department, Branch, Unit, Region AND Reports To Code. Two readers pointed at
+   two files for one concept is exactly the drift this codebase keeps paying
+   for; there is now one reader and one file.
+
+2. NON-FILERS WERE INVISIBLE AND FREE. carried_forward only walks logs that
+   exist, so a staff member who never files had no rows, no target and no
+   deficit. In the current week 74 of 363 staff filed - the other 289 did not
+   appear in the grid at all, which is why an MD login showed only three
+   departments.
+
+   The endpoint now emits a zero row for every WORKING day a scoped staff member
+   has no entry. Scope comes from get_visible_staff_codes - the same upward
+   hierarchy the pipeline uses - so admin sees the bank, a manager sees their
+   subtree, everyone else sees themselves.
+
+   Measured on live data: a never-filer over the last 6 working days accrues
+       Mon-Fri  -25.0 each   (full weekday target)
+       Sat      -12.5        (WC-2b half day)
+       Sun      excluded
+       balance  -137.5
+   Rest days still contribute nothing, so the calendar rules hold.
+
+   New query param include_missing (default true) can switch it off.
+
+VOLUME: roster-complete means 363 staff x working days. The grid's default range
+drops from 30 days to 7 (~2,200 rows) because 30 would be ~9,500 before
+filtering. Department / Branch / Person filters do the narrowing.
+
+Rows the backend synthesised carry status='missing' and render distinctly:
+amber row wash, a "Not filed" chip in the notes column, and a middot instead of
+a zero in each activity cell - a synthesised zero must not look like a filed
+zero.
+
+Verified before delivery: py_compile clean, tsc --noEmit clean, vite build
+clean, roster join checked against real codes, and the deficit arithmetic
+checked against the live calendar.
+
+Usage (from project root, .venv active):
+    python scripts\\patch_p3d_roster_complete.py            # dry run
+    python scripts\\patch_p3d_roster_complete.py --apply    # write + .pre_p3d backups
+"""
+import os
+import shutil
+import sys
+
+API = os.path.join("utils", "api_branch_log.py")
+PAGE = os.path.join("frontend", "web", "src", "pages", "BranchLog.tsx")
+COMP = os.path.join("frontend", "web", "src", "components", "HistoryGrid.tsx")
+BACKUP_SUFFIX = ".pre_p3d"
+
+HELPER_NEW = r'''def _roster_dims() -> dict:
+    """Canonical {canon(staff_code) -> {department, branch, full_name, role}}.
+
+    SOURCE OF TRUTH: data/staff_register.xlsx, read through
+    utils.api_pipeline_scope.get_staff_roster() — the SAME loader the pipeline
+    hierarchy and visibility engine uses. It carries Department, Branch, Unit,
+    Region and Reports To Code, so the grid's dimensions cannot drift from the
+    hierarchy the rest of the system reports against.
+
+    (An earlier revision of this joined data/staff_roster.json — a 362-row
+    shadow of the same population without the reporting column. Two readers,
+    two files, one concept: exactly the drift this codebase keeps paying for.)
+
+    The Daily Log record's own `unit` is free text typed at submit time and is
+    inconsistent in live data ("Fortis" / "Fortis Branch" / "Consumer" /
+    "EKE-CONSUMER BANKING DEPARTMENT"); it is used only as a fallback.
+
+    Keyed on utils.staff_code.canon so KE0439 / KE439 / 439 all resolve.
+    """
+    from utils.staff_code import canon as _canon
+    out: dict = {}
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        df = get_staff_roster()
+        if df is None or len(df) == 0:
+            return out
+        cols = set(df.columns)
+
+        def pick(row, *names):
+            for n in names:
+                if n in cols:
+                    v = row.get(n)
+                    if v is not None and str(v).strip() and str(v) != "nan":
+                        return str(v).strip()
+            return ""
+
+        for _, row in df.iterrows():
+            code = pick(row, "Staff Code", "staff_code")
+            if not code:
+                continue
+            out[_canon(code)] = {
+                "department": pick(row, "Department", "department"),
+                "branch":     pick(row, "Branch", "Unit", "branch", "unit"),
+                "full_name":  pick(row, "Staff Name", "staff_name", "full_name"),
+                "role":       pick(row, "Role", "role"),
+                "code":       code,
+            }
+    except Exception:
+        return out
+    return out
+
+
+def _dims_for(staff_code) -> dict:
+    """Roster dimensions for a staff code, empty dict when unmatched."""
+    from utils.staff_code import canon as _canon
+    return _roster_dims().get(_canon(staff_code)) or {}
+
+
+'''
+
+FILL_NEW = r"""    if include_missing:
+        from datetime import date as _date, timedelta as _td
+        from utils.staff_code import canon as _canon
+        try:
+            from utils import workcal as _wc
+        except Exception:
+            _wc = None
+
+        dims = _roster_dims()
+        if _is_admin(user):
+            scope_codes = set(dims.keys())
+        elif _is_manager(user):
+            try:
+                from utils.api_pipeline_scope import get_visible_staff_codes
+                scope_codes = {_canon(c) for c in get_visible_staff_codes({
+                    "staff_code": me.get("staff_code", ""),
+                    "role": me.get("role", ""),
+                    "is_admin": bool(user.get("is_admin")),
+                })}
+            except Exception:
+                scope_codes = {_canon(c) for c in by_staff}
+        else:
+            scope_codes = {_canon(me.get("staff_code", ""))}
+        scope_codes.discard("")
+
+        # Working days in the window, newest-inclusive.
+        today = _date.today()
+        window = [today - _td(days=i) for i in range(int(days))]
+        work_days = [d for d in window if (_wc.is_working_day(d) if _wc else d.weekday() != 6)]
+
+        # Index existing logs by canonical code + date so the fill never
+        # duplicates a day someone actually filed.
+        filed = {}
+        for code, ls in by_staff.items():
+            for l in ls:
+                filed.setdefault(_canon(code), set()).add(str(l.get("log_date"))[:10])
+
+        for ck in scope_codes:
+            d = dims.get(ck) or {}
+            have = filed.get(ck, set())
+            bucket = by_staff.setdefault(d.get("code") or ck, [])
+            for day in work_days:
+                iso = day.isoformat()
+                if iso in have:
+                    continue
+                blank = {
+                    "log_date": iso,
+                    "staff_code": d.get("code") or ck,
+                    "staff_name": d.get("full_name", ""),
+                    "role": d.get("role", ""),
+                    "unit": d.get("branch", ""),
+                    "status": "missing",
+                    "validated": False,
+                    "auto_submitted": False,
+                    "index": 0.0,
+                    "remarks": "",
+                    "manager_note": "",
+                }
+                for k in mkeys:
+                    blank[k] = 0
+                bucket.append(blank)
+    rows = []
+    for sc, staff_logs in by_staff.items():
+        annotated = carried_forward(staff_logs)  # sorted asc, adds target/variance/cf_variance
+        for r in annotated:
+            row = {
+                "log_date":   r.get("log_date"),
+                "staff_code": r.get("staff_code"),
+                "staff_name": r.get("staff_name"),
+                "role":       r.get("role"),
+                "unit":       r.get("unit"),
+                "status":     r.get("status", "submitted"),
+                "validated":  bool(r.get("validated")),
+                "auto_submitted": bool(r.get("auto_submitted")),
+                "index":      round(float(r.get("index") or 0), 2),
+                "target":     r.get("target"),
+                "variance":   r.get("variance"),
+                "cf_variance": r.get("cf_variance"),
+                # WC-2b sets working_day on the annotated row (false on Sundays
+                # and gazetted holidays). The endpoint was dropping it, so the
+                # grid could never distinguish a rest day from a missed one and
+                # rendered every Sunday as 0/0/0.
+                "working_day":  bool(r.get("working_day", True)),
+                # P3b: the day's note travels with the row so a manager reading
+                # the spreadsheet sees the context without opening each entry.
+                "remarks":      str(r.get("remarks") or ""),
+                "manager_note": str(r.get("manager_note") or ""),
+            }
+            # P3c: canonical dimensions from the roster. The log's own free-text
+            # `unit` stays on the row for backward compatibility, but the grid
+            # filters on department/branch because those are the structure the
+            # bank actually reports against.
+            _d = _dims_for(r.get("staff_code"))
+            row["department"] = _d.get("department", "")
+            row["branch"] = _d.get("branch", "") or str(r.get("unit") or "")
+            if _d.get("full_name"):
+                row["staff_name"] = _d["full_name"]
+            for k in mkeys:
+                row[k] = r.get(k, 0)
+            rows.append(row)"""
+
+SIG_OLD = 'def branch_log_history_grid(days: int = 30, unit: str = "", user: dict = Depends(get_current_user)):'
+SIG_NEW = ('def branch_log_history_grid(days: int = 30, unit: str = "", include_missing: bool = True,\n'
+           '                            user: dict = Depends(get_current_user)):')
+
+FILL_ANCHOR = "    mkeys = metric_keys()"
+
+PAGE_OLD = "  const [gridDays, setGridDays] = useState(30);"
+PAGE_NEW = ("  // 7 by default: the grid is now roster-complete (every scoped staff member\n"
+            "  // for every working day), so 30 days is ~9,500 rows before filtering.\n"
+            "  const [gridDays, setGridDays] = useState(7);")
+
+COMPONENT = r"""// Phase 3 — wide spreadsheet history grid for the Daily Log.
 //
 // One row per staff per day. Identity columns (Date / Staff / Name / Role) are
 // frozen to the left so they survive horizontal scrolling across an arbitrary
@@ -403,3 +636,95 @@ export default function HistoryGrid({ grid, loading, days, onDaysChange }: Histo
     </div>
   );
 }
+"""
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (API, PAGE, COMP):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found." % p)
+            return 1
+
+    api = open(API, encoding="utf-8").read()
+    page = open(PAGE, encoding="utf-8").read()
+    cur = open(COMP, encoding="utf-8").read()
+
+    if "include_missing" in api:
+        print("ABORT: api_branch_log already has include_missing - Phase 3d looks applied.")
+        return 1
+    if "_roster_dims" not in api:
+        print("ABORT: apply patch_p3c_org_filters.py first.")
+        return 1
+    if "deptFilter" not in cur:
+        print("ABORT: HistoryGrid is not at Phase 3c.")
+        return 1
+
+    # 1. swap the roster reader (JSON shadow -> canonical xlsx loader)
+    try:
+        i = api.index("def _roster_dims()")
+        j = api.index('@router.get("/history-grid")')
+    except ValueError:
+        print("ABORT: could not locate the roster helper block.")
+        return 1
+    # keep anything defined before the helper (cache globals) out of the way
+    k = api.rindex("\n", 0, i)
+    head = api[:k + 1]
+    if "_ROSTER_DIMS_CACHE" in head:
+        head = head[:head.index("_ROSTER_DIMS_CACHE")]
+    api = head + HELPER_NEW + api[j:]
+    print("  ok  roster reader -> staff_register.xlsx via get_staff_roster()")
+
+    if api.count(SIG_OLD) != 1:
+        print("ABORT: endpoint signature matched %d times." % api.count(SIG_OLD))
+        return 1
+    api = api.replace(SIG_OLD, SIG_NEW, 1)
+    print("  ok  include_missing query param")
+
+    if api.count(FILL_ANCHOR) != 1:
+        print("ABORT: fill anchor matched %d times." % api.count(FILL_ANCHOR))
+        return 1
+    api = api.replace(FILL_ANCHOR, FILL_ANCHOR + "\n\n" + FILL_NEW, 1)
+    print("  ok  roster completion (zero rows for unfiled working days)")
+
+    if page.count(PAGE_OLD) != 1:
+        print("ABORT: default-range anchor matched %d times." % page.count(PAGE_OLD))
+        return 1
+    page = page.replace(PAGE_OLD, PAGE_NEW, 1)
+    print("  ok  default range 30 -> 7 days")
+
+    for token in ("missing", "Not filed", "notFiled"):
+        if token not in COMPONENT:
+            print("ABORT: embedded component missing '%s'." % token)
+            return 1
+    for o, c in (("{", "}"), ("(", ")")):
+        if COMPONENT.count(o) != COMPONENT.count(c):
+            print("ABORT: embedded component unbalanced %s%s." % (o, c))
+            return 1
+    print("  ok  embedded component validated (%d lines)" % (COMPONENT.count("\n") + 1))
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((API, api), (PAGE, page), (COMP, COMPONENT)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    try:
+        py_compile.compile(API, doraise=True)
+        print("  ok  %s compiles" % API)
+    except Exception as exc:
+        print("  FAIL %s: %s" % (API, exc))
+        return 1
+
+    print("\nNext:")
+    print("  1. pushd frontend\\web && pnpm tsc --noEmit && popd && echo TSC_PASSED")
+    print("  2. restart uvicorn - the endpoint now completes against the roster")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
