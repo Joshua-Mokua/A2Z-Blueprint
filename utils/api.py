@@ -10149,6 +10149,12 @@ app.include_router(cbs_router)
 from utils.api_branch_log import router as branch_log_router
 app.include_router(branch_log_router)
 
+# Pipeline validation - the same tier structure and the same calendar as the
+# Daily Log, sharing utils.branch_day under domain="pipeline" rather than a
+# parallel store.
+from utils.api_pipeline_validation import router as pipeline_validation_router
+app.include_router(pipeline_validation_router)
+
 
 # v10.532 Phase 5 Batch gamma3 -- Target Cascade read-only routes
 from utils.api_cascade_routes import router as cascade_api_router
