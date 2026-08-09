@@ -6,12 +6,13 @@ import { useToast } from '@/components/Toast';
 import { useRole } from '@/hooks/useRole';
 import DayPlanner from '@/components/DayPlanner';
 import HistoryGrid from '@/components/HistoryGrid';
+import Leaderboard from '@/components/Leaderboard';
 import {
   fetchBranchLogFields, fetchBranchLogAutoActivities, fetchMyBranchLogs, fetchPendingBranchLogs,
   submitBranchLogHourly, saveBranchLogHourlyDraft, fetchBranchLogDraft, validateBranchLog, fetchBranchLogConfig, saveBranchLogConfig, fetchBranchLogRanking,
   fetchBranchLogActivities, saveBranchLogActivities,
   fetchDayContext, fetchBranchLogHistoryGrid,
-  type BranchLogField, type BranchLogEntry, type BranchLogActivity, type BranchLogRankRow, type ExtraActivity,
+  type BranchLogField, type BranchLogEntry, type BranchLogActivity, type ExtraActivity,
   type HourlyMap, type DayContext, type HistoryGrid as HistoryGridData,
 } from '@/lib/api';
 import { displayName } from '@/lib/names';
@@ -62,7 +63,6 @@ export default function BranchLog() {
   const [savingDraft, setSavingDraft] = useState(false);
   const [autoActs, setAutoActs] = useState<BranchLogActivity[]>([]);
   const [indexTarget, setIndexTarget] = useState(0);
-  const [ranking, setRanking] = useState<BranchLogRankRow[]>([]);
   const [weightDraft, setWeightDraft] = useState<Record<string, string>>({});
   const [targetDraft, setTargetDraft] = useState('');
   const [extraActs, setExtraActs] = useState<ExtraActivity[]>([]);
@@ -95,7 +95,9 @@ export default function BranchLog() {
     } catch { /* ignore */ }
   }, []);
   const loadRanking = useCallback(async () => {
-    try { const r = await fetchBranchLogRanking(30); setRanking(r.ranking); setIndexTarget(r.daily_index_target || 0); } catch { /* ignore */ }
+    // The Leaderboard component owns the ranking now; this call survives only to
+    // pick up the daily index target, which the Day Planner header needs.
+    try { const r = await fetchBranchLogRanking(30); setIndexTarget(r.daily_index_target || 0); } catch { /* ignore */ }
   }, []);
   const loadActs = useCallback(async () => {
     try { const r = await fetchBranchLogActivities(); setExtraActs(r.extra); } catch { /* ignore */ }
@@ -369,32 +371,7 @@ export default function BranchLog() {
         </Card>
       )}
 
-      {tab === 'ranking' && (
-        <Card>
-          <Card.Header><h2 className="text-base font-semibold text-gray-900">Productivity ranking — last 30 days</h2></Card.Header>
-          <Card.Body>
-            {ranking.length === 0 ? <p className="text-sm text-gray-400">No logs in this period.</p> : (
-              <table className="w-full text-sm">
-                <thead><tr className="text-left text-xs text-gray-400">
-                  <th className="py-1">#</th><th>Staff</th><th>Unit</th><th className="text-right">Index</th><th className="text-right">Avg/day</th><th className="text-right">Days</th>
-                </tr></thead>
-                <tbody>
-                  {ranking.map((r) => (
-                    <tr key={r.staff_code} className="border-t border-gray-100">
-                      <td className="py-1.5 font-medium text-gray-500">{r.rank}</td>
-                      <td className="font-medium text-gray-900">{r.staff_name}</td>
-                      <td className="text-gray-500">{r.unit}</td>
-                      <td className="text-right font-semibold tabular-nums">{r.index}</td>
-                      <td className={'text-right tabular-nums ' + (r.target > 0 && r.avg_per_day >= r.target ? 'text-emerald-600' : 'text-gray-600')}>{r.avg_per_day}</td>
-                      <td className="text-right tabular-nums text-gray-500">{r.days}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Card.Body>
-        </Card>
-      )}
+      {tab === 'ranking' && <Leaderboard />}
 
       {tab === 'setup' && isAdmin && (
         <Card>

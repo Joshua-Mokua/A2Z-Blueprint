@@ -782,6 +782,34 @@ export async function saveBranchLogActivities(extra_activities: ExtraActivity[])
   return postJson<{ status: string }, { extra_activities: ExtraActivity[] }>('/branch-log/activities', { extra_activities });
 }
 export interface BranchLogRankRow { rank: number; staff_code: string; staff_name: string; unit: string; index: number; days: number; avg_per_day: number; target: number; }
+// ── Cumulative leaderboard (staff / role / branch / unit) ─────────────────
+export interface LeaderboardRow {
+  rank?: number;
+  name?: string;                       // role / branch / unit rows
+  staff_code?: string; staff_name?: string; role?: string; branch?: string; unit?: string;
+  index: number; target: number; achievement?: number;
+  headcount?: number; index_per_head?: number;
+  days_filed: number; validated: number; cf_variance?: number;
+}
+export interface Leaderboard {
+  level: string; days: number; rows: LeaderboardRow[];
+  total_index: number; total_headcount: number;
+  filters: { role: string; branch: string; unit: string };
+  roles: string[]; branches: string[]; units: string[];
+}
+export async function fetchBranchLogLeaderboard(opts: {
+  days?: number; level?: string; role?: string; branch?: string; unit?: string;
+} = {}): Promise<Leaderboard> {
+  const q = new URLSearchParams();
+  if (opts.days) q.set('days', String(opts.days));
+  if (opts.level) q.set('level', opts.level);
+  if (opts.role) q.set('role', opts.role);
+  if (opts.branch) q.set('branch', opts.branch);
+  if (opts.unit) q.set('unit', opts.unit);
+  const s = q.toString();
+  return getJson<Leaderboard>(`/branch-log/leaderboard${s ? `?${s}` : ''}`);
+}
+
 export async function fetchBranchLogRanking(days = 30): Promise<{ ranking: BranchLogRankRow[]; days: number; daily_index_target: number }> {
   return getJson<{ ranking: BranchLogRankRow[]; days: number; daily_index_target: number }>(`/branch-log/ranking?days=${days}`);
 }
