@@ -1760,7 +1760,13 @@ def branch_log_submit(payload: dict = Body(default_factory=dict),
         raise HTTPException(status_code=400, detail="Your staff identity could not be resolved.")
     values = payload.get("values") if isinstance(payload.get("values"), dict) else payload
     blm = BranchLogManager()
-    rec = blm.submit(me["staff_code"], me["staff_name"], me["unit"], me["role"], values or {})
+    try:
+        rec = blm.submit(me["staff_code"], me["staff_name"], me["unit"], me["role"],
+                         values or {})
+    except ValueError as exc:
+        # Plausibility bounds. 400, not 500: the entry is wrong, not the server,
+        # and the message names every field so it can be fixed in one pass.
+        raise HTTPException(status_code=400, detail=str(exc))
     audit_log("BRANCH_LOG_SUBMIT", user.get("username", "unknown"),
               detail=f"log={rec.get('id')} unit={me['unit']}")
     return {"log": rec}
