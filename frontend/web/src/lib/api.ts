@@ -833,10 +833,15 @@ export async function decidePipelineDay(
 export interface DefinedStep {
   stage: string; count: number; value: number; probability: number;
 }
+export interface BucketHealth {
+  status: 'green' | 'amber' | 'red' | 'idle';
+  avg_days: number; target_days: number; oldest_days: number; at_risk: number;
+}
 export interface DefinedBucket {
   key: string; label: string; weight: number;
   count: number; value: number; probability: number;
   steps: DefinedStep[];
+  health: BucketHealth;
 }
 export interface DefinedFlow {
   flow: string; buckets: DefinedBucket[];

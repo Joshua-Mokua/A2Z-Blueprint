@@ -139,6 +139,89 @@ def _settings() -> dict:
         return {}
 
 
+# Target days per BUCKET — how long a deal should reasonably sit there. Config
+# first (stage_buckets[].target_days), then sla_config's steps, then these.
+# Without a target there is no "delayed", so the RAG line would be decoration.
+DEFAULT_BUCKET_TARGET_DAYS = {
+    "initiation": 3, "documentation": 5, "unit_review": 7,
+    "credit_analysis": 5, "credit_admin": 7, "trops": 2,
+    "approval": 3, "opening": 2,
+}
+
+
+def bucket_target_days(flow: str, bucket_key: str) -> float:
+    """Days a deal should take to clear this bucket."""
+    for b in buckets_for(flow):
+        if b["key"] == bucket_key and b.get("target_days"):
+            try:
+                return float(b["target_days"])
+            except (TypeError, ValueError):
+                break
+    return float(DEFAULT_BUCKET_TARGET_DAYS.get(str(bucket_key), 5))
+
+
+def _days_in_stage(deal: dict) -> float:
+    """WORKING days the deal has sat at its current stage.
+
+    Business days, via workcal, for the same reason the daily log counts them
+    that way: a deal that entered a stage on Friday is not two days late on
+    Sunday, and calling it late would send someone chasing a queue nobody was
+    rostered for.
+    """
+    from datetime import date, datetime
+    raw = (deal.get("stage_entered_at") or deal.get("stage_changed_at")
+           or deal.get("updated_at") or deal.get("open_date") or "")
+    txt = str(raw)[:10]
+    if not txt:
+        return 0.0
+    try:
+        d0 = date.fromisoformat(txt)
+    except ValueError:
+        return 0.0
+    today = date.today()
+    if d0 >= today:
+        return 0.0
+    try:
+        from utils import workcal
+        return float(workcal.business_days_between(d0, today))
+    except Exception:
+        return float((today - d0).days)
+
+
+def bucket_health(deals: list, flow: str, bucket_key: str) -> dict:
+    """RAG for a bucket: are deals moving through it, or stalling?
+
+    Scientific rather than decorative: the ratio of the AVERAGE working days
+    deals have sat here to the target for this bucket.
+
+        <= 1.0   green   moving within target
+        <= 1.5   amber   slipping
+        >  1.5   red     stalled
+
+    A bucket with no deals is 'idle', not green - calling an empty stage
+    healthy would hide the fact that nothing is arriving.
+    """
+    steps = {s.lower() for s in
+             next((b["steps"] for b in buckets_for(flow) if b["key"] == bucket_key), [])}
+    mine = [d for d in (deals or [])
+            if str(d.get("stage") or "").strip().lower() in steps]
+    if not mine:
+        return {"status": "idle", "avg_days": 0.0, "target_days":
+                bucket_target_days(flow, bucket_key), "oldest_days": 0.0, "at_risk": 0}
+    ages = [_days_in_stage(d) for d in mine]
+    avg = sum(ages) / len(ages)
+    target = bucket_target_days(flow, bucket_key)
+    ratio = (avg / target) if target else 0.0
+    status = "green" if ratio <= 1.0 else ("amber" if ratio <= 1.5 else "red")
+    return {
+        "status": status,
+        "avg_days": round(avg, 1),
+        "target_days": target,
+        "oldest_days": round(max(ages), 1),
+        "at_risk": sum(1 for a in ages if target and a > target),
+    }
+
+
 def buckets_for(flow: str) -> list:
     """The bucket chain for a flow: [{key,label,weight,steps:[...]}, ...].
 
@@ -240,6 +323,7 @@ def bucket_view(deals: list, flow: str, value_of=None) -> list:
             "count": b_count, "value": round(b_value, 2),
             "probability": bucket_probability(flow, b["steps"][-1]) if b["steps"] else 0.0,
             "steps": steps,
+            "health": bucket_health(deals, flow, b["key"]),
         })
     return out
 

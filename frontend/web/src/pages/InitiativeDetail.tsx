@@ -178,7 +178,7 @@ export function InitiativeDetail() {
               <Card.Body className="p-0">
                 {!initiative.bsc_linkage || (initiative.bsc_linkage as InitiativeBsc[]).length === 0 ? (
                   <div className="px-6 py-4 text-xs text-gray-400 italic">
-                    No BSC linkage registered. Initiative is not yet wired to a balanced-scorecard KPI.
+                    Not linked to a balanced scorecard KPI.
                   </div>
                 ) : (
                   <div className="overflow-x-auto">

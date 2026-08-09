@@ -372,7 +372,7 @@ export function Pipeline() {
         ribbon
         breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'EKE Sales Pro' }]}
         title="EKE Sales Pro"
-        subtitle="Deals across your scope — assured value, stage, and ownership."
+        subtitle="Your pipeline"
         actions={
           <>
             <Button
@@ -714,18 +714,6 @@ export function Pipeline() {
                 </div>
               }
             />
-          </Card.Body>
-        </Card>
-
-        {/* Status footer — what this page is and isn't */}
-        <Card className="mt-6">
-          <Card.Body>
-            <div className="text-xs text-gray-500 leading-relaxed">
-              Click any deal row to view its detail page. Advance and
-              cancel-request actions live there, gated by the per-deal
-              permissions from α7. Create-deal and manager queues land
-              in subsequent β-batches.
-            </div>
           </Card.Body>
         </Card>
 

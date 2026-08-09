@@ -51,7 +51,6 @@ export default function DefinedFunnel({ onStageClick }: DefinedFunnelProps = {})
   const [data, setData] = useState<FunnelData | null>(null);
   const [loading, setLoading] = useState(false);
   const [flowKey, setFlowKey] = useState('');
-  const [sizeBy, setSizeBy] = useState<'count' | 'value'>('count');
   const [hover, setHover] = useState('');
 
   useEffect(() => {
@@ -77,7 +76,6 @@ export default function DefinedFunnel({ onStageClick }: DefinedFunnelProps = {})
     [data, flowKey]);
 
   const buckets = flow?.buckets ?? [];
-  const max = Math.max(1, ...buckets.map((b) => (sizeBy === 'count' ? b.count : b.value)));
   // Micro-steps open on demand: management reads the six buckets, an officer
   // opens the one they work in.
   const [openBucket, setOpenBucket] = useState('');
@@ -91,15 +89,6 @@ export default function DefinedFunnel({ onStageClick }: DefinedFunnelProps = {})
             <p className="mt-0.5 text-xs text-gray-500">
               Each product's defined stages, in the order the bank configured them.
             </p>
-          </div>
-          <div className="flex items-center gap-1 text-[11px]">
-            {(['count', 'value'] as const).map((s) => (
-              <button key={s} type="button" onClick={() => setSizeBy(s)}
-                className={'rounded-full px-2.5 py-1 font-medium '
-                  + (sizeBy === s ? 'bg-[#0082BB] text-white' : 'text-[#005B82] hover:bg-[#0082BB]/10')}>
-                by {s}
-              </button>
-            ))}
           </div>
         </div>
       </Card.Header>
@@ -127,82 +116,92 @@ export default function DefinedFunnel({ onStageClick }: DefinedFunnelProps = {})
               ))}
             </div>
 
-            {/* The journey, as BUCKETS. Bands taper by position so the shape
-                reads as a funnel even where the numbers do not decline
-                monotonically — real pipelines rarely do, and a mis-shaped
-                funnel makes people distrust correct data. */}
-            <div className="space-y-1.5">
+            {/* A TRUE FUNNEL: each band is a trapezoid whose top edge matches
+                the band above, so the silhouette is continuous from Initiation
+                to disbursement rather than a stack of separate bars. Width
+                follows the ideal taper — what a healthy pipeline SHOULD look
+                like — while the RAG rail on the left reports what it is
+                actually doing. Shape shows the plan; colour shows the truth. */}
+            <div className="mx-auto" style={{ maxWidth: 760 }}>
               {buckets.map((b, i) => {
-                const metric = sizeBy === 'count' ? b.count : b.value;
-                const fill = Math.max(metric / max, metric > 0 ? 0.06 : 0);
-                const taper = 1 - (i / Math.max(buckets.length, 2)) * 0.34;
+                const wTop = 100 - (i / Math.max(buckets.length, 1)) * 62;
+                const wBot = 100 - ((i + 1) / Math.max(buckets.length, 1)) * 62;
                 const colour = bandColour(i, buckets.length);
                 const empty = b.count === 0;
                 const on = hover === b.key;
                 const open = openBucket === b.key;
+                const h = b.health;
+                const rag = h.status === 'red' ? '#C4536F'
+                  : h.status === 'amber' ? '#E0A02B'
+                  : h.status === 'green' ? '#669438' : '#D8DBDF';
                 return (
                   <div key={b.key}>
                     <div
                       onMouseEnter={() => setHover(b.key)}
                       onMouseLeave={() => setHover('')}
                       onClick={() => setOpenBucket(open ? '' : b.key)}
-                      className="group relative flex cursor-pointer items-center gap-3"
+                      className="relative flex cursor-pointer items-stretch gap-2"
                     >
-                      <div className="w-44 shrink-0 text-right">
+                      {/* the health rail — red/amber/green, per stage */}
+                      <div className="w-1.5 shrink-0 rounded-full transition-all"
+                           style={{ background: rag, opacity: on ? 1 : 0.85 }}
+                           title={h.status === 'idle'
+                             ? 'No deals at this stage'
+                             : `${h.avg_days} working days on average against a ${h.target_days}-day target`} />
+
+                      <div className="relative flex-1" style={{ height: 58 }}>
+                        {/* the trapezoid */}
+                        <div
+                          className="absolute inset-0 transition-transform duration-200"
+                          style={{
+                            clipPath: `polygon(${(100 - wTop) / 2}% 0%, ${100 - (100 - wTop) / 2}% 0%, ${100 - (100 - wBot) / 2}% 100%, ${(100 - wBot) / 2}% 100%)`,
+                            background: empty
+                              ? 'repeating-linear-gradient(45deg,#F4F5F7,#F4F5F7 7px,#E9EBEE 7px,#E9EBEE 14px)'
+                              : `linear-gradient(180deg, rgba(255,255,255,0.30) 0%, ${colour} 34%, ${colour} 62%, rgba(0,0,0,0.26) 100%), ${colour}`,
+                            transform: on ? 'scaleY(1.04)' : 'none',
+                            filter: on ? 'brightness(1.06)' : 'none',
+                          }}
+                        />
+                        {/* fill: how much of this band the deals occupy */}
+                        {!empty && (
+                          <div className="absolute inset-y-0 left-0 flex items-center justify-center"
+                               style={{ width: '100%' }}>
+                            <div className="flex items-baseline gap-2 text-white drop-shadow">
+                              <span className="text-lg font-semibold tabular-nums">{b.count}</span>
+                              <span className="text-[11px] opacity-90">KES {kes(b.value)}</span>
+                            </div>
+                          </div>
+                        )}
+                        {empty && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-[11px] text-gray-400">nothing here</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="w-52 shrink-0 self-center">
                         <div className={'truncate text-xs font-semibold ' + (empty ? 'text-gray-400' : 'text-gray-800')}
                              title={b.label}>
                           <span className="mr-1 text-gray-400">{open ? '▾' : '▸'}</span>
                           {b.label}
                         </div>
                         <div className="text-[10px] text-gray-400">
-                          {b.weight}% of journey · {Math.round(b.probability * 100)}% at exit
+                          {b.weight}% · {Math.round(b.probability * 100)}% at exit
                         </div>
-                      </div>
-
-                      <div className="relative h-12 flex-1" style={{ paddingInline: `${(1 - taper) * 50}%` }}>
-                        <div className="absolute inset-y-0 left-0 right-0 rounded-md bg-gray-100/70"
-                             style={{ marginInline: `${(1 - taper) * 50}%` }} />
-                        <div
-                          className={'relative h-full rounded-md transition-all duration-200 '
-                            + (on ? 'shadow-lg' : 'shadow-sm')}
-                          style={{
-                            width: `${Math.max(fill * 100, 0)}%`,
-                            background: empty
-                              ? 'repeating-linear-gradient(45deg,#F3F4F6,#F3F4F6 6px,#E9EBEE 6px,#E9EBEE 12px)'
-                              : `linear-gradient(180deg, ${colour} 0%, ${colour} 42%, rgba(0,0,0,0.18) 100%), ${colour}`,
-                            boxShadow: empty ? 'none'
-                              : 'inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -2px 6px rgba(0,0,0,0.18)',
-                            transform: on ? 'translateY(-1px)' : 'none',
-                          }}
-                        >
-                          {!empty && (
-                            <div className="flex h-full items-center gap-2 px-3 text-white">
-                              <span className="text-base font-semibold tabular-nums drop-shadow">{b.count}</span>
-                              <span className="truncate text-[11px] opacity-90">KES {kes(b.value)}</span>
-                            </div>
-                          )}
+                        <div className="text-[10px]" style={{ color: rag }}>
+                          {h.status === 'idle'
+                            ? 'no deals'
+                            : `${h.avg_days}d avg / ${h.target_days}d target`
+                              + (h.at_risk ? ` · ${h.at_risk} over` : '')}
                         </div>
-                        {empty && (
-                          <div className="pointer-events-none absolute inset-0 flex items-center px-3">
-                            <span className="text-[11px] text-gray-400">no deals in this bucket</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="w-24 shrink-0 text-right">
-                        <div className="text-[11px] tabular-nums text-gray-600">{b.steps.length} step{b.steps.length === 1 ? '' : 's'}</div>
                       </div>
                     </div>
 
                     {open && (
-                      <div className="ml-44 mt-1 space-y-1 border-l-2 border-gray-200 pl-3">
+                      <div className="mb-1 ml-4 space-y-1 border-l-2 border-gray-200 pl-3">
                         {b.steps.map((st) => (
                           <div key={st.stage}
                                onClick={(e) => {
-                                 // Drill on the MICRO-STEP, which is the real
-                                 // stage a deal sits at. Stopping propagation
-                                 // keeps the click from also collapsing the
-                                 // bucket the user just opened.
                                  e.stopPropagation();
                                  if (st.count && onStageClick && flow) onStageClick(flow.flow, st.stage);
                                }}
@@ -228,6 +227,17 @@ export default function DefinedFunnel({ onStageClick }: DefinedFunnelProps = {})
               })}
             </div>
 
+            {/* What the colours mean — three words, not a paragraph. */}
+            <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-gray-500">
+              {[['#669438', 'within target'], ['#E0A02B', 'slipping'],
+                ['#C4536F', 'stalled'], ['#D8DBDF', 'no deals']].map(([c, l]) => (
+                <span key={l} className="flex items-center gap-1">
+                  <span className="inline-block h-2 w-2 rounded-full" style={{ background: c }} />
+                  {l}
+                </span>
+              ))}
+            </div>
+
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3 text-xs">
               <span className="text-gray-500">
                 {flow?.deals ?? 0} deals · KES {kes(flow?.value ?? 0)} ·{' '}
@@ -235,12 +245,6 @@ export default function DefinedFunnel({ onStageClick }: DefinedFunnelProps = {})
                   KES {kes(flow?.weighted ?? 0)} weighted
                 </span>
               </span>
-              {(data.unplaced_deals ?? 0) > 0 && (
-                <span className="rounded-full bg-[#FBEAF0] px-2.5 py-1 text-[11px] text-[#993556]">
-                  {data.unplaced_deals} deal(s) sit at a stage no configured flow contains —
-                  they are counted nowhere above
-                </span>
-              )}
             </div>
 
           </>
