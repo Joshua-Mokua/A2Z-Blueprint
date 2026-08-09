@@ -433,41 +433,39 @@
   },
   "stage_flows": {
     "asset": [
-      "Lead",
-      "Contacted",
-      "Qualified",
-      "Application",
-      "Credit Assessment",
-      "Offer / Proposal",
-      "Negotiation",
-      "Compliance",
+      "Initiation",
+      "Documentation",
+      "Branch Credit Committee",
+      "Department Analyst",
+      "Department Business Committee",
+      "Credit Analysis",
+      "Offer Letter",
+      "Legal - Security Perfection",
+      "Disbursement",
       "Closed Won",
       "Closed Lost"
     ],
     "liability": [
-      "Lead",
-      "Contacted",
-      "Proposal",
-      "Negotiation",
+      "Initiation",
       "Documentation",
+      "Approval",
+      "Opening",
       "Closed Won",
       "Closed Lost"
     ],
     "insurance": [
-      "Lead",
-      "Contacted",
-      "Proposal",
-      "Negotiation",
+      "Initiation",
       "Documentation",
+      "Approval",
+      "Opening",
       "Closed Won",
       "Closed Lost"
     ],
     "other": [
-      "Lead",
-      "Contacted",
-      "Qualified",
-      "Proposal",
-      "Negotiation",
+      "Initiation",
+      "Documentation",
+      "Approval",
+      "Opening",
       "Closed Won",
       "Closed Lost"
     ]
@@ -2396,5 +2394,162 @@
       "min": 0.95,
       "max": 1.01
     }
-  ]
+  ],
+  "stage_buckets": {
+    "asset": [
+      {
+        "key": "initiation",
+        "label": "Initiation",
+        "weight": 10,
+        "steps": [
+          "Initiation"
+        ]
+      },
+      {
+        "key": "documentation",
+        "label": "Documentation",
+        "weight": 15,
+        "steps": [
+          "Documentation"
+        ]
+      },
+      {
+        "key": "unit_review",
+        "label": "Unit Review",
+        "weight": 25,
+        "steps": [
+          "Branch Credit Committee",
+          "Department Analyst",
+          "Department Business Committee"
+        ]
+      },
+      {
+        "key": "credit_analysis",
+        "label": "Credit Analysis",
+        "weight": 20,
+        "steps": [
+          "Credit Analysis"
+        ]
+      },
+      {
+        "key": "credit_admin",
+        "label": "Credit Administration",
+        "weight": 15,
+        "steps": [
+          "Offer Letter",
+          "Legal - Security Perfection"
+        ]
+      },
+      {
+        "key": "trops",
+        "label": "TROPS",
+        "weight": 15,
+        "steps": [
+          "Disbursement"
+        ]
+      }
+    ],
+    "liability": [
+      {
+        "key": "initiation",
+        "label": "Initiation",
+        "weight": 20,
+        "steps": [
+          "Initiation"
+        ]
+      },
+      {
+        "key": "documentation",
+        "label": "Documentation",
+        "weight": 30,
+        "steps": [
+          "Documentation"
+        ]
+      },
+      {
+        "key": "approval",
+        "label": "Approval",
+        "weight": 25,
+        "steps": [
+          "Approval"
+        ]
+      },
+      {
+        "key": "opening",
+        "label": "Opening",
+        "weight": 25,
+        "steps": [
+          "Opening"
+        ]
+      }
+    ],
+    "insurance": [
+      {
+        "key": "initiation",
+        "label": "Initiation",
+        "weight": 20,
+        "steps": [
+          "Initiation"
+        ]
+      },
+      {
+        "key": "documentation",
+        "label": "Documentation",
+        "weight": 30,
+        "steps": [
+          "Documentation"
+        ]
+      },
+      {
+        "key": "approval",
+        "label": "Approval",
+        "weight": 25,
+        "steps": [
+          "Approval"
+        ]
+      },
+      {
+        "key": "opening",
+        "label": "Opening",
+        "weight": 25,
+        "steps": [
+          "Opening"
+        ]
+      }
+    ],
+    "other": [
+      {
+        "key": "initiation",
+        "label": "Initiation",
+        "weight": 20,
+        "steps": [
+          "Initiation"
+        ]
+      },
+      {
+        "key": "documentation",
+        "label": "Documentation",
+        "weight": 30,
+        "steps": [
+          "Documentation"
+        ]
+      },
+      {
+        "key": "approval",
+        "label": "Approval",
+        "weight": 25,
+        "steps": [
+          "Approval"
+        ]
+      },
+      {
+        "key": "opening",
+        "label": "Opening",
+        "weight": 25,
+        "steps": [
+          "Opening"
+        ]
+      }
+    ]
+  }
 }
