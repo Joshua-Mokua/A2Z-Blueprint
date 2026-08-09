@@ -200,10 +200,24 @@ export default function Leaderboard() {
 
         {!loading && rows.length > 0 && (
           <div className="overflow-auto rounded-lg border border-gray-200">
-            <table className="w-full border-separate" style={{ borderSpacing: 0 }}>
+            <table className="w-full table-fixed border-separate" style={{ borderSpacing: 0 }}>
+              <colgroup>
+                <col style={{ width: 44 }} />
+                <col />
+                {isStaff && <col style={{ width: '18%' }} />}
+                {isStaff && <col style={{ width: '14%' }} />}
+                {!isStaff && <col style={{ width: 72 }} />}
+                <col style={{ width: 104 }} />
+                <col style={{ width: 96 }} />
+                <col style={{ width: 76 }} />
+                <col style={{ width: 150 }} />
+                <col style={{ width: 76 }} />
+                {!isStaff && <col style={{ width: 84 }} />}
+                <col style={{ width: 68 }} />
+              </colgroup>
               <thead>
                 <tr>
-                  <th className="w-10 bg-gray-100 px-2 py-2 text-left text-[11px] font-semibold uppercase text-gray-600">#</th>
+                  <th className="bg-gray-100 px-2 py-2 text-left text-[11px] font-semibold uppercase text-gray-600">#</th>
                   <th className="bg-gray-100 px-2 py-2 text-left text-[11px] font-semibold uppercase text-gray-600">
                     {isStaff ? 'Staff' : LEVELS.find((l) => l.key === level)?.label}
                   </th>
@@ -243,7 +257,8 @@ export default function Leaderboard() {
                           {r.rank}
                         </span>
                       </td>
-                      <td className={`${bg} px-2 py-1.5 text-xs font-medium text-gray-900`}>
+                      <td className={`${bg} truncate px-2 py-1.5 text-xs font-medium text-gray-900`}
+                          title={nameOf(r)}>
                         {isStaff ? nameOf(r) : (
                           <button type="button" onClick={() => void expand(r)}
                                   className="flex items-center gap-1.5 text-left hover:text-brand-primary">
@@ -254,8 +269,16 @@ export default function Leaderboard() {
                           </button>
                         )}
                       </td>
-                      {isStaff && <td className={`${bg} px-2 py-1.5 text-xs text-gray-500`}>{r.role}</td>}
-                      {isStaff && <td className={`${bg} px-2 py-1.5 text-xs text-gray-500`}>{r.branch}</td>}
+                      {isStaff && (
+                        <td className={`${bg} truncate px-2 py-1.5 text-xs text-gray-500`} title={r.role}>
+                          {r.role}
+                        </td>
+                      )}
+                      {isStaff && (
+                        <td className={`${bg} truncate px-2 py-1.5 text-xs text-gray-500`} title={r.branch}>
+                          {r.branch}
+                        </td>
+                      )}
                       {!isStaff && (
                         <td className={`${bg} px-2 py-1.5 text-right text-xs tabular-nums text-gray-500`}>
                           {r.headcount}
@@ -362,13 +385,23 @@ export default function Leaderboard() {
         )}
 
         <p className="mt-2 text-[11px] text-gray-400">
-          Ranked on the <strong>average index per day on duty</strong>. Days on leave,
+          Sorted best to worst on the <strong>average index per day on duty</strong> —
+          at every level, and inside every expanded row. Days on leave,
           rest days and excused absences are not counted as days on duty, so nobody is
           penalised for a day the bank did not expect work — that is what the manager's
           exception is for. The total index stays on the row as what was actually banked.
           Each person is counted once at every level, so switching lens changes how the
           total is divided, never the total itself.
         </p>
+        {level === 'segment' && data?.bears_branch && (
+          <p className="mt-1 text-[11px] text-gray-500">
+            {data.bears_branch.headcount} branch manager(s) are not in these segments —
+            they cut across all three and bear the branch instead, the same logic used
+            when branches are ranked against each other. Their{' '}
+            {data.bears_branch.index.toLocaleString()} index sits at branch level, which
+            is why this is the one view that does not sum to the bank total.
+          </p>
+        )}
       </Card.Body>
     </Card>
   );

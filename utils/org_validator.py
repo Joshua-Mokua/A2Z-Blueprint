@@ -528,7 +528,12 @@ _DEFAULT_SEGMENTS = {
     "Operations": [
         "branch operations officer", "assistant branch service & operations manager",
         "customer service manager", "teller", "branch operations manager",
-        "service assistant, operations officer", "branch manager",
+        "service assistant, operations officer",
+        # RULING 2026-08-09: the BRANCH MANAGER is deliberately absent. They cut
+        # across all three segments, so "they simply bear the branch" - the same
+        # logic that already applies when branches are ranked against each
+        # other. Placing them in Operations would credit operations with a
+        # contribution that is really the whole branch's.
     ],
     "Consumer": [
         "relationship officer", "relationship manager, premier banking",

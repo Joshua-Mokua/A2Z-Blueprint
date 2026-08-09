@@ -847,6 +847,8 @@ export interface Leaderboard {
   met_days?: number; scored_days?: number; met_rate?: number;
   filters: { role: string; branch: string; unit: string };
   roles: string[]; branches: string[]; units: string[]; segments?: string[];
+  // Segment level only: people held back because they bear the branch.
+  bears_branch?: { headcount: number; index: number } | null;
 }
 export async function fetchBranchLogLeaderboard(opts: {
   days?: number; level?: string; role?: string; branch?: string; unit?: string;

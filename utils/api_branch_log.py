@@ -1545,7 +1545,15 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
     elif level == "segment":
         # Consumer / Commercial / Operations — the split that means something at
         # a branch, where the MD-reporting unit does not.
-        rows = agg(people, lambda p: p["segment"], "name")
+        #
+        # Branch managers are EXCLUDED, not bucketed: they cut across all three
+        # and bear the branch instead (ruling 2026-08-09). That means this level
+        # is the ONE that does not sum to the bank total, so the count and index
+        # of the people held back are returned explicitly — a level that quietly
+        # fails to reconcile would be worse than one that says why.
+        segmented = [p for p in people if p["segment"]]
+        unsegmented = [p for p in people if not p["segment"]]
+        rows = agg(segmented, lambda p: p["segment"], "name")
         sort_key = "avg_index"
     else:
         level = "staff"
@@ -1565,6 +1573,11 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         r["rank"] = i
 
     total_index = round(sum(float(r.get("index") or 0) for r in rows), 1)
+    _held = locals().get("unsegmented") or []
+    bears_branch = {
+        "headcount": len(_held),
+        "index": round(sum(float(p.get("index") or 0) for p in _held), 1),
+    } if _held else None
     met_total = sum(int(p.get("met_days") or 0) for p in people)
     scored_total = sum(int(p.get("scored_days") or 0) for p in people)
     return {
@@ -1578,6 +1591,7 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         "branches": sorted({p["branch"] for p in people if p["branch"]}),
         "units": sorted({p["unit"] for p in people if p["unit"]}),
         "segments": sorted({p["segment"] for p in people if p["segment"]}),
+        "bears_branch": bears_branch,
     }
 
 
