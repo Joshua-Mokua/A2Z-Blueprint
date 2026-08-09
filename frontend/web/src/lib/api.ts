@@ -873,11 +873,12 @@ export async function saveBranchControlTotals(
     '/branch-log/control-totals', { branch, date, totals });
 }
 export async function fetchBranchLogValidationQueue(
-  date = '', branch = '',
+  date = '', branch = '', unit = '',
 ): Promise<ValidationQueue> {
   const q = new URLSearchParams();
   if (date) q.set('date', date);
   if (branch) q.set('branch', branch);      // tier-2 read-only inspection
+  if (unit) q.set('unit', unit);            // Head Office unit, read-only
   const s = q.toString();
   return getJson<ValidationQueue>(`/branch-log/validation-queue${s ? `?${s}` : ''}`);
 }
@@ -904,6 +905,7 @@ export interface NonSubmitterRow {
 }
 export interface NonSubmitters {
   rows: NonSubmitterRow[]; date: string; total: number; working_day?: boolean;
+  bank_wide?: boolean;
 }
 export async function fetchNonSubmitters(date = ''): Promise<NonSubmitters> {
   return getJson<NonSubmitters>(

@@ -805,13 +805,18 @@ def branch_log_non_submitters(date: str = "", user: dict = Depends(get_current_u
     except ValueError:
         raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
 
+    # R3: the MD and Business Manager observe the WHOLE bank, so their follow-up
+    # list is not confined to branches — a Head Office unit that never files is
+    # exactly as much a follow-up item as a branch that never files.
+    top = False
     try:
-        from utils.org_validator import branches_validated_by
+        from utils.org_validator import branches_validated_by, units_validated_by
         scope = branches_validated_by(my_code)
+        top = bool((units_validated_by(my_code) or {}).get("top_of_house"))
     except Exception:
         scope = {"branches": []}
     branches = set(scope.get("branches") or [])
-    if not branches:
+    if not branches and not top:
         return {"rows": [], "date": day.isoformat(), "total": 0}
 
     try:
@@ -851,7 +856,7 @@ def branch_log_non_submitters(date: str = "", user: dict = Depends(get_current_u
     iso = day.isoformat()
     for ck, dd in dims.items():
         branch = str((dd or {}).get("branch") or "").strip()
-        if branch not in branches:
+        if not top and branch not in branches:
             continue
         code = dd.get("code") or ck
         if (_canon_n(code), iso) in filed:
@@ -882,11 +887,12 @@ def branch_log_non_submitters(date: str = "", user: dict = Depends(get_current_u
         })
 
     rows.sort(key=lambda r: (-r["days_outstanding"], r["branch"], r["staff_name"]))
-    return {"rows": rows, "date": iso, "total": len(rows), "working_day": True}
+    return {"rows": rows, "date": iso, "total": len(rows), "working_day": True,
+            "bank_wide": top}
 
 
 @router.get("/validation-queue")
-def branch_log_validation_queue(date: str = "", branch: str = "",
+def branch_log_validation_queue(date: str = "", branch: str = "", unit: str = "",
                                 user: dict = Depends(get_current_user)):
     """Daily-log validation queue for ONE day, in the same row shape as the
     history grid so Manager Queues can reuse its column and colour vocabulary.
@@ -931,7 +937,28 @@ def branch_log_validation_queue(date: str = "", branch: str = "",
     # across 363 people (~132k pandas row reads) and hung the tab.
     from utils.org_validator import staff_validated_by
     inspect_only = False
-    if branch:
+    if unit:
+        # R3: inspect a HEAD OFFICE unit read-only. Members are the unit's DIRECT
+        # REPORTS (ruling 2026-08-09) — a subtree would re-absorb the branches.
+        try:
+            from utils.org_validator import units_validated_by, direct_reports_of_role
+            uscope = units_validated_by(my_code)
+        except Exception:
+            uscope, direct_reports_of_role = {"units": []}, None
+        if unit not in (uscope.get("units") or []) and not _is_admin(user):
+            raise HTTPException(status_code=403,
+                                detail=f"{unit} is not a unit you oversee.")
+        inspect_only = True
+        mode = "inspect-unit"
+        codes = set()
+        if direct_reports_of_role:
+            try:
+                codes = {_canon_q(c) for c in direct_reports_of_role(unit)}
+            except Exception:
+                codes = set()
+        mine = [(d.get("code") or ck, d) for ck, d in dims.items()
+                if _canon_q(d.get("code") or ck) in codes]
+    elif branch:
         # B3: TIER-2 INSPECTION. A Head of Branches opening a branch sees that
         # branch's staff READ-ONLY — they countersign the branch, they do not
         # validate individuals (ruling 2026-08-08). can_act is forced false
