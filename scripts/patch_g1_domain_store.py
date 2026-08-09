@@ -1,4 +1,54 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+G1 - generalise the unit-day store so the pipeline reuses it.
+
+WHY THIS FIRST. You asked for pipeline validation to follow the exact structure
+and path the daily log uses. The tempting route is to copy branch_day.py and
+adjust it - which is how this codebase ended up with two hierarchies, two
+validator rules and an /analytics endpoint that disagreed with the history grid.
+One store, two domains, no copy.
+
+WHAT CHANGES
+
+  utils/branch_day.py keys records on DOMAIN|UNIT|DATE instead of UNIT|DATE.
+
+      DOMAIN_DAILY_LOG = "daily_log"
+      DOMAIN_PIPELINE  = "pipeline"
+
+  Every public function takes an optional `domain`, defaulting to daily_log, so
+  no existing caller changes. The lifecycle, the atomic writes, the resubmit
+  clearing a validation, the note-required-on-return rule - all shared.
+
+BACKWARD COMPATIBLE ON PURPOSE. Records written before this exist as UNIT|DATE.
+_find() prefers the domain key and falls back to the legacy one; list_branch_days
+parses both. The pilot has already submitted branch days, and a migration that
+silently orphaned them would look exactly like the days having never been
+closed - indistinguishable from a real problem, at the worst possible moment.
+
+PROVEN:
+    legacy record still resolves                  True
+    legacy still appears in the day listing       True
+    same branch, same day, both domains           daily-log 167.9 / pipeline 42.0
+    returning the pipeline day                    pipeline: returned
+    ... leaves the daily-log day alone            daily log: submitted
+
+NOTHING ELSE MOVES YET. No pipeline endpoints, no UI change. This is the seam
+the pipeline validation will attach to, landed on its own so it can be verified
+without a second moving part.
+
+Usage (from project root, .venv active):
+    python scripts\patch_g1_domain_store.py            # dry run
+    python scripts\patch_g1_domain_store.py --apply    # write + .pre_g1 backup
 """
+import os
+import shutil
+import sys
+
+MOD = os.path.join("utils", "branch_day.py")
+BACKUP_SUFFIX = ".pre_g1"
+
+MODULE = r'''"""
 A2Z Daily Log — branch-day submission (additive, new module).
 
 TWO-TIER VALIDATION (ruling 2026-08-08):
@@ -240,3 +290,58 @@ def return_branch_day(branch: str, day: str, by_code: str, by_name: str,
     data[k] = rec
     _save(data)
     return rec
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    if not os.path.isfile(MOD):
+        print("ABORT: %s not found - apply patch_b2_branch_day.py first." % MOD)
+        return 1
+
+    cur = open(MOD, encoding="utf-8").read()
+    if "DOMAIN_PIPELINE" in cur:
+        print("ABORT: branch_day already has DOMAIN_PIPELINE - G1 looks applied.")
+        return 1
+    for token in ("submit_branch_day", "validate_branch_day", "return_branch_day"):
+        if token not in cur:
+            print("ABORT: %s is missing from the current module." % token)
+            return 1
+
+    for token in ("DOMAIN_DAILY_LOG", "DOMAIN_PIPELINE", "_legacy_key", "_find("):
+        if token not in MODULE:
+            print("ABORT: embedded module missing %r." % token)
+            return 1
+    # The whole point is that nothing else has to change: every public function
+    # must still exist with its original name.
+    for token in ("def get_branch_day(", "def list_branch_days(",
+                  "def submit_branch_day(", "def validate_branch_day(",
+                  "def return_branch_day("):
+        if token not in MODULE:
+            print("ABORT: embedded module lost %r - callers would break." % token)
+            return 1
+    print("  ok  embedded module validated (%d lines)" % (MODULE.count("\n") + 1))
+    print("  ok  all five public functions preserved")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    shutil.copy2(MOD, MOD + BACKUP_SUFFIX)
+    open(MOD, "w", encoding="utf-8", newline="").write(MODULE)
+    print("APPLIED %s  (backup: %s)" % (MOD, os.path.basename(MOD) + BACKUP_SUFFIX))
+
+    import py_compile
+    try:
+        py_compile.compile(MOD, doraise=True)
+        print("  ok  compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("\nNo behaviour change for the daily log. Restart uvicorn when convenient.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
