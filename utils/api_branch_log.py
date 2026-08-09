@@ -1377,6 +1377,150 @@ def branch_log_cf_reset(payload: dict = Body(default_factory=dict),
     return {"status": "saved", "cf_reset_markers": markers}
 
 
+@router.get("/leaderboard")
+def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
+                           branch: str = "", unit: str = "",
+                           user: dict = Depends(get_current_user)):
+    """Cumulative ranking, drillable: staff -> role -> branch -> unit.
+
+    Every person is counted EXACTLY ONCE at each level, so a level always sums
+    to the same bank total. Ranking is a different lens from index ownership:
+    the ruling that a person's index belongs to their employing unit governs
+    what a unit's OWN number is; this asks how much activity sits beneath a
+    unit in total. The SOLID line is used for the unit roll-up — the dotted
+    line would place a branch RM in both Fortis and Consumer and the level
+    would stop summing.
+
+    level:  staff | role | branch | unit
+    role/branch/unit: optional filters, so a Branch Manager can rank tellers
+    inside their own branch.
+
+    Scope is the canonical engine (get_visible_staff_codes), the same call the
+    history grid and the pipeline use.
+    """
+    from utils.branch_log import metric_keys
+    from utils.branch_log_analytics import carried_forward, _target_for
+    from utils.staff_code import canon as _canon_l
+
+    me = _identity(user)
+    my_code = str(me.get("staff_code", "") or "")
+
+    _stored = {}
+    try:
+        from utils.core import UserManager
+        _stored = UserManager().users.get(str(user.get("username", "")) or "") or {}
+    except Exception:
+        _stored = {}
+    user_ctx = {
+        "staff_code":   my_code or str(_stored.get("staff_code", "") or ""),
+        "role":         me.get("role", "") or str(_stored.get("role", "") or ""),
+        "full_name":    str(_stored.get("full_name", "") or me.get("staff_name", "") or ""),
+        "unit":         me.get("unit", "") or str(_stored.get("unit", "") or ""),
+        "department":   str(_stored.get("department", "") or ""),
+        "is_admin":     bool(user.get("is_admin") or _stored.get("is_admin")),
+        "can_view_all": bool(user.get("can_view_all") or _stored.get("can_view_all")),
+    }
+    try:
+        from utils.api_pipeline_scope import get_visible_staff_codes
+        visible = {_canon_l(c) for c in get_visible_staff_codes(user_ctx)}
+    except Exception:
+        visible = set()
+    visible.discard("")
+    if not visible and user_ctx["staff_code"]:
+        visible = {_canon_l(user_ctx["staff_code"])}
+
+    dims = _roster_dims()
+    try:
+        from utils.org_validator import unit_for_role
+    except Exception:
+        unit_for_role = lambda _r: ""      # noqa: E731
+
+    blm = BranchLogManager()
+    logs = [l for l in blm.get_history(days=days)
+            if _canon_l(l.get("staff_code")) in visible]
+
+    # Per-staff cumulative: index actually achieved, target that applied, and
+    # the closing carried-forward balance from the same read-time engine the
+    # grid uses — so a leaderboard can never disagree with the history.
+    by_staff = {}
+    for l in logs:
+        by_staff.setdefault(_canon_l(l.get("staff_code")), []).append(l)
+
+    people = []
+    for ck, dd in dims.items():
+        code = dd.get("code") or ck
+        if _canon_l(code) not in visible:
+            continue
+        r = str(dd.get("role") or "")
+        b = str(dd.get("branch") or "")
+        u = unit_for_role(r) or ""
+        if role and r != role:
+            continue
+        if branch and b != branch:
+            continue
+        if unit and u != unit:
+            continue
+        mine = by_staff.get(_canon_l(code), [])
+        rows = carried_forward(mine) if mine else []
+        idx = round(sum(float(x.get("index") or 0) for x in rows), 2)
+        tgt = round(sum(float(x.get("target") or 0) for x in rows), 2)
+        people.append({
+            "staff_code": code, "staff_name": dd.get("full_name", ""),
+            "role": r, "branch": b, "unit": u,
+            "index": idx, "target": tgt,
+            "days_filed": len(mine),
+            "validated": sum(1 for x in mine if x.get("validated")),
+            "cf_variance": rows[-1].get("cf_variance", 0) if rows else 0,
+        })
+
+    def agg(rows, keyfn, label):
+        out = {}
+        for p in rows:
+            k = keyfn(p) or "(unassigned)"
+            e = out.setdefault(k, {label: k, "index": 0.0, "target": 0.0,
+                                   "headcount": 0, "days_filed": 0, "validated": 0})
+            e["index"] += p["index"]; e["target"] += p["target"]
+            e["headcount"] += 1; e["days_filed"] += p["days_filed"]
+            e["validated"] += p["validated"]
+        for e in out.values():
+            e["index"] = round(e["index"], 1)
+            e["target"] = round(e["target"], 1)
+            e["achievement"] = round((e["index"] / e["target"]) * 100, 1) if e["target"] else 0.0
+            e["index_per_head"] = round(e["index"] / e["headcount"], 1) if e["headcount"] else 0.0
+        return list(out.values())
+
+    if level == "role":
+        rows = agg(people, lambda p: p["role"], "name")
+        sort_key = "index_per_head"
+    elif level == "branch":
+        rows = agg(people, lambda p: p["branch"], "name")
+        sort_key = "index"
+    elif level == "unit":
+        rows = agg(people, lambda p: p["unit"], "name")
+        sort_key = "index"
+    else:
+        level = "staff"
+        for p in people:
+            p["achievement"] = round((p["index"] / p["target"]) * 100, 1) if p["target"] else 0.0
+        rows = people
+        sort_key = "index"
+
+    rows.sort(key=lambda r: -float(r.get(sort_key) or 0))
+    for i, r in enumerate(rows, 1):
+        r["rank"] = i
+
+    total_index = round(sum(float(r.get("index") or 0) for r in rows), 1)
+    return {
+        "level": level, "days": days, "rows": rows,
+        "total_index": total_index,
+        "total_headcount": len(people),
+        "filters": {"role": role, "branch": branch, "unit": unit},
+        "roles": sorted({p["role"] for p in people if p["role"]}),
+        "branches": sorted({p["branch"] for p in people if p["branch"]}),
+        "units": sorted({p["unit"] for p in people if p["unit"]}),
+    }
+
+
 @router.get("/analytics")
 def branch_log_analytics(days: int = 30, unit: str = "", user: dict = Depends(get_current_user)):
     """Daily-log analytics, scope-aware. Includes the 80/20 impact-tier breakdown (for the pie),
@@ -1392,12 +1536,36 @@ def branch_log_analytics(days: int = 30, unit: str = "", user: dict = Depends(ge
     logs = blm.get_history(days=days)
     if unit and unit != "All":
         logs = [l for l in logs if str(l.get("unit", "")) == unit]
-    if _is_admin(user):
-        scoped = logs
-    elif _is_manager(user):
-        scoped = _subtree_logs(logs, user, me)
-    else:
-        scoped = [l for l in logs if str(l.get("staff_code")) == me["staff_code"]]
+
+    # Scope from the CANONICAL engine, as the history grid and leaderboard do.
+    # This endpoint previously carried its own _is_admin/_is_manager rules, so
+    # analytics and the grid could disagree about the same population — the
+    # second-hierarchy fault fixed in P3f, still present here.
+    from utils.staff_code import canon as _canon_a
+    _stored = {}
+    try:
+        from utils.core import UserManager
+        _stored = UserManager().users.get(str(user.get("username", "")) or "") or {}
+    except Exception:
+        _stored = {}
+    _ctx = {
+        "staff_code":   me.get("staff_code", "") or str(_stored.get("staff_code", "") or ""),
+        "role":         me.get("role", "") or str(_stored.get("role", "") or ""),
+        "full_name":    str(_stored.get("full_name", "") or me.get("staff_name", "") or ""),
+        "unit":         me.get("unit", "") or str(_stored.get("unit", "") or ""),
+        "department":   str(_stored.get("department", "") or ""),
+        "is_admin":     bool(user.get("is_admin") or _stored.get("is_admin")),
+        "can_view_all": bool(user.get("can_view_all") or _stored.get("can_view_all")),
+    }
+    try:
+        from utils.api_pipeline_scope import get_visible_staff_codes
+        _visible = {_canon_a(c) for c in get_visible_staff_codes(_ctx)}
+    except Exception:
+        _visible = set()
+    _visible.discard("")
+    if not _visible and _ctx["staff_code"]:
+        _visible = {_canon_a(_ctx["staff_code"])}
+    scoped = [l for l in logs if _canon_a(l.get("staff_code")) in _visible]
 
     breakdown = impact_breakdown(scoped)
     submitters = len({str(l.get("staff_code")) for l in scoped if l.get("staff_code")})
@@ -1408,7 +1576,9 @@ def branch_log_analytics(days: int = 30, unit: str = "", user: dict = Depends(ge
                   if l.get("status") in ("submitted", "auto_submitted") and not l.get("validated"))
     return {
         "days": days,
-        "scope_tier": "bank" if _is_admin(user) else ("subtree" if _is_manager(user) else "self"),
+        "scope_tier": ("bank" if len(_visible) >= max(len(_roster_dims()), 1)
+                       else ("subtree" if len(_visible) > 1 else "self")),
+        "visible_staff": len(_visible),
         "impact": breakdown,
         "high_impact_keys": sorted(high_impact_keys()),
         "totals": {

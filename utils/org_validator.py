@@ -470,6 +470,56 @@ def direct_reports_of_role(role: str) -> list:
     return [c for c in codes[mask].tolist() if c]
 
 
+@lru_cache(maxsize=1)
+def _role_to_unit_map() -> dict:
+    """{role -> the MD-reporting unit it rolls into}, by walking the SOLID line.
+
+    Used for CUMULATIVE RANKING only. Ranking is a different lens from index
+    ownership: the ruling that a person's index belongs to their employing unit
+    governs what a unit's own number is, while a cumulative ranking asks "how
+    much activity sits beneath this unit in total". Each person is counted
+    exactly ONCE per level, so a level always sums to the bank.
+
+    The dotted (functional) line is deliberately NOT used here — it would place
+    a branch RM in both Fortis and Consumer and the level would stop summing.
+    """
+    try:
+        from utils.config import load_org_config
+        hier = (load_org_config() or {}).get("hierarchy") or {}
+    except Exception:
+        return {}
+
+    def parents(role):
+        info = hier.get(role)
+        if isinstance(info, dict):
+            return list(info.get("reports_to") or [])
+        return list(info or [])
+
+    tops = set(md_reporting_roles())
+    out = {}
+    for role in hier:
+        cur, seen = role, set()
+        for _ in range(14):
+            if cur in tops:
+                out[role] = cur
+                break
+            if cur in seen:
+                break
+            seen.add(cur)
+            ps = parents(cur)
+            if not ps:
+                break
+            cur = ps[0]
+    return out
+
+
+def unit_for_role(role: str) -> str:
+    """The MD-reporting unit a role rolls into, or '' when it reaches nothing."""
+    m = _role_to_unit_map()
+    r = _s(role)
+    return m.get(r, "")
+
+
 def units_validated_by(validator_code: str) -> dict:
     """Which HEAD OFFICE UNITS does this person own?
 
