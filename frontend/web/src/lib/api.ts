@@ -830,20 +830,20 @@ export async function decidePipelineDay(
 }
 
 // ── Defined funnel (journey from admin config + credit side layer) ────────
-export interface DefinedStage {
-  stage: string; count: number; value: number;
-  probability: number; weighted: number; credit_band: string;
+export interface DefinedStep {
+  stage: string; count: number; value: number; probability: number;
+}
+export interface DefinedBucket {
+  key: string; label: string; weight: number;
+  count: number; value: number; probability: number;
+  steps: DefinedStep[];
 }
 export interface DefinedFlow {
-  flow: string; stages: DefinedStage[];
+  flow: string; buckets: DefinedBucket[];
   deals: number; value: number; weighted: number;
-}
-export interface CreditBandTally {
-  label: string; count: number; value: number; min: number; max: number;
 }
 export interface DefinedFunnel {
   flows: DefinedFlow[];
-  credit_layer: CreditBandTally[];
   total_deals: number;
   unplaced_deals: number;
 }

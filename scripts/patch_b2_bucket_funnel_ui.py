@@ -1,4 +1,147 @@
-// DefinedFunnel — the pipeline centrepiece, drawn from ADMIN CONFIG.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+B2 - the funnel shows BUCKETS. The side layer is gone.
+
+Follows B1. The six names - Initiation, Documentation, Unit Review, Credit
+Analysis, Credit Administration, TROPS - ARE the journey, so the funnel now
+draws them as its bands and the probability-inferred "side layer" is REMOVED
+from both the endpoint and the UI.
+
+That removal is the point. Leaving the same six names in two places, once as the
+journey and once as an inferred second axis, is exactly the confusion to avoid
+on a system heading to production - two competing answers to "where is this
+deal".
+
+WHAT MANAGEMENT SEES
+    six bands for a loan, four for an account, each carrying its weight
+    ("15% of journey"), its exit probability, count and value.
+
+WHAT AN OFFICER SEES
+    clicking a bucket opens its micro-steps, each with its own cumulative
+    probability, count and value - so Unit Review unfolds into Branch Credit
+    Committee / Department Analyst / Department Business Committee.
+
+THE DRILL MOVED DOWN A LEVEL, deliberately: it now fires on the MICRO-STEP,
+which is the real stage a deal sits at. Clicking a step stops propagation so it
+does not also collapse the bucket the user just opened.
+
+Empty buckets are still drawn, hatched and labelled - the empty bucket is where
+deals stop arriving, which is usually the finding.
+
+Verified: py_compile clean, tsc --noEmit clean, vite build clean.
+
+REQUIRES B1 (and the migration having been run, or the buckets will be empty).
+
+Usage (from project root, .venv active):
+    python scripts\patch_b2_bucket_funnel_ui.py            # dry run
+    python scripts\patch_b2_bucket_funnel_ui.py --apply    # write + .pre_b2b backups
+"""
+import os
+import shutil
+import sys
+
+COMP = os.path.join("frontend", "web", "src", "components", "DefinedFunnel.tsx")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+API = os.path.join("utils", "api.py")
+BACKUP_SUFFIX = ".pre_b2b"
+
+ENDPOINT = r'''@app.get("/api/pipeline/funnel")
+def pipeline_funnel_defined(user: dict = Depends(get_current_user)):
+    """The DEFINED journey per product flow — from admin config, not from code.
+
+    Returns every configured stage of every flow in order, including the ones
+    holding nothing: a funnel that hides its empty steps is a bar chart of
+    whatever happened to be busy, and the gap is usually the finding.
+
+    Each stage carries its win probability PER FLOW (ruling 2026-08-09) and the
+    credit band that probability implies. The band is a SIDE LAYER describing
+    where the deal probably sits inside the bank — it is not a sales stage and
+    it never filters the journey.
+
+    Scope is the caller's own: the same visible-deal rule the rest of the
+    pipeline uses, so this can never show a deal the list would hide.
+    """
+    from utils.pipeline_funnel import (
+        stage_flows, flow_for_deal, buckets_for, bucket_view, micro_steps,
+    )
+
+    # _acquire_scoped_deals is the canonical scope read used by the pipeline
+    # list and analytics. NO try/except fallback here on purpose: a fallback to
+    # "all deals" would silently show a caller deals outside their cascade, and
+    # a scope bypass that looks like a working page is worse than an error.
+    deals = _acquire_scoped_deals(user)
+
+    grouped: dict = {}
+    for d in deals:
+        grouped.setdefault(flow_for_deal(d), []).append(d)
+
+    flows_out = []
+    for flow in (stage_flows() or {}):
+        mine = grouped.get(flow, [])
+        # BUCKETS are the journey (ruling 2026-08-09). Management reads six rows
+        # for a loan, not eleven; the micro-steps travel inside their bucket so
+        # an officer can still see exactly where a deal sits.
+        buckets = bucket_view(mine, flow)
+        weighted = 0.0
+        for b in buckets:
+            for st in b["steps"]:
+                weighted += float(st["value"]) * float(st["probability"])
+        flows_out.append({
+            "flow": flow,
+            "buckets": buckets,
+            "deals": len(mine),
+            "value": round(sum(float(b["value"]) for b in buckets), 2),
+            "weighted": round(weighted, 2),
+        })
+    flows_out.sort(key=lambda f: -f["deals"])
+
+    # Deals sitting at a stage no configured bucket contains. Reported, never
+    # dropped: silently vanishing deals is the defect this endpoint replaces.
+    unplaced = 0
+    for d in deals:
+        st = str(d.get("stage") or "").strip()
+        if st in ("Closed Won", "Closed Lost"):
+            continue
+        if st not in micro_steps(flow_for_deal(d)):
+            unplaced += 1
+
+    return {
+        "flows": flows_out,
+        "total_deals": len(deals),
+        # Deals sitting at a stage NO configured flow contains. Reported rather
+        # than dropped: silently vanishing deals is the defect this replaces.
+        "unplaced_deals": unplaced,
+    }
+
+
+'''
+
+TS_NEW = r'''// ── Defined funnel (journey from admin config + credit side layer) ────────
+export interface DefinedStep {
+  stage: string; count: number; value: number; probability: number;
+}
+export interface DefinedBucket {
+  key: string; label: string; weight: number;
+  count: number; value: number; probability: number;
+  steps: DefinedStep[];
+}
+export interface DefinedFlow {
+  flow: string; buckets: DefinedBucket[];
+  deals: number; value: number; weighted: number;
+}
+export interface DefinedFunnel {
+  flows: DefinedFlow[];
+  total_deals: number;
+  unplaced_deals: number;
+}
+export async function fetchPipelineDefinedFunnel(): Promise<DefinedFunnel> {
+  return getJson<DefinedFunnel>('/pipeline/funnel');
+}
+
+'''
+
+COMPONENT = r'''// DefinedFunnel — the pipeline centrepiece, drawn from ADMIN CONFIG.
 //
 // Ruling 2026-08-09: stages are never hardcoded. Every band here is a stage the
 // bank configured in that product's flow, in the order it configured them, with
@@ -249,3 +392,86 @@ export default function DefinedFunnel({ onStageClick }: DefinedFunnelProps = {})
     </Card>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (COMP, APITS, API):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found - apply patch_f2_funnel_ui.py first." % p)
+            return 1
+    if not os.path.isfile(os.path.join("utils", "pipeline_funnel.py")):
+        print("ABORT: apply patch_b1_stage_buckets.py first.")
+        return 1
+
+    api = open(API, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+
+    if '"buckets": buckets' in api:
+        print("ABORT: the endpoint already returns buckets - B2 looks applied.")
+        return 1
+    if "bucket_view" not in open(os.path.join("utils", "pipeline_funnel.py"),
+                                 encoding="utf-8").read():
+        print("ABORT: bucket_view missing - apply patch_b1_stage_buckets.py first.")
+        return 1
+
+    i = api.index('@app.get("/api/pipeline/funnel")')
+    j = api.index("from utils.api_branch_log import router as branch_log_router", i)
+    api = api[:i] + ENDPOINT + api[j:]
+    print("  ok  /api/pipeline/funnel returns buckets")
+
+    a = ts.index("// \u2500\u2500 Defined funnel (journey from admin config + credit side layer) \u2500\u2500")
+    b = ts.index("// \u2500\u2500 Cumulative leaderboard (staff / role / branch / unit) \u2500\u2500", a)
+    ts = ts[:a] + TS_NEW + ts[b:]
+    print("  ok  api.ts - bucket types")
+
+    # post-checks
+    if api.count('@app.get("/api/pipeline/funnel")') != 1:
+        print("ABORT: post-check - funnel route count is not 1.")
+        return 1
+    if "credit_layer" in api[api.index('@app.get("/api/pipeline/funnel")'):
+                             api.index("from utils.api_branch_log import")]:
+        print("ABORT: post-check - the side layer survives in the endpoint.")
+        return 1
+    if "credit_layer" in COMPONENT:
+        print("ABORT: post-check - the side layer survives in the component.")
+        return 1
+    if "onStageClick" not in COMPONENT or "st.stage)" not in COMPONENT:
+        print("ABORT: post-check - the stage drill was not reconnected.")
+        return 1
+    if "unplaced_deals" not in api:
+        print("ABORT: post-check - unplaced deals are no longer reported.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if COMPONENT.count(op) != COMPONENT.count(cl):
+            print("ABORT: component unbalanced %s%s." % (op, cl))
+            return 1
+    if "fetchBranchLogHistoryGrid" not in ts:
+        print("ABORT: post-check - api.ts lost an existing client.")
+        return 1
+    print("  ok  post-checks: one journey, drill preserved, unplaced still reported")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((API, api), (APITS, ts), (COMP, COMPONENT)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    try:
+        py_compile.compile(API, doraise=True)
+        print("  ok  api.py compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd, then restart uvicorn.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

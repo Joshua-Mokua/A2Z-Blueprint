@@ -10186,8 +10186,7 @@ def pipeline_funnel_defined(user: dict = Depends(get_current_user)):
     pipeline uses, so this can never show a deal the list would hide.
     """
     from utils.pipeline_funnel import (
-        stage_flows, build_funnel, flow_for_deal, credit_bands, credit_band_for,
-        probability_for,
+        stage_flows, flow_for_deal, buckets_for, bucket_view, micro_steps,
     )
 
     # _acquire_scoped_deals is the canonical scope read used by the pipeline
@@ -10201,41 +10200,37 @@ def pipeline_funnel_defined(user: dict = Depends(get_current_user)):
         grouped.setdefault(flow_for_deal(d), []).append(d)
 
     flows_out = []
-    for flow, seq in (stage_flows() or {}).items():
+    for flow in (stage_flows() or {}):
         mine = grouped.get(flow, [])
-        stages = build_funnel(mine, flow)
+        # BUCKETS are the journey (ruling 2026-08-09). Management reads six rows
+        # for a loan, not eleven; the micro-steps travel inside their bucket so
+        # an officer can still see exactly where a deal sits.
+        buckets = bucket_view(mine, flow)
+        weighted = 0.0
+        for b in buckets:
+            for st in b["steps"]:
+                weighted += float(st["value"]) * float(st["probability"])
         flows_out.append({
             "flow": flow,
-            "stages": stages,
+            "buckets": buckets,
             "deals": len(mine),
-            "value": round(sum(float(x.get("value") or 0) for x in stages), 2),
-            "weighted": round(sum(float(x.get("weighted") or 0) for x in stages), 2),
+            "value": round(sum(float(b["value"]) for b in buckets), 2),
+            "weighted": round(weighted, 2),
         })
     flows_out.sort(key=lambda f: -f["deals"])
 
-    # The side layer, over the same population.
-    bands = credit_bands()
-    tally = {b["label"]: {"label": b["label"], "count": 0, "value": 0.0,
-                          "min": b["min"], "max": b["max"]} for b in bands}
+    # Deals sitting at a stage no configured bucket contains. Reported, never
+    # dropped: silently vanishing deals is the defect this endpoint replaces.
     unplaced = 0
     for d in deals:
         st = str(d.get("stage") or "").strip()
-        fl = flow_for_deal(d)
-        if st not in (stage_flows().get(fl) or []):
-            unplaced += 1          # a stage no configured flow contains
+        if st in ("Closed Won", "Closed Lost"):
             continue
-        p = probability_for(fl, st)
-        lab = credit_band_for(p)["label"]
-        try:
-            v = float(d.get("amount_kes") or d.get("deal_value") or 0)
-        except (TypeError, ValueError):
-            v = 0.0
-        tally[lab]["count"] += 1
-        tally[lab]["value"] = round(tally[lab]["value"] + v, 2)
+        if st not in micro_steps(flow_for_deal(d)):
+            unplaced += 1
 
     return {
         "flows": flows_out,
-        "credit_layer": [tally[b["label"]] for b in bands],
         "total_deals": len(deals),
         # Deals sitting at a stage NO configured flow contains. Reported rather
         # than dropped: silently vanishing deals is the defect this replaces.
