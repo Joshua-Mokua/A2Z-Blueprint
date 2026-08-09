@@ -1,4 +1,372 @@
-// v10.513 Phase 4 Batch β4 — PipelineManagerQueues page.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+P2 - pipeline validation UI, and the Manager Queues restructure.
+
+YOUR RULING: "on the manager queue we can have instead of validation, we have
+pipeline validation, then daily log validation and we remove what we have on
+that page named cancellation, then the pipeline can have the same structure
+upward".
+
+MANAGER QUEUES IS NOW
+    Pipeline validation | Daily log validation | Ranking | Analytics
+    Cancellation removed - the tab, its loader, its state and its fetch.
+
+PIPELINE VALIDATION ROUTES BY TIER, exactly as the daily log does:
+    branch / roll-up caller  -> PipelineDayCountersign (branch pipeline days)
+    everyone else            -> the existing deal queue, unchanged
+
+WHAT IS PRESERVED, DELIBERATELY. The rich per-deal ValidationCard stays for the
+people who validate deals. Replacing it with a thin row list would have been
+"consistency" that removed working functionality - the structure above it is
+what you asked to be consistent, not the deal screen itself.
+
+PipelineDayCountersign is the same shape as BranchCountersign: one row per
+branch (deals / validated / pending / value / status), expandable to that
+branch's deals read-only, Countersign and Return with a note required. A manager
+who has learned the daily log screen has learned this one.
+
+Validation still TERMINATES (ruling 2026-08-08): the Head of Branches
+countersigns; the MD and Business Manager observe and may return, and the
+Countersign button is not rendered for them at all.
+
+Verified: tsc --noEmit clean, vite build clean, and no dangling reference to the
+removed cancellation queue.
+
+Usage (from project root, .venv active):
+    python scripts\patch_p2_pipeline_ui.py            # dry run
+    python scripts\patch_p2_pipeline_ui.py --apply    # write + .pre_p2 backups
+"""
+import os
+import shutil
+import sys
+
+COMP = os.path.join("frontend", "web", "src", "components", "PipelineDayCountersign.tsx")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+PAGE = os.path.join("frontend", "web", "src", "pages", "PipelineManagerQueues.tsx")
+BACKUP_SUFFIX = ".pre_p2"
+
+TS_ANCHOR = "// \u2500\u2500 Cumulative leaderboard (staff / role / branch / unit) \u2500\u2500"
+
+TS_NEW = r'''// ── Pipeline validation (same tier structure as the Daily Log) ────────────
+export interface PipelineQueueRow {
+  deal_id: string; staff_code: string; staff_name: string; role: string;
+  branch: string; client: string; product: string; stage: string;
+  deal_value: number; validated: boolean; validated_by: string; can_act: boolean;
+}
+export interface PipelineQueue {
+  rows: PipelineQueueRow[]; date: string; working_day: boolean; label: string;
+  pending: number; branch?: string; mode: string;
+}
+export interface PipelineDayRow {
+  branch: string; deals: number; validated: number; pending: number; value: number;
+  status: string; submitted_by_name: string; validated_by_name: string;
+  return_note: string;
+}
+export interface PipelineDays {
+  rows: PipelineDayRow[]; date: string; working_day?: boolean; label?: string;
+  top_of_house: boolean; can_return?: boolean;
+}
+export async function fetchPipelineValidationQueue(
+  date = '', branch = '',
+): Promise<PipelineQueue> {
+  const q = new URLSearchParams();
+  if (date) q.set('date', date);
+  if (branch) q.set('branch', branch);
+  const s = q.toString();
+  return getJson<PipelineQueue>(`/pipeline-validation/queue${s ? `?${s}` : ''}`);
+}
+export async function fetchPipelineValidationDays(date = ''): Promise<PipelineDays> {
+  return getJson<PipelineDays>(
+    `/pipeline-validation/days${date ? `?date=${encodeURIComponent(date)}` : ''}`);
+}
+export async function submitPipelineDay(
+  branch: string, date: string,
+): Promise<{ pipeline_day: Record<string, unknown> }> {
+  return postJson<{ pipeline_day: Record<string, unknown> },
+                  { branch: string; date: string }>(
+    '/pipeline-validation/days/submit', { branch, date });
+}
+export async function decidePipelineDay(
+  branch: string, date: string, approved: boolean, note = '',
+): Promise<{ pipeline_day: Record<string, unknown> }> {
+  return postJson<{ pipeline_day: Record<string, unknown> },
+                  { branch: string; date: string; approved: boolean; note: string }>(
+    '/pipeline-validation/days/validate', { branch, date, approved, note });
+}
+
+'''
+
+COMPONENT = r'''// P2 — pipeline day countersign, tiers 2 and 3.
+//
+// Deliberately the same shape as BranchCountersign for the daily log: a manager
+// who has learned one screen has learned both. One row per branch, expandable
+// to that branch's deals read-only, with Countersign and Return (note required).
+//
+// Ruling 2026-08-08 applies unchanged: validation TERMINATES. The Head of
+// Branches countersigns a branch pipeline day; the MD and Business Manager
+// observe and may return, but never countersign.
+
+import { useCallback, useEffect, useState } from 'react';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { useToast } from '@/components/Toast';
+import {
+  fetchPipelineValidationDays, decidePipelineDay, fetchPipelineValidationQueue,
+  type PipelineDays, type PipelineDayRow, type PipelineQueue,
+} from '@/lib/api';
+
+const STATUS: Record<string, { label: string; cls: string }> = {
+  draft:     { label: 'Not closed',    cls: 'bg-gray-100 text-gray-500' },
+  submitted: { label: 'Awaiting you',  cls: 'bg-[#FAEEDA] text-[#854F0B]' },
+  validated: { label: 'Countersigned', cls: 'bg-[#EAF3DE] text-[#3B6D11]' },
+  returned:  { label: 'Returned',      cls: 'bg-[#FBEAF0] text-[#993556]' },
+};
+
+function todayIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function kes(n: number): string {
+  if (!n) return '—';
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
+  return String(Math.round(n));
+}
+
+export default function PipelineDayCountersign({ onCount }: { onCount?: (n: number) => void }) {
+  const { toast } = useToast();
+  const [date, setDate] = useState(todayIso());
+  const [data, setData] = useState<PipelineDays | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [openKey, setOpenKey] = useState('');
+  const [detail, setDetail] = useState<PipelineQueue | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [returning, setReturning] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState('');
+
+  const load = useCallback(async (d: string) => {
+    setLoading(true);
+    try {
+      const r = await fetchPipelineValidationDays(d);
+      setData(r);
+      onCount?.(r.rows.filter((x) => x.status === 'submitted').length);
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not load pipeline days.' });
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [toast, onCount]);
+
+  useEffect(() => { void load(date); }, [date, load]);
+
+  async function expand(row: PipelineDayRow) {
+    if (openKey === row.branch) { setOpenKey(''); setDetail(null); return; }
+    setOpenKey(row.branch);
+    setDetail(null);
+    setDetailLoading(true);
+    try {
+      setDetail(await fetchPipelineValidationQueue(date, row.branch));
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not open that branch.' });
+      setOpenKey('');
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  async function decide(row: PipelineDayRow, approve: boolean) {
+    if (!approve && !note.trim()) {
+      toast({ tone: 'danger', message: 'A note is required when returning a day.' });
+      return;
+    }
+    setBusy(row.branch);
+    try {
+      await decidePipelineDay(row.branch, date, approve, note.trim());
+      toast({ tone: 'success',
+              message: approve ? `${row.branch} pipeline day countersigned.`
+                               : `${row.branch} returned to the branch.` });
+      setReturning(''); setNote('');
+      await load(date);
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Action failed.' });
+    } finally {
+      setBusy('');
+    }
+  }
+
+  const rows = data?.rows ?? [];
+  const th = 'whitespace-nowrap px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide';
+  const td = 'whitespace-nowrap px-3 py-2 text-sm';
+
+  return (
+    <Card className="mt-4">
+      <Card.Header>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Pipeline day — branches</h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              {data?.top_of_house
+                ? 'You observe these and may return a day for amendment.'
+                : 'You countersign the branch pipeline day once its deals are validated.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <label className="text-gray-500">Day</label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+                   className="rounded border border-gray-200 px-2 py-1 text-xs" />
+            <span className="rounded-full bg-[#E6F1FB] px-2.5 py-1 text-[11px] text-[#0C447C]">
+              {rows.length} branches
+            </span>
+          </div>
+        </div>
+      </Card.Header>
+
+      <Card.Body>
+        {loading && <p className="py-8 text-center text-sm text-gray-400">Loading…</p>}
+
+        {!loading && data && data.working_day === false && (
+          <p className="py-8 text-center text-sm text-gray-500">
+            {data.label || 'Rest day'} — no pipeline day is expected.
+          </p>
+        )}
+
+        {!loading && data?.working_day !== false && rows.length === 0 && (
+          <p className="py-8 text-center text-sm text-gray-400">
+            No branches consolidate to you for this day.
+          </p>
+        )}
+
+        {!loading && rows.length > 0 && (
+          <div className="overflow-auto rounded-lg border border-gray-200">
+            <table className="w-full border-separate" style={{ borderSpacing: 0 }}>
+              <thead>
+                <tr>
+                  <th className={`${th} bg-gray-100 text-gray-600`}>Branch</th>
+                  <th className={`${th} bg-gray-100 text-gray-600`}>Deals</th>
+                  <th className={`${th} bg-gray-100 text-gray-600`}>Validated</th>
+                  <th className={`${th} bg-gray-100 text-gray-600`}>Pending</th>
+                  <th className={`${th} bg-[#003D57] text-white`}>Value (KES)</th>
+                  <th className={`${th} bg-gray-100 text-gray-600`}>Status</th>
+                  <th className={`${th} bg-gray-100 text-gray-600`}>Decision</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r, i) => {
+                  const st = STATUS[r.status] ?? STATUS.draft;
+                  const bg = i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white';
+                  const canAct = r.status === 'submitted'
+                    && (!data?.top_of_house || (data?.can_return ?? false));
+                  return (
+                    <>
+                      <tr key={r.branch}>
+                        <td className={`${td} ${bg} font-medium text-gray-900`}>
+                          <button type="button" onClick={() => void expand(r)}
+                                  className="flex items-center gap-1.5 hover:text-brand-primary">
+                            <span className="text-gray-400">{openKey === r.branch ? '▾' : '▸'}</span>
+                            {r.branch}
+                          </button>
+                        </td>
+                        <td className={`${td} ${bg} tabular-nums text-gray-700`}>{r.deals}</td>
+                        <td className={`${td} ${bg} tabular-nums text-[#3B6D11]`}>{r.validated}</td>
+                        <td className={`${td} ${bg} tabular-nums ${r.pending ? 'text-amber-600' : 'text-gray-300'}`}>
+                          {r.pending || '—'}
+                        </td>
+                        <td className={`${td} ${bg} tabular-nums font-semibold text-[#003D57]`}>
+                          {kes(r.value)}
+                        </td>
+                        <td className={`${td} ${bg}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${st.cls}`}>
+                            {st.label}
+                          </span>
+                          {r.submitted_by_name && (
+                            <div className="mt-0.5 text-[10px] text-gray-400">by {r.submitted_by_name}</div>
+                          )}
+                          {r.status === 'returned' && r.return_note && (
+                            <div className="mt-0.5 text-[10px] text-[#993556]">{r.return_note}</div>
+                          )}
+                        </td>
+                        <td className={`${td} ${bg}`}>
+                          {!canAct ? (
+                            <span className="text-[11px] text-gray-400">—</span>
+                          ) : returning === r.branch ? (
+                            <div className="flex flex-col gap-1" style={{ minWidth: 210 }}>
+                              <input autoFocus value={note} onChange={(e) => setNote(e.target.value)}
+                                     placeholder="Why is it going back?"
+                                     className="w-full rounded border border-gray-300 px-2 py-1 text-xs" />
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="secondary" disabled={busy === r.branch}
+                                        onClick={() => void decide(r, false)}>Send back</Button>
+                                <Button size="sm" variant="ghost"
+                                        onClick={() => { setReturning(''); setNote(''); }}>Cancel</Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex gap-1">
+                              {!data?.top_of_house && (
+                                <Button size="sm" disabled={busy === r.branch}
+                                        onClick={() => void decide(r, true)}>Countersign</Button>
+                              )}
+                              <Button size="sm" variant="ghost"
+                                      onClick={() => { setReturning(r.branch); setNote(''); }}>
+                                Return
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+
+                      {openKey === r.branch && (
+                        <tr key={`${r.branch}-d`}>
+                          <td colSpan={7} className="bg-[#F7FBFD] px-6 py-3">
+                            {detailLoading && <p className="text-xs text-gray-400">Opening {r.branch}…</p>}
+                            {!detailLoading && (detail?.rows ?? []).length === 0 && (
+                              <p className="text-xs text-gray-400">No deals recorded for this day.</p>
+                            )}
+                            {!detailLoading && (detail?.rows ?? []).length > 0 && (
+                              <table className="w-full">
+                                <tbody>
+                                  {(detail?.rows ?? []).map((d) => (
+                                    <tr key={d.deal_id} className="border-b border-gray-100 last:border-0">
+                                      <td className="py-1 pr-3 text-xs tabular-nums text-gray-500" style={{ width: 80 }}>
+                                        {d.deal_id}
+                                      </td>
+                                      <td className="py-1 pr-3 text-xs text-gray-800">{d.staff_name}</td>
+                                      <td className="py-1 pr-3 text-xs text-gray-500">{d.client}</td>
+                                      <td className="py-1 pr-3 text-xs text-gray-500">{d.product}</td>
+                                      <td className="py-1 pr-3 text-xs tabular-nums text-gray-700" style={{ width: 80 }}>
+                                        {kes(d.deal_value)}
+                                      </td>
+                                      <td className="py-1 text-xs" style={{ width: 130 }}>
+                                        {d.validated
+                                          ? <span className="text-[#3B6D11]">✓ validated</span>
+                                          : <span className="text-amber-600">awaiting validation</span>}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+'''
+
+PAGE_NEW = r'''// v10.513 Phase 4 Batch β4 — PipelineManagerQueues page.
 //
 // Manager-only page at /pipeline/queues with two tabs:
 //
@@ -578,3 +946,72 @@ function CancellationCard({ deal, onNavigate, onResolved, onErrorToast }: {
     </QueueCard>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (APITS, PAGE):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found. Run from the project root." % p)
+            return 1
+    if os.path.exists(COMP):
+        print("ABORT: %s already exists - P2 looks applied." % COMP)
+        return 1
+
+    ts = open(APITS, encoding="utf-8").read()
+    cur = open(PAGE, encoding="utf-8").read()
+
+    if "fetchPipelineValidationDays" in ts:
+        print("ABORT: api.ts already has the pipeline validation clients.")
+        return 1
+    if "DailyLogAnalytics" not in cur:
+        print("ABORT: apply patch_a3_analytics.py first.")
+        return 1
+    if "cancellation" not in cur.lower():
+        print("ABORT: this page no longer has a cancellation queue - unexpected state.")
+        return 1
+    if ts.count(TS_ANCHOR) != 1:
+        print("ABORT: api.ts anchor matched %d times." % ts.count(TS_ANCHOR))
+        return 1
+
+    ts = ts.replace(TS_ANCHOR, TS_NEW + TS_ANCHOR, 1)
+    print("  ok  api.ts - pipeline validation clients")
+
+    for token in ("PipelineDayCountersign", "Pipeline validation",
+                  "Daily log validation"):
+        if token not in PAGE_NEW:
+            print("ABORT: embedded page missing %r." % token)
+            return 1
+    if "fetchCancellationQueue" in PAGE_NEW or "loadCancellation" in PAGE_NEW:
+        print("ABORT: embedded page still references the cancellation queue.")
+        return 1
+    for name, blob in (("component", COMPONENT), ("page", PAGE_NEW)):
+        for o, c in (("{", "}"), ("(", ")")):
+            if blob.count(o) != blob.count(c):
+                print("ABORT: embedded %s unbalanced %s%s." % (name, o, c))
+                return 1
+    print("  ok  embedded page + component validated")
+
+    if "fetchBranchLogHistoryGrid" not in ts:
+        print("ABORT: post-check - api.ts lost fetchBranchLogHistoryGrid.")
+        return 1
+    print("  ok  post-checks clean")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    open(COMP, "w", encoding="utf-8", newline="").write(COMPONENT)
+    print("CREATED %s" % COMP)
+    for path, content in ((APITS, ts), (PAGE, PAGE_NEW)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd && echo TSC_PASSED")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

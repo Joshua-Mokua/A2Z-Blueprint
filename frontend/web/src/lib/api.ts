@@ -782,6 +782,53 @@ export async function saveBranchLogActivities(extra_activities: ExtraActivity[])
   return postJson<{ status: string }, { extra_activities: ExtraActivity[] }>('/branch-log/activities', { extra_activities });
 }
 export interface BranchLogRankRow { rank: number; staff_code: string; staff_name: string; unit: string; index: number; days: number; avg_per_day: number; target: number; }
+// ── Pipeline validation (same tier structure as the Daily Log) ────────────
+export interface PipelineQueueRow {
+  deal_id: string; staff_code: string; staff_name: string; role: string;
+  branch: string; client: string; product: string; stage: string;
+  deal_value: number; validated: boolean; validated_by: string; can_act: boolean;
+}
+export interface PipelineQueue {
+  rows: PipelineQueueRow[]; date: string; working_day: boolean; label: string;
+  pending: number; branch?: string; mode: string;
+}
+export interface PipelineDayRow {
+  branch: string; deals: number; validated: number; pending: number; value: number;
+  status: string; submitted_by_name: string; validated_by_name: string;
+  return_note: string;
+}
+export interface PipelineDays {
+  rows: PipelineDayRow[]; date: string; working_day?: boolean; label?: string;
+  top_of_house: boolean; can_return?: boolean;
+}
+export async function fetchPipelineValidationQueue(
+  date = '', branch = '',
+): Promise<PipelineQueue> {
+  const q = new URLSearchParams();
+  if (date) q.set('date', date);
+  if (branch) q.set('branch', branch);
+  const s = q.toString();
+  return getJson<PipelineQueue>(`/pipeline-validation/queue${s ? `?${s}` : ''}`);
+}
+export async function fetchPipelineValidationDays(date = ''): Promise<PipelineDays> {
+  return getJson<PipelineDays>(
+    `/pipeline-validation/days${date ? `?date=${encodeURIComponent(date)}` : ''}`);
+}
+export async function submitPipelineDay(
+  branch: string, date: string,
+): Promise<{ pipeline_day: Record<string, unknown> }> {
+  return postJson<{ pipeline_day: Record<string, unknown> },
+                  { branch: string; date: string }>(
+    '/pipeline-validation/days/submit', { branch, date });
+}
+export async function decidePipelineDay(
+  branch: string, date: string, approved: boolean, note = '',
+): Promise<{ pipeline_day: Record<string, unknown> }> {
+  return postJson<{ pipeline_day: Record<string, unknown> },
+                  { branch: string; date: string; approved: boolean; note: string }>(
+    '/pipeline-validation/days/validate', { branch, date, approved, note });
+}
+
 // ── Cumulative leaderboard (staff / role / branch / unit) ─────────────────
 export interface LeaderboardRow {
   rank?: number;
