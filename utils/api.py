@@ -10196,6 +10196,130 @@ app.include_router(credit_admin_router)
 # v10.530 Phase 5 Batch gamma1 -- CBS lookup routes
 from utils.api_cbs_routes import router as cbs_router
 app.include_router(cbs_router)
+@app.get("/api/pipeline/leaderboard")
+def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
+                         level: str = "staff", origin: str = "all",
+                         branch: str = "", unit: str = "",
+                         user: dict = Depends(get_current_user)):
+    """Pipeline ranking, in TWO LEVELS: referral and direct.
+
+    Ruling 2026-08-09: "on the pipeline ranking we will also have it in two
+    levels, the referral and the direct pipeline from the sales team."
+
+    A deal's VALUE counts once, for whoever owns it. The REFERRER is credited
+    separately, under origin=referred, so a referred deal never inflates both
+    the owner's and the referrer's totals as though the bank booked it twice.
+
+    A referral counts only once ACCEPTED, matching the daily-log credit rule -
+    a pending referral is an intention, not an outcome.
+
+    level:  staff | role | branch | unit
+    origin: all | referred | direct
+    """
+    from datetime import date as _date, timedelta as _td
+    from utils.staff_code import canon as _canon_p
+
+    deals = _acquire_scoped_deals(user)
+
+    if start or end:
+        lo = str(start or "0000-01-01")[:10]
+        hi = str(end or "9999-12-31")[:10]
+    else:
+        hi = _date.today().isoformat()
+        lo = (_date.today() - _td(days=max(int(days or 30), 1))).isoformat()
+
+    def _when(d):
+        return str(d.get("created_at") or d.get("open_date") or "")[:10]
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _accepted_referral(d):
+        return bool(d.get("is_referral")) and str(d.get("referral_status") or "") == "accepted"
+
+    live = [d for d in deals if not d.get("draft") and lo <= (_when(d) or lo) <= hi]
+    if origin == "referred":
+        live = [d for d in live if _accepted_referral(d)]
+    elif origin == "direct":
+        live = [d for d in live if not _accepted_referral(d)]
+
+    # The roster dimensions the daily log already builds - cached, canonical,
+    # and the same source the rankings and grids use. Inventing a second reader
+    # here is how this codebase grew two of everything.
+    from utils.api_branch_log import _roster_dims
+    dims = _roster_dims()
+    try:
+        from utils.org_validator import unit_for_role, segment_for_role
+    except Exception:
+        unit_for_role = segment_for_role = lambda _r: ""
+
+    # Attribute to the OWNER. For origin=referred we attribute to the REFERRER
+    # instead - that is the whole point of the second level.
+    rows_by_key: dict = {}
+    for d in live:
+        if origin == "referred":
+            code = _canon_p(d.get("referred_by_code")
+                            or (d.get("referral_chain") or [{}])[0].get("referred_by_code")
+                            or "")
+        else:
+            code = _canon_p(d.get("staff_code") or "")
+        if not code:
+            continue
+        dd = dims.get(code) or {}
+        role = str(dd.get("role") or "")
+        b = str(dd.get("branch") or "")
+        u = unit_for_role(role) or ""
+        if branch and b != branch:
+            continue
+        if unit and u != unit:
+            continue
+        key = {"staff": code, "role": role, "branch": b, "unit": u}.get(level, code)
+        if not key:
+            key = "(unassigned)"
+        e = rows_by_key.setdefault(key, {
+            "key": key,
+            "staff_code": code if level == "staff" else "",
+            "name": (dd.get("full_name") or code) if level == "staff" else key,
+            "role": role if level == "staff" else "",
+            "branch": b if level == "staff" else "",
+            "deals": 0, "value": 0.0, "weighted": 0.0, "won": 0, "lost": 0,
+            "referred": 0,
+        })
+        e["deals"] += 1
+        e["value"] += _val(d)
+        e["weighted"] += _val(d) * _deal_probability(d)
+        st = str(d.get("stage") or "")
+        if st == "Closed Won":
+            e["won"] += 1
+        elif st == "Closed Lost":
+            e["lost"] += 1
+        if _accepted_referral(d):
+            e["referred"] += 1
+
+    rows = []
+    for e in rows_by_key.values():
+        closed = e["won"] + e["lost"]
+        e["value"] = round(e["value"], 2)
+        e["weighted"] = round(e["weighted"], 2)
+        e["win_rate"] = round(e["won"] / closed * 100, 1) if closed else 0.0
+        rows.append(e)
+    rows.sort(key=lambda r: -r["value"])
+    for i, r in enumerate(rows, 1):
+        r["rank"] = i
+
+    return {
+        "level": level, "origin": origin, "start": lo, "end": hi,
+        "rows": rows,
+        "total_deals": len(live),
+        "total_value": round(sum(r["value"] for r in rows), 2),
+        "total_weighted": round(sum(r["weighted"] for r in rows), 2),
+        "branches": sorted({r["branch"] for r in rows if r.get("branch")}),
+    }
+
+
 @app.get("/api/pipeline/analytics/summary")
 def pipeline_analytics_summary(days: int = 30, start: str = "", end: str = "",
                                user: dict = Depends(get_current_user)):

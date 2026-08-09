@@ -852,6 +852,33 @@ export interface DefinedFunnel {
   total_deals: number;
   unplaced_deals: number;
 }
+export interface PipelineLeaderboardRow {
+  key: string; rank: number; name: string;
+  staff_code: string; role: string; branch: string;
+  deals: number; value: number; weighted: number;
+  won: number; lost: number; referred: number; win_rate: number;
+}
+export interface PipelineLeaderboard {
+  level: string; origin: string; start: string; end: string;
+  rows: PipelineLeaderboardRow[];
+  total_deals: number; total_value: number; total_weighted: number;
+  branches: string[];
+}
+export async function fetchPipelineLeaderboard(opts: {
+  days?: number; start?: string; end?: string;
+  level?: string; origin?: string; branch?: string; unit?: string;
+} = {}): Promise<PipelineLeaderboard> {
+  const q = new URLSearchParams();
+  if (opts.days) q.set('days', String(opts.days));
+  if (opts.start) q.set('start', opts.start);
+  if (opts.end) q.set('end', opts.end);
+  if (opts.level) q.set('level', opts.level);
+  if (opts.origin) q.set('origin', opts.origin);
+  if (opts.branch) q.set('branch', opts.branch);
+  if (opts.unit) q.set('unit', opts.unit);
+  return getJson<PipelineLeaderboard>(`/pipeline/leaderboard?${q.toString()}`);
+}
+
 export interface PipelineOriginSplit {
   origin: string; count: number; value: number; won: number;
 }

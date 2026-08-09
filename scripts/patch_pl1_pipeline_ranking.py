@@ -1,4 +1,417 @@
-// v10.513 Phase 4 Batch β4 — PipelineManagerQueues page.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+PL1 - pipeline ranking in two levels: referral and direct.
+
+RULING (2026-08-09): "on the pipeline ranking we will also have it in two
+levels, the referral and the direct pipeline from the sales team."
+
+THE RULE THAT KEEPS IT HONEST. A deal's value counts ONCE, for whoever owns it.
+Under "Referred" the same deals are attributed to the REFERRER instead - not in
+addition. Blending the two would let one referred deal inflate both the owner's
+and the referrer's totals, as though the bank had booked it twice. The two views
+answer different questions about the same book, which is why they are a toggle
+rather than a sum.
+
+A referral counts only once ACCEPTED, matching the daily-log credit rule
+(ruling 2026-08-09) - a pending referral is an intention, not an outcome. The
+same deal therefore tells the same story in the daily log, the pipeline
+analytics and here.
+
+ADDS
+  GET /api/pipeline/leaderboard?days=&start=&end=&level=&origin=&branch=&unit=
+      level  staff | role | branch | unit
+      origin all | direct | referred
+      Rows carry deals, value, weighted (via _deal_probability, the one
+      probability model), won/lost and win rate.
+
+  frontend .../components/PipelineLeaderboard.tsx
+
+  Manager Queues' Ranking tab gains an INDEX / PIPELINE switch. They measure
+  different things over the same people, so they sit side by side rather than
+  being blended into one misleading number.
+
+Uses the SAME roster reader as everything else (api_branch_log._roster_dims) -
+the first draft called a _roster_dims_pipeline that does not exist, which is how
+this codebase grew two of everything before.
+
+Verified: py_compile clean, tsc --noEmit clean, vite build clean.
+
+Usage (from project root, .venv active):
+    python scripts\patch_pl1_pipeline_ranking.py            # dry run
+    python scripts\patch_pl1_pipeline_ranking.py --apply    # write + .pre_pl1 backups
+"""
+import os
+import shutil
+import sys
+
+COMP = os.path.join("frontend", "web", "src", "components", "PipelineLeaderboard.tsx")
+PAGE = os.path.join("frontend", "web", "src", "pages", "PipelineManagerQueues.tsx")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+API = os.path.join("utils", "api.py")
+BACKUP_SUFFIX = ".pre_pl1"
+
+ENDPOINT = r'''@app.get("/api/pipeline/leaderboard")
+def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
+                         level: str = "staff", origin: str = "all",
+                         branch: str = "", unit: str = "",
+                         user: dict = Depends(get_current_user)):
+    """Pipeline ranking, in TWO LEVELS: referral and direct.
+
+    Ruling 2026-08-09: "on the pipeline ranking we will also have it in two
+    levels, the referral and the direct pipeline from the sales team."
+
+    A deal's VALUE counts once, for whoever owns it. The REFERRER is credited
+    separately, under origin=referred, so a referred deal never inflates both
+    the owner's and the referrer's totals as though the bank booked it twice.
+
+    A referral counts only once ACCEPTED, matching the daily-log credit rule -
+    a pending referral is an intention, not an outcome.
+
+    level:  staff | role | branch | unit
+    origin: all | referred | direct
+    """
+    from datetime import date as _date, timedelta as _td
+    from utils.staff_code import canon as _canon_p
+
+    deals = _acquire_scoped_deals(user)
+
+    if start or end:
+        lo = str(start or "0000-01-01")[:10]
+        hi = str(end or "9999-12-31")[:10]
+    else:
+        hi = _date.today().isoformat()
+        lo = (_date.today() - _td(days=max(int(days or 30), 1))).isoformat()
+
+    def _when(d):
+        return str(d.get("created_at") or d.get("open_date") or "")[:10]
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _accepted_referral(d):
+        return bool(d.get("is_referral")) and str(d.get("referral_status") or "") == "accepted"
+
+    live = [d for d in deals if not d.get("draft") and lo <= (_when(d) or lo) <= hi]
+    if origin == "referred":
+        live = [d for d in live if _accepted_referral(d)]
+    elif origin == "direct":
+        live = [d for d in live if not _accepted_referral(d)]
+
+    # The roster dimensions the daily log already builds - cached, canonical,
+    # and the same source the rankings and grids use. Inventing a second reader
+    # here is how this codebase grew two of everything.
+    from utils.api_branch_log import _roster_dims
+    dims = _roster_dims()
+    try:
+        from utils.org_validator import unit_for_role, segment_for_role
+    except Exception:
+        unit_for_role = segment_for_role = lambda _r: ""
+
+    # Attribute to the OWNER. For origin=referred we attribute to the REFERRER
+    # instead - that is the whole point of the second level.
+    rows_by_key: dict = {}
+    for d in live:
+        if origin == "referred":
+            code = _canon_p(d.get("referred_by_code")
+                            or (d.get("referral_chain") or [{}])[0].get("referred_by_code")
+                            or "")
+        else:
+            code = _canon_p(d.get("staff_code") or "")
+        if not code:
+            continue
+        dd = dims.get(code) or {}
+        role = str(dd.get("role") or "")
+        b = str(dd.get("branch") or "")
+        u = unit_for_role(role) or ""
+        if branch and b != branch:
+            continue
+        if unit and u != unit:
+            continue
+        key = {"staff": code, "role": role, "branch": b, "unit": u}.get(level, code)
+        if not key:
+            key = "(unassigned)"
+        e = rows_by_key.setdefault(key, {
+            "key": key,
+            "staff_code": code if level == "staff" else "",
+            "name": (dd.get("full_name") or code) if level == "staff" else key,
+            "role": role if level == "staff" else "",
+            "branch": b if level == "staff" else "",
+            "deals": 0, "value": 0.0, "weighted": 0.0, "won": 0, "lost": 0,
+            "referred": 0,
+        })
+        e["deals"] += 1
+        e["value"] += _val(d)
+        e["weighted"] += _val(d) * _deal_probability(d)
+        st = str(d.get("stage") or "")
+        if st == "Closed Won":
+            e["won"] += 1
+        elif st == "Closed Lost":
+            e["lost"] += 1
+        if _accepted_referral(d):
+            e["referred"] += 1
+
+    rows = []
+    for e in rows_by_key.values():
+        closed = e["won"] + e["lost"]
+        e["value"] = round(e["value"], 2)
+        e["weighted"] = round(e["weighted"], 2)
+        e["win_rate"] = round(e["won"] / closed * 100, 1) if closed else 0.0
+        rows.append(e)
+    rows.sort(key=lambda r: -r["value"])
+    for i, r in enumerate(rows, 1):
+        r["rank"] = i
+
+    return {
+        "level": level, "origin": origin, "start": lo, "end": hi,
+        "rows": rows,
+        "total_deals": len(live),
+        "total_value": round(sum(r["value"] for r in rows), 2),
+        "total_weighted": round(sum(r["weighted"] for r in rows), 2),
+        "branches": sorted({r["branch"] for r in rows if r.get("branch")}),
+    }
+
+
+'''
+
+TS_NEW = r'''export interface PipelineLeaderboardRow {
+  key: string; rank: number; name: string;
+  staff_code: string; role: string; branch: string;
+  deals: number; value: number; weighted: number;
+  won: number; lost: number; referred: number; win_rate: number;
+}
+export interface PipelineLeaderboard {
+  level: string; origin: string; start: string; end: string;
+  rows: PipelineLeaderboardRow[];
+  total_deals: number; total_value: number; total_weighted: number;
+  branches: string[];
+}
+export async function fetchPipelineLeaderboard(opts: {
+  days?: number; start?: string; end?: string;
+  level?: string; origin?: string; branch?: string; unit?: string;
+} = {}): Promise<PipelineLeaderboard> {
+  const q = new URLSearchParams();
+  if (opts.days) q.set('days', String(opts.days));
+  if (opts.start) q.set('start', opts.start);
+  if (opts.end) q.set('end', opts.end);
+  if (opts.level) q.set('level', opts.level);
+  if (opts.origin) q.set('origin', opts.origin);
+  if (opts.branch) q.set('branch', opts.branch);
+  if (opts.unit) q.set('unit', opts.unit);
+  return getJson<PipelineLeaderboard>(`/pipeline/leaderboard?${q.toString()}`);
+}
+
+'''
+
+COMPONENT = r'''// PipelineLeaderboard — pipeline ranking in two levels: referral and direct.
+//
+// A deal's value counts once, for whoever owns it. Under "Referred" the same
+// deals are attributed to the REFERRER instead, so a referred deal is never
+// counted twice as though the bank booked it twice — the two views answer
+// different questions about the same book.
+
+import { useCallback, useEffect, useState } from 'react';
+import { Card } from '@/components/Card';
+import { useToast } from '@/components/Toast';
+import {
+  fetchPipelineLeaderboard, type PipelineLeaderboard as Board,
+} from '@/lib/api';
+import { periods, findPeriod, periodArgs, DEFAULT_PERIOD_KEY } from '@/lib/period';
+
+type Level = 'unit' | 'branch' | 'role' | 'staff';
+type Origin = 'all' | 'direct' | 'referred';
+
+const LEVELS: { key: Level; label: string }[] = [
+  { key: 'unit', label: 'Units' },
+  { key: 'branch', label: 'Branches' },
+  { key: 'role', label: 'Roles' },
+  { key: 'staff', label: 'Individuals' },
+];
+
+const ORIGINS: { key: Origin; label: string }[] = [
+  { key: 'all', label: 'All deals' },
+  { key: 'direct', label: 'Direct' },
+  { key: 'referred', label: 'Referred' },
+];
+
+const MEDAL = ['bg-[#BED600] text-[#3B6D11]', 'bg-[#E6F1FB] text-[#0C447C]', 'bg-[#FAEEDA] text-[#854F0B]'];
+
+function kes(n: number): string {
+  if (!n) return '—';
+  return Math.round(n).toLocaleString();
+}
+
+export default function PipelineLeaderboard() {
+  const { toast } = useToast();
+  const [periodKey, setPeriodKey] = useState(DEFAULT_PERIOD_KEY);
+  const [level, setLevel] = useState<Level>('branch');
+  const [origin, setOrigin] = useState<Origin>('all');
+  const [data, setData] = useState<Board | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const a = periodArgs(findPeriod(periodKey));
+      setData(await fetchPipelineLeaderboard({ ...a, level, origin }));
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not load the pipeline ranking.' });
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [periodKey, level, origin, toast]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const rows = data?.rows ?? [];
+  const isStaff = level === 'staff';
+  const max = Math.max(1, ...rows.map((r) => r.value));
+
+  return (
+    <Card>
+      <Card.Header>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-gray-900">Pipeline ranking</h2>
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            {LEVELS.map((l) => (
+              <button key={l.key} type="button" onClick={() => setLevel(l.key)}
+                className={'rounded-full px-3 py-1 font-medium '
+                  + (level === l.key ? 'bg-[#0082BB] text-white'
+                                     : 'text-[#005B82] hover:bg-[#0082BB]/10')}>
+                {l.label}
+              </button>
+            ))}
+            <select value={periodKey} onChange={(e) => setPeriodKey(e.target.value)}
+                    className="ml-2 rounded border border-gray-200 px-2 py-1 text-xs">
+              {periods().map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+            </select>
+          </div>
+        </div>
+      </Card.Header>
+
+      <Card.Body>
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+          <span className="inline-flex overflow-hidden rounded-lg border border-gray-200">
+            {ORIGINS.map((o) => (
+              <button key={o.key} type="button" onClick={() => setOrigin(o.key)}
+                className={'px-3 py-1 font-medium '
+                  + (origin === o.key ? 'bg-[#005B82] text-white'
+                                      : 'bg-white text-gray-600 hover:bg-gray-50')}>
+                {o.label}
+              </button>
+            ))}
+          </span>
+          {origin === 'referred' && (
+            <span className="text-[11px] text-gray-500">credited to the referrer</span>
+          )}
+          {data && (
+            <span className="ml-auto text-gray-500">
+              {data.total_deals} deals · KES{' '}
+              <span className="font-semibold text-gray-800">{kes(data.total_value)}</span>
+              {' · '}KES {kes(data.total_weighted)} weighted
+            </span>
+          )}
+        </div>
+
+        {loading && <p className="py-8 text-center text-sm text-gray-400">Ranking…</p>}
+
+        {!loading && rows.length === 0 && (
+          <p className="py-8 text-center text-sm text-gray-400">
+            {origin === 'referred'
+              ? 'No accepted referrals in this period.'
+              : 'Nothing to rank for this period.'}
+          </p>
+        )}
+
+        {!loading && rows.length > 0 && (
+          <div className="overflow-auto rounded-lg border border-gray-200">
+            <table className="w-full table-fixed border-separate" style={{ borderSpacing: 0 }}>
+              <colgroup>
+                <col style={{ width: 44 }} />
+                <col />
+                {isStaff && <col style={{ width: '20%' }} />}
+                {isStaff && <col style={{ width: '14%' }} />}
+                <col style={{ width: 70 }} />
+                <col style={{ width: 130 }} />
+                <col style={{ width: 130 }} />
+                <col style={{ width: 150 }} />
+                <col style={{ width: 70 }} />
+              </colgroup>
+              <thead>
+                <tr>
+                  {['#', isStaff ? 'Staff' : LEVELS.find((l) => l.key === level)?.label,
+                    ...(isStaff ? ['Role', 'Branch'] : []),
+                    'Deals', 'Value (KES)', 'Weighted (KES)', 'Share', 'Win %'].map((h, i) => (
+                    <th key={i}
+                        className={'px-2 py-2 text-[11px] font-semibold uppercase '
+                          + (i >= 4 ? 'text-right ' : 'text-left ')
+                          + (h === 'Value (KES)' ? 'bg-[#0082BB] text-white' : 'bg-gray-100 text-gray-600')}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r, i) => {
+                  const bg = i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white';
+                  return (
+                    <tr key={r.key}>
+                      <td className={`${bg} px-2 py-1.5 text-xs`}>
+                        <span className={'inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold '
+                          + (r.rank <= 3 ? MEDAL[r.rank - 1] : 'text-gray-400')}>
+                          {r.rank}
+                        </span>
+                      </td>
+                      <td className={`${bg} truncate px-2 py-1.5 text-xs font-medium text-gray-900`}
+                          title={r.name}>{r.name}</td>
+                      {isStaff && (
+                        <td className={`${bg} truncate px-2 py-1.5 text-xs text-gray-500`} title={r.role}>
+                          {r.role}
+                        </td>
+                      )}
+                      {isStaff && (
+                        <td className={`${bg} truncate px-2 py-1.5 text-xs text-gray-500`} title={r.branch}>
+                          {r.branch}
+                        </td>
+                      )}
+                      <td className={`${bg} px-2 py-1.5 text-right text-xs tabular-nums text-gray-700`}>
+                        {r.deals}
+                      </td>
+                      <td className={`${bg} px-2 py-1.5 text-right text-xs font-semibold tabular-nums text-gray-900`}>
+                        {kes(r.value)}
+                      </td>
+                      <td className={`${bg} px-2 py-1.5 text-right text-xs tabular-nums text-gray-600`}>
+                        {kes(r.weighted)}
+                      </td>
+                      <td className={`${bg} px-2 py-1.5`}>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                          <div className="h-full rounded-full bg-[#0082BB]"
+                               style={{ width: `${(r.value / max) * 100}%` }} />
+                        </div>
+                      </td>
+                      <td className={`${bg} px-2 py-1.5 text-right text-xs tabular-nums`}>
+                        <span className={r.win_rate >= 50 ? 'text-[#3B6D11]' : 'text-gray-500'}>
+                          {r.win_rate}%
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+'''
+
+PAGE_NEW = r'''// v10.513 Phase 4 Batch β4 — PipelineManagerQueues page.
 //
 // Manager-only page at /pipeline/queues with two tabs:
 //
@@ -597,3 +1010,90 @@ function CancellationCard({ deal, onNavigate, onResolved, onErrorToast }: {
     </QueueCard>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (PAGE, APITS, API):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found. Run from the project root." % p)
+            return 1
+    if os.path.exists(COMP):
+        print("ABORT: %s already exists - PL1 looks applied." % COMP)
+        return 1
+
+    api = open(API, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+
+    if '@app.get("/api/pipeline/leaderboard")' in api:
+        print("ABORT: the pipeline leaderboard route is already registered.")
+        return 1
+    if "/api/pipeline/analytics/summary" not in api:
+        print("ABORT: apply patch_pa1_pipeline_analytics.py first.")
+        return 1
+    if "_deal_probability" not in api:
+        print("ABORT: apply patch_f3_one_probability_model.py first.")
+        return 1
+
+    anchor = '@app.get("/api/pipeline/analytics/summary")'
+    api = api.replace(anchor, ENDPOINT + anchor, 1)
+    print("  ok  GET /api/pipeline/leaderboard")
+
+    ts_anchor = "export interface PipelineOriginSplit {"
+    if ts.count(ts_anchor) != 1:
+        print("ABORT: api.ts anchor matched %d times." % ts.count(ts_anchor))
+        return 1
+    ts = ts.replace(ts_anchor, TS_NEW + ts_anchor, 1)
+    print("  ok  api.ts - fetchPipelineLeaderboard")
+
+    # The endpoint must not invent a roster reader.
+    if "_roster_dims_pipeline" in ENDPOINT:
+        print("ABORT: the endpoint calls a roster reader that does not exist.")
+        return 1
+    if "from utils.api_branch_log import _roster_dims" not in ENDPOINT:
+        print("ABORT: the endpoint is not using the canonical roster reader.")
+        return 1
+    for token in ("PipelineLeaderboard", "rankView"):
+        if token not in PAGE_NEW:
+            print("ABORT: the page is missing %r." % token)
+            return 1
+    for token in ("Pipeline validation", "Daily log validation", "Index analytics"):
+        if token not in PAGE_NEW:
+            print("ABORT: the page lost %r - nothing existing should be removed." % token)
+            return 1
+    for name, blob in (("component", COMPONENT), ("page", PAGE_NEW)):
+        for op, cl in (("{", "}"), ("(", ")")):
+            if blob.count(op) != blob.count(cl):
+                print("ABORT: %s unbalanced %s%s." % (name, op, cl))
+                return 1
+    if api.count('@app.get("/api/pipeline/leaderboard")') != 1:
+        print("ABORT: post-check - route count is not 1.")
+        return 1
+    print("  ok  post-checks: canonical roster, tabs intact, one new route")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    open(COMP, "w", encoding="utf-8", newline="").write(COMPONENT)
+    print("CREATED %s" % COMP)
+    for path, content in ((API, api), (APITS, ts), (PAGE, PAGE_NEW)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    try:
+        py_compile.compile(API, doraise=True)
+        print("  ok  api.py compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd, then restart uvicorn.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
