@@ -20,5 +20,24 @@
     "remarks": 0.0
   },
   "daily_index_target": 25.0,
-  "extra_activities": []
+  "extra_activities": [],
+  "impact_tiers": {
+    "loans_disbursed": "high",
+    "dfs_registrations": "high",
+    "new_leads": "high",
+    "deposits_mobilised": "high",
+    "accounts_opened": "high",
+    "customer_visits": "high",
+    "transactions_count": "medium",
+    "cards_issued": "medium",
+    "complaints_resolved": "low",
+    "cross_sell_success": "low",
+    "loans_referred": "low",
+    "nps_collected": "low",
+    "accounts_activated": "low",
+    "digital_txns": "low",
+    "bancassurance_sold": "low",
+    "complaints_received": "low",
+    "teller_errors": "low"
+  }
 }
