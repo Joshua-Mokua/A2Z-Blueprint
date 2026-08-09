@@ -1,4 +1,346 @@
-// #3b — Analytics page. Consumes /api/pipeline/analytics (KES-equivalent,
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+PA1 - pipeline analytics, closing the item left open from the analytics arc.
+
+"we are yet to close on the pipeline analytics in a similar context" - so this
+mirrors the index analytics: same period model (rolling days, or an explicit
+calendar window for a quarter / year-to-date), and the same scope read, so the
+two analytics pages cannot disagree about the same population.
+
+THREE QUESTIONS, in the order management asks them:
+
+  WHERE IS THE MONEY   open deals, open value, weighted, won, win rate.
+      Weighted uses _deal_probability - the per-flow config model - so it agrees
+      with the funnel and the headline rather than being a third calculation.
+
+  WHERE DOES IT STALL  conversion through the journey, per flow, bar per bucket
+      coloured by the SAME RAG health the funnel uses (average working days in
+      bucket against that bucket's target). One health model, two views.
+
+  WHERE DOES IT COME FROM  referred versus direct, by count, value and wins.
+      A REFERRAL COUNTS ONLY ONCE ACCEPTED, matching the daily-log credit rule
+      (ruling 2026-08-09) - a pending referral is an intention, not an outcome.
+      Counting sent-but-unaccepted referrals here would have contradicted the
+      index the same deal feeds.
+
+ADDS
+  GET /api/pipeline/analytics/summary?days=&start=&end=
+  frontend .../components/PipelineAnalytics.tsx, mounted at the top of the
+  existing Sales Pro Analytics page - above the SLA tiles, so the money question
+  is answered before the exception list.
+
+Nothing existing on that page is removed: the SLA tiles, product-class
+pipelines, slicer and branch drill-down all remain.
+
+Verified: py_compile clean, tsc --noEmit clean, vite build clean.
+
+Usage (from project root, .venv active):
+    python scripts\patch_pa1_pipeline_analytics.py            # dry run
+    python scripts\patch_pa1_pipeline_analytics.py --apply    # write + .pre_pa1 backups
+"""
+import os
+import shutil
+import sys
+
+COMP = os.path.join("frontend", "web", "src", "components", "PipelineAnalytics.tsx")
+PAGE = os.path.join("frontend", "web", "src", "pages", "Analytics.tsx")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+API = os.path.join("utils", "api.py")
+BACKUP_SUFFIX = ".pre_pa1"
+
+ENDPOINT = r'''@app.get("/api/pipeline/analytics/summary")
+def pipeline_analytics_summary(days: int = 30, start: str = "", end: str = "",
+                               user: dict = Depends(get_current_user)):
+    """Pipeline analytics over a reporting period, mirroring the index analytics.
+
+    Same period model (rolling days, or an explicit calendar window for a
+    quarter / year-to-date) and the same scope read, so the two analytics pages
+    cannot disagree about the same population.
+
+    Returns the journey conversion by bucket, the referred-vs-direct split, and
+    the win/loss picture.
+    """
+    from datetime import date as _date, timedelta as _td
+    from utils.pipeline_funnel import (
+        stage_flows, flow_for_deal, bucket_view, micro_steps,
+    )
+
+    deals = _acquire_scoped_deals(user)
+
+    if start or end:
+        lo = str(start or "0000-01-01")[:10]
+        hi = str(end or "9999-12-31")[:10]
+    else:
+        hi = _date.today().isoformat()
+        lo = (_date.today() - _td(days=max(int(days or 30), 1))).isoformat()
+
+    def _when(d):
+        return str(d.get("created_at") or d.get("open_date") or "")[:10]
+
+    live = [d for d in deals
+            if not d.get("draft") and lo <= (_when(d) or lo) <= hi]
+
+    won = [d for d in live if str(d.get("stage")) == "Closed Won"]
+    lost = [d for d in live if str(d.get("stage")) == "Closed Lost"]
+    open_deals = [d for d in live if str(d.get("stage")) not in ("Closed Won", "Closed Lost")]
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    # Journey conversion, per flow, using the SAME bucket view the funnel draws
+    # so the two can never show different counts for the same stage.
+    journey = []
+    for flow in (stage_flows() or {}):
+        mine = [d for d in open_deals if flow_for_deal(d) == flow]
+        if not mine:
+            continue
+        journey.append({"flow": flow, "buckets": bucket_view(mine, flow),
+                        "deals": len(mine)})
+    journey.sort(key=lambda f: -f["deals"])
+
+    # Referred vs direct. A referral is only counted once it has been ACCEPTED,
+    # matching the daily-log credit rule - a pending referral is an intention.
+    def _is_ref(d):
+        return bool(d.get("is_referral")) and str(d.get("referral_status") or "") == "accepted"
+
+    referred = [d for d in live if _is_ref(d)]
+    direct = [d for d in live if not _is_ref(d)]
+    origin = [
+        {"origin": "Referred", "count": len(referred),
+         "value": round(sum(_val(d) for d in referred), 2),
+         "won": sum(1 for d in referred if str(d.get("stage")) == "Closed Won")},
+        {"origin": "Direct", "count": len(direct),
+         "value": round(sum(_val(d) for d in direct), 2),
+         "won": sum(1 for d in direct if str(d.get("stage")) == "Closed Won")},
+    ]
+
+    closed = len(won) + len(lost)
+    return {
+        "start": lo, "end": hi, "days": days,
+        "totals": {
+            "deals": len(live),
+            "open": len(open_deals),
+            "won": len(won),
+            "lost": len(lost),
+            "open_value": round(sum(_val(d) for d in open_deals), 2),
+            "won_value": round(sum(_val(d) for d in won), 2),
+            "weighted": round(sum(_val(d) * _deal_probability(d) for d in open_deals), 2),
+            "win_rate": round(len(won) / closed * 100, 1) if closed else 0.0,
+        },
+        "journey": journey,
+        "origin": origin,
+    }
+
+
+'''
+
+TS_NEW = r'''export interface PipelineOriginSplit {
+  origin: string; count: number; value: number; won: number;
+}
+export interface PipelineJourneyFlow {
+  flow: string; deals: number; buckets: DefinedBucket[];
+}
+export interface PipelineAnalyticsSummary {
+  start: string; end: string; days: number;
+  totals: {
+    deals: number; open: number; won: number; lost: number;
+    open_value: number; won_value: number; weighted: number; win_rate: number;
+  };
+  journey: PipelineJourneyFlow[];
+  origin: PipelineOriginSplit[];
+}
+export async function fetchPipelineAnalyticsSummary(
+  days = 30, start = '', end = '',
+): Promise<PipelineAnalyticsSummary> {
+  const q = new URLSearchParams();
+  if (days) q.set('days', String(days));
+  if (start) q.set('start', start);
+  if (end) q.set('end', end);
+  return getJson<PipelineAnalyticsSummary>(`/pipeline/analytics/summary?${q.toString()}`);
+}
+
+'''
+
+COMPONENT = r'''// PipelineAnalytics — the pipeline counterpart to the index analytics.
+//
+// Same period model, same scope read, so the two pages cannot disagree about
+// the same population. Three questions, in the order management asks them:
+//
+//   Where is the money        open / weighted / won, and the win rate
+//   Where does it stall       conversion through the journey, RAG per bucket
+//   Where does it come from   referred versus direct
+
+import { useCallback, useEffect, useState } from 'react';
+import { Card } from '@/components/Card';
+import { useToast } from '@/components/Toast';
+import {
+  fetchPipelineAnalyticsSummary, type PipelineAnalyticsSummary,
+} from '@/lib/api';
+import { periods, findPeriod, periodArgs, DEFAULT_PERIOD_KEY } from '@/lib/period';
+
+function kes(n: number): string {
+  if (!n) return '—';
+  return Math.round(n).toLocaleString();
+}
+
+const RAG: Record<string, string> = {
+  green: '#669438', amber: '#E0A02B', red: '#C4536F', idle: '#D8DBDF',
+};
+
+export default function PipelineAnalytics() {
+  const { toast } = useToast();
+  const [periodKey, setPeriodKey] = useState(DEFAULT_PERIOD_KEY);
+  const [data, setData] = useState<PipelineAnalyticsSummary | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const a = periodArgs(findPeriod(periodKey));
+      setData(await fetchPipelineAnalyticsSummary(a.days ?? 0, a.start ?? '', a.end ?? ''));
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not load pipeline analytics.' });
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [periodKey, toast]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const t = data?.totals;
+  const originTotal = (data?.origin ?? []).reduce((a, o) => a + o.count, 0);
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <Card.Header>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-gray-900">Pipeline analytics</h2>
+            <select value={periodKey} onChange={(e) => setPeriodKey(e.target.value)}
+                    className="rounded border border-gray-200 px-2 py-1 text-xs">
+              {periods().map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+            </select>
+          </div>
+        </Card.Header>
+        <Card.Body>
+          {loading && <p className="py-8 text-center text-sm text-gray-400">Loading…</p>}
+
+          {!loading && !t && (
+            <p className="py-8 text-center text-sm text-gray-400">No pipeline data for this period.</p>
+          )}
+
+          {!loading && t && (
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {[
+                { label: 'Open deals', value: t.open.toLocaleString(), tone: 'text-gray-900' },
+                { label: 'Open value (KES)', value: kes(t.open_value), tone: 'text-[#0082BB]' },
+                { label: 'Weighted (KES)', value: kes(t.weighted), tone: 'text-[#005B82]' },
+                { label: 'Won (KES)', value: kes(t.won_value), tone: 'text-[#3B6D11]' },
+                { label: 'Won', value: t.won.toLocaleString(), tone: 'text-[#3B6D11]' },
+                { label: 'Lost', value: t.lost.toLocaleString(), tone: 'text-rose-600' },
+                { label: 'Win rate', value: `${t.win_rate}%`, tone: 'text-gray-900' },
+                { label: 'Deals in period', value: t.deals.toLocaleString(), tone: 'text-gray-900' },
+              ].map((s) => (
+                <div key={s.label} className="rounded-lg border border-gray-200 p-3">
+                  <div className={`text-xl font-semibold tabular-nums ${s.tone}`}>{s.value}</div>
+                  <div className="mt-0.5 text-[11px] text-gray-500">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      {!loading && (data?.journey ?? []).length > 0 && (
+        <Card>
+          <Card.Header>
+            <h2 className="text-base font-semibold text-gray-900">Conversion through the journey</h2>
+          </Card.Header>
+          <Card.Body>
+            <div className="space-y-5">
+              {(data?.journey ?? []).map((f) => {
+                const max = Math.max(1, ...f.buckets.map((b) => b.count));
+                return (
+                  <div key={f.flow}>
+                    <div className="mb-1.5 flex items-baseline gap-2">
+                      <span className="text-xs font-semibold capitalize text-gray-800">{f.flow}</span>
+                      <span className="text-[11px] text-gray-400">{f.deals} open</span>
+                    </div>
+                    <div className="space-y-1">
+                      {f.buckets.map((b) => (
+                        <div key={b.key} className="flex items-center gap-2">
+                          <span className="w-44 shrink-0 truncate text-[11px] text-gray-600"
+                                title={b.label}>{b.label}</span>
+                          <div className="h-4 flex-1 overflow-hidden rounded bg-gray-100">
+                            <div className="h-full rounded"
+                                 style={{ width: `${(b.count / max) * 100}%`,
+                                          background: RAG[b.health.status] || RAG.idle }} />
+                          </div>
+                          <span className="w-10 shrink-0 text-right text-[11px] tabular-nums text-gray-700">
+                            {b.count || '—'}
+                          </span>
+                          <span className="w-28 shrink-0 text-right text-[11px] tabular-nums text-gray-500">
+                            {kes(b.value)}
+                          </span>
+                          <span className="w-24 shrink-0 text-right text-[10px] tabular-nums"
+                                style={{ color: RAG[b.health.status] || RAG.idle }}>
+                            {b.health.status === 'idle'
+                              ? '—'
+                              : `${b.health.avg_days}d / ${b.health.target_days}d`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+
+      {!loading && originTotal > 0 && (
+        <Card>
+          <Card.Header>
+            <h2 className="text-base font-semibold text-gray-900">Referred vs direct</h2>
+          </Card.Header>
+          <Card.Body>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {(data?.origin ?? []).map((o) => (
+                <div key={o.origin} className="rounded-lg border border-gray-200 p-3">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm font-semibold text-gray-800">{o.origin}</span>
+                    <span className="text-xs tabular-nums text-gray-500">
+                      {originTotal ? Math.round((o.count / originTotal) * 100) : 0}%
+                    </span>
+                  </div>
+                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-gray-100">
+                    <div className="h-full rounded-full"
+                         style={{ width: `${originTotal ? (o.count / originTotal) * 100 : 0}%`,
+                                  background: o.origin === 'Referred' ? '#0082BB' : '#979797' }} />
+                  </div>
+                  <div className="mt-2 flex gap-4 text-[11px] tabular-nums text-gray-600">
+                    <span>{o.count} deals</span>
+                    <span>KES {kes(o.value)}</span>
+                    <span className="text-[#3B6D11]">{o.won} won</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+    </div>
+  );
+}
+'''
+
+PAGE_NEW = r'''// #3b — Analytics page. Consumes /api/pipeline/analytics (KES-equivalent,
 // dashboard-consistent) and showcases the pipeline across products, sectors,
 // currency book, the conversion funnel, and the four product-class pipelines.
 
@@ -597,3 +939,89 @@ function DrillTable({ head, rows }: {
     </div>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (PAGE, APITS, API):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found. Run from the project root." % p)
+            return 1
+    if os.path.exists(COMP):
+        print("ABORT: %s already exists - PA1 looks applied." % COMP)
+        return 1
+
+    api = open(API, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+
+    if "/api/pipeline/analytics/summary" in api:
+        print("ABORT: the summary endpoint is already registered.")
+        return 1
+    if "_deal_probability" not in api:
+        print("ABORT: apply patch_f3_one_probability_model.py first - the weighted")
+        print("       figure must use the one probability model.")
+        return 1
+    if "bucket_view" not in open(os.path.join("utils", "pipeline_funnel.py"),
+                                 encoding="utf-8").read():
+        print("ABORT: apply patch_b1_stage_buckets.py first.")
+        return 1
+    anchor = '@app.get("/api/pipeline/funnel")'
+    if api.count(anchor) != 1:
+        print("ABORT: funnel route anchor matched %d times." % api.count(anchor))
+        return 1
+    api = api.replace(anchor, ENDPOINT + anchor, 1)
+    print("  ok  GET /api/pipeline/analytics/summary")
+
+    ts_anchor = "export async function fetchPipelineDefinedFunnel()"
+    if ts.count(ts_anchor) != 1:
+        print("ABORT: api.ts anchor matched %d times." % ts.count(ts_anchor))
+        return 1
+    ts = ts.replace(ts_anchor, TS_NEW + ts_anchor, 1)
+    print("  ok  api.ts - fetchPipelineAnalyticsSummary")
+
+    # The page must gain the component AND its import, and lose nothing.
+    for token in ("PipelineAnalytics", "import PipelineAnalytics"):
+        if token not in PAGE_NEW:
+            print("ABORT: the page is missing %r." % token)
+            return 1
+    for token in ("SLA status across your pipeline", "Pipelines by Product Class",
+                  "Drill down"):
+        if token not in PAGE_NEW:
+            print("ABORT: the page lost %r - nothing existing should be removed." % token)
+            return 1
+    for name, blob in (("component", COMPONENT), ("page", PAGE_NEW)):
+        for op, cl in (("{", "}"), ("(", ")")):
+            if blob.count(op) != blob.count(cl):
+                print("ABORT: %s unbalanced %s%s." % (name, op, cl))
+                return 1
+    if api.count('@app.get("/api/pipeline/analytics/summary")') != 1:
+        print("ABORT: post-check - summary route count is not 1.")
+        return 1
+    print("  ok  post-checks: page intact, one new route")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    open(COMP, "w", encoding="utf-8", newline="").write(COMPONENT)
+    print("CREATED %s" % COMP)
+    for path, content in ((API, api), (APITS, ts), (PAGE, PAGE_NEW)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    try:
+        py_compile.compile(API, doraise=True)
+        print("  ok  api.py compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd, then restart uvicorn.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

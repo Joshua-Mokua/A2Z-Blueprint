@@ -852,6 +852,31 @@ export interface DefinedFunnel {
   total_deals: number;
   unplaced_deals: number;
 }
+export interface PipelineOriginSplit {
+  origin: string; count: number; value: number; won: number;
+}
+export interface PipelineJourneyFlow {
+  flow: string; deals: number; buckets: DefinedBucket[];
+}
+export interface PipelineAnalyticsSummary {
+  start: string; end: string; days: number;
+  totals: {
+    deals: number; open: number; won: number; lost: number;
+    open_value: number; won_value: number; weighted: number; win_rate: number;
+  };
+  journey: PipelineJourneyFlow[];
+  origin: PipelineOriginSplit[];
+}
+export async function fetchPipelineAnalyticsSummary(
+  days = 30, start = '', end = '',
+): Promise<PipelineAnalyticsSummary> {
+  const q = new URLSearchParams();
+  if (days) q.set('days', String(days));
+  if (start) q.set('start', start);
+  if (end) q.set('end', end);
+  return getJson<PipelineAnalyticsSummary>(`/pipeline/analytics/summary?${q.toString()}`);
+}
+
 export async function fetchPipelineDefinedFunnel(): Promise<DefinedFunnel> {
   return getJson<DefinedFunnel>('/pipeline/funnel');
 }

@@ -10196,6 +10196,93 @@ app.include_router(credit_admin_router)
 # v10.530 Phase 5 Batch gamma1 -- CBS lookup routes
 from utils.api_cbs_routes import router as cbs_router
 app.include_router(cbs_router)
+@app.get("/api/pipeline/analytics/summary")
+def pipeline_analytics_summary(days: int = 30, start: str = "", end: str = "",
+                               user: dict = Depends(get_current_user)):
+    """Pipeline analytics over a reporting period, mirroring the index analytics.
+
+    Same period model (rolling days, or an explicit calendar window for a
+    quarter / year-to-date) and the same scope read, so the two analytics pages
+    cannot disagree about the same population.
+
+    Returns the journey conversion by bucket, the referred-vs-direct split, and
+    the win/loss picture.
+    """
+    from datetime import date as _date, timedelta as _td
+    from utils.pipeline_funnel import (
+        stage_flows, flow_for_deal, bucket_view, micro_steps,
+    )
+
+    deals = _acquire_scoped_deals(user)
+
+    if start or end:
+        lo = str(start or "0000-01-01")[:10]
+        hi = str(end or "9999-12-31")[:10]
+    else:
+        hi = _date.today().isoformat()
+        lo = (_date.today() - _td(days=max(int(days or 30), 1))).isoformat()
+
+    def _when(d):
+        return str(d.get("created_at") or d.get("open_date") or "")[:10]
+
+    live = [d for d in deals
+            if not d.get("draft") and lo <= (_when(d) or lo) <= hi]
+
+    won = [d for d in live if str(d.get("stage")) == "Closed Won"]
+    lost = [d for d in live if str(d.get("stage")) == "Closed Lost"]
+    open_deals = [d for d in live if str(d.get("stage")) not in ("Closed Won", "Closed Lost")]
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    # Journey conversion, per flow, using the SAME bucket view the funnel draws
+    # so the two can never show different counts for the same stage.
+    journey = []
+    for flow in (stage_flows() or {}):
+        mine = [d for d in open_deals if flow_for_deal(d) == flow]
+        if not mine:
+            continue
+        journey.append({"flow": flow, "buckets": bucket_view(mine, flow),
+                        "deals": len(mine)})
+    journey.sort(key=lambda f: -f["deals"])
+
+    # Referred vs direct. A referral is only counted once it has been ACCEPTED,
+    # matching the daily-log credit rule - a pending referral is an intention.
+    def _is_ref(d):
+        return bool(d.get("is_referral")) and str(d.get("referral_status") or "") == "accepted"
+
+    referred = [d for d in live if _is_ref(d)]
+    direct = [d for d in live if not _is_ref(d)]
+    origin = [
+        {"origin": "Referred", "count": len(referred),
+         "value": round(sum(_val(d) for d in referred), 2),
+         "won": sum(1 for d in referred if str(d.get("stage")) == "Closed Won")},
+        {"origin": "Direct", "count": len(direct),
+         "value": round(sum(_val(d) for d in direct), 2),
+         "won": sum(1 for d in direct if str(d.get("stage")) == "Closed Won")},
+    ]
+
+    closed = len(won) + len(lost)
+    return {
+        "start": lo, "end": hi, "days": days,
+        "totals": {
+            "deals": len(live),
+            "open": len(open_deals),
+            "won": len(won),
+            "lost": len(lost),
+            "open_value": round(sum(_val(d) for d in open_deals), 2),
+            "won_value": round(sum(_val(d) for d in won), 2),
+            "weighted": round(sum(_val(d) * _deal_probability(d) for d in open_deals), 2),
+            "win_rate": round(len(won) / closed * 100, 1) if closed else 0.0,
+        },
+        "journey": journey,
+        "origin": origin,
+    }
+
+
 @app.get("/api/pipeline/funnel")
 def pipeline_funnel_defined(user: dict = Depends(get_current_user)):
     """The DEFINED journey per product flow — from admin config, not from code.
