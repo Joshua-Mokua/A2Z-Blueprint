@@ -248,3 +248,24 @@ data/staff_register_staging.xlsx
 data/staff_source_dsa.xlsx
 data/staff_source_permanent.xlsx
 data/*.xlsx.bak*
+
+# ── Forensic and one-off scripts (tidied 2026-08-09) ────────────────────────
+# Kept out of the repository root so `git status` stays readable. An unreadable
+# status is how commits go wrong unnoticed.
+/forensics/
+/diagnose_*.py
+/probe_*.py
+/check_*.py
+/dump_*.py
+/find_*.py
+/verify_*.py
+/inspect_*.py
+/trace_*.py
+/fix_*.py
+/scan_*.py
+/audit_*.py
+/*.tar.gz
+/*.zip
+/*_backup_*.json
+/*_snapshot_*.json
+*.pre_*
