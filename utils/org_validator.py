@@ -513,6 +513,76 @@ def _role_to_unit_map() -> dict:
     return out
 
 
+# ── Branch segments ─────────────────────────────────────────────────────────
+# RULING (2026-08-09): at a BRANCH the meaningful split is Consumer, Commercial
+# and Operations - "operations which will include tellers and the operations
+# team". The MD-reporting unit is the wrong label there: a teller does not think
+# of themselves as sitting under "Director Consumer & Commercial Banking (CCB)".
+#
+# It cannot come from the register's Department either: branch staff carry only
+# Commercial Banking (100) and Consumer Banking (93), with every operations role
+# filed under Commercial. So the segment is derived from ROLE, and the mapping
+# lives in org_config.json under `branch_segments` so the bank can move a role
+# between segments without a deploy.
+_DEFAULT_SEGMENTS = {
+    "Operations": [
+        "branch operations officer", "assistant branch service & operations manager",
+        "customer service manager", "teller", "branch operations manager",
+        "service assistant, operations officer", "branch manager",
+    ],
+    "Consumer": [
+        "relationship officer", "relationship manager, premier banking",
+        "relationship officer, premier banking", "direct sales agent",
+        "branch dsa team lead", "bancassurance officer",
+        "relationship manager, employee schemes",
+    ],
+    "Commercial": [
+        "relationship manager, sme", "relationship manager, local corporate",
+        "relationship manager", "relationship manager, corporate",
+    ],
+}
+
+
+def branch_segments() -> dict:
+    """{segment: [role, ...]} from org_config, falling back to the defaults."""
+    try:
+        from utils.config import load_org_config
+        cfg = (load_org_config() or {}).get("branch_segments")
+        if isinstance(cfg, dict) and cfg:
+            return {str(k): [str(r).lower() for r in (v or [])] for k, v in cfg.items()}
+    except Exception:
+        pass
+    return {k: list(v) for k, v in _DEFAULT_SEGMENTS.items()}
+
+
+@lru_cache(maxsize=1)
+def _segment_index() -> dict:
+    out = {}
+    for seg, roles in branch_segments().items():
+        for r in roles:
+            out[str(r).strip().lower()] = seg
+    return out
+
+
+def segment_for_role(role: str) -> str:
+    """Consumer / Commercial / Operations for a branch role, or '' if unmapped.
+
+    An UNMAPPED role returns '' rather than being guessed into a segment - a
+    quietly miscategorised teller is worse than a visible gap, because nobody
+    goes looking for a number that already looks plausible.
+    """
+    r = _s(role).lower()
+    idx = _segment_index()
+    if r in idx:
+        return idx[r]
+    # Substring fallback for variant spellings, longest match first so
+    # "relationship manager, sme" beats "relationship manager".
+    for known in sorted(idx, key=len, reverse=True):
+        if known and known in r:
+            return idx[known]
+    return ""
+
+
 def unit_for_role(role: str) -> str:
     """The MD-reporting unit a role rolls into, or '' when it reaches nothing."""
     m = _role_to_unit_map()

@@ -838,17 +838,19 @@ export interface LeaderboardRow {
   headcount?: number; index_per_head?: number;
   days_filed: number; validated: number; cf_variance?: number;
   met_days?: number; scored_days?: number; met_rate?: number;
+  segment?: string;
+  avg_index?: number; avg_target?: number;   // per ON-DUTY day
 }
 export interface Leaderboard {
   level: string; days: number; rows: LeaderboardRow[];
   total_index: number; total_headcount: number;
   met_days?: number; scored_days?: number; met_rate?: number;
   filters: { role: string; branch: string; unit: string };
-  roles: string[]; branches: string[]; units: string[];
+  roles: string[]; branches: string[]; units: string[]; segments?: string[];
 }
 export async function fetchBranchLogLeaderboard(opts: {
   days?: number; level?: string; role?: string; branch?: string; unit?: string;
-  start?: string; end?: string;
+  segment?: string; start?: string; end?: string;
 } = {}): Promise<Leaderboard> {
   const q = new URLSearchParams();
   if (opts.days) q.set('days', String(opts.days));
@@ -858,6 +860,7 @@ export async function fetchBranchLogLeaderboard(opts: {
   if (opts.role) q.set('role', opts.role);
   if (opts.branch) q.set('branch', opts.branch);
   if (opts.unit) q.set('unit', opts.unit);
+  if (opts.segment) q.set('segment', opts.segment);
   const s = q.toString();
   return getJson<Leaderboard>(`/branch-log/leaderboard${s ? `?${s}` : ''}`);
 }

@@ -19,13 +19,14 @@ import { useToast } from '@/components/Toast';
 import { fetchBranchLogLeaderboard, type Leaderboard, type LeaderboardRow } from '@/lib/api';
 import { periods, findPeriod, periodArgs, DEFAULT_PERIOD_KEY } from '@/lib/period';
 
-type Level = 'unit' | 'branch' | 'role' | 'staff';
+type Level = 'unit' | 'segment' | 'branch' | 'role' | 'staff';
 
 const LEVELS: { key: Level; label: string; hint: string }[] = [
-  { key: 'unit',   label: 'Units',       hint: 'Everything beneath each MD-reporting unit' },
-  { key: 'branch', label: 'Branches',    hint: 'The 16 branches and Head Office' },
-  { key: 'role',   label: 'Roles',       hint: 'Ranked by index per head, so a big role cannot win on size' },
-  { key: 'staff',  label: 'Individuals', hint: 'Every person you can see' },
+  { key: 'unit',    label: 'Units',       hint: 'Everything beneath each MD-reporting unit' },
+  { key: 'segment', label: 'Segments',    hint: 'Consumer, Commercial and Operations — the split that means something at a branch' },
+  { key: 'branch',  label: 'Branches',    hint: 'The 16 branches and Head Office' },
+  { key: 'role',    label: 'Roles',       hint: 'Averaged per on-duty day, so a big role cannot win on size' },
+  { key: 'staff',   label: 'Individuals', hint: 'Ranked on the average per day on duty, not the total' },
 ];
 
 // Medal tint for the top three, brand palette only.
@@ -215,8 +216,9 @@ export default function Leaderboard() {
                   {!isStaff && (
                     <th className="bg-gray-100 px-2 py-2 text-right text-[11px] font-semibold uppercase text-gray-600">Staff</th>
                   )}
-                  <th className="bg-[#0082BB] px-2 py-2 text-right text-[11px] font-semibold uppercase text-white">Index</th>
-                  <th className="bg-gray-100 px-2 py-2 text-right text-[11px] font-semibold uppercase text-gray-600">Target</th>
+                  <th className="bg-[#0082BB] px-2 py-2 text-right text-[11px] font-semibold uppercase text-white">Avg/day</th>
+                  <th className="bg-gray-100 px-2 py-2 text-right text-[11px] font-semibold uppercase text-gray-600">Total index</th>
+                  <th className="bg-gray-100 px-2 py-2 text-right text-[11px] font-semibold uppercase text-gray-600">On duty</th>
                   <th className="bg-gray-100 px-2 py-2 text-left text-[11px] font-semibold uppercase text-gray-600">Achievement</th>
                   <th className="bg-gray-100 px-2 py-2 text-right text-[11px] font-semibold uppercase text-gray-600">Met %</th>
                   {!isStaff && (
@@ -259,11 +261,20 @@ export default function Leaderboard() {
                           {r.headcount}
                         </td>
                       )}
-                      <td className={`${bg} px-2 py-1.5 text-right text-xs font-semibold tabular-nums text-gray-900`}>
+                      <td className={`${bg} px-2 py-1.5 text-right text-xs font-semibold tabular-nums`}>
+                        <span className={(r.avg_index ?? 0) >= (r.avg_target ?? 0) && (r.avg_target ?? 0) > 0
+                          ? 'text-[#3B6D11]' : 'text-gray-900'}>
+                          {(r.avg_index ?? 0).toFixed(1)}
+                        </span>
+                        <span className="ml-1 text-[10px] font-normal text-gray-400">
+                          / {(r.avg_target ?? 0).toFixed(0)}
+                        </span>
+                      </td>
+                      <td className={`${bg} px-2 py-1.5 text-right text-xs tabular-nums text-gray-600`}>
                         {idx.toLocaleString()}
                       </td>
                       <td className={`${bg} px-2 py-1.5 text-right text-xs tabular-nums text-gray-500`}>
-                        {(Number(r.target) || 0).toLocaleString()}
+                        {r.scored_days ?? 0}
                       </td>
                       <td className={`${bg} px-2 py-1.5`}>
                         <div className="flex items-center gap-2">
@@ -294,7 +305,7 @@ export default function Leaderboard() {
                     </tr>
                     {expanded && (
                       <tr key={`${rowKey}-drill`}>
-                        <td colSpan={9} className="bg-[#F7FBFD] px-6 py-3">
+                        <td colSpan={10} className="bg-[#F7FBFD] px-6 py-3">
                           {drillLoading && (
                             <p className="text-xs text-gray-400">Opening {rowKey}…</p>
                           )}
@@ -351,9 +362,12 @@ export default function Leaderboard() {
         )}
 
         <p className="mt-2 text-[11px] text-gray-400">
-          Each person is counted once at every level, so the total index does not change
-          when you switch lens — only how it is divided. Roles rank on index per head so a
-          large role cannot win on size alone.
+          Ranked on the <strong>average index per day on duty</strong>. Days on leave,
+          rest days and excused absences are not counted as days on duty, so nobody is
+          penalised for a day the bank did not expect work — that is what the manager's
+          exception is for. The total index stays on the row as what was actually banked.
+          Each person is counted once at every level, so switching lens changes how the
+          total is divided, never the total itself.
         </p>
       </Card.Body>
     </Card>

@@ -48,6 +48,10 @@ export default function DailyLogAnalytics() {
   // leaderboard so the analytics and the ranking cannot report different
   // achievement for the same population.
   const [byUnit, setByUnit] = useState<Leaderboard | null>(null);
+  // At a branch the MD-reporting unit is the wrong label — a teller does not
+  // think of themselves as under 'Director Consumer & Commercial Banking'.
+  // Default to segments when the caller's population sits in one branch.
+  const [dim, setDim] = useState<'unit' | 'segment'>('segment');
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
@@ -56,15 +60,17 @@ export default function DailyLogAnalytics() {
       const p = findPeriod(periodKey);
       const a = periodArgs(p);
       setData(await fetchBranchLogAnalytics(a.days ?? 0, '', a.start ?? '', a.end ?? ''));
-      try { setByUnit(await fetchBranchLogLeaderboard({ ...a, level: 'unit' })); }
-      catch { setByUnit(null); }
+      try {
+        const lb = await fetchBranchLogLeaderboard({ ...a, level: dim });
+        setByUnit(lb);
+      } catch { setByUnit(null); }
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not load analytics.' });
       setData(null);
     } finally {
       setLoading(false);
     }
-  }, [periodKey, toast]);
+  }, [periodKey, dim, toast]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -229,8 +235,21 @@ export default function DailyLogAnalytics() {
               </div>
 
               <div>
-                <div className="mb-1 text-xs font-semibold text-gray-600">
-                  By unit — cumulative over {findPeriod(periodKey).label.toLowerCase()}
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-gray-600">
+                    By {dim === 'segment' ? 'segment' : 'unit'} — cumulative over{' '}
+                    {findPeriod(periodKey).label.toLowerCase()}
+                  </span>
+                  <span className="flex gap-1 text-[11px]">
+                    {(['segment', 'unit'] as const).map((d) => (
+                      <button key={d} type="button" onClick={() => setDim(d)}
+                        className={'rounded-full px-2 py-0.5 '
+                          + (dim === d ? 'bg-[#0082BB] text-white'
+                                       : 'text-[#005B82] hover:bg-[#0082BB]/10')}>
+                        {d === 'segment' ? 'Consumer / Commercial / Operations' : 'Units'}
+                      </button>
+                    ))}
+                  </span>
                 </div>
                 <ResponsiveContainer width="100%" height={Math.max(180, (byUnit.rows.length || 1) * 26)}>
                   <BarChart

@@ -1379,7 +1379,7 @@ def branch_log_cf_reset(payload: dict = Body(default_factory=dict),
 
 @router.get("/leaderboard")
 def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
-                           branch: str = "", unit: str = "",
+                           branch: str = "", unit: str = "", segment: str = "",
                            start: str = "", end: str = "",
                            user: dict = Depends(get_current_user)):
     """Cumulative ranking, drillable: staff -> role -> branch -> unit.
@@ -1464,11 +1464,19 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         r = str(dd.get("role") or "")
         b = str(dd.get("branch") or "")
         u = unit_for_role(r) or ""
+        seg = ""
+        try:
+            from utils.org_validator import segment_for_role
+            seg = segment_for_role(r) or ""
+        except Exception:
+            seg = ""
         if role and r != role:
             continue
         if branch and b != branch:
             continue
         if unit and u != unit:
+            continue
+        if segment and seg != segment:
             continue
         mine = by_staff.get(_canon_l(code), [])
         rows = carried_forward(mine) if mine else []
@@ -1482,13 +1490,21 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
                   if float(x.get("index") or 0) >= float(x.get("target") or 0))
         people.append({
             "staff_code": code, "staff_name": dd.get("full_name", ""),
-            "role": r, "branch": b, "unit": u,
+            "role": r, "branch": b, "unit": u, "segment": seg,
             "index": idx, "target": tgt,
             "days_filed": len(mine),
             "validated": sum(1 for x in mine if x.get("validated")),
             "cf_variance": rows[-1].get("cf_variance", 0) if rows else 0,
             "met_days": met,
             "scored_days": len(scored),
+            # RULING 2026-08-09: the index is a DAILY measure, so a fair ranking
+            # averages it over the days a person was ACTUALLY ON DUTY. Total
+            # accumulation punishes a new joiner and anyone who took approved
+            # leave, which is precisely what the exception model exists to
+            # prevent. scored_days already excludes rest days and excused days,
+            # so it is exactly "days on duty".
+            "avg_index": round(idx / len(scored), 2) if scored else 0.0,
+            "avg_target": round(tgt / len(scored), 2) if scored else 0.0,
         })
 
     def agg(rows, keyfn, label):
@@ -1509,6 +1525,12 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
             e["index_per_head"] = round(e["index"] / e["headcount"], 1) if e["headcount"] else 0.0
             e["met_rate"] = (round(e["met_days"] / e["scored_days"] * 100, 1)
                              if e["scored_days"] else 0.0)
+            # Average per on-duty day, so a large unit cannot outrank a small
+            # one on headcount alone.
+            e["avg_index"] = (round(e["index"] / e["scored_days"], 2)
+                              if e["scored_days"] else 0.0)
+            e["avg_target"] = (round(e["target"] / e["scored_days"], 2)
+                               if e["scored_days"] else 0.0)
         return list(out.values())
 
     if level == "role":
@@ -1520,6 +1542,11 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
     elif level == "unit":
         rows = agg(people, lambda p: p["unit"], "name")
         sort_key = "index"
+    elif level == "segment":
+        # Consumer / Commercial / Operations — the split that means something at
+        # a branch, where the MD-reporting unit does not.
+        rows = agg(people, lambda p: p["segment"], "name")
+        sort_key = "avg_index"
     else:
         level = "staff"
         for p in people:
@@ -1527,7 +1554,11 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
             p["met_rate"] = (round(p["met_days"] / p["scored_days"] * 100, 1)
                              if p["scored_days"] else 0.0)
         rows = people
-        sort_key = "index"
+        # Individuals rank on the AVERAGE per on-duty day, not the total: a
+        # person who joined in June or took two weeks' leave should not be
+        # ranked below someone with the same daily performance and more days.
+        # The total stays on the row - it is still what the bank banked.
+        sort_key = "avg_index"
 
     rows.sort(key=lambda r: -float(r.get(sort_key) or 0))
     for i, r in enumerate(rows, 1):
@@ -1542,10 +1573,11 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         "met_days": met_total, "scored_days": scored_total,
         "met_rate": round(met_total / scored_total * 100, 1) if scored_total else 0.0,
         "total_headcount": len(people),
-        "filters": {"role": role, "branch": branch, "unit": unit},
+        "filters": {"role": role, "branch": branch, "unit": unit, "segment": segment},
         "roles": sorted({p["role"] for p in people if p["role"]}),
         "branches": sorted({p["branch"] for p in people if p["branch"]}),
         "units": sorted({p["unit"] for p in people if p["unit"]}),
+        "segments": sorted({p["segment"] for p in people if p["segment"]}),
     }
 
 
