@@ -51,8 +51,6 @@ const key2 = (h: number) => String(h).padStart(2, '0');
 
 function fmtCount(f: BranchLogField, n: number): string {
   if (f.type === 'amount') {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${Math.round(n / 1000)}k`;
     return String(Math.round(n));
   }
   return String(Math.round(n));

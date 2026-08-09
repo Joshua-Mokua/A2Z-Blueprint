@@ -78,7 +78,11 @@ function num(v: unknown): number {
 function fmt(v: unknown): string {
   const n = num(v);
   if (n === 0) return '';                        // blank reads better than a field of zeros
-  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+  // Thousands separators on every figure (ruling 2026-08-09): a KES deposit
+  // rendered as 934858 is a number the reader has to count digits on.
+  return Number.isInteger(n)
+    ? n.toLocaleString()
+    : n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
 function signed(n: number): string {
