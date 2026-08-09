@@ -1299,7 +1299,14 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
     visible_codes = get_visible_staff_codes(user)
     deals = filter_deals_by_visible_codes(deals, visible_codes)
 
-    from utils.core import ACTIVE_STAGES as _ACTIVE
+    # Config-derived active stages; the hardcoded list is only a fallback.
+    try:
+        from utils.pipeline_funnel import all_active_stages as _cfg_act
+        _ACTIVE = _cfg_act() or None
+    except Exception:
+        _ACTIVE = None
+    if not _ACTIVE:
+        from utils.core import ACTIVE_STAGES as _ACTIVE
     by_stage: dict = {}
     total_val = 0.0
     won_val   = 0.0
@@ -4138,9 +4145,22 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
     """Headline totals + overall funnel + per-category funnels. Pure function
     over a deal list (already scope-filtered) — mirrors 3_pipeline.py."""
     from utils.core import (
-        ACTIVE_STAGES, ALL_ACTIVE_STAGES,
+        ACTIVE_STAGES as _LEGACY_ACTIVE, ALL_ACTIVE_STAGES as _LEGACY_ALL_ACTIVE,
         get_pipeline_category, get_stages_for_category,
     )
+    # ACTIVE STAGES FROM CONFIG, not from the hardcoded PIPELINE_STAGES lists.
+    # Those carry the retired vocabulary, so after the bucket migration NO deal
+    # matched them: "active" came out empty and every headline value collapsed
+    # to zero. The legacy lists remain as a fallback for a build with no
+    # configured buckets.
+    try:
+        from utils.pipeline_funnel import all_active_stages as _cfg_active
+        _ACTIVE_NOW = _cfg_active() or list(_LEGACY_ACTIVE)
+    except Exception:
+        _ACTIVE_NOW = list(_LEGACY_ACTIVE)
+    ACTIVE_STAGES = _ACTIVE_NOW
+    ALL_ACTIVE_STAGES = _ACTIVE_NOW
+
     live = [d for d in deals if not d.get("draft") and not _referral_blocked(d)]
     active = [d for d in live if d.get("stage") in ACTIVE_STAGES]
     # Validation split: management anchors on VALIDATED (manager-assured) deals.
@@ -4744,7 +4764,14 @@ def pipeline_funnel_drill(
     _acquire_scoped_deals. Reuses _classify_product / _segment_of so it can't
     drift from the analytics dimensions."""
     _audit("API_PIPELINE_FUNNEL_DRILL", user, f"cls={cls} stage={stage}")
-    from utils.core import ACTIVE_STAGES as _ACTIVE
+    # Config-derived active stages; the hardcoded list is only a fallback.
+    try:
+        from utils.pipeline_funnel import all_active_stages as _cfg_act
+        _ACTIVE = _cfg_act() or None
+    except Exception:
+        _ACTIVE = None
+    if not _ACTIVE:
+        from utils.core import ACTIVE_STAGES as _ACTIVE
     deals = _acquire_scoped_deals(user)
 
     def _match(d: dict) -> bool:

@@ -250,6 +250,22 @@ def buckets_for(flow: str) -> list:
     return out
 
 
+def all_active_stages() -> list:
+    """Every micro-step across every configured flow, excluding closed.
+
+    utils.core.ACTIVE_STAGES is built from HARDCODED stage lists
+    (PIPELINE_STAGES_LOAN and friends) carrying the retired vocabulary. After
+    the bucket migration no deal matched it, so "active" came out empty and
+    every headline value collapsed to zero. This is the configured equivalent.
+    """
+    out = []
+    for flow in stage_flows():
+        for st in micro_steps(flow):
+            if st not in out and st not in CLOSED:
+                out.append(st)
+    return out
+
+
 def micro_steps(flow: str) -> list:
     """Every micro-step of a flow, in journey order — the real stage list."""
     out = []
@@ -415,21 +431,49 @@ def credit_band_for(probability: float) -> dict:
     return bands[-1] if p >= bands[-1]["min"] else bands[0]
 
 
+# A product's category, as the pipeline already understands it, mapped onto the
+# flow whose journey that product follows.
+_CATEGORY_TO_FLOW = {
+    "loan": "asset",        # credit facilities take the full credit journey
+    "account": "liability", # CASA and deposits: Initiation -> Opening
+    "deposit": "liability",
+    "insurance": "insurance",
+}
+
+
 def flow_for_deal(deal: dict) -> str:
     """Which configured flow this deal follows.
 
-    Prefers the per-product flow resolution the pipeline already uses, so this
-    module never invents a second answer to a question already settled.
+    Classifies by PRODUCT via utils.core.get_pipeline_category - the mapper the
+    pipeline already uses - rather than by a class field the deals do not carry.
+    Reading a missing field was landing every deal in "other", so loans were
+    being shown the four-step account journey instead of the credit journey.
+
+    The bank's focus is loans disbursed and deposits mobilised, so those two
+    must classify correctly even when a deal is sparsely filled; everything else
+    falls to "other", which is the light-touch journey by design.
     """
-    try:
-        from utils.core import _stage_flow_for
-        f = _stage_flow_for(deal)
-        if isinstance(f, str) and f:
-            return f
-    except Exception:
-        pass
-    cls = str(deal.get("deal_class") or deal.get("product_class")
-              or deal.get("category") or "").strip().lower()
+    for key in ("product", "product_type", "deal_type", "deal_category", "category"):
+        raw = str(deal.get(key) or "").strip()
+        if not raw:
+            continue
+        try:
+            from utils.core import get_pipeline_category
+            cat = str(get_pipeline_category(raw) or "").strip().lower()
+        except Exception:
+            cat = ""
+        flow = _CATEGORY_TO_FLOW.get(cat)
+        if flow and flow in stage_flows():
+            return flow
+        low = raw.lower()
+        if any(w in low for w in ("loan", "credit", "overdraft", "finance", "mortgage")):
+            return "asset"
+        if any(w in low for w in ("deposit", "casa", "account", "savings", "current")):
+            return "liability"
+        if "insur" in low or "bancass" in low:
+            return "insurance"
+
+    cls = str(deal.get("deal_class") or deal.get("product_class") or "").strip().lower()
     return cls if cls in stage_flows() else "other"
 
 
