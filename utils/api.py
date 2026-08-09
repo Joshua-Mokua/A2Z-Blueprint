@@ -10196,6 +10196,73 @@ app.include_router(credit_admin_router)
 # v10.530 Phase 5 Batch gamma1 -- CBS lookup routes
 from utils.api_cbs_routes import router as cbs_router
 app.include_router(cbs_router)
+@app.get("/api/pipeline/referrals/bench")
+def pipeline_referral_bench(user: dict = Depends(get_current_user)):
+    """The referral bench: what is waiting on ME, and what I sent that is still
+    unactioned.
+
+    The second list is the point. Today a referrer sends a referral and hears
+    nothing - there is no screen that says "three people have been sitting on
+    yours". Referrals do not expire (ruling 2026-08-09); they escalate, so an
+    overdue one carries the ladder of people to lean on.
+    """
+    from utils.staff_code import canon as _canon_b
+    from utils.referral_escalation import clock_for, referred_at_of
+
+    # _resolve_actor is defined later in this module but resolved at CALL time,
+    # so a direct call is correct and a globals() guard would only mask a real
+    # failure by silently yielding an empty staff code - which would return an
+    # empty bench that looks like "nothing waiting on you".
+    actor_code, _actor_name, _priv = _resolve_actor(user)
+    my = _canon_b(actor_code or "")
+    if not my:
+        raise HTTPException(status_code=400,
+                            detail="Your staff identity could not be resolved.")
+    deals = _acquire_scoped_deals(user)
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _row(d):
+        c = clock_for(d)
+        return {
+            "deal_id": str(d.get("id") or ""),
+            "client": str(d.get("client_name") or d.get("client_cif") or ""),
+            "product": str(d.get("product") or d.get("deal_category") or ""),
+            "value": _val(d),
+            "from_code": str(d.get("referred_by_code") or ""),
+            "from_name": str(d.get("referred_by") or d.get("referred_by_name") or ""),
+            "to_code": str(d.get("referred_to_code") or ""),
+            "to_name": str(d.get("referred_to") or ""),
+            "sent_at": referred_at_of(d),
+            "clock": c,
+        }
+
+    referrals = [d for d in deals if d.get("is_referral")]
+    pending = [d for d in referrals
+               if str(d.get("referral_status") or "") == "pending"]
+
+    incoming = [_row(d) for d in pending
+                if _canon_b(d.get("referred_to_code")) == my]
+    outgoing = [_row(d) for d in pending
+                if _canon_b(d.get("referred_by_code")) == my]
+
+    # Oldest first: the one nobody has touched is the one that needs a name
+    # attached to it.
+    incoming.sort(key=lambda r: r["sent_at"])
+    outgoing.sort(key=lambda r: r["sent_at"])
+
+    return {
+        "incoming": incoming,
+        "outgoing": outgoing,
+        "incoming_overdue": sum(1 for r in incoming if r["clock"]["status"] == "overdue"),
+        "outgoing_overdue": sum(1 for r in outgoing if r["clock"]["status"] == "overdue"),
+    }
+
+
 @app.get("/api/pipeline/leaderboard")
 def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
                          level: str = "staff", origin: str = "all",
