@@ -23,6 +23,7 @@ import {
   fetchBranchLogAnalytics, fetchBranchLogLeaderboard,
   type BranchLogAnalytics, type Leaderboard,
 } from '@/lib/api';
+import { periods, findPeriod, periodArgs, DEFAULT_PERIOD_KEY } from '@/lib/period';
 
 // Brand palette. High is primary blue, medium the deep blue, low grey — so the
 // eye reads importance by saturation rather than by hue alone.
@@ -41,7 +42,7 @@ function pct(n: number, total: number): string {
 
 export default function DailyLogAnalytics() {
   const { toast } = useToast();
-  const [days, setDays] = useState(30);
+  const [periodKey, setPeriodKey] = useState(DEFAULT_PERIOD_KEY);
   const [data, setData] = useState<BranchLogAnalytics | null>(null);
   // Met vs not met per unit, cumulative over the window. Sourced from the
   // leaderboard so the analytics and the ranking cannot report different
@@ -52,8 +53,10 @@ export default function DailyLogAnalytics() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await fetchBranchLogAnalytics(days));
-      try { setByUnit(await fetchBranchLogLeaderboard({ days, level: 'unit' })); }
+      const p = findPeriod(periodKey);
+      const a = periodArgs(p);
+      setData(await fetchBranchLogAnalytics(a.days ?? 0, '', a.start ?? '', a.end ?? ''));
+      try { setByUnit(await fetchBranchLogLeaderboard({ ...a, level: 'unit' })); }
       catch { setByUnit(null); }
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not load analytics.' });
@@ -61,7 +64,7 @@ export default function DailyLogAnalytics() {
     } finally {
       setLoading(false);
     }
-  }, [days, toast]);
+  }, [periodKey, toast]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -109,15 +112,15 @@ export default function DailyLogAnalytics() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-semibold text-gray-900">
-                Impact analysis — where the output comes from
+                Index analytics — where the output comes from
               </h2>
               <p className="mt-0.5 text-xs text-gray-500">
                 Index contribution by impact tier. Tiers are assigned in Index Setup.
               </p>
             </div>
-            <select value={days} onChange={(e) => setDays(Number(e.target.value))}
+            <select value={periodKey} onChange={(e) => setPeriodKey(e.target.value)}
                     className="rounded border border-gray-200 px-2 py-1 text-xs">
-              {[7, 14, 30, 60, 90].map((d) => <option key={d} value={d}>last {d} days</option>)}
+              {periods().map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
             </select>
           </div>
         </Card.Header>
@@ -227,7 +230,7 @@ export default function DailyLogAnalytics() {
 
               <div>
                 <div className="mb-1 text-xs font-semibold text-gray-600">
-                  By unit — cumulative over {days} days
+                  By unit — cumulative over {findPeriod(periodKey).label.toLowerCase()}
                 </div>
                 <ResponsiveContainer width="100%" height={Math.max(180, (byUnit.rows.length || 1) * 26)}>
                   <BarChart

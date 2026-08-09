@@ -17,6 +17,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card } from '@/components/Card';
 import { useToast } from '@/components/Toast';
 import { fetchBranchLogLeaderboard, type Leaderboard, type LeaderboardRow } from '@/lib/api';
+import { periods, findPeriod, periodArgs, DEFAULT_PERIOD_KEY } from '@/lib/period';
 
 type Level = 'unit' | 'branch' | 'role' | 'staff';
 
@@ -40,7 +41,7 @@ function bar(pct: number): string {
 export default function Leaderboard() {
   const { toast } = useToast();
   const [level, setLevel] = useState<Level>('branch');
-  const [days, setDays] = useState(30);
+  const [periodKey, setPeriodKey] = useState(DEFAULT_PERIOD_KEY);
   const [unit, setUnit] = useState('');
   const [branch, setBranch] = useState('');
   const [role, setRole] = useState('');
@@ -55,17 +56,19 @@ export default function Leaderboard() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await fetchBranchLogLeaderboard({ days, level, unit, branch, role }));
+      setData(await fetchBranchLogLeaderboard({
+        ...periodArgs(findPeriod(periodKey)), level, unit, branch, role,
+      }));
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not load the ranking.' });
       setData(null);
     } finally {
       setLoading(false);
     }
-  }, [days, level, unit, branch, role, toast]);
+  }, [periodKey, level, unit, branch, role, toast]);
 
   useEffect(() => { void load(); }, [load]);
-  useEffect(() => { setOpenRow(''); setDrill(null); }, [level, days, unit, branch, role]);
+  useEffect(() => { setOpenRow(''); setDrill(null); }, [level, periodKey, unit, branch, role]);
 
   async function expand(r: LeaderboardRow) {
     const key = String(r.name || r.staff_code || '');
@@ -79,7 +82,7 @@ export default function Leaderboard() {
         : level === 'branch' ? { branch: key }
         : { role: key };
       const r2 = await fetchBranchLogLeaderboard({
-        days, level: 'staff', unit, branch, role, ...extra,
+        ...periodArgs(findPeriod(periodKey)), level: 'staff', unit, branch, role, ...extra,
       });
       setDrill(r2.rows);
     } catch (e) {
@@ -117,9 +120,9 @@ export default function Leaderboard() {
                 {l.label}
               </button>
             ))}
-            <select value={days} onChange={(e) => setDays(Number(e.target.value))}
+            <select value={periodKey} onChange={(e) => setPeriodKey(e.target.value)}
                     className="ml-2 rounded border border-gray-200 px-2 py-1 text-xs">
-              {[7, 14, 30, 60, 90].map((d) => <option key={d} value={d}>last {d} days</option>)}
+              {periods().map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
             </select>
           </div>
         </div>

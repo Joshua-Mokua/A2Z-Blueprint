@@ -848,9 +848,12 @@ export interface Leaderboard {
 }
 export async function fetchBranchLogLeaderboard(opts: {
   days?: number; level?: string; role?: string; branch?: string; unit?: string;
+  start?: string; end?: string;
 } = {}): Promise<Leaderboard> {
   const q = new URLSearchParams();
   if (opts.days) q.set('days', String(opts.days));
+  if (opts.start) q.set('start', opts.start);
+  if (opts.end) q.set('end', opts.end);
   if (opts.level) q.set('level', opts.level);
   if (opts.role) q.set('role', opts.role);
   if (opts.branch) q.set('branch', opts.branch);
@@ -897,8 +900,15 @@ export interface BranchLogAnalytics {
   totals: { logs: number; submitters: number; validated: number; auto_submitted: number;
             returned: number; pending: number; validation_rate: number };
 }
-export async function fetchBranchLogAnalytics(days = 30, unit = ''): Promise<BranchLogAnalytics> {
-  const q = unit ? `?days=${days}&unit=${encodeURIComponent(unit)}` : `?days=${days}`;
+export async function fetchBranchLogAnalytics(
+  days = 30, unit = '', start = '', end = '',
+): Promise<BranchLogAnalytics> {
+  const p = new URLSearchParams();
+  if (days) p.set('days', String(days));
+  if (unit) p.set('unit', unit);
+  if (start) p.set('start', start);   // calendar window (quarter / YTD)
+  if (end) p.set('end', end);
+  const q = `?${p.toString()}`;
   return getJson<BranchLogAnalytics>(`/branch-log/analytics${q}`);
 }
 

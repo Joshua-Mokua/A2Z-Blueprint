@@ -214,7 +214,7 @@ export function PipelineManagerQueues() {
         <TabBtn
           active={activeTab === 'analytics'}
           onClick={() => setActiveTab('analytics')}
-          label="Analytics"
+          label="Index analytics"
           count={0}
           loading={false}
         />

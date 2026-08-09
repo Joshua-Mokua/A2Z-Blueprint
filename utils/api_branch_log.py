@@ -1380,6 +1380,7 @@ def branch_log_cf_reset(payload: dict = Body(default_factory=dict),
 @router.get("/leaderboard")
 def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
                            branch: str = "", unit: str = "",
+                           start: str = "", end: str = "",
                            user: dict = Depends(get_current_user)):
     """Cumulative ranking, drillable: staff -> role -> branch -> unit.
 
@@ -1435,9 +1436,18 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
     except Exception:
         unit_for_role = lambda _r: ""      # noqa: E731
 
+    # A rolling window (days) or an EXPLICIT one (start/end). Quarters and
+    # year-to-date are fixed calendar windows, not "the last N days", so they
+    # cannot be expressed as a day count without drifting as the year advances.
     blm = BranchLogManager()
-    logs = [l for l in blm.get_history(days=days)
-            if _canon_l(l.get("staff_code")) in visible]
+    if start or end:
+        lo = str(start or "0000-01-01")[:10]
+        hi = str(end or "9999-12-31")[:10]
+        pool = [l for l in blm.get_history(days=400)
+                if lo <= str(l.get("log_date"))[:10] <= hi]
+    else:
+        pool = blm.get_history(days=days)
+    logs = [l for l in pool if _canon_l(l.get("staff_code")) in visible]
 
     # Per-staff cumulative: index actually achieved, target that applied, and
     # the closing carried-forward balance from the same read-time engine the
@@ -1527,7 +1537,7 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
     met_total = sum(int(p.get("met_days") or 0) for p in people)
     scored_total = sum(int(p.get("scored_days") or 0) for p in people)
     return {
-        "level": level, "days": days, "rows": rows,
+        "level": level, "days": days, "start": start, "end": end, "rows": rows,
         "total_index": total_index,
         "met_days": met_total, "scored_days": scored_total,
         "met_rate": round(met_total / scored_total * 100, 1) if scored_total else 0.0,
@@ -1540,7 +1550,9 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
 
 
 @router.get("/analytics")
-def branch_log_analytics(days: int = 30, unit: str = "", user: dict = Depends(get_current_user)):
+def branch_log_analytics(days: int = 30, unit: str = "",
+                         start: str = "", end: str = "",
+                         user: dict = Depends(get_current_user)):
     """Daily-log analytics, scope-aware. Includes the 80/20 impact-tier breakdown (for the pie),
     validation split, and totals. Admin sees all; manager sees subtree; else self."""
     from utils.branch_log_analytics import impact_breakdown, high_impact_keys
@@ -1551,7 +1563,13 @@ def branch_log_analytics(days: int = 30, unit: str = "", user: dict = Depends(ge
         run_maintenance(blm)
     except Exception:
         pass
-    logs = blm.get_history(days=days)
+    if start or end:
+        _lo = str(start or "0000-01-01")[:10]
+        _hi = str(end or "9999-12-31")[:10]
+        logs = [l for l in blm.get_history(days=400)
+                if _lo <= str(l.get("log_date"))[:10] <= _hi]
+    else:
+        logs = blm.get_history(days=days)
     if unit and unit != "All":
         logs = [l for l in logs if str(l.get("unit", "")) == unit]
 
