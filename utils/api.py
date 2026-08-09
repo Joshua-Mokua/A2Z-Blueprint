@@ -3587,10 +3587,33 @@ def pipeline_submit_to_credit(
 # to JSON-first as an emergency patch when the sync was best-effort.)
 _PIPELINE_READ_DB_FIRST = True
 
+# RULING 2026-08-09: "the stages should not be hardcoded". This map knew SIX
+# stages, so a deal at Application, Credit Assessment or Offer / Proposal
+# contributed ZERO weighted value - silently, in every headline figure. It is
+# kept ONLY as the last-resort fallback for a deal whose flow cannot be
+# resolved, and nothing reads it directly any more.
 _STAGE_WEIGHTS = {
     "Lead": 0.05, "Contacted": 0.10, "Qualified": 0.25, "Proposal": 0.40,
     "Negotiation": 0.60, "Compliance": 0.80, "Closed Won": 1.0, "Closed Lost": 0.0,
 }
+
+
+def _deal_probability(d: dict) -> float:
+    """Win probability for a deal, PER STAGE WITHIN ITS FLOW, from admin config.
+
+    One model, used by the funnel and by every weighted figure, so the two can
+    never disagree about the same deal. Falls back to the legacy map only when
+    the flow cannot be resolved at all - and even then never returns a silent
+    zero for a stage the bank has configured.
+    """
+    try:
+        from utils.pipeline_funnel import flow_for_deal, probability_for
+        p = probability_for(flow_for_deal(d), str(d.get("stage") or ""))
+        if p:
+            return float(p)
+    except Exception:
+        pass
+    return float(_STAGE_WEIGHTS.get(d.get("stage"), 0) or 0)
 
 
 def _deal_value(d: dict) -> float:
@@ -4129,7 +4152,7 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
 
     total_value = sum(_deal_value(d) for d in validated_active)        # assured
     pending_value = sum(_deal_value(d) for d in pending_active)        # pending assurance
-    weighted_value = sum(_deal_value(d) * _STAGE_WEIGHTS.get(d.get("stage"), 0)
+    weighted_value = sum(_deal_value(d) * _deal_probability(d)
                          for d in validated_active)
     won_value = sum(_deal_value(d) for d in won)
     win_rate = (round(len(won) / (len(won) + len(lost)) * 100, 1)
@@ -4171,7 +4194,7 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
             "count": len(cdeals),
             "active_count": len(c_active),
             "value": sum(_deal_value(d) for d in c_active),
-            "weighted": sum(_deal_value(d) * _STAGE_WEIGHTS.get(d.get("stage"), 0)
+            "weighted": sum(_deal_value(d) * _deal_probability(d)
                             for d in cdeals),
             "funnel": c_funnel,
         })
@@ -4197,7 +4220,7 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
         return {
             "value": sum(_deal_value(d) for d in val_act),        # assured headline
             "pending_value": sum(_deal_value(d) for d in pend_act),  # pending assurance
-            "weighted": sum(_deal_value(d) * _STAGE_WEIGHTS.get(d.get("stage"), 0)
+            "weighted": sum(_deal_value(d) * _deal_probability(d)
                             for d in val_act),
             "active_count": len(val_act),
             "pending_count": len(pend_act),
