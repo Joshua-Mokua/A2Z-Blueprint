@@ -42,13 +42,15 @@ import { PageHeader } from '@/components/PageHeader';
 import DailyLogValidation from '@/components/DailyLogValidation';
 import BranchCountersign from '@/components/BranchCountersign';
 import UnitRollup from '@/components/UnitRollup';
+import Leaderboard from '@/components/Leaderboard';
+import DailyLogAnalytics from '@/components/DailyLogAnalytics';
 import { fetchUnitDays } from '@/lib/api';
 import {
   stageTone, type PipelineDeal,
 } from '@/types/pipeline';
 
 
-type TabKey = 'validation' | 'cancellation' | 'dailylog';
+type TabKey = 'validation' | 'cancellation' | 'dailylog' | 'ranking' | 'analytics';
 
 
 // ── Page component ──────────────────────────────────────────────────────
@@ -227,6 +229,20 @@ export function PipelineManagerQueues() {
           count={cancellationDeals.length}
           loading={loadingC}
         />
+        <TabBtn
+          active={activeTab === 'ranking'}
+          onClick={() => setActiveTab('ranking')}
+          label="Ranking"
+          count={0}
+          loading={false}
+        />
+        <TabBtn
+          active={activeTab === 'analytics'}
+          onClick={() => setActiveTab('analytics')}
+          label="Analytics"
+          count={0}
+          loading={false}
+        />
         <div className="flex-1" />
         <Button
           variant="ghost"
@@ -254,8 +270,15 @@ export function PipelineManagerQueues() {
         <DailyLogValidation onCount={setDailyLogPending} />
       )}
 
+      {/* Ranking and analytics live here too: a manager works out of this page,
+          and making them navigate elsewhere to see how their team is doing
+          splits one job across two screens. Both components are scope-aware
+          server-side, so each manager sees their own population. */}
+      {activeTab === 'ranking' && <div className="mt-4"><Leaderboard /></div>}
+      {activeTab === 'analytics' && <DailyLogAnalytics />}
+
       {/* Error panel */}
-      {activeTab !== 'dailylog' && activeError && (
+      {!['dailylog', 'ranking', 'analytics'].includes(activeTab) && activeError && (
         <Card className="mt-4">
           <Card.Body>
             <div className="flex items-center gap-3">
@@ -270,7 +293,7 @@ export function PipelineManagerQueues() {
       )}
 
       {/* Empty / loading / content */}
-      {activeTab === 'dailylog' ? null : activeLoading && activeDeals.length === 0 ? (
+      {['dailylog', 'ranking', 'analytics'].includes(activeTab) ? null : activeLoading && activeDeals.length === 0 ? (
         <Card className="mt-4">
           <Card.Body>
             <Skeleton shape="line" className="w-1/3" />
