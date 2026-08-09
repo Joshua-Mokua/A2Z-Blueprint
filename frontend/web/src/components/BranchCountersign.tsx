@@ -111,9 +111,6 @@ export default function BranchCountersign({ onCount }: { onCount?: (n: number) =
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Branch validation</h2>
-            <p className="mt-0.5 text-xs text-gray-500">
-              You countersign the branch day. Branch managers validate their own staff.
-            </p>
           </div>
           <div className="flex items-center gap-2 text-xs">
             <label className="text-gray-500">Day</label>
@@ -321,11 +318,6 @@ export default function BranchCountersign({ onCount }: { onCount?: (n: number) =
                 </tbody>
               </table>
             </div>
-            <p className="mt-2 text-[11px] text-gray-500">
-              Three or more days is past the return window — those logs lock and
-              need an admin unlock. Branch managers record the reason; excused
-              staff do not appear here.
-            </p>
           </div>
         )}
       </Card.Body>

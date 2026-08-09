@@ -21,12 +21,12 @@ import { periods, findPeriod, periodArgs, DEFAULT_PERIOD_KEY } from '@/lib/perio
 
 type Level = 'unit' | 'segment' | 'branch' | 'role' | 'staff';
 
-const LEVELS: { key: Level; label: string; hint: string }[] = [
-  { key: 'unit',    label: 'Units',       hint: 'Everything beneath each MD-reporting unit' },
-  { key: 'segment', label: 'Segments',    hint: 'Consumer, Commercial and Operations — the split that means something at a branch' },
-  { key: 'branch',  label: 'Branches',    hint: 'The 16 branches and Head Office' },
-  { key: 'role',    label: 'Roles',       hint: 'Averaged per on-duty day, so a big role cannot win on size' },
-  { key: 'staff',   label: 'Individuals', hint: 'Ranked on the average per day on duty, not the total' },
+const LEVELS: { key: Level; label: string }[] = [
+  { key: 'unit',    label: 'Units' },
+  { key: 'segment', label: 'Segments' },
+  { key: 'branch',  label: 'Branches' },
+  { key: 'role',    label: 'Roles' },
+  { key: 'staff',   label: 'Individuals' },
 ];
 
 // Medal tint for the top three, brand palette only.
@@ -126,9 +126,6 @@ export default function Leaderboard() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Cumulative ranking</h2>
-            <p className="mt-0.5 text-xs text-gray-500">
-              {LEVELS.find((l) => l.key === level)?.hint}
-            </p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             {LEVELS.map((l) => (

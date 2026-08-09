@@ -86,9 +86,6 @@ export default function DefinedFunnel({ onStageClick }: DefinedFunnelProps = {})
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Pipeline journey</h2>
-            <p className="mt-0.5 text-xs text-gray-500">
-              Each product's defined stages, in the order the bank configured them.
-            </p>
           </div>
         </div>
       </Card.Header>

@@ -175,10 +175,6 @@ export default function UnitRollup({ onCount }: { onCount?: (n: number) => void 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Daily log — consolidated</h2>
-            <p className="mt-0.5 text-xs text-gray-500">
-              Branches are countersigned by the Head of Branches and units by their Director.
-              You observe, and may return a day for amendment.
-            </p>
           </div>
           <div className="flex items-center gap-2 text-xs">
             <label className="text-gray-500">Day</label>
@@ -395,10 +391,6 @@ export default function UnitRollup({ onCount }: { onCount?: (n: number) => void 
                 </tbody>
               </table>
             </div>
-            <p className="mt-2 text-[11px] text-gray-500">
-              Three or more days is past the return window — those logs lock and need an
-              admin unlock. Staff excused for leave, sickness or training do not appear.
-            </p>
           </div>
         )}
       </Card.Body>

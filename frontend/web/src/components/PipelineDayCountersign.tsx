@@ -31,7 +31,7 @@ function todayIso(): string {
 
 function kes(n: number): string {
   if (!n) return '—';
-  return String(Math.round(n));
+  return Math.round(n).toLocaleString();
 }
 
 export default function PipelineDayCountersign({ onCount }: { onCount?: (n: number) => void }) {
@@ -107,11 +107,6 @@ export default function PipelineDayCountersign({ onCount }: { onCount?: (n: numb
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Pipeline day — branches</h2>
-            <p className="mt-0.5 text-xs text-gray-500">
-              {data?.top_of_house
-                ? 'You observe these and may return a day for amendment.'
-                : 'You countersign the branch pipeline day once its deals are validated.'}
-            </p>
           </div>
           <div className="flex items-center gap-2 text-xs">
             <label className="text-gray-500">Day</label>

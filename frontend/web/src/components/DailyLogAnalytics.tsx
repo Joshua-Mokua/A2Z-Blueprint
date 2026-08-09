@@ -120,9 +120,6 @@ export default function DailyLogAnalytics() {
               <h2 className="text-base font-semibold text-gray-900">
                 Index analytics — where the output comes from
               </h2>
-              <p className="mt-0.5 text-xs text-gray-500">
-                Index contribution by impact tier. Tiers are assigned in Index Setup.
-              </p>
             </div>
             <select value={periodKey} onChange={(e) => setPeriodKey(e.target.value)}
                     className="rounded border border-gray-200 px-2 py-1 text-xs">
@@ -163,9 +160,6 @@ export default function DailyLogAnalytics() {
                   <div className="text-2xl font-semibold text-[#0082BB]">
                     {Math.round(highPct)}%
                   </div>
-                  <div className="text-xs text-gray-500">
-                    of the index comes from high-impact activity
-                  </div>
                 </div>
               </div>
 
@@ -201,9 +195,6 @@ export default function DailyLogAnalytics() {
             <h2 className="text-base font-semibold text-gray-900">
               Daily target — met vs not met
             </h2>
-            <span className="text-xs text-gray-500">
-              Person-days that carried a target. Rest days and excused days are excluded.
-            </span>
           </div>
         </Card.Header>
         <Card.Body>
@@ -353,11 +344,6 @@ export default function DailyLogAnalytics() {
                 ))}
               </div>
             )}
-            <p className="mt-3 text-[11px] text-gray-400">
-              Auto-submitted logs were swept at the 09:00 deadline with whatever had been
-              autosaved — a high count here usually means people are not closing their day,
-              not that they did nothing.
-            </p>
           </Card.Body>
         </Card>
       </div>

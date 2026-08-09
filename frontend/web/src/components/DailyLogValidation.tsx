@@ -137,13 +137,6 @@ export default function DailyLogValidation({ onCount }: { onCount?: (n: number) 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Daily log validation</h2>
-            <p className="mt-0.5 text-xs text-gray-500">
-              {q?.mode === 'triad'
-                ? 'You are one of the branch management triad for these staff.'
-                : q?.mode === 'line_manager'
-                  ? 'You are the line manager for these staff.'
-                  : 'Staff whose daily logs you may validate.'}
-            </p>
           </div>
           <div className="flex items-center gap-2 text-xs">
             <label className="text-gray-500">Day</label>
