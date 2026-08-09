@@ -26,38 +26,73 @@ nothing reconciling the two. Everything below rests on closing that gap.
 | referral sent | nothing | an unaccepted referral is an intention, not an outcome |
 | accepted | **credited** | the receiving officer has taken the work on |
 | returned | nothing | it was not fit to pursue |
-| expired unactioned (>24h) | nothing | see the escalation below |
+| still unactioned (>24 working hours) | nothing yet | escalates; credit follows whenever the decision lands |
 
 **Which day does the credit land on?** The **day the referral was sent**, not the
-day it was accepted. The work happened that day, and the carried-forward engine
-recomputes at read time, so a credit arriving a few hours later simply heals the
-original day — no correcting entry, no retroactive surprise.
+day it was accepted. The work happened that day.
 
-That only holds because the acceptance window is 24 hours: the credit always
-lands well inside the three-business-day lock. If the window were ever widened
-past the lock, this rule breaks and the credit would have to land on the
-acceptance date instead. Worth remembering if the window is ever revisited.
+Because referrals escalate rather than expire, that decision may arrive long
+after the day has locked — so the credit is **derived at read time**, never
+written. See section 3.
 
-**Automatic, not typed.** Once credit is automatic, `loans_referred` should stop
-being a manual field for referrals routed through the system — otherwise the
-same referral can be counted twice, by hand and by machine. Manual entry stays
-only for referrals made outside the system.
+**Automatic, not typed.** RULING (2026-08-09): the referral field on the daily
+log becomes **uneditable**, because it is auto-derived. Otherwise the same
+referral is counted twice — once by hand, once by machine.
+
+Two halves, and neither works alone:
+
+* the Day Planner renders it as a computed chip, not an input
+* **the submit endpoint ignores any posted value for an auto field** — read-only
+  in the UI alone is not enforcement, since a crafted request would still write
+
+Implemented as an `auto: true` flag in the field schema, alongside `type` and
+`weight`, rather than a hardcoded exception for this one key — so the next
+auto-derived metric needs no new code.
+
+SEQUENCING MATTERS: the field can only go read-only AFTER the auto-credit works,
+or staff simply lose the ability to record referrals at all.
 
 ---
 
-## 3. The 24-hour clock
+## 3. The 24-hour clock — and escalation, not expiry
 
-Acceptance or return is due within **24 hours of sending**. Two questions the
-implementation has to answer, and my proposals:
+**RULING (2026-08-09): a referral never expires for the person who referred it.
+It escalates upward until a decision is given.**
 
-* **Working hours or wall clock?** Working hours, via `workcal`. A referral sent
-  at 16:00 on Friday should not expire over a weekend the recipient was never
-  rostered for — the same reasoning that put the daily log's return window on
-  business days.
-* **What happens at expiry?** It does not silently vanish. The referral moves to
-  an `expired` state, stays on the referrer's unactioned list, and escalates to
-  the recipient's validator. Nobody is credited, and the failure is visible to
-  the person who can do something about it.
+Acceptance or return is due within **24 working hours** of sending (via
+`workcal`, so a referral sent 16:00 Friday is not overdue on Monday morning for
+a weekend nobody was rostered for). Missing that deadline does not kill the
+referral — it moves it up:
+
+    recipient
+      → their validator            (branch triad, or line manager at Head Office)
+      → up the solid line          (org_validator.unit_for_role)
+      → THE UNIT OWNER — Director  ← escalation STOPS here
+      → also visible on the consolidated view (MD / Business Manager)
+
+The Director is terminal because they can compel a decision. Escalating past
+them would relocate the silence rather than resolve it: a queue at the top that
+nobody owns is not an escalation, it is a dumping ground. The MD and Business
+Manager *see* it at that point, but ownership stays with the Director.
+
+The ladder reuses the existing tree — `unit_for_role` and the reporting
+hierarchy — so it needs no new structure and follows any change to `org_config`.
+
+### The consequence this creates
+
+No expiry means **a decision can arrive after the referral's day has locked**.
+A referral escalating for three days is decided when day 2 is already sealed, so
+a credit *written into* that log would be impossible.
+
+**So it is not written.** The referral credit is DERIVED AT READ TIME from the
+referral's accepted state, exactly as `carried_forward` already derives variance.
+The lock prevents editing; it has no bearing on a figure that is computed rather
+than stored. A decision on day 9 simply heals day 2's index the next time anyone
+reads it — no unlock, no correcting entry, no retroactive surprise.
+
+This is more robust than crediting on write, and it falls straight out of the
+no-expiry ruling: the arithmetic carries no deadline pressure, only the person
+does.
 
 ---
 
@@ -157,7 +192,10 @@ RF1 first because the credit rule decides what every later screen is counting.
 
 ## Open
 
-1. Referral expiry — working hours or wall clock? (proposed: working hours)
-2. Warehouse — first claim wins, or multiple pursuers? (proposed: first wins)
-3. Warehouse shelves — is product family the right axis, or should it be
+1. Warehouse — first claim wins, or multiple pursuers? (proposed: first wins)
+2. Warehouse shelves — is product family the right axis, or should it be
    industry, or geography?
+
+Settled 2026-08-09: credit on acceptance only; referrals escalate rather than
+expire, stopping at the Director; the daily-log referral field becomes
+uneditable; referral clocks run on working hours.
