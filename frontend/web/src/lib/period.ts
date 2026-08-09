@@ -41,11 +41,11 @@ export function periods(now = new Date()): Period[] {
   const thisQ = Math.floor(now.getMonth() / 3) + 1;
 
   const out: Period[] = [
+    { key: 'ytd', label: `Year to date (${year})`, kind: 'calendar',
+      start: `${year}-01-01`, end: iso(now) },
     { key: '7', label: 'Last 7 days', kind: 'rolling', days: 7 },
     { key: '30', label: 'Last 30 days', kind: 'rolling', days: 30 },
     { key: '90', label: 'Last 90 days', kind: 'rolling', days: 90 },
-    { key: 'ytd', label: `Year to date (${year})`, kind: 'calendar',
-      start: `${year}-01-01`, end: iso(now) },
   ];
 
   // Quarters that have started. A quarter nobody has reached yet is noise in a
@@ -61,11 +61,18 @@ export function periods(now = new Date()): Period[] {
   return out;
 }
 
-export const DEFAULT_PERIOD_KEY = '30';
+// RULING 2026-08-09: year to date is the default everywhere. A rolling 30-day
+// window answers "how are we doing lately"; the bank reports on the year, so
+// that is what a page should open on.
+export const DEFAULT_PERIOD_KEY = 'ytd';
 
 export function findPeriod(key: string, now = new Date()): Period {
   const all = periods(now);
-  return all.find((p) => p.key === key) ?? all[1];
+  // Fall back to the DEFAULT, not to a positional index: all[1] was "last 30
+  // days", so an unknown key silently ignored the default.
+  return all.find((p) => p.key === key)
+    ?? all.find((p) => p.key === DEFAULT_PERIOD_KEY)
+    ?? all[0];
 }
 
 /** The query arguments this period implies — days, or an explicit window. */
