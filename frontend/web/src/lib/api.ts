@@ -829,6 +829,28 @@ export async function decidePipelineDay(
     '/pipeline-validation/days/validate', { branch, date, approved, note });
 }
 
+// ── Defined funnel (journey from admin config + credit side layer) ────────
+export interface DefinedStage {
+  stage: string; count: number; value: number;
+  probability: number; weighted: number; credit_band: string;
+}
+export interface DefinedFlow {
+  flow: string; stages: DefinedStage[];
+  deals: number; value: number; weighted: number;
+}
+export interface CreditBandTally {
+  label: string; count: number; value: number; min: number; max: number;
+}
+export interface DefinedFunnel {
+  flows: DefinedFlow[];
+  credit_layer: CreditBandTally[];
+  total_deals: number;
+  unplaced_deals: number;
+}
+export async function fetchPipelineDefinedFunnel(): Promise<DefinedFunnel> {
+  return getJson<DefinedFunnel>('/pipeline/funnel');
+}
+
 // ── Cumulative leaderboard (staff / role / branch / unit) ─────────────────
 export interface LeaderboardRow {
   rank?: number;
