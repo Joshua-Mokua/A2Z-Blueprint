@@ -10146,6 +10146,80 @@ app.include_router(credit_admin_router)
 # v10.530 Phase 5 Batch gamma1 -- CBS lookup routes
 from utils.api_cbs_routes import router as cbs_router
 app.include_router(cbs_router)
+@app.get("/api/pipeline/funnel")
+def pipeline_funnel_defined(user: dict = Depends(get_current_user)):
+    """The DEFINED journey per product flow — from admin config, not from code.
+
+    Returns every configured stage of every flow in order, including the ones
+    holding nothing: a funnel that hides its empty steps is a bar chart of
+    whatever happened to be busy, and the gap is usually the finding.
+
+    Each stage carries its win probability PER FLOW (ruling 2026-08-09) and the
+    credit band that probability implies. The band is a SIDE LAYER describing
+    where the deal probably sits inside the bank — it is not a sales stage and
+    it never filters the journey.
+
+    Scope is the caller's own: the same visible-deal rule the rest of the
+    pipeline uses, so this can never show a deal the list would hide.
+    """
+    from utils.pipeline_funnel import (
+        stage_flows, build_funnel, flow_for_deal, credit_bands, credit_band_for,
+        probability_for,
+    )
+
+    # _acquire_scoped_deals is the canonical scope read used by the pipeline
+    # list and analytics. NO try/except fallback here on purpose: a fallback to
+    # "all deals" would silently show a caller deals outside their cascade, and
+    # a scope bypass that looks like a working page is worse than an error.
+    deals = _acquire_scoped_deals(user)
+
+    grouped: dict = {}
+    for d in deals:
+        grouped.setdefault(flow_for_deal(d), []).append(d)
+
+    flows_out = []
+    for flow, seq in (stage_flows() or {}).items():
+        mine = grouped.get(flow, [])
+        stages = build_funnel(mine, flow)
+        flows_out.append({
+            "flow": flow,
+            "stages": stages,
+            "deals": len(mine),
+            "value": round(sum(float(x.get("value") or 0) for x in stages), 2),
+            "weighted": round(sum(float(x.get("weighted") or 0) for x in stages), 2),
+        })
+    flows_out.sort(key=lambda f: -f["deals"])
+
+    # The side layer, over the same population.
+    bands = credit_bands()
+    tally = {b["label"]: {"label": b["label"], "count": 0, "value": 0.0,
+                          "min": b["min"], "max": b["max"]} for b in bands}
+    unplaced = 0
+    for d in deals:
+        st = str(d.get("stage") or "").strip()
+        fl = flow_for_deal(d)
+        if st not in (stage_flows().get(fl) or []):
+            unplaced += 1          # a stage no configured flow contains
+            continue
+        p = probability_for(fl, st)
+        lab = credit_band_for(p)["label"]
+        try:
+            v = float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            v = 0.0
+        tally[lab]["count"] += 1
+        tally[lab]["value"] = round(tally[lab]["value"] + v, 2)
+
+    return {
+        "flows": flows_out,
+        "credit_layer": [tally[b["label"]] for b in bands],
+        "total_deals": len(deals),
+        # Deals sitting at a stage NO configured flow contains. Reported rather
+        # than dropped: silently vanishing deals is the defect this replaces.
+        "unplaced_deals": unplaced,
+    }
+
+
 from utils.api_branch_log import router as branch_log_router
 app.include_router(branch_log_router)
 

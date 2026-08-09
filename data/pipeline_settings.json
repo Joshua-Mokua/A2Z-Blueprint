@@ -2311,5 +2311,90 @@
     "relationship_status",
     "mou_id",
     "sector"
+  ],
+  "stage_probabilities": {
+    "asset": {
+      "Lead": 0.05,
+      "Contacted": 0.1,
+      "Qualified": 0.25,
+      "Application": 0.4,
+      "Credit Assessment": 0.55,
+      "Offer / Proposal": 0.7,
+      "Negotiation": 0.8,
+      "Compliance": 0.9,
+      "Closed Won": 1.0,
+      "Closed Lost": 0.0
+    },
+    "liability": {
+      "Lead": 0.05,
+      "Contacted": 0.15,
+      "Proposal": 0.4,
+      "Negotiation": 0.65,
+      "Documentation": 0.85,
+      "Closed Won": 1.0,
+      "Closed Lost": 0.0
+    },
+    "insurance": {
+      "Lead": 0.05,
+      "Contacted": 0.15,
+      "Proposal": 0.4,
+      "Negotiation": 0.65,
+      "Documentation": 0.85,
+      "Closed Won": 1.0,
+      "Closed Lost": 0.0
+    },
+    "other": {
+      "Lead": 0.05,
+      "Contacted": 0.15,
+      "Qualified": 0.3,
+      "Proposal": 0.5,
+      "Negotiation": 0.75,
+      "Closed Won": 1.0,
+      "Closed Lost": 0.0
+    }
+  },
+  "credit_bands": [
+    {
+      "key": "pre_credit",
+      "label": "Not yet in credit",
+      "min": 0.0,
+      "max": 0.4
+    },
+    {
+      "key": "documentation",
+      "label": "Documentation",
+      "min": 0.4,
+      "max": 0.6
+    },
+    {
+      "key": "branch_credit",
+      "label": "Branch Credit",
+      "min": 0.6,
+      "max": 0.7
+    },
+    {
+      "key": "department",
+      "label": "Department",
+      "min": 0.7,
+      "max": 0.8
+    },
+    {
+      "key": "credit_analysis",
+      "label": "Credit Analysis",
+      "min": 0.8,
+      "max": 0.9
+    },
+    {
+      "key": "credit_admin",
+      "label": "Credit Administration",
+      "min": 0.9,
+      "max": 0.95
+    },
+    {
+      "key": "trops",
+      "label": "TROPS",
+      "min": 0.95,
+      "max": 1.01
+    }
   ]
 }
