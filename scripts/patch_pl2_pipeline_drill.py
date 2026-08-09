@@ -1,4 +1,51 @@
-// PipelineLeaderboard — pipeline ranking in two levels: referral and direct.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+PL2 - the pipeline ranking drills to individuals, WITHIN their unit.
+
+RULING (2026-08-09): "the pipeline ranking does not drill down to individual
+level from the MD's view; the ranking should be showing the branch or department
+ranking for individuals within the unit, how they are doing, but not the entire
+bank - the tree allows admin and the MD's office these consolidated."
+
+WHAT WAS MISSING. The index ranking has expanded rows; the pipeline ranking did
+not. From the MD's view it stopped at units, with no way to see who inside one
+was carrying the book.
+
+WHAT THIS ADDS. Clicking a unit, branch or role row opens the INDIVIDUALS INSIDE
+IT, ranked against each other, with their own header row: rank, staff, name,
+role, deals, value, weighted, win %.
+
+THE SCOPING RULE MATTERS MORE THAN THE INTERACTION. An individual is ranked
+WITHIN their unit, not against the whole bank. A teller in Fortis and a
+corporate RM are not competing, and a flat bank-wide list of 363 people says
+nothing a manager can act on. The consolidated view remains reachable through
+the tree itself, for the MD's office and admin, which is exactly the shape the
+daily-log roll-up already uses.
+
+The endpoint needed no change: branch and unit filters were already applied
+before aggregation, so drilling a unit returns only that unit's people. Verified
+rather than assumed.
+
+Top 40 shown per expansion, with a count when there are more - the same limit
+the index ranking uses.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+REQUIRES PL1.
+
+Usage (from project root, .venv active):
+    python scripts\patch_pl2_pipeline_drill.py            # dry run
+    python scripts\patch_pl2_pipeline_drill.py --apply    # write + .pre_pl2 backup
+"""
+import os
+import shutil
+import sys
+
+COMP = os.path.join("frontend", "web", "src", "components", "PipelineLeaderboard.tsx")
+BACKUP_SUFFIX = ".pre_pl2"
+
+COMPONENT = r'''// PipelineLeaderboard — pipeline ranking in two levels: referral and direct.
 //
 // A deal's value counts once, for whoever owns it. Under "Referred" the same
 // deals are attributed to the REFERRER instead, so a referred deal is never
@@ -306,3 +353,46 @@ export default function PipelineLeaderboard() {
     </Card>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    if not os.path.isfile(COMP):
+        print("ABORT: %s not found - apply patch_pl1_pipeline_ranking.py first." % COMP)
+        return 1
+
+    cur = open(COMP, encoding="utf-8").read()
+    if "openRow" in cur:
+        print("ABORT: the drill is already present - PL2 looks applied.")
+        return 1
+
+    for token in ("openRow", "drillLoading", "expand(", "showing the top 40"):
+        if token not in COMPONENT:
+            print("ABORT: embedded component missing %r." % token)
+            return 1
+    # The drill must narrow by the row's own dimension, or it would return the
+    # whole bank and defeat the ruling.
+    if "level === 'unit' ? { unit: key }" not in COMPONENT:
+        print("ABORT: the drill does not narrow by unit - it would return the")
+        print("       entire bank rather than the people inside the row.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if COMPONENT.count(op) != COMPONENT.count(cl):
+            print("ABORT: embedded component unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  embedded component validated; drill narrows by row dimension")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    shutil.copy2(COMP, COMP + BACKUP_SUFFIX)
+    open(COMP, "w", encoding="utf-8", newline="").write(COMPONENT)
+    print("APPLIED %s  (backup: %s)" % (COMP, os.path.basename(COMP) + BACKUP_SUFFIX))
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd && echo TSC_PASSED")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
