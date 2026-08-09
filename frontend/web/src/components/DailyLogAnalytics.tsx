@@ -272,10 +272,6 @@ export default function DailyLogAnalytics() {
                     <Bar dataKey="missed" stackId="a" fill="#C4536F" radius={[0, 3, 3, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-                <p className="mt-1 text-[11px] text-gray-400">
-                  Bars are proportional, so a small unit and a large one are compared on
-                  rate rather than volume. Hover for the day counts behind each.
-                </p>
               </div>
             </div>
           )}
