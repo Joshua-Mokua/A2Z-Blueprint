@@ -909,6 +909,23 @@ export async function fetchNonSubmitters(date = ''): Promise<NonSubmitters> {
   return getJson<NonSubmitters>(
     `/branch-log/non-submitters${date ? `?date=${encodeURIComponent(date)}` : ''}`);
 }
+export interface UnitRow {
+  key: string; name: string; kind: string;            // branch | unit | rollup
+  expected: number; filed: number; validated: number; not_filed: number;
+  status: string; index: number; owner: string; over_reported: number;
+  can_countersign?: boolean;
+  count?: number; countersigned?: number;             // rollup only
+  children?: UnitRow[];
+}
+export interface UnitDays {
+  branches: UnitRow | null; units: UnitRow[];
+  date: string; working_day?: boolean; label?: string;
+  top_of_house: boolean; can_return?: boolean;
+}
+export async function fetchUnitDays(date = ''): Promise<UnitDays> {
+  return getJson<UnitDays>(
+    `/branch-log/unit-days${date ? `?date=${encodeURIComponent(date)}` : ''}`);
+}
 export async function fetchBranchDays(date = ''): Promise<BranchDays> {
   return getJson<BranchDays>(
     `/branch-log/branch-days${date ? `?date=${encodeURIComponent(date)}` : ''}`);

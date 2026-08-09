@@ -41,7 +41,8 @@ import { Skeleton } from '@/components/Skeleton';
 import { PageHeader } from '@/components/PageHeader';
 import DailyLogValidation from '@/components/DailyLogValidation';
 import BranchCountersign from '@/components/BranchCountersign';
-import { fetchBranchDays } from '@/lib/api';
+import UnitRollup from '@/components/UnitRollup';
+import { fetchUnitDays } from '@/lib/api';
 import {
   stageTone, type PipelineDeal,
 } from '@/types/pipeline';
@@ -75,7 +76,9 @@ export function PipelineManagerQueues() {
   // Tier 2 (Head of Branches, MD) countersigns BRANCHES; everyone else
   // validates individuals. Decided by asking the server what this caller
   // oversees rather than by inspecting their role string here.
-  const [tier2, setTier2] = useState<boolean | null>(null);
+  // 'staff' = validates individuals, 'branch' = countersigns branches,
+  // 'rollup' = MD / Business Manager, observes and may return.
+  const [tier, setTier] = useState<'staff' | 'branch' | 'rollup' | null>(null);
 
   // ── Fetchers ─────────────────────────────────────────────────────────
 
@@ -117,10 +120,16 @@ export function PipelineManagerQueues() {
     let alive = true;
     void (async () => {
       try {
-        const r = await fetchBranchDays();
-        if (alive) setTier2((r.rows?.length ?? 0) > 0);
+        // One probe. /unit-days answers both questions: top_of_house marks the
+        // observation tier, and a Branches node means this caller countersigns
+        // branches. Asking the server beats inspecting a role string here.
+        const r = await fetchUnitDays();
+        if (!alive) return;
+        if (r.top_of_house) setTier('rollup');
+        else if ((r.branches?.children?.length ?? 0) > 0) setTier('branch');
+        else setTier('staff');
       } catch {
-        if (alive) setTier2(false);
+        if (alive) setTier('staff');
       }
     })();
     return () => { alive = false; };
@@ -230,15 +239,18 @@ export function PipelineManagerQueues() {
       </div>
 
       {/* Daily-log validation owns its own loading, empty and error states. */}
-      {activeTab === 'dailylog' && tier2 === null && (
+      {activeTab === 'dailylog' && tier === null && (
         <Card className="mt-4"><Card.Body>
           <div className="text-sm text-gray-400">Loading…</div>
         </Card.Body></Card>
       )}
-      {activeTab === 'dailylog' && tier2 === true && (
+      {activeTab === 'dailylog' && tier === 'rollup' && (
+        <UnitRollup onCount={setDailyLogPending} />
+      )}
+      {activeTab === 'dailylog' && tier === 'branch' && (
         <BranchCountersign onCount={setDailyLogPending} />
       )}
-      {activeTab === 'dailylog' && tier2 === false && (
+      {activeTab === 'dailylog' && tier === 'staff' && (
         <DailyLogValidation onCount={setDailyLogPending} />
       )}
 
