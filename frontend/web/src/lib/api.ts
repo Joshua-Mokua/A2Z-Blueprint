@@ -790,10 +790,12 @@ export interface LeaderboardRow {
   index: number; target: number; achievement?: number;
   headcount?: number; index_per_head?: number;
   days_filed: number; validated: number; cf_variance?: number;
+  met_days?: number; scored_days?: number; met_rate?: number;
 }
 export interface Leaderboard {
   level: string; days: number; rows: LeaderboardRow[];
   total_index: number; total_headcount: number;
+  met_days?: number; scored_days?: number; met_rate?: number;
   filters: { role: string; branch: string; unit: string };
   roles: string[]; branches: string[]; units: string[];
 }

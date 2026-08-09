@@ -19,7 +19,10 @@ import {
 } from 'recharts';
 import { Card } from '@/components/Card';
 import { useToast } from '@/components/Toast';
-import { fetchBranchLogAnalytics, type BranchLogAnalytics } from '@/lib/api';
+import {
+  fetchBranchLogAnalytics, fetchBranchLogLeaderboard,
+  type BranchLogAnalytics, type Leaderboard,
+} from '@/lib/api';
 
 // Brand palette. High is primary blue, medium the deep blue, low grey — so the
 // eye reads importance by saturation rather than by hue alone.
@@ -40,12 +43,18 @@ export default function DailyLogAnalytics() {
   const { toast } = useToast();
   const [days, setDays] = useState(30);
   const [data, setData] = useState<BranchLogAnalytics | null>(null);
+  // Met vs not met per unit, cumulative over the window. Sourced from the
+  // leaderboard so the analytics and the ranking cannot report different
+  // achievement for the same population.
+  const [byUnit, setByUnit] = useState<Leaderboard | null>(null);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       setData(await fetchBranchLogAnalytics(days));
+      try { setByUnit(await fetchBranchLogLeaderboard({ days, level: 'unit' })); }
+      catch { setByUnit(null); }
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not load analytics.' });
       setData(null);
@@ -171,6 +180,80 @@ export default function DailyLogAnalytics() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      <Card>
+        <Card.Header>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-base font-semibold text-gray-900">
+              Daily target — met vs not met
+            </h2>
+            <span className="text-xs text-gray-500">
+              Person-days that carried a target. Rest days and excused days are excluded.
+            </span>
+          </div>
+        </Card.Header>
+        <Card.Body>
+          {!byUnit || (byUnit.scored_days ?? 0) === 0 ? (
+            <p className="py-8 text-center text-sm text-gray-400">
+              No scored days in this period.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+              <div className="text-center">
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie dataKey="value" innerRadius={48} outerRadius={78} paddingAngle={2}
+                         data={[{ name: 'Met', value: byUnit.met_days ?? 0 },
+                                { name: 'Not met',
+                                  value: (byUnit.scored_days ?? 0) - (byUnit.met_days ?? 0) }]}>
+                      <Cell fill="#669438" />
+                      <Cell fill="#C4536F" />
+                    </Pie>
+                    <Tooltip formatter={(v: number) => [`${v} person-days`, '']} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="text-2xl font-semibold text-[#3B6D11]">
+                  {byUnit.met_rate ?? 0}%
+                </div>
+                <div className="text-xs text-gray-500">
+                  of person-days met the target, bank-wide
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-1 text-xs font-semibold text-gray-600">
+                  By unit — cumulative over {days} days
+                </div>
+                <ResponsiveContainer width="100%" height={Math.max(180, (byUnit.rows.length || 1) * 26)}>
+                  <BarChart
+                    data={byUnit.rows.map((r) => ({
+                      name: String(r.name || '').replace(/^Director,? /, '').slice(0, 26),
+                      met: r.met_days ?? 0,
+                      missed: (r.scored_days ?? 0) - (r.met_days ?? 0),
+                      rate: r.met_rate ?? 0,
+                    }))}
+                    layout="vertical" stackOffset="expand"
+                    margin={{ left: 8, right: 16, top: 4, bottom: 4 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#EDEDED" />
+                    <XAxis type="number" tickFormatter={(v: number) => `${Math.round(v * 100)}%`}
+                           tick={{ fontSize: 10, fill: '#979797' }} />
+                    <YAxis type="category" dataKey="name" width={170}
+                           tick={{ fontSize: 10, fill: '#464646' }} />
+                    <Tooltip formatter={(v: number, n: string) => [`${v} days`, n]} />
+                    <Bar dataKey="met" stackId="a" fill="#669438" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="missed" stackId="a" fill="#C4536F" radius={[0, 3, 3, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+                <p className="mt-1 text-[11px] text-gray-400">
+                  Bars are proportional, so a small unit and a large one are compared on
+                  rate rather than volume. Hover for the day counts behind each.
+                </p>
               </div>
             </div>
           )}

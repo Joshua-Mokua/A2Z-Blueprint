@@ -13,6 +13,7 @@
 // the history grid uses — so this can never disagree with the history.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card } from '@/components/Card';
 import { useToast } from '@/components/Toast';
 import { fetchBranchLogLeaderboard, type Leaderboard, type LeaderboardRow } from '@/lib/api';
@@ -45,6 +46,11 @@ export default function Leaderboard() {
   const [role, setRole] = useState('');
   const [data, setData] = useState<Leaderboard | null>(null);
   const [loading, setLoading] = useState(false);
+  // Row expansion: clicking a unit/branch/role shows the individuals inside it,
+  // fetched with that row as a filter — the same drill the daily log uses.
+  const [openRow, setOpenRow] = useState('');
+  const [drill, setDrill] = useState<LeaderboardRow[] | null>(null);
+  const [drillLoading, setDrillLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,6 +65,30 @@ export default function Leaderboard() {
   }, [days, level, unit, branch, role, toast]);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => { setOpenRow(''); setDrill(null); }, [level, days, unit, branch, role]);
+
+  async function expand(r: LeaderboardRow) {
+    const key = String(r.name || r.staff_code || '');
+    if (openRow === key) { setOpenRow(''); setDrill(null); return; }
+    setOpenRow(key);
+    setDrill(null);
+    setDrillLoading(true);
+    try {
+      // Narrow by whichever dimension this row represents, then ask for people.
+      const extra = level === 'unit' ? { unit: key }
+        : level === 'branch' ? { branch: key }
+        : { role: key };
+      const r2 = await fetchBranchLogLeaderboard({
+        days, level: 'staff', unit, branch, role, ...extra,
+      });
+      setDrill(r2.rows);
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not open that row.' });
+      setOpenRow('');
+    } finally {
+      setDrillLoading(false);
+    }
+  }
 
   const rows = data?.rows ?? [];
   const max = useMemo(
@@ -128,6 +158,34 @@ export default function Leaderboard() {
           )}
         </div>
 
+        {/* Met vs not met, on the same scope as the table. A person-day counts
+            only if it carried a target, so rest days and excused days neither
+            flatter nor punish. */}
+        {!loading && data && (data.scored_days ?? 0) > 0 && (
+          <div className="mb-3 flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50/50 p-3">
+            <ResponsiveContainer width={110} height={110}>
+              <PieChart>
+                <Pie dataKey="value" innerRadius={30} outerRadius={50} paddingAngle={2}
+                     data={[{ name: 'Met', value: data.met_days ?? 0 },
+                            { name: 'Not met', value: (data.scored_days ?? 0) - (data.met_days ?? 0) }]}>
+                  <Cell fill="#669438" />
+                  <Cell fill="#C4536F" />
+                </Pie>
+                <Tooltip formatter={(v: number) => [`${v} person-days`, '']} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="text-xs">
+              <div className="text-2xl font-semibold text-[#3B6D11]">{data.met_rate ?? 0}%</div>
+              <div className="text-gray-600">of person-days met the daily target</div>
+              <div className="mt-1 text-gray-400">
+                {(data.met_days ?? 0).toLocaleString()} met ·{' '}
+                {((data.scored_days ?? 0) - (data.met_days ?? 0)).toLocaleString()} missed ·{' '}
+                {(data.scored_days ?? 0).toLocaleString()} days carrying a target
+              </div>
+            </div>
+          </div>
+        )}
+
         {loading && <p className="py-8 text-center text-sm text-gray-400">Ranking…</p>}
 
         {!loading && rows.length === 0 && (
@@ -157,6 +215,7 @@ export default function Leaderboard() {
                   <th className="bg-[#0082BB] px-2 py-2 text-right text-[11px] font-semibold uppercase text-white">Index</th>
                   <th className="bg-gray-100 px-2 py-2 text-right text-[11px] font-semibold uppercase text-gray-600">Target</th>
                   <th className="bg-gray-100 px-2 py-2 text-left text-[11px] font-semibold uppercase text-gray-600">Achievement</th>
+                  <th className="bg-gray-100 px-2 py-2 text-right text-[11px] font-semibold uppercase text-gray-600">Met %</th>
                   {!isStaff && (
                     <th className="bg-gray-100 px-2 py-2 text-right text-[11px] font-semibold uppercase text-gray-600">Per head</th>
                   )}
@@ -168,8 +227,11 @@ export default function Leaderboard() {
                   const pct = Number(r.achievement) || 0;
                   const idx = Number(r.index) || 0;
                   const bg = i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white';
+                  const rowKey = String(r.name || r.staff_code || i);
+                  const expanded = !isStaff && openRow === rowKey;
                   return (
-                    <tr key={String(r.staff_code || r.name || i)}>
+                    <>
+                    <tr key={rowKey}>
                       <td className={`${bg} px-2 py-1.5 text-xs`}>
                         <span className={'inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold '
                           + (r.rank && r.rank <= 3 ? MEDAL[r.rank - 1] : 'text-gray-400')}>
@@ -177,7 +239,15 @@ export default function Leaderboard() {
                         </span>
                       </td>
                       <td className={`${bg} px-2 py-1.5 text-xs font-medium text-gray-900`}>
-                        {nameOf(r)}
+                        {isStaff ? nameOf(r) : (
+                          <button type="button" onClick={() => void expand(r)}
+                                  className="flex items-center gap-1.5 text-left hover:text-brand-primary">
+                            <span className="text-gray-400">
+                              {openRow === String(r.name || '') ? '▾' : '▸'}
+                            </span>
+                            {nameOf(r)}
+                          </button>
+                        )}
                       </td>
                       {isStaff && <td className={`${bg} px-2 py-1.5 text-xs text-gray-500`}>{r.role}</td>}
                       {isStaff && <td className={`${bg} px-2 py-1.5 text-xs text-gray-500`}>{r.branch}</td>}
@@ -204,6 +274,12 @@ export default function Leaderboard() {
                           </span>
                         </div>
                       </td>
+                      <td className={`${bg} px-2 py-1.5 text-right text-xs tabular-nums`}>
+                        <span className={(r.met_rate ?? 0) >= 60 ? 'text-[#3B6D11]'
+                          : (r.met_rate ?? 0) >= 30 ? 'text-amber-600' : 'text-rose-600'}>
+                          {r.met_rate ?? 0}%
+                        </span>
+                      </td>
                       {!isStaff && (
                         <td className={`${bg} px-2 py-1.5 text-right text-xs tabular-nums text-gray-700`}>
                           {r.index_per_head}
@@ -213,6 +289,57 @@ export default function Leaderboard() {
                         {r.days_filed}
                       </td>
                     </tr>
+                    {expanded && (
+                      <tr key={`${rowKey}-drill`}>
+                        <td colSpan={9} className="bg-[#F7FBFD] px-6 py-3">
+                          {drillLoading && (
+                            <p className="text-xs text-gray-400">Opening {rowKey}…</p>
+                          )}
+                          {!drillLoading && drill && drill.length === 0 && (
+                            <p className="text-xs text-gray-400">Nobody to show here.</p>
+                          )}
+                          {!drillLoading && drill && drill.length > 0 && (
+                            <table className="w-full">
+                              <tbody>
+                                {drill.slice(0, 40).map((m) => (
+                                  <tr key={m.staff_code} className="border-b border-gray-100 last:border-0">
+                                    <td className="w-8 py-1 pr-2 text-[11px] tabular-nums text-gray-400">
+                                      {m.rank}
+                                    </td>
+                                    <td className="py-1 pr-3 text-xs tabular-nums text-gray-500" style={{ width: 80 }}>
+                                      {m.staff_code}
+                                    </td>
+                                    <td className="py-1 pr-3 text-xs text-gray-800">{m.staff_name}</td>
+                                    <td className="py-1 pr-3 text-xs text-gray-500">{m.role}</td>
+                                    <td className="py-1 pr-3 text-xs text-gray-500">{m.branch}</td>
+                                    <td className="py-1 pr-3 text-right text-xs font-semibold tabular-nums text-gray-900"
+                                        style={{ width: 80 }}>
+                                      {Math.round(Number(m.index) || 0).toLocaleString()}
+                                    </td>
+                                    <td className="py-1 pr-3 text-right text-xs tabular-nums text-gray-500"
+                                        style={{ width: 70 }}>
+                                      {m.achievement ?? 0}%
+                                    </td>
+                                    <td className="py-1 text-right text-xs tabular-nums" style={{ width: 60 }}>
+                                      <span className={(m.met_rate ?? 0) >= 60 ? 'text-[#3B6D11]'
+                                        : (m.met_rate ?? 0) >= 30 ? 'text-amber-600' : 'text-rose-600'}>
+                                        {m.met_rate ?? 0}%
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                          {!drillLoading && (drill?.length ?? 0) > 40 && (
+                            <p className="mt-1 text-[11px] text-gray-400">
+                              showing the top 40 of {drill?.length}
+                            </p>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                    </>
                   );
                 })}
               </tbody>

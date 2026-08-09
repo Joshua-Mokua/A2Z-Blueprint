@@ -1464,6 +1464,12 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         rows = carried_forward(mine) if mine else []
         idx = round(sum(float(x.get("index") or 0) for x in rows), 2)
         tgt = round(sum(float(x.get("target") or 0) for x in rows), 2)
+        # MET vs NOT MET, per person-day. Only days that CARRIED a target count:
+        # rest days and excused days have no target, so counting them either way
+        # would flatter or punish people for days nobody expected work on.
+        scored = [x for x in rows if float(x.get("target") or 0) > 0]
+        met = sum(1 for x in scored
+                  if float(x.get("index") or 0) >= float(x.get("target") or 0))
         people.append({
             "staff_code": code, "staff_name": dd.get("full_name", ""),
             "role": r, "branch": b, "unit": u,
@@ -1471,6 +1477,8 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
             "days_filed": len(mine),
             "validated": sum(1 for x in mine if x.get("validated")),
             "cf_variance": rows[-1].get("cf_variance", 0) if rows else 0,
+            "met_days": met,
+            "scored_days": len(scored),
         })
 
     def agg(rows, keyfn, label):
@@ -1478,15 +1486,19 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         for p in rows:
             k = keyfn(p) or "(unassigned)"
             e = out.setdefault(k, {label: k, "index": 0.0, "target": 0.0,
-                                   "headcount": 0, "days_filed": 0, "validated": 0})
+                                   "headcount": 0, "days_filed": 0, "validated": 0,
+                                   "met_days": 0, "scored_days": 0})
             e["index"] += p["index"]; e["target"] += p["target"]
             e["headcount"] += 1; e["days_filed"] += p["days_filed"]
             e["validated"] += p["validated"]
+            e["met_days"] += p["met_days"]; e["scored_days"] += p["scored_days"]
         for e in out.values():
             e["index"] = round(e["index"], 1)
             e["target"] = round(e["target"], 1)
             e["achievement"] = round((e["index"] / e["target"]) * 100, 1) if e["target"] else 0.0
             e["index_per_head"] = round(e["index"] / e["headcount"], 1) if e["headcount"] else 0.0
+            e["met_rate"] = (round(e["met_days"] / e["scored_days"] * 100, 1)
+                             if e["scored_days"] else 0.0)
         return list(out.values())
 
     if level == "role":
@@ -1502,6 +1514,8 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         level = "staff"
         for p in people:
             p["achievement"] = round((p["index"] / p["target"]) * 100, 1) if p["target"] else 0.0
+            p["met_rate"] = (round(p["met_days"] / p["scored_days"] * 100, 1)
+                             if p["scored_days"] else 0.0)
         rows = people
         sort_key = "index"
 
@@ -1510,9 +1524,13 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         r["rank"] = i
 
     total_index = round(sum(float(r.get("index") or 0) for r in rows), 1)
+    met_total = sum(int(p.get("met_days") or 0) for p in people)
+    scored_total = sum(int(p.get("scored_days") or 0) for p in people)
     return {
         "level": level, "days": days, "rows": rows,
         "total_index": total_index,
+        "met_days": met_total, "scored_days": scored_total,
+        "met_rate": round(met_total / scored_total * 100, 1) if scored_total else 0.0,
         "total_headcount": len(people),
         "filters": {"role": role, "branch": branch, "unit": unit},
         "roles": sorted({p["role"] for p in people if p["role"]}),
