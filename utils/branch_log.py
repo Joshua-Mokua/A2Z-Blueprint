@@ -61,6 +61,48 @@ def activity_weights() -> dict:
     return load_log_config().get("activity_weights", {}) or {}
 
 
+def unit_activity_weights() -> dict:
+    """{unit: {activity key: weight}} — per-unit OVERRIDES, from config."""
+    try:
+        v = (load_log_config() or {}).get("unit_activity_weights")
+        if isinstance(v, dict):
+            out = {}
+            for u, m in v.items():
+                if not isinstance(m, dict):
+                    continue
+                got = {}
+                for k, w in m.items():
+                    try:
+                        got[str(k)] = float(w)
+                    except (TypeError, ValueError):
+                        continue
+                if got:
+                    out[str(u)] = got
+            return out
+    except Exception:
+        pass
+    return {}
+
+
+def weights_for_unit(unit: str = "") -> dict:
+    """The weights that apply to a person in this unit.
+
+    RULING 2026-08-10: "the target will be the same, maybe the weights is what
+    shall vary on the various activities." So the TARGET is global and the
+    weights are per unit.
+
+    An OVERLAY, not a replacement: a unit sets only the activities whose value
+    differs for it, and everything else keeps the bank-wide weight. A unit that
+    had to restate every weight would drift out of step the moment a global one
+    changed, and nobody would notice.
+    """
+    base = dict(activity_weights())
+    over = unit_activity_weights().get(str(unit or "").strip())
+    if over:
+        base.update(over)
+    return base
+
+
 def daily_index_target() -> float:
     try:
         return float(load_log_config().get("daily_index_target", 0) or 0)
@@ -68,9 +110,21 @@ def daily_index_target() -> float:
         return 0.0
 
 
-def compute_index(metrics: dict) -> float:
-    """Productivity index for a log = sum(activity count x admin weight)."""
-    w = activity_weights()
+def compute_index(metrics: dict, unit: str = "") -> float:
+    """Productivity index for a log = sum(activity count x admin weight).
+
+    `unit` selects that unit's weights where it has overridden them. It defaults
+    to "" so every existing caller keeps the bank-wide weights and nothing
+    changes until a unit is actually configured.
+    """
+    w = weights_for_unit(unit) if unit else activity_weights()
+    total = 0.0
+    for k, v in (metrics or {}).items():
+        try:
+            total += float(v or 0) * float(w.get(k, 0) or 0)
+        except (TypeError, ValueError):
+            continue
+    return round(total, 2)
     total = 0.0
     for k, v in (metrics or {}).items():
         try:
@@ -230,6 +284,24 @@ def activity_sets() -> dict:
     return {}
 
 
+def _reweight(fields: list, unit: str) -> list:
+    """Restate each field's weight as the UNIT sees it.
+
+    Without this the admin panel would show the bank-wide number while the
+    index used the unit's - the kind of quiet disagreement that makes people
+    stop trusting the figure rather than report it.
+    """
+    if not unit:
+        return fields
+    w = weights_for_unit(unit)
+    out = []
+    for f in fields:
+        g = dict(f)
+        g["weight"] = float(w.get(f.get("key"), f.get("weight", 0)) or 0)
+        out.append(g)
+    return out
+
+
 def fields_for_unit(unit: str) -> list:
     """The base activity set for a unit.
 
@@ -237,8 +309,9 @@ def fields_for_unit(unit: str) -> list:
     note above on why an empty set is the wrong default.
     """
     sets = activity_sets()
-    keys = sets.get(str(unit or "").strip())
-    base = fields_schema()
+    u = str(unit or "").strip()
+    keys = sets.get(u)
+    base = _reweight(fields_schema(), u)
     if not keys:
         return base
     # COMMON_KEYS always travel, whatever the unit configured. The referral is
@@ -361,7 +434,7 @@ class BranchLogManager:
             existing["remarks"] = remarks
             if hourly:
                 existing["hourly"] = hourly
-            existing["index"] = compute_index(metrics)
+            existing["index"] = compute_index(metrics, unit)
             existing["updated_at"] = datetime.now().isoformat()
             existing["validated"] = False
             existing["rejected"] = False
@@ -385,7 +458,7 @@ class BranchLogManager:
             "status": "submitted",
             "hourly": hourly,
             **metrics,
-            "index": compute_index(metrics),
+            "index": compute_index(metrics, unit),
             "remarks": remarks,
         }
         self.logs.append(rec)
@@ -453,7 +526,7 @@ class BranchLogManager:
             existing["remarks"] = remarks
             if hourly:
                 existing["hourly"] = hourly
-            existing["index"] = compute_index(metrics)
+            existing["index"] = compute_index(metrics, unit)
             existing["updated_at"] = datetime.now().isoformat()
             existing["status"] = "draft"
             existing["validated"] = False
@@ -478,7 +551,7 @@ class BranchLogManager:
             "status": "draft",
             "hourly": hourly,
             **metrics,
-            "index": compute_index(metrics),
+            "index": compute_index(metrics, unit),
             "remarks": remarks,
         }
         self.logs.append(rec)

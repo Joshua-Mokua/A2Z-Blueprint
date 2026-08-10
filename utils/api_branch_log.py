@@ -256,7 +256,8 @@ def branch_log_ranking(days: int = 30, user: dict = Depends(get_current_user)):
             continue
         idx = l.get("index")
         if idx is None:
-            idx = compute_index({k: l.get(k, 0) for k in metric_keys()})
+            idx = compute_index({k: l.get(k, 0) for k in metric_keys()},
+                                str(l.get("unit", "") or ""))
         r = agg.setdefault(sc, {"staff_code": sc, "staff_name": l.get("staff_name"),
                                 "unit": l.get("unit"), "index": 0.0, "days": 0})
         r["index"] += float(idx or 0)
