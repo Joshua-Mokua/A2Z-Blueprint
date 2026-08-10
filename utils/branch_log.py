@@ -163,10 +163,42 @@ def sanitize_hourly(hourly: dict) -> dict:
     return out
 
 
+def auto_fields() -> set:
+    """Fields the SYSTEM derives; a person must not type them.
+
+    Ruling 2026-08-09: the referral field becomes uneditable once referral
+    credit is automatic (RF1), because otherwise the same referral is counted
+    twice - once by hand and once by machine.
+
+    Config-driven, so the next derived metric needs no code change.
+    """
+    try:
+        cfg = load_log_config() or {}
+        v = cfg.get("auto_fields")
+        if isinstance(v, list):
+            return {str(x) for x in v if str(x).strip()}
+    except Exception:
+        pass
+    try:
+        from utils.referral_credit import credit_field
+        return {credit_field()}
+    except Exception:
+        return {"loans_referred"}
+
+
 def fields_schema() -> list:
     w = activity_weights()
+    auto = auto_fields()
     return [{"key": k, "label": lbl, "type": t, "unit": u, "bsc_kpi": kpi,
-             "weight": float(w.get(k, 0) or 0)}
+             "weight": float(w.get(k, 0) or 0), "auto": k in auto}
+            for k, lbl, t, u, kpi in LOG_FIELDS]
+
+
+def fields_schema() -> list:
+    w = activity_weights()
+    auto = auto_fields()
+    return [{"key": k, "label": lbl, "type": t, "unit": u, "bsc_kpi": kpi,
+             "weight": float(w.get(k, 0) or 0), "auto": k in auto}
             for k, lbl, t, u, kpi in LOG_FIELDS]
 
 
@@ -310,6 +342,16 @@ class BranchLogManager:
             metrics = {k: _num(derived.get(k, 0)) for k in metric_keys()}
         else:
             metrics = {k: _num(values.get(k, 0)) for k in metric_keys()}
+        # AUTO FIELDS ARE IGNORED, not trusted. A read-only input is a UI
+        # courtesy; a crafted request would still write. Whatever arrives for an
+        # auto field is discarded, and the value is derived at read time instead
+        # (utils.referral_credit), so a machine count and a typed count can
+        # never disagree. Drafts are NOT touched - same reasoning that exempts
+        # them from bounds checking.
+        for _k in auto_fields():
+            if _k in metrics:
+                metrics[_k] = 0
+
         remarks = str(values.get("remarks", "") or "")
 
         # Reject, never clamp: a clamped number looks like a real one, and the

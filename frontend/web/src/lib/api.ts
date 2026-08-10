@@ -677,6 +677,28 @@ export async function recordSlaCommitment(
   >(`/pipeline/deals/${dealId}/sla/commitment`, { reason, committed_date: committedDate });
 }
 
+// ── Referral bench (both directions, with the escalation clock) ───────────
+export interface ReferralClock {
+  status: 'due' | 'overdue' | 'decided';
+  state: string; sent_at: string; due_at: string;
+  hours_left: number; overdue_hours: number;
+  escalate_to: { level: string; code: string; name: string; role: string }[];
+}
+export interface ReferralBenchRow {
+  deal_id: string; client: string; product: string; value: number;
+  from_code: string; from_name: string; to_code: string; to_name: string;
+  sent_at: string; clock: ReferralClock;
+}
+export interface ReferralBench {
+  incoming: ReferralBenchRow[];
+  outgoing: ReferralBenchRow[];
+  incoming_overdue: number;
+  outgoing_overdue: number;
+}
+export async function fetchReferralBench(): Promise<ReferralBench> {
+  return getJson<ReferralBench>('/pipeline/referrals/bench');
+}
+
 export async function acceptReferral(dealId: string): Promise<{ status?: string }> {
   return postJson<{ status?: string }, Record<string, never>>(
     `/pipeline/deals/${dealId}/referral/accept`, {});
@@ -736,7 +758,7 @@ export async function fetchDealJourney(dealId: string): Promise<{ journey: LoanA
 }
 
 // ── Daily Branch Log ───────────────────────────────────────────
-export interface BranchLogField { key: string; label: string; type: string; unit: string; bsc_kpi: string | null; weight?: number; }
+export interface BranchLogField { key: string; label: string; type: string; unit: string; bsc_kpi: string | null; weight?: number; auto?: boolean; }
 export interface BranchLogEntry {
   id: string; log_date: string; staff_code: string; staff_name: string; unit: string; role: string;
   submitted_at?: string; updated_at?: string; validated?: boolean; rejected?: boolean;

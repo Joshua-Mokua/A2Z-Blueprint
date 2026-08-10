@@ -49,11 +49,11 @@ const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const hh = (h: number) => `${String(h).padStart(2, '0')}:00`;
 const key2 = (h: number) => String(h).padStart(2, '0');
 
-function fmtCount(f: BranchLogField, n: number): string {
-  if (f.type === 'amount') {
-    return String(Math.round(n));
-  }
-  return String(Math.round(n));
+function fmtCount(_f: BranchLogField, n: number): string {
+  // Full figures with thousands separators - no K/M abbreviation anywhere
+  // (ruling 2026-08-09). An abbreviated number is a number somebody has to
+  // decode, and 367K hides whether it was 367,000 or 367,400.
+  return Math.round(n).toLocaleString();
 }
 
 export interface DayPlannerProps {
@@ -252,12 +252,23 @@ export default function DayPlanner({
                         <span className="mb-0.5 block text-gray-600">
                           {f.label}{f.unit ? ` (${f.unit})` : ''}
                         </span>
-                        <input
-                          type="number" min={0}
-                          className="w-full rounded border border-gray-200 px-2 py-1 text-sm"
-                          value={block.counts?.[f.key] ?? ''}
-                          onChange={(e) => setCount(h, f.key, e.target.value)}
-                        />
+                        {f.auto ? (
+                          // Derived by the system, so there is nothing to type.
+                          // Shown rather than hidden: the activity still counts,
+                          // and a person who cannot see it would assume it does
+                          // not.
+                          <div className="flex w-full items-center gap-1.5 rounded border border-dashed border-gray-200 bg-gray-50 px-2 py-1 text-sm text-gray-500">
+                            <span className="text-[10px] uppercase tracking-wide text-[#0C447C]">auto</span>
+                            <span className="text-[11px]">counted when accepted</span>
+                          </div>
+                        ) : (
+                          <input
+                            type="number" min={0}
+                            className="w-full rounded border border-gray-200 px-2 py-1 text-sm"
+                            value={block.counts?.[f.key] ?? ''}
+                            onChange={(e) => setCount(h, f.key, e.target.value)}
+                          />
+                        )}
                       </label>
                     ))}
                   </div>
