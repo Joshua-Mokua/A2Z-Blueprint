@@ -39,5 +39,43 @@
     "bancassurance_sold": "low",
     "complaints_received": "low",
     "teller_errors": "low"
+  },
+  "activity_sets": {
+    "Director Operations & Technology": [
+      "customer_visits",
+      "transactions_count",
+      "complaints_resolved",
+      "complaints_received",
+      "digital_txns",
+      "teller_errors"
+    ],
+    "Director, Corporate Banking Kenya & EAC": [
+      "new_leads",
+      "deposits_mobilised",
+      "loans_disbursed",
+      "cross_sell_success",
+      "accounts_opened"
+    ],
+    "Head of Consumer": [
+      "new_leads",
+      "accounts_opened",
+      "dfs_registrations",
+      "cards_issued",
+      "bancassurance_sold",
+      "cross_sell_success"
+    ],
+    "Director Consumer & Commercial Banking (CCB)": [
+      "new_leads",
+      "deposits_mobilised",
+      "loans_disbursed",
+      "cross_sell_success"
+    ],
+    "Director, Credit Risk Management- Kenya & EAC": [
+      "loans_disbursed"
+    ],
+    "Director, Treasury & FICC, EAC": [
+      "deposits_mobilised",
+      "new_leads"
+    ]
   }
 }
