@@ -202,9 +202,19 @@ def branch_log_config_get(user: dict = Depends(get_current_user)):
     """Per-activity weights + daily index target (admin-configured), with fields."""
     from utils.branch_log import load_log_config
     cfg = load_log_config()
+    # UNITS the admin can configure: every MD-reporting unit, so the panel can
+    # offer a list rather than expecting someone to type a unit name exactly.
+    try:
+        from utils.org_validator import md_reporting_roles
+        units = sorted(md_reporting_roles() or [])
+    except Exception:
+        units = sorted((cfg.get("activity_sets") or {}).keys())
     return {"activity_weights": cfg.get("activity_weights", {}) or {},
             "daily_index_target": cfg.get("daily_index_target", 0) or 0,
-            "fields": fields_schema()}
+            "fields": fields_schema(),
+            "activity_sets": cfg.get("activity_sets", {}) or {},
+            "unit_activity_weights": cfg.get("unit_activity_weights", {}) or {},
+            "units": units}
 
 
 @router.post("/config")
@@ -228,11 +238,53 @@ def branch_log_config_set(payload: dict = Body(default_factory=dict),
             cfg["daily_index_target"] = float(payload.get("daily_index_target") or 0)
         except (TypeError, ValueError):
             cfg["daily_index_target"] = 0.0
+
+    # PER-UNIT ACTIVITY SETS (AS1). {unit: [field key, ...]}
+    # A unit sent with an EMPTY list is REMOVED rather than stored empty: an
+    # empty set would leave that unit with no activities at all and its people
+    # would read zero. Removing it returns them to the branch base, which is
+    # what "no set" is supposed to mean.
+    if isinstance(payload.get("activity_sets"), dict):
+        from utils.branch_log import fields_schema
+        known = {f["key"] for f in fields_schema()}
+        sets = dict(cfg.get("activity_sets") or {})
+        for unit, keys in payload["activity_sets"].items():
+            u = str(unit).strip()
+            if not u:
+                continue
+            good = [str(k) for k in (keys or []) if str(k) in known]
+            if good:
+                sets[u] = good
+            else:
+                sets.pop(u, None)
+        cfg["activity_sets"] = sets
+
+    # PER-UNIT WEIGHT OVERRIDES (AS2). {unit: {key: weight}}
+    if isinstance(payload.get("unit_activity_weights"), dict):
+        uw = dict(cfg.get("unit_activity_weights") or {})
+        for unit, m in payload["unit_activity_weights"].items():
+            u = str(unit).strip()
+            if not u or not isinstance(m, dict):
+                continue
+            got = {}
+            for k, v in m.items():
+                try:
+                    got[str(k)] = float(v)
+                except (TypeError, ValueError):
+                    continue
+            if got:
+                uw[u] = got
+            else:
+                uw.pop(u, None)      # cleared = inherit the bank-wide weights
+        cfg["unit_activity_weights"] = uw
+
     save_log_config(cfg)
     audit_log("BRANCH_LOG_CONFIG", str(user.get("username", "") or ""), "weights/target updated")
     return {"status": "saved",
             "activity_weights": cfg.get("activity_weights", {}),
-            "daily_index_target": cfg.get("daily_index_target", 0)}
+            "daily_index_target": cfg.get("daily_index_target", 0),
+            "activity_sets": cfg.get("activity_sets", {}),
+            "unit_activity_weights": cfg.get("unit_activity_weights", {})}
 
 
 @router.get("/ranking")
