@@ -69,7 +69,30 @@ CHAIN = [
     "patch_ux1_remove_captions", "patch_pa1_pipeline_analytics",
     "patch_ux2_ytd_default", "patch_pl1_pipeline_ranking",
     "patch_rf2a_referral_clock", "patch_pl2_pipeline_drill",
+    "patch_rf2b_referral_bench_ui", "patch_rf3_auto_referral_field",
+    "patch_p3_branch_pipeline_day",
+    "patch_perf1_roster_cache", "patch_mail1_smtp_negotiation",
 ]
+
+# Patchers that deliberately do NOT ship to the pilot. Anything in scripts/ that
+# is neither in CHAIN nor here is REPORTED, because a release tool that silently
+# drops work is worse than one that fails - the first release missed five
+# batches this way and nobody would have noticed until Alex asked where they
+# were.
+# Already on alex-dev from earlier pushes - verified 2026-08-10 by checking that
+# their effects are present on his branch (workcal.business_days_between,
+# datetime.parseTs). Re-running them would only abort as "already applied", but
+# listing them keeps the guard meaningful instead of crying wolf every build.
+NOT_FOR_RELEASE = {
+    "patch_a8_branch_segment_and_ui",
+    "patch_phase2c_dayplanner",
+    "patch_phase2cb_layout",
+    "patch_phase2cc_compact",
+    "patch_phase2cd_ribbon",
+    "patch_tz1_dateonly",
+    "patch_wc2a_daycontext",
+    "patch_wc2b_wiring",
+}
 
 # Must be IDENTICAL to alex-dev when this finishes.
 #
@@ -184,6 +207,22 @@ def main():
     print("")
     print("  Alex's AD auth is verified after the replay; the script ABORTS and")
     print("  deletes the branch if any authentication file has moved.")
+
+    # Anything present but unlisted would ship nothing and say nothing.
+    import glob
+    on_disk = {os.path.splitext(os.path.basename(f))[0]
+               for f in glob.glob(os.path.join("scripts", "patch_*.py"))}
+    unlisted = sorted(on_disk - set(CHAIN) - NOT_FOR_RELEASE)
+    if unlisted:
+        print("")
+        print("  *** %d patcher(s) exist but are NOT in the release chain:" % len(unlisted))
+        for u in unlisted:
+            print("        %s" % u)
+        print("  They will NOT reach the pilot. Add them to CHAIN in the right")
+        print("  order, or to NOT_FOR_RELEASE if that is deliberate.")
+        if apply:
+            print("\nABORT: refusing to build a release that silently omits work.")
+            return 1
 
     missing = [p for p in CHAIN if not os.path.isfile(os.path.join("scripts", p + ".py"))]
     if missing:
