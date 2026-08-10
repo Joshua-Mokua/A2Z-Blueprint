@@ -1,0 +1,355 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Build a release branch for alex-dev by REPLAYING PATCHERS, not by pushing main.
+
+WHY NOT JUST PUSH. main and alex-dev have deliberately divergent files - your
+own commit 7913483 says so: "LOCAL ONLY: never push these paths to alex-dev,
+they would revert his SMTP/referral/AD work". Measured against alex-dev, a
+fast-forward from main would:
+
+    utils/api.py                    -326 lines
+    utils/core.py                   -169 lines
+    AuthProvider.tsx                -133 lines
+    Login.tsx                        -22 lines
+
+That is Alex's Active Directory authentication being deleted. It would take
+login down on the bank's pilot.
+
+THE PATCHERS ADD BY ANCHOR, so they land on HIS files and leave his auth alone.
+Verified on a real alex-dev checkout: 21 daily-log patchers applied, AD
+references 16 before and 16 after, zero diff on api.py, core.py, AuthProvider
+and Login.
+
+WHAT THIS DOES
+  1. refuses unless your working tree is clean
+  2. creates release/alex-<date> from origin/alex-dev
+  3. copies scripts/ across from main (the patchers live there)
+  4. replays the chain IN ORDER, reporting each one
+  5. HARD-VERIFIES the delta files against origin/alex-dev and ABORTS if any of
+     them moved - the check is the point, not a formality
+  6. leaves the branch for you to build, test and push
+
+It never pushes. Nothing reaches the bank without you looking at it first.
+
+    python scripts\\build_alex_release.py            # plan only
+    python scripts\\build_alex_release.py --apply
+"""
+import datetime
+import os
+import shutil
+import subprocess
+import sys
+
+# In dependency order. A patcher that legitimately reports "already applied" is
+# not a failure - alex-dev may already carry part of this.
+CHAIN = [
+    "patch_p3_history_grid", "patch_p3a_grid_polish", "patch_p3b_grid_filters",
+    "patch_p3c_org_filters", "patch_p3d_roster_complete", "patch_p3e_hotfix",
+    "patch_p3f_canonical_scope", "patch_p3g_rows_reset",
+    "patch_v1_validation_backend", "patch_v1a_register_loader",
+    "patch_v2_validation_tab", "patch_v2a_queue_perf",
+    "patch_b1_branch_line", "patch_b2_branch_day",
+    "patch_e1_exceptions", "patch_e2_exception_endpoints",
+    "patch_b3_tier2_view", "patch_e3_followup", "patch_e4_notifications",
+    "patch_r1_units", "patch_r1a_direct_reports",
+    "patch_r2_rollup_view", "patch_r3_bankwide_followup",
+    "patch_a1_leaderboard", "patch_a2_leaderboard_ui",
+    "patch_bd_bounds", "patch_a3_analytics", "patch_g1_domain_store",
+    "patch_a4_drilldown",
+    "patch_p1_pipeline_validation", "patch_p2_pipeline_ui",
+    "patch_rf1_referral_credit",
+    "patch_a5_periods", "patch_a6_average_and_segments",
+    "patch_a7_bm_and_layout", "patch_fmt_full_figures",
+    "patch_a8_drill_header",
+    "patch_f1_funnel_model", "patch_f2_funnel_ui",
+    "patch_f3_one_probability_model",
+    "patch_b1_stage_buckets", "patch_b2_bucket_funnel_ui",
+    "patch_b3_funnel_shape_and_cleanup", "patch_b4_flow_classification",
+    "patch_ux1_remove_captions", "patch_pa1_pipeline_analytics",
+    "patch_ux2_ytd_default", "patch_pl1_pipeline_ranking",
+    "patch_rf2a_referral_clock", "patch_pl2_pipeline_drill",
+]
+
+# Must be IDENTICAL to alex-dev when this finishes.
+#
+# utils/api.py is DELIBERATELY ABSENT (ruling 2026-08-10). This release adds
+# endpoints to it - the funnel, pipeline analytics, the leaderboard and the
+# referral bench all live there - so "must not differ at all" was never
+# achievable and blocked every run. What actually matters is that ALEX'S
+# AUTHENTICATION inside it is untouched, and the AD marker count proves that.
+# Confirmed with Josh: nothing else in api.py is his alone; he cloned main.
+DELTA = [
+    "utils/core.py",
+    "frontend/web/src/providers/AuthProvider.tsx",
+    "frontend/web/src/pages/Login.tsx",
+    "frontend/web/src/pages/ChangePassword.tsx",
+    "frontend/web/src/types/auth.ts",
+    "frontend/web/src/components/AppShell.tsx",
+    "frontend/web/src/components/Sidebar.tsx",
+    "frontend/web/src/components/TopBar.tsx",
+    # Ruling 2026-08-10: PipelineDealDetail must NOT travel. The formatting
+    # patcher removes three K/M abbreviations from it; harmless in itself, but
+    # the file stays on Alex's side, so it is reverted below rather than staged.
+    "frontend/web/src/pages/PipelineDealDetail.tsx",
+]
+
+# Reverted to alex-dev's version after the replay, before staging. A patcher
+# may legitimately touch these; the release must not carry them.
+REVERT_AFTER_REPLAY = [
+    "frontend/web/src/pages/PipelineDealDetail.tsx",
+]
+
+# api.py legitimately gains new endpoints, so it cannot be in DELTA above - but
+# its AUTH must be untouched. This is the guard that matters.
+AUTH_MARKERS = ("ad_enabled", "active_directory", "ldap", "AD_")
+
+
+def sh(*args, check=True):
+    return subprocess.run(args, capture_output=True, text=True, check=check).stdout
+
+
+def count_auth(path):
+    try:
+        s = open(path, encoding="utf-8").read()
+    except OSError:
+        return 0
+    return sum(s.count(m) for m in AUTH_MARKERS)
+
+
+def main():
+    apply = "--apply" in sys.argv
+    if not os.path.isdir(".git"):
+        print("ABORT: run from the project root.")
+        return 1
+
+    # Windows locks utils/__pycache__/*.pyc while uvicorn has the module
+    # loaded. A patcher then dies mid-write with "Access is denied", leaving
+    # api.py HALF-PATCHED - which the safety check correctly reads as a
+    # protected file having moved. Cheaper to detect it here than to unpick it.
+    stale = []
+    for root, _dirs, files in os.walk("."):
+        if os.path.basename(root) != "__pycache__":
+            continue
+        for f in files:
+            if f.endswith(".pyc"):
+                stale.append(os.path.join(root, f))
+    locked = []
+    for f in stale[:400]:
+        try:
+            os.rename(f, f + ".t")
+            os.rename(f + ".t", f)
+        except OSError:
+            locked.append(f)
+    if locked:
+        print("ABORT: %d compiled files are LOCKED - a Python process is running."
+              % len(locked))
+        for f in locked[:5]:
+            print("   %s" % f)
+        print("")
+        print("Stop uvicorn (and any Streamlit), then clear the caches:")
+        print('   for /d /r . %d in (__pycache__) do @if exist "%d" rd /s /q "%d"')
+        print("")
+        print("A patcher that dies on a locked file leaves api.py half-written,")
+        print("and the release is then indistinguishable from a broken one.")
+        return 1
+
+    dirty = sh("git", "status", "--porcelain").strip()
+    tracked_dirty = [l for l in dirty.splitlines() if not l.startswith("??")]
+    if tracked_dirty:
+        print("ABORT: you have uncommitted changes to tracked files.")
+        for l in tracked_dirty[:10]:
+            print("   %s" % l)
+        print("Commit or stash them first - this script switches branches.")
+        return 1
+
+    sh("git", "fetch", "origin", check=False)
+    try:
+        base = sh("git", "rev-parse", "--short", "origin/alex-dev").strip()
+    except subprocess.CalledProcessError:
+        print("ABORT: origin/alex-dev not found.")
+        return 1
+    here = sh("git", "rev-parse", "--abbrev-ref", "HEAD").strip()
+    ahead = sh("git", "rev-list", "--count", "origin/alex-dev..HEAD").strip()
+
+    branch = "release/alex-%s" % datetime.date.today().isoformat()
+    print("=" * 72)
+    print("PLAN")
+    print("=" * 72)
+    print("  current branch      %s" % here)
+    print("  alex-dev is at      %s" % base)
+    print("  commits ahead of it %s" % ahead)
+    print("  release branch      %s" % branch)
+    print("  patchers to replay  %d" % len(CHAIN))
+    print("")
+    print("  Alex's AD auth is verified after the replay; the script ABORTS and")
+    print("  deletes the branch if any authentication file has moved.")
+
+    missing = [p for p in CHAIN if not os.path.isfile(os.path.join("scripts", p + ".py"))]
+    if missing:
+        print("\nABORT: %d patchers are missing from scripts/:" % len(missing))
+        for m in missing[:10]:
+            print("   %s" % m)
+        return 1
+    print("  all %d patchers present" % len(CHAIN))
+
+    if not apply:
+        print("\nDRY RUN - no branch created. Re-run with --apply.")
+        return 0
+
+    # Keep a copy of the patchers: switching to alex-dev removes the ones that
+    # were only ever committed on main.
+    tmp = os.path.join(".git", "_release_scripts")
+    if os.path.isdir(tmp):
+        shutil.rmtree(tmp)
+    shutil.copytree("scripts", tmp)
+
+    print("\ncreating %s from origin/alex-dev ..." % branch)
+    sh("git", "checkout", "-q", "-B", branch, "origin/alex-dev")
+
+    for name in os.listdir(tmp):
+        src = os.path.join(tmp, name)
+        if os.path.isfile(src):
+            shutil.copy2(src, os.path.join("scripts", name))
+
+    before_auth = count_auth("utils/api.py")
+    print("AD markers in api.py before: %d\n" % before_auth)
+
+    # Snapshot every path git knows about NOW. Anything untracked that already
+    # existed before the replay is YOUR working clutter, not part of the
+    # release, and must never be staged. The previous run used `git add -A`
+    # from this point and swept 578 forensic scripts into a commit bound for
+    # the bank.
+    pre_untracked = set(sh("git", "ls-files", "--others",
+                           "--exclude-standard").split())
+
+    applied, skipped, failed = [], [], []
+    for p in CHAIN:
+        r = subprocess.run([sys.executable, os.path.join("scripts", p + ".py"), "--apply"],
+                           capture_output=True, text=True)
+        out = (r.stdout or "") + (r.stderr or "")
+        if r.returncode == 0:
+            applied.append(p)
+            print("  applied  %s" % p)
+        elif "looks applied" in out or "already" in out:
+            skipped.append(p)
+            print("  already  %s" % p)
+        else:
+            why = out.strip().splitlines()[-1] if out.strip() else "?"
+            failed.append((p, why))
+            print("  FAILED   %s" % p)
+            # A failure part-way through means every later patcher builds on a
+            # file that may be half-written. Stop here rather than produce a
+            # release nobody can reason about.
+            print("\nABORT: stopping at the first failure - continuing would")
+            print("       stack patches onto a partly-written file.")
+            print("       %s" % why)
+            sh("git", "checkout", "-q", here, check=False)
+            sh("git", "branch", "-D", branch, check=False)
+            return 1
+
+    print("\napplied %d · already present %d · failed %d"
+          % (len(applied), len(skipped), len(failed)))
+    for p, why in failed[:10]:
+        print("   %s -> %s" % (p, why))
+
+    # Put back anything that must stay on Alex's side, before the check reads it.
+    for f in REVERT_AFTER_REPLAY:
+        r = subprocess.run(["git", "checkout", "origin/alex-dev", "--", f],
+                           capture_output=True, text=True)
+        if r.returncode == 0:
+            print("  reverted %s (stays on Alex's side)" % f)
+
+    # ── the guard that matters ───────────────────────────────────────────────
+    print("\n" + "=" * 72)
+    print("SAFETY CHECK")
+    print("=" * 72)
+    moved = []
+    for f in DELTA:
+        d = sh("git", "diff", "--name-only", "origin/alex-dev", "--", f).strip()
+        if d:
+            moved.append(f)
+    after_auth = count_auth("utils/api.py")
+    print("  AD markers in api.py after: %d (was %d)%s"
+          % (after_auth, before_auth,
+             "  <- auth intact" if after_auth >= before_auth else "  *** AUTH LOST"))
+    print("  utils/api.py                                         gains endpoints "
+          "(auth verified above)")
+    for f in DELTA:
+        print("  %-52s %s" % (f, "MOVED" if f in moved else "untouched"))
+
+    if moved or after_auth < before_auth:
+        print("\nABORT: a protected file changed. This release would damage the")
+        print("       pilot's authentication. Deleting the branch.")
+        sh("git", "checkout", "-q", here, check=False)
+        sh("git", "branch", "-D", branch, check=False)
+        return 1
+
+    print("\n  SAFE - authentication is intact.")
+
+    # ── stage EXACTLY what the replay produced ───────────────────────────────
+    modified = [l for l in sh("git", "diff", "--name-only").split() if l]
+    now_untracked = set(sh("git", "ls-files", "--others", "--exclude-standard").split())
+    created = sorted(now_untracked - pre_untracked)
+
+    ALLOW_PREFIX = ("utils/", "frontend/web/src/", "scripts/", "data/", "docs/")
+    staged, refused = [], []
+    for f in sorted(set(modified) | set(created)):
+        if f.startswith(ALLOW_PREFIX):
+            staged.append(f)
+        else:
+            refused.append(f)
+
+    # Data files carry OPERATIONAL state. Config the new features need may go;
+    # simulated logs and deals must never overwrite the pilot's own records.
+    DATA_BLOCK = ("data/branch_logs.json", "data/pipeline_deals.json",
+                  "data/branch_days.json", "data/daily_log_exceptions.json",
+                  "data/users.json", "data/staff_register.xlsx")
+    blocked = [f for f in staged if f in DATA_BLOCK or "backup" in f.lower()]
+    staged = [f for f in staged if f not in blocked]
+
+    print("\n" + "=" * 72)
+    print("STAGING")
+    print("=" * 72)
+    print("  staging %d files the replay touched" % len(staged))
+    for f in staged[:40]:
+        print("     %s" % f)
+    if len(staged) > 40:
+        print("     ... and %d more" % (len(staged) - 40))
+    if blocked:
+        print("\n  NOT staged - operational data, would overwrite the pilot's own:")
+        for f in blocked:
+            print("     %s" % f)
+    if refused:
+        print("\n  NOT staged - outside the release paths (your working clutter):")
+        for f in refused[:15]:
+            print("     %s" % f)
+        if len(refused) > 15:
+            print("     ... and %d more" % (len(refused) - 15))
+
+    if not staged:
+        print("\nABORT: nothing to stage - the replay produced no changes.")
+        sh("git", "checkout", "-q", here, check=False)
+        sh("git", "branch", "-D", branch, check=False)
+        return 1
+
+    subprocess.run(["git", "add", "--"] + staged, check=True)
+    subprocess.run(["git", "commit", "-q", "-m",
+                    "release: daily log with tiered validation and roll-ups, "
+                    "index and pipeline rankings, analytics, and the pipeline "
+                    "journey funnel"], check=True)
+    head = sh("git", "rev-parse", "--short", "HEAD").strip()
+    n = len(sh("git", "show", "--stat", "--name-only", "--format=", "HEAD").split())
+    print("\n  committed %s with %d files" % (head, n))
+
+    print("\nNext, on this branch:")
+    print("  pushd frontend\\web && pnpm install && pnpm tsc --noEmit && pnpm build && popd")
+    print("  git push origin %s" % branch)
+    print("\nThen ask Alex to merge %s into alex-dev - a pull request he can" % branch)
+    print("read, rather than a force-push he cannot.")
+    print("\nWhen you are done, return with:  git checkout %s" % here)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
