@@ -1,4 +1,89 @@
-// ──────────────────────────────────────────────────────────────────────────
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+AS4 - the admin panel for per-unit activities. Closes the AS arc.
+
+RULING (2026-08-10): "the branch default but with admin still being able to
+amend."
+
+AS3 made the endpoint accept unit sets and weights. AS4 gives the admin a
+surface for it, so amending no longer means editing JSON on a server.
+
+Daily Log Admin gains "ACTIVITIES BY UNIT":
+
+    a unit picker listing all 16 MD-reporting units, each showing how many
+    activities it has configured
+
+    a checkbox per activity, with the BANK WEIGHT beside a per-unit override
+    box. Blank inherits - the placeholder literally reads "inherit" - so an
+    admin only types the weights that actually differ for that unit.
+
+    the referral carries an "always included" chip, because it travels to every
+    unit whatever is ticked and an admin unticking it would otherwise expect it
+    to disappear.
+
+CLEARING ALL ACTIVITIES RETURNS THE UNIT TO THE BRANCH SET, and the panel says
+so on screen and again in the save confirmation. That is the safe direction: an
+empty set would leave a unit with no activities and its people reading zero,
+which looks identical to having done no work.
+
+The unit payload is sent ON ITS OWN, so saving a unit never rewrites the
+bank-wide weights as a side effect of a shared form.
+
+Uses the page's existing setMsg for feedback rather than introducing a toast -
+two conventions on one screen is how a codebase starts disagreeing with itself.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+REQUIRES AS3.
+
+Usage (from project root, .venv active):
+    python scripts\patch_as4_unit_admin_ui.py            # dry run
+    python scripts\patch_as4_unit_admin_ui.py --apply
+"""
+import os
+import shutil
+import sys
+
+PAGE = os.path.join("frontend", "web", "src", "pages", "DailyLogAdmin.tsx")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+BACKUP_SUFFIX = ".pre_as4"
+
+TS_OLD = ("export interface BranchLogConfig { activity_weights: "
+          "Record<string, number>; daily_index_target: number; "
+          "fields: BranchLogField[]; }")
+
+SAVE_OLD = '''export async function saveBranchLogConfig(activity_weights: Record<string, number>, daily_index_target: number): Promise<{ status: string }> {
+  return postJson<{ status: string }, { activity_weights: Record<string, number>; daily_index_target: number }>(
+    '/branch-log/config', { activity_weights, daily_index_target });
+}'''
+
+SAVE_NEW = '''export async function saveBranchLogConfig(activity_weights: Record<string, number>, daily_index_target: number): Promise<{ status: string }> {
+  return postJson<{ status: string }, { activity_weights: Record<string, number>; daily_index_target: number }>(
+    '/branch-log/config', { activity_weights, daily_index_target });
+}
+// Per-unit sets and weights (AS1-AS3). Sent on their own, so saving one unit
+// never rewrites the bank-wide weights as a side effect.
+export interface UnitConfigPayload {
+  activity_sets?: Record<string, string[]>;
+  unit_activity_weights?: Record<string, Record<string, number>>;
+}
+export async function saveBranchLogUnitConfig(
+  body: UnitConfigPayload,
+): Promise<{ status: string }> {
+  return postJson<{ status: string }, UnitConfigPayload>('/branch-log/config', body);
+}'''
+
+TS_NEW = r'''export interface BranchLogConfig {
+  activity_weights: Record<string, number>;
+  daily_index_target: number;
+  fields: BranchLogField[];
+  activity_sets?: Record<string, string[]>;
+  unit_activity_weights?: Record<string, Record<string, number>>;
+  units?: string[];
+}'''
+
+PAGE_NEW = r'''// ──────────────────────────────────────────────────────────────────────────
 // Admin > Daily Log — productivity index configuration, consolidated into the
 // Administration area (previously only reachable as an "Index Setup" tab on the
 // Daily Log page itself).
@@ -379,3 +464,69 @@ export function DailyLogAdmin() {
 }
 
 export default DailyLogAdmin;
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (PAGE, APITS):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found. Run from the project root." % p)
+            return 1
+
+    ts = open(APITS, encoding="utf-8").read()
+    cur = open(PAGE, encoding="utf-8").read()
+
+    if "saveBranchLogUnitConfig" in ts:
+        print("ABORT: api.ts already has the unit config client - AS4 looks applied.")
+        return 1
+    if '"activity_sets"' not in open(os.path.join("utils", "api_branch_log.py"),
+                                     encoding="utf-8").read():
+        print("ABORT: apply patch_as3_admin_unit_config.py first - the endpoint")
+        print("       would reject everything this panel sends.")
+        return 1
+    if ts.count(TS_OLD) != 1:
+        print("ABORT: BranchLogConfig matched %d times." % ts.count(TS_OLD))
+        return 1
+    if ts.count(SAVE_OLD) != 1:
+        print("ABORT: saveBranchLogConfig matched %d times." % ts.count(SAVE_OLD))
+        return 1
+
+    ts = ts.replace(TS_OLD, TS_NEW, 1).replace(SAVE_OLD, SAVE_NEW, 1)
+    print("  ok  api.ts - config type extended, unit client added")
+
+    for token in ("Activities by unit", "always included", "inherit",
+                  "returned to the branch activity set"):
+        if token not in PAGE_NEW:
+            print("ABORT: embedded page missing %r." % token)
+            return 1
+    # The page has its own message mechanism; a toast here would be a second
+    # convention on one screen.
+    if "toast(" in PAGE_NEW:
+        print("ABORT: the page uses a toast - it should use setMsg like its")
+        print("       existing save handlers.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if PAGE_NEW.count(op) != PAGE_NEW.count(cl):
+            print("ABORT: page unbalanced %s%s." % (op, cl))
+            return 1
+    if "fetchBranchLogHistoryGrid" not in ts:
+        print("ABORT: post-check - api.ts lost an existing client.")
+        return 1
+    print("  ok  post-checks clean")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((APITS, ts), (PAGE, PAGE_NEW)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd && echo TSC_PASSED")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

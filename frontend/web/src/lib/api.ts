@@ -788,13 +788,31 @@ export async function fetchBranchLogAutoActivities(): Promise<{ activities: Bran
   return getJson<{ activities: BranchLogActivity[]; date: string }>('/branch-log/auto-activities');
 }
 
-export interface BranchLogConfig { activity_weights: Record<string, number>; daily_index_target: number; fields: BranchLogField[]; }
+export interface BranchLogConfig {
+  activity_weights: Record<string, number>;
+  daily_index_target: number;
+  fields: BranchLogField[];
+  activity_sets?: Record<string, string[]>;
+  unit_activity_weights?: Record<string, Record<string, number>>;
+  units?: string[];
+}
 export async function fetchBranchLogConfig(): Promise<BranchLogConfig> {
   return getJson<BranchLogConfig>('/branch-log/config');
 }
 export async function saveBranchLogConfig(activity_weights: Record<string, number>, daily_index_target: number): Promise<{ status: string }> {
   return postJson<{ status: string }, { activity_weights: Record<string, number>; daily_index_target: number }>(
     '/branch-log/config', { activity_weights, daily_index_target });
+}
+// Per-unit sets and weights (AS1-AS3). Sent on their own, so saving one unit
+// never rewrites the bank-wide weights as a side effect.
+export interface UnitConfigPayload {
+  activity_sets?: Record<string, string[]>;
+  unit_activity_weights?: Record<string, Record<string, number>>;
+}
+export async function saveBranchLogUnitConfig(
+  body: UnitConfigPayload,
+): Promise<{ status: string }> {
+  return postJson<{ status: string }, UnitConfigPayload>('/branch-log/config', body);
 }
 export interface ExtraActivity { key: string; label: string; type: string; unit: string; weight: number; roles: string[]; }
 export async function fetchBranchLogActivities(): Promise<{ base: BranchLogField[]; extra: ExtraActivity[] }> {
