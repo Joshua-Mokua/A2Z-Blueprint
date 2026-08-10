@@ -1,4 +1,275 @@
-// v10.513 Phase 4 Batch β4 — PipelineManagerQueues page.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+P3 - the branch triad gets the enhanced pipeline validation, not the old cards.
+
+PILOT REPORT (2026-08-10): "the pipeline validation for the branch manager is
+the old one and not the one we enhanced".
+
+Correct, and it was a gap I left deliberately. P2 routed BRANCH and ROLL-UP
+callers to the new countersign view but left tier 1 - the branch triad - on the
+original per-deal ValidationCard list, on the grounds that it worked and
+replacing working functionality is not free. I flagged it at the time. The
+pilot's answer is that the inconsistency costs more than the extra detail was
+worth.
+
+WHAT THE TRIAD NOW SEES, in the same shape as DailyLogValidation:
+    deal rows with Validate / Return
+    a BRANCH LINE showing what the day adds up to, and how much is validated
+    a gate: "Close the day" stays disabled while anything is unvalidated
+
+RETURN IS A QUERY, NOT A CANCELLATION. validatePipelineDeal already carries
+approved:false for exactly this. The first draft routed Return through the
+cancel endpoint, which would have asked to KILL a live deal when the manager
+only wanted it corrected.
+
+NO BACKEND CHANGE. /pipeline-validation/queue and /days/submit came with P1;
+only the tier-1 view was missing.
+
+The old ValidationCard list is left in the file but is no longer reachable -
+every tier now has its own component. Deleting it in the same step as replacing
+it would make a revert harder.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+REQUIRES P2.
+
+Usage (from project root, .venv active):
+    python scripts\patch_p3_branch_pipeline_day.py            # dry run
+    python scripts\patch_p3_branch_pipeline_day.py --apply    # write + .pre_p3b backup
+"""
+import os
+import shutil
+import sys
+
+COMP = os.path.join("frontend", "web", "src", "components", "PipelineBranchDay.tsx")
+PAGE = os.path.join("frontend", "web", "src", "pages", "PipelineManagerQueues.tsx")
+BACKUP_SUFFIX = ".pre_p3b"
+
+COMPONENT = r'''// PipelineBranchDay — tier 1: the branch triad validating the day's deals.
+//
+// The counterpart to DailyLogValidation, and deliberately the same shape: deal
+// rows with Validate / Return, a branch line, and a gate that will not let the
+// day close while anything is still open. A branch manager who has learned the
+// daily-log screen should recognise this one immediately.
+//
+// Replaces the per-deal card list for the triad. Those cards were kept through
+// P2 rather than removed, on the grounds that they worked — the pilot's answer
+// was that the inconsistency costs more than the extra detail was worth.
+
+import { useCallback, useEffect, useState } from 'react';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { useToast } from '@/components/Toast';
+import {
+  fetchPipelineValidationQueue, submitPipelineDay, validatePipelineDeal,
+  type PipelineQueue, type PipelineQueueRow,
+} from '@/lib/api';
+
+function todayIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function kes(n: number): string {
+  if (!n) return '—';
+  return Math.round(n).toLocaleString();
+}
+
+export default function PipelineBranchDay() {
+  const { toast } = useToast();
+  const [date, setDate] = useState(todayIso());
+  const [data, setData] = useState<PipelineQueue | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState('');
+  const [returning, setReturning] = useState('');
+  const [note, setNote] = useState('');
+  const [closing, setClosing] = useState(false);
+
+  const load = useCallback(async (d: string) => {
+    setLoading(true);
+    try {
+      setData(await fetchPipelineValidationQueue(d));
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not load the day.' });
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { void load(date); }, [date, load]);
+
+  const rows = data?.rows ?? [];
+  const pending = rows.filter((r) => !r.validated).length;
+  const value = rows.reduce((a, r) => a + (Number(r.deal_value) || 0), 0);
+  const validatedValue = rows.filter((r) => r.validated)
+    .reduce((a, r) => a + (Number(r.deal_value) || 0), 0);
+
+  async function decide(row: PipelineQueueRow, approve: boolean) {
+    if (!approve && !note.trim()) {
+      toast({ tone: 'danger', message: 'A note is required when returning a deal.' });
+      return;
+    }
+    setBusy(row.deal_id);
+    try {
+      // Returning is a QUERY, not a cancellation — validatePipelineDeal already
+      // carries approved:false for exactly this. Routing "return" through the
+      // cancel endpoint would ask to kill a live deal when the manager only
+      // wanted it corrected.
+      await validatePipelineDeal(row.deal_id, { approved: approve, note: note.trim() });
+      toast({ tone: 'success', message: approve ? 'Deal validated.' : 'Returned to the owner.' });
+      setReturning(''); setNote('');
+      await load(date);
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Action failed.' });
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function closeDay() {
+    const branch = rows[0]?.branch || '';
+    if (!branch) return;
+    setClosing(true);
+    try {
+      await submitPipelineDay(branch, date);
+      toast({ tone: 'success', message: `${branch} pipeline day closed and sent for countersigning.` });
+      await load(date);
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not close the day.' });
+    } finally {
+      setClosing(false);
+    }
+  }
+
+  const th = 'whitespace-nowrap px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide';
+  const td = 'whitespace-nowrap px-3 py-2 text-sm';
+
+  return (
+    <Card className="mt-4">
+      <Card.Header>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-gray-900">Pipeline day</h2>
+          <div className="flex items-center gap-2 text-xs">
+            <label className="text-gray-500">Day</label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+                   className="rounded border border-gray-200 px-2 py-1 text-xs" />
+            <span className={'rounded-full px-2.5 py-1 text-[11px] '
+              + (pending ? 'bg-[#FAEEDA] text-[#854F0B]' : 'bg-[#EAF3DE] text-[#3B6D11]')}>
+              {pending ? `${pending} to validate` : 'all validated'}
+            </span>
+          </div>
+        </div>
+      </Card.Header>
+
+      <Card.Body>
+        {loading && <p className="py-8 text-center text-sm text-gray-400">Loading…</p>}
+
+        {!loading && data && data.working_day === false && (
+          <p className="py-8 text-center text-sm text-gray-500">
+            {data.label || 'Rest day'} — no pipeline day is expected.
+          </p>
+        )}
+
+        {!loading && data?.working_day !== false && rows.length === 0 && (
+          <p className="py-8 text-center text-sm text-gray-400">No deals recorded for this day.</p>
+        )}
+
+        {!loading && rows.length > 0 && (
+          <>
+            <div className="overflow-auto rounded-lg border border-gray-200">
+              <table className="w-full border-separate" style={{ borderSpacing: 0 }}>
+                <thead>
+                  <tr>
+                    <th className={`${th} bg-gray-100 text-gray-600`}>Deal</th>
+                    <th className={`${th} bg-gray-100 text-gray-600`}>Owner</th>
+                    <th className={`${th} bg-gray-100 text-gray-600`}>Client</th>
+                    <th className={`${th} bg-gray-100 text-gray-600`}>Product</th>
+                    <th className={`${th} bg-gray-100 text-gray-600`}>Stage</th>
+                    <th className={`${th} bg-[#003D57] text-right text-white`}>Value (KES)</th>
+                    <th className={`${th} bg-gray-100 text-gray-600`}>Decision</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r, i) => {
+                    const bg = i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white';
+                    return (
+                      <tr key={r.deal_id}>
+                        <td className={`${td} ${bg} tabular-nums text-gray-500`}>{r.deal_id}</td>
+                        <td className={`${td} ${bg} text-gray-800`}>{r.staff_name}</td>
+                        <td className={`${td} ${bg} text-gray-600`}>{r.client}</td>
+                        <td className={`${td} ${bg} text-gray-600`}>{r.product}</td>
+                        <td className={`${td} ${bg} text-gray-600`}>{r.stage}</td>
+                        <td className={`${td} ${bg} text-right font-semibold tabular-nums text-[#003D57]`}>
+                          {kes(r.deal_value)}
+                        </td>
+                        <td className={`${td} ${bg}`}>
+                          {r.validated ? (
+                            <span className="text-[11px] text-[#3B6D11]">
+                              ✓ validated{r.validated_by ? ` · ${r.validated_by}` : ''}
+                            </span>
+                          ) : !r.can_act ? (
+                            <span className="text-[11px] text-gray-400">not yours to validate</span>
+                          ) : returning === r.deal_id ? (
+                            <div className="flex flex-col gap-1" style={{ minWidth: 220 }}>
+                              <input autoFocus value={note} onChange={(e) => setNote(e.target.value)}
+                                     placeholder="Why is it going back?"
+                                     className="w-full rounded border border-gray-300 px-2 py-1 text-xs" />
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="secondary" disabled={busy === r.deal_id}
+                                        onClick={() => void decide(r, false)}>Send back</Button>
+                                <Button size="sm" variant="ghost"
+                                        onClick={() => { setReturning(''); setNote(''); }}>Cancel</Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex gap-1">
+                              <Button size="sm" disabled={busy === r.deal_id}
+                                      onClick={() => void decide(r, true)}>Validate</Button>
+                              <Button size="sm" variant="ghost"
+                                      onClick={() => { setReturning(r.deal_id); setNote(''); }}>Return</Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  <tr>
+                    <td className="bg-[#EDF4F8] px-3 py-2 text-sm font-semibold text-gray-800" colSpan={5}>
+                      Branch total · {rows.length} deal{rows.length === 1 ? '' : 's'}
+                    </td>
+                    <td className="bg-[#EDF4F8] px-3 py-2 text-right text-sm font-semibold tabular-nums text-[#003D57]">
+                      {kes(value)}
+                    </td>
+                    <td className="bg-[#EDF4F8] px-3 py-2 text-[11px] text-gray-600">
+                      {kes(validatedValue)} validated
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs text-gray-500">
+                {pending
+                  ? `${pending} deal${pending === 1 ? '' : 's'} still to validate before the day can close.`
+                  : 'Every deal is validated. The day can be closed.'}
+              </span>
+              <Button disabled={pending > 0 || closing} onClick={() => void closeDay()}>
+                {closing ? 'Closing…' : 'Close the day'}
+              </Button>
+            </div>
+          </>
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+'''
+
+PAGE_NEW = r'''// v10.513 Phase 4 Batch β4 — PipelineManagerQueues page.
 //
 // Manager-only page at /pipeline/queues with two tabs:
 //
@@ -603,3 +874,65 @@ function CancellationCard({ deal, onNavigate, onResolved, onErrorToast }: {
     </QueueCard>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    if not os.path.isfile(PAGE):
+        print("ABORT: %s not found. Run from the project root." % PAGE)
+        return 1
+    if os.path.exists(COMP):
+        print("ABORT: %s already exists - P3 looks applied." % COMP)
+        return 1
+
+    cur = open(PAGE, encoding="utf-8").read()
+    if "PipelineDayCountersign" not in cur:
+        print("ABORT: apply patch_p2_pipeline_ui.py first.")
+        return 1
+    if "PipelineBranchDay" in cur:
+        print("ABORT: the page already routes to PipelineBranchDay.")
+        return 1
+
+    # Return must NOT go through the cancel endpoint.
+    if "requestPipelineDealCancel" in COMPONENT or "requestDealCancellation" in COMPONENT:
+        print("ABORT: the component routes Return through a cancel endpoint.")
+        print("       Returning is a query; cancelling kills a live deal.")
+        return 1
+    if "validatePipelineDeal" not in COMPONENT:
+        print("ABORT: the component is not using validatePipelineDeal.")
+        return 1
+    for token in ("Close the day", "Branch total", "pending > 0"):
+        if token not in COMPONENT:
+            print("ABORT: embedded component missing %r." % token)
+            return 1
+    if "tier === 'staff' && <PipelineBranchDay />" not in PAGE_NEW:
+        print("ABORT: the page does not route tier 1 to the new view.")
+        return 1
+    # Every tier must be covered, or the old card list resurfaces for someone.
+    if "tier === 'branch' || tier === 'rollup' || tier === 'staff'" not in PAGE_NEW:
+        print("ABORT: the old deal list is still reachable for some tier.")
+        return 1
+    for name, blob in (("component", COMPONENT), ("page", PAGE_NEW)):
+        for op, cl in (("{", "}"), ("(", ")")):
+            if blob.count(op) != blob.count(cl):
+                print("ABORT: %s unbalanced %s%s." % (name, op, cl))
+                return 1
+    print("  ok  embedded component and page validated")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    open(COMP, "w", encoding="utf-8", newline="").write(COMPONENT)
+    print("CREATED %s" % COMP)
+    shutil.copy2(PAGE, PAGE + BACKUP_SUFFIX)
+    open(PAGE, "w", encoding="utf-8", newline="").write(PAGE_NEW)
+    print("APPLIED %s" % PAGE)
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd && echo TSC_PASSED")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
