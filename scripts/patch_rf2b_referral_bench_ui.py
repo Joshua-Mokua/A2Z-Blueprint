@@ -1,4 +1,297 @@
-// Referrals inbox — Batch B frontend.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+RF2b - the referral bench (frontend). Completes the referral arc.
+
+Mounts on A2Z Sales Referral Analytics, above the existing analytics - nothing
+there is removed.
+
+TWO LISTS, and the SECOND is the reason this exists:
+
+  REFERRALS TO ME     accept, or return with a note. Accepting tells the user
+      the referrer is credited for THE DAY THEY SENT IT, not today - which is
+      the rule RF1 implements and the one people will otherwise get wrong.
+
+  SENT, NOT YET ACTIONED   what you referred that nobody has touched. Today a
+      referrer sends one and hears nothing; no screen anywhere says "three
+      people have been sitting on yours for a week".
+
+NO "EXPIRED" BADGE ANYWHERE. Referrals escalate rather than expire (ruling
+2026-08-09), so an overdue row shows the LADDER of people to lean on, ending at
+the unit owner, who is rendered in bold because they are where it stops. A dead
+"expired" state would contradict the model and tell the referrer their work had
+evaporated.
+
+The clock reads in the units a person thinks in: "6h left", "2 days overdue" -
+not a timestamp they have to subtract from.
+
+Reuses the existing acceptReferral / declineReferral clients rather than adding
+new ones; only the bench types are new.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+REQUIRES RF2a (the bench endpoint).
+
+Usage (from project root, .venv active):
+    python scripts\patch_rf2b_referral_bench_ui.py            # dry run
+    python scripts\patch_rf2b_referral_bench_ui.py --apply    # write + .pre_rf2b backups
+"""
+import os
+import shutil
+import sys
+
+COMP = os.path.join("frontend", "web", "src", "components", "ReferralBench.tsx")
+PAGE = os.path.join("frontend", "web", "src", "pages", "Referrals.tsx")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+BACKUP_SUFFIX = ".pre_rf2b"
+
+TS_NEW = r'''// ── Referral bench (both directions, with the escalation clock) ───────────
+export interface ReferralClock {
+  status: 'due' | 'overdue' | 'decided';
+  state: string; sent_at: string; due_at: string;
+  hours_left: number; overdue_hours: number;
+  escalate_to: { level: string; code: string; name: string; role: string }[];
+}
+export interface ReferralBenchRow {
+  deal_id: string; client: string; product: string; value: number;
+  from_code: string; from_name: string; to_code: string; to_name: string;
+  sent_at: string; clock: ReferralClock;
+}
+export interface ReferralBench {
+  incoming: ReferralBenchRow[];
+  outgoing: ReferralBenchRow[];
+  incoming_overdue: number;
+  outgoing_overdue: number;
+}
+export async function fetchReferralBench(): Promise<ReferralBench> {
+  return getJson<ReferralBench>('/pipeline/referrals/bench');
+}
+
+'''
+
+COMPONENT = r'''// ReferralBench — what is waiting on me, and what I sent that nobody has actioned.
+//
+// The second list is the reason this exists. Today a referrer sends one and
+// hears nothing; there is no screen anywhere that says "three people have been
+// sitting on yours for a week".
+//
+// Referrals do NOT expire (ruling 2026-08-09) — they escalate until a decision
+// is given, stopping at the unit owner. So an overdue row carries the ladder of
+// people to lean on rather than a dead badge saying the referral lapsed.
+
+import { useCallback, useEffect, useState } from 'react';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { useToast } from '@/components/Toast';
+import {
+  fetchReferralBench, acceptReferral, declineReferral,
+  type ReferralBench as Bench, type ReferralBenchRow,
+} from '@/lib/api';
+
+function kes(n: number): string {
+  if (!n) return '—';
+  return Math.round(n).toLocaleString();
+}
+
+function due(row: ReferralBenchRow): { text: string; tone: string } {
+  const c = row.clock;
+  if (c.status === 'overdue') {
+    const d = Math.floor(c.overdue_hours / 24);
+    return {
+      text: d >= 1 ? `${d} day${d === 1 ? '' : 's'} overdue` : `${Math.round(c.overdue_hours)}h overdue`,
+      tone: 'text-[#993556]',
+    };
+  }
+  if (c.hours_left >= 24) return { text: `${Math.floor(c.hours_left / 24)}d left`, tone: 'text-gray-500' };
+  return { text: `${Math.round(c.hours_left)}h left`, tone: 'text-amber-600' };
+}
+
+export default function ReferralBench() {
+  const { toast } = useToast();
+  const [data, setData] = useState<Bench | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState('');
+  const [returning, setReturning] = useState('');
+  const [note, setNote] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      setData(await fetchReferralBench());
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not load the referral bench.' });
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  async function decide(row: ReferralBenchRow, accept: boolean) {
+    if (!accept && !note.trim()) {
+      toast({ tone: 'danger', message: 'A note is required when returning a referral.' });
+      return;
+    }
+    setBusy(row.deal_id);
+    try {
+      if (accept) await acceptReferral(row.deal_id);
+      else await declineReferral(row.deal_id, note.trim());
+      toast({
+        tone: 'success',
+        message: accept
+          ? `Accepted — ${row.from_name || 'the referrer'} is credited for the day they sent it.`
+          : 'Returned to the referrer.',
+      });
+      setReturning(''); setNote('');
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Action failed.' });
+    } finally {
+      setBusy('');
+    }
+  }
+
+  const incoming = data?.incoming ?? [];
+  const outgoing = data?.outgoing ?? [];
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <Card.Header>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-base font-semibold text-gray-900">Referrals to me</h2>
+            <span className="flex items-center gap-2 text-xs">
+              {(data?.incoming_overdue ?? 0) > 0 && (
+                <span className="rounded-full bg-[#FBEAF0] px-2.5 py-1 text-[#993556]">
+                  {data?.incoming_overdue} overdue
+                </span>
+              )}
+              <span className="rounded-full bg-[#E6F1FB] px-2.5 py-1 text-[#0C447C]">
+                {incoming.length} waiting
+              </span>
+            </span>
+          </div>
+        </Card.Header>
+        <Card.Body>
+          {loading && <p className="py-8 text-center text-sm text-gray-400">Loading…</p>}
+
+          {!loading && incoming.length === 0 && (
+            <p className="py-8 text-center text-sm text-gray-400">Nothing is waiting on you.</p>
+          )}
+
+          {!loading && incoming.length > 0 && (
+            <div className="space-y-2">
+              {incoming.map((r) => {
+                const d = due(r);
+                return (
+                  <div key={r.deal_id}
+                       className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 p-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-gray-900">
+                        {r.client || r.deal_id}
+                      </div>
+                      <div className="mt-0.5 text-xs text-gray-500">
+                        {r.product && <span>{r.product} · </span>}
+                        KES {kes(r.value)}
+                        {r.from_name && <span> · from {r.from_name}</span>}
+                      </div>
+                    </div>
+                    <div className={`text-xs tabular-nums ${d.tone}`} style={{ minWidth: 96 }}>
+                      {d.text}
+                    </div>
+                    {returning === r.deal_id ? (
+                      <div className="flex flex-col gap-1" style={{ minWidth: 240 }}>
+                        <input autoFocus value={note} onChange={(e) => setNote(e.target.value)}
+                               placeholder="Why is it going back?"
+                               className="w-full rounded border border-gray-300 px-2 py-1 text-xs" />
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="secondary" disabled={busy === r.deal_id}
+                                  onClick={() => void decide(r, false)}>Send back</Button>
+                          <Button size="sm" variant="ghost"
+                                  onClick={() => { setReturning(''); setNote(''); }}>Cancel</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-1">
+                        <Button size="sm" disabled={busy === r.deal_id}
+                                onClick={() => void decide(r, true)}>Accept</Button>
+                        <Button size="sm" variant="ghost"
+                                onClick={() => { setReturning(r.deal_id); setNote(''); }}>Return</Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      <Card>
+        <Card.Header>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-base font-semibold text-gray-900">Sent, not yet actioned</h2>
+            {(data?.outgoing_overdue ?? 0) > 0 && (
+              <span className="rounded-full bg-[#FBEAF0] px-2.5 py-1 text-xs text-[#993556]">
+                {data?.outgoing_overdue} overdue
+              </span>
+            )}
+          </div>
+        </Card.Header>
+        <Card.Body>
+          {!loading && outgoing.length === 0 && (
+            <p className="py-8 text-center text-sm text-gray-400">
+              Everything you referred has been actioned.
+            </p>
+          )}
+
+          {!loading && outgoing.length > 0 && (
+            <div className="space-y-2">
+              {outgoing.map((r) => {
+                const d = due(r);
+                const ladder = r.clock.escalate_to ?? [];
+                return (
+                  <div key={r.deal_id} className="rounded-lg border border-gray-200 p-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium text-gray-900">
+                          {r.client || r.deal_id}
+                        </div>
+                        <div className="mt-0.5 text-xs text-gray-500">
+                          {r.product && <span>{r.product} · </span>}
+                          KES {kes(r.value)}
+                          {r.to_name && <span> · with {r.to_name}</span>}
+                        </div>
+                      </div>
+                      <div className={`text-xs tabular-nums ${d.tone}`}>{d.text}</div>
+                    </div>
+                    {ladder.length > 0 && (
+                      <div className="mt-2 border-t border-gray-100 pt-2 text-xs text-gray-600">
+                        <span className="text-gray-400">Escalating to </span>
+                        {ladder.map((x, i) => (
+                          <span key={`${x.code}-${i}`}>
+                            {i > 0 && <span className="text-gray-300"> → </span>}
+                            <span className={x.level === 'unit_owner' ? 'font-medium text-gray-800' : ''}>
+                              {x.name}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+    </div>
+  );
+}
+'''
+
+PAGE_NEW = r'''// Referrals inbox — Batch B frontend.
 //
 // Three views over the refer-existing-deal lifecycle:
 //   • Incoming  — pending referrals addressed to me; Accept or Decline (reason).
@@ -647,3 +940,74 @@ export default function Referrals() {
     </div>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (PAGE, APITS):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found. Run from the project root." % p)
+            return 1
+    if os.path.exists(COMP):
+        print("ABORT: %s already exists - RF2b looks applied." % COMP)
+        return 1
+    if not os.path.isfile(os.path.join("utils", "referral_escalation.py")):
+        print("ABORT: apply patch_rf2a_referral_clock.py first - this reads its endpoint.")
+        return 1
+
+    ts = open(APITS, encoding="utf-8").read()
+    if "fetchReferralBench" in ts:
+        print("ABORT: api.ts already has the bench client.")
+        return 1
+    anchor = "export async function acceptReferral(dealId: string): Promise<{ status?: string }> {"
+    if ts.count(anchor) != 1:
+        print("ABORT: api.ts anchor matched %d times." % ts.count(anchor))
+        return 1
+    ts = ts.replace(anchor, TS_NEW + anchor, 1)
+    print("  ok  api.ts - fetchReferralBench")
+
+    for token in ("Sent, not yet actioned", "escalate_to", "Referrals to me"):
+        if token not in COMPONENT:
+            print("ABORT: embedded component missing %r." % token)
+            return 1
+    # Referrals escalate; they do not expire. An "expired" state would
+    # contradict the model and tell the referrer their work had evaporated.
+    # Check for USE, not mention: the component's own header explains that
+    # referrals do NOT expire, and a bare substring match trips on that. This
+    # is the third guard in this codebase to make that mistake.
+    for bad in ("'expired'", '"expired"', ">Expired<", "EXPIRED"):
+        if bad in COMPONENT:
+            print("ABORT: the component renders an expired state (%s) - "
+                  "referrals escalate, they do not expire." % bad)
+            return 1
+    if "ReferralBench" not in PAGE_NEW:
+        print("ABORT: the page does not mount the bench.")
+        return 1
+    for name, blob in (("component", COMPONENT), ("page", PAGE_NEW)):
+        for op, cl in (("{", "}"), ("(", ")")):
+            if blob.count(op) != blob.count(cl):
+                print("ABORT: %s unbalanced %s%s." % (name, op, cl))
+                return 1
+    if "fetchBranchLogHistoryGrid" not in ts:
+        print("ABORT: post-check - api.ts lost an existing client.")
+        return 1
+    print("  ok  post-checks clean")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    open(COMP, "w", encoding="utf-8", newline="").write(COMPONENT)
+    print("CREATED %s" % COMP)
+    for path, content in ((APITS, ts), (PAGE, PAGE_NEW)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd && echo TSC_PASSED")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
