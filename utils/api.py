@@ -6200,6 +6200,7 @@ def pipeline_referrals_by_department(user: dict = Depends(get_current_user)):
                    if scope_codes is None
                    or str(d.get("staff_code") or "") in scope_codes
                    or str(d.get("referred_by_code") or "") in scope_codes]
+    from utils.core import ACTIVE_STAGES
     for d in _scoped_all:
         if d.get("draft"):
             continue
