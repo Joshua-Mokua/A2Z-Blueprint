@@ -57,6 +57,25 @@ def _is_manager(user: dict) -> bool:
     return user.get("is_admin") or "admin" in role or "manager" in role or "head" in role
 
 
+@router.get("/day-context")
+def branch_log_day_context(user: dict = Depends(get_current_user)):
+    """Calendar context for today: position in the year, what remains of it, and
+    how much of that is actually working time under the Kenya work calendar.
+
+    Read-only and cheap; the Daily Log header calls it once on mount.
+    """
+    me = _identity(user)
+    try:
+        from utils import workcal
+        ctx = dict(workcal.day_context())
+    except Exception as exc:
+        raise HTTPException(status_code=500,
+                            detail=f"Work calendar unavailable: {exc}")
+    ctx["staff_name"] = me.get("staff_name", "")
+    ctx["staff_code"] = me.get("staff_code", "")
+    return ctx
+
+
 @router.get("/fields")
 def branch_log_fields(user: dict = Depends(get_current_user)):
     """Role-aware daily-log schema: common base fields + this role's extras."""
@@ -252,6 +271,1463 @@ def branch_log_ranking(days: int = 30, user: dict = Depends(get_current_user)):
     return {"ranking": rows, "days": days, "daily_index_target": target}
 
 
+_DIMS_CACHE = None
+_DIMS_AT = 0.0
+_DIMS_TTL = 300.0   # seconds; matches the roster loader's own cache horizon
+
+
+def _roster_dims() -> dict:
+    """Canonical {canon(staff_code) -> {department, branch, full_name, role}}.
+
+    SOURCE OF TRUTH: data/staff_register.xlsx, read through
+    utils.api_pipeline_scope.get_staff_roster() — the SAME loader the pipeline
+    hierarchy and visibility engine uses. It carries Department, Branch, Unit,
+    Region and Reports To Code, so the grid's dimensions cannot drift from the
+    hierarchy the rest of the system reports against.
+
+    (An earlier revision of this joined data/staff_roster.json — a 362-row
+    shadow of the same population without the reporting column. Two readers,
+    two files, one concept: exactly the drift this codebase keeps paying for.)
+
+    The Daily Log record's own `unit` is free text typed at submit time and is
+    inconsistent in live data ("Fortis" / "Fortis Branch" / "Consumer" /
+    "EKE-CONSUMER BANKING DEPARTMENT"); it is used only as a fallback.
+
+    Keyed on utils.staff_code.canon so KE0439 / KE439 / 439 all resolve.
+    """
+    global _DIMS_CACHE, _DIMS_AT
+    import time as _time
+    from utils.staff_code import canon as _canon
+
+    # P3e: memoised. Without this the map was rebuilt from df.iterrows() on
+    # EVERY call. get_staff_roster() has its own TTL cache; this memoises the
+    # derived lookup so a request does one build, not one per row.
+    if _DIMS_CACHE is not None and (_time.monotonic() - _DIMS_AT) < _DIMS_TTL:
+        return _DIMS_CACHE
+
+    out: dict = {}
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        df = get_staff_roster()
+        if df is None or len(df) == 0:
+            return out
+        cols = set(df.columns)
+
+        def pick(row, *names):
+            for n in names:
+                if n in cols:
+                    v = row.get(n)
+                    if v is not None and str(v).strip() and str(v) != "nan":
+                        return str(v).strip()
+            return ""
+
+        for _, row in df.iterrows():
+            code = pick(row, "Staff Code", "staff_code")
+            if not code:
+                continue
+            out[_canon(code)] = {
+                "department": pick(row, "Department", "department"),
+                "branch":     pick(row, "Branch", "Unit", "branch", "unit"),
+                "full_name":  pick(row, "Staff Name", "staff_name", "full_name"),
+                "role":       pick(row, "Role", "role"),
+                "code":       code,
+            }
+    except Exception:
+        return _DIMS_CACHE or out
+
+    _DIMS_CACHE, _DIMS_AT = out, _time.monotonic()
+    return out
+
+
+def _dims_for(staff_code) -> dict:
+    """Roster dimensions for a staff code, empty dict when unmatched."""
+    from utils.staff_code import canon as _canon
+    return _roster_dims().get(_canon(staff_code)) or {}
+
+
+@router.get("/unit-days")
+def branch_log_unit_days(date: str = "", user: dict = Depends(get_current_user)):
+    """The consolidated roll-up for the Business Manager and the MD.
+
+    Ruling 2026-08-08: VALIDATION TERMINATES. A branch day is countersigned by
+    the Head of Branches; a Head Office unit day by its Director. Nobody
+    re-validates above that. This tier OBSERVES, and may return a day for
+    amendment — it never countersigns.
+
+    Shape:
+        one collapsed BRANCHES node (a roll-up, not an owner) aggregating every
+        branch, plus one row per MD-reporting unit from org_config.hierarchy.
+
+    Because branch days stop at the Head of Branches, the CCB unit here covers
+    only its NON-BRANCH staff — Head of Branches sits inside CCB's subtree, so
+    counting branches again would double them.
+    """
+    from datetime import date as _date
+    from utils.staff_code import canon as _canon_u
+
+    me = _identity(user)
+    my_code = str(me.get("staff_code", "") or "")
+    try:
+        day = _date.fromisoformat(str(date)[:10]) if date else _date.today()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+    iso = day.isoformat()
+
+    try:
+        from utils.org_validator import units_validated_by, branches_validated_by
+        uscope = units_validated_by(my_code)
+        bscope = branches_validated_by(my_code)
+    except Exception:
+        uscope = {"units": [], "owns": [], "top_of_house": False}
+        bscope = {"branches": []}
+
+    if not uscope.get("units") and not bscope.get("branches"):
+        return {"branches": None, "units": [], "date": iso, "top_of_house": False}
+
+    try:
+        from utils import workcal as _wc
+        if not _wc.is_working_day(day):
+            return {"branches": None, "units": [], "date": iso,
+                    "working_day": False, "label": _wc.holiday_label(day),
+                    "top_of_house": bool(uscope.get("top_of_house"))}
+    except Exception:
+        pass
+
+    dims = _roster_dims()
+    blm = BranchLogManager()
+    logs = [l for l in blm.get_history(days=45) if str(l.get("log_date"))[:10] == iso]
+    filed_by = {}
+    for l in logs:
+        filed_by[_canon_u(l.get("staff_code"))] = l
+
+    from utils.branch_day import list_branch_days
+
+    # ── the collapsed BRANCHES node ──────────────────────────────────────────
+    branch_names = sorted({str((d or {}).get("branch") or "").strip()
+                           for d in dims.values()
+                           if str((d or {}).get("branch") or "").strip()
+                           and str((d or {}).get("branch") or "").strip().lower()
+                           != "head office"})
+    subs = list_branch_days(iso, branch_names)
+    brows, tot = [], {"expected": 0, "filed": 0, "validated": 0, "index": 0.0,
+                      "countersigned": 0, "over": 0}
+    for b in branch_names:
+        members = [(d.get("code") or ck, d) for ck, d in dims.items()
+                   if str((d or {}).get("branch") or "").strip() == b]
+        filed = sum(1 for c, _d in members if _canon_u(c) in filed_by)
+        validated = sum(1 for c, _d in members
+                        if (filed_by.get(_canon_u(c)) or {}).get("validated"))
+        rec = subs.get(b) or {}
+        over = 0
+        try:
+            from utils.branch_log_reconcile import reconcile_branch_day
+            over = int((reconcile_branch_day(logs, b, iso) or {}).get("anomaly_count", 0))
+        except Exception:
+            over = 0
+        row = {"key": b, "name": b, "kind": "branch",
+               "expected": len(members), "filed": filed, "validated": validated,
+               "not_filed": max(len(members) - filed, 0),
+               "status": rec.get("status", "draft"),
+               "index": rec.get("branch_index", 0),
+               "owner": rec.get("validated_by_name", "") or rec.get("submitted_by_name", ""),
+               "over_reported": over}
+        brows.append(row)
+        tot["expected"] += row["expected"]; tot["filed"] += row["filed"]
+        tot["validated"] += row["validated"]; tot["index"] += float(row["index"] or 0)
+        tot["over"] += over
+        if row["status"] == "validated":
+            tot["countersigned"] += 1
+
+    branches_node = {
+        "key": "__branches__", "name": "Branches", "kind": "rollup",
+        "expected": tot["expected"], "filed": tot["filed"],
+        "validated": tot["validated"],
+        "not_filed": max(tot["expected"] - tot["filed"], 0),
+        "index": round(tot["index"], 1),
+        "count": len(brows), "countersigned": tot["countersigned"],
+        "over_reported": tot["over"],
+        "owner": "Head of Branches",
+        "children": brows,
+    } if brows else None
+
+    # ── one row per Head Office unit ─────────────────────────────────────────
+    # RULING 2026-08-08: a person's index belongs to the unit that EMPLOYS them.
+    # Higher levels do not re-sum what is already counted below — they ADD their
+    # own increment. So a unit's members are its DIRECT REPORTS, never its whole
+    # subtree; taking the subtree would re-absorb the branches under CCB and
+    # double every branch staff member.
+    #
+    # The dotted line therefore grants VISIBILITY (Head of Consumer sees the
+    # Consumer book across every branch, exactly as the pipeline does) without
+    # moving anybody's index out of their branch.
+    try:
+        from utils.org_validator import direct_reports_of_role
+    except Exception:
+        direct_reports_of_role = None
+
+    urows = []
+    for unit in uscope.get("units", []):
+        codes = set()
+        if direct_reports_of_role:
+            try:
+                codes = {_canon_u(c) for c in direct_reports_of_role(unit)}
+            except Exception:
+                codes = set()
+        members = [(d.get("code") or ck, d) for ck, d in dims.items()
+                   if _canon_u(d.get("code") or ck) in codes]
+
+        if not members:
+            continue
+        filed = sum(1 for c, _d in members if _canon_u(c) in filed_by)
+        validated = sum(1 for c, _d in members
+                        if (filed_by.get(_canon_u(c)) or {}).get("validated"))
+        rec = list_branch_days(iso, [unit]).get(unit) or {}
+        urows.append({
+            "key": unit, "name": unit, "kind": "unit",
+            "expected": len(members), "filed": filed, "validated": validated,
+            "not_filed": max(len(members) - filed, 0),
+            "status": rec.get("status", "draft"),
+            "index": rec.get("branch_index", 0),
+            "owner": rec.get("validated_by_name", "") or rec.get("submitted_by_name", ""),
+            "over_reported": 0,
+            "can_countersign": unit in (uscope.get("owns") or []),
+        })
+    urows.sort(key=lambda r: r["name"])
+
+    return {"branches": branches_node, "units": urows, "date": iso,
+            "working_day": True,
+            "top_of_house": bool(uscope.get("top_of_house")),
+            "can_return": bool(uscope.get("top_of_house")) or _is_admin(user)}
+
+
+@router.get("/branch-days")
+def branch_log_branch_days(date: str = "", user: dict = Depends(get_current_user)):
+    """TIER 2: the branches this caller countersigns, for one day.
+
+    One row per branch: how many staff are expected, filed, validated, whether
+    the Branch Manager has submitted, the branch index, and whether the
+    over-reporting gate is currently breached.
+
+    Scope comes from org_validator.branches_validated_by — an all-view role
+    (MD, Head of Branches) owns every branch; otherwise a branch belongs to the
+    person its Branch Manager reports to. This endpoint decides nothing.
+    """
+    from datetime import date as _date
+    from utils.staff_code import canon as _canon_b
+
+    me = _identity(user)
+    my_code = str(me.get("staff_code", "") or "")
+    try:
+        day = _date.fromisoformat(str(date)[:10]) if date else _date.today()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+    iso = day.isoformat()
+
+    try:
+        from utils.org_validator import branches_validated_by
+        scope = branches_validated_by(my_code)
+    except Exception:
+        scope = {"mode": "", "branches": [], "all_view": False}
+    branches = scope.get("branches") or []
+    if not branches:
+        return {"rows": [], "date": iso, "mode": scope.get("mode", ""),
+                "all_view": bool(scope.get("all_view")), "working_day": True}
+
+    try:
+        from utils import workcal as _wc
+        if not _wc.is_working_day(day):
+            return {"rows": [], "date": iso, "mode": scope.get("mode", ""),
+                    "all_view": bool(scope.get("all_view")), "working_day": False,
+                    "label": _wc.holiday_label(day)}
+    except Exception:
+        pass
+
+    dims = _roster_dims()
+    # Expected headcount per branch, from the roster — so a branch with nobody
+    # filing still appears rather than vanishing.
+    expected = {}
+    for _ck, d in dims.items():
+        b = str((d or {}).get("branch") or "").strip()
+        if b:
+            expected[b] = expected.get(b, 0) + 1
+
+    blm = BranchLogManager()
+    logs = [l for l in blm.get_history(days=45) if str(l.get("log_date"))[:10] == iso]
+    by_branch_logs = {}
+    for l in logs:
+        d = dims.get(_canon_b(l.get("staff_code"))) or {}
+        b = str(d.get("branch") or l.get("unit") or "").strip()
+        by_branch_logs.setdefault(b, []).append(l)
+
+    from utils.branch_day import list_branch_days
+    subs = list_branch_days(iso, branches)
+
+    rows = []
+    for b in branches:
+        blogs = by_branch_logs.get(b, [])
+        filed = len(blogs)
+        validated = sum(1 for l in blogs if l.get("validated"))
+        rec = subs.get(b) or {}
+        breaches = 0
+        try:
+            from utils.branch_log_reconcile import reconcile_branch_day
+            breaches = int((reconcile_branch_day(logs, b, iso) or {}).get("anomaly_count", 0))
+        except Exception:
+            breaches = 0
+        rows.append({
+            "branch": b,
+            "expected": expected.get(b, 0),
+            "filed": filed,
+            "validated": validated,
+            "pending": max(filed - validated, 0),
+            "not_filed": max(expected.get(b, 0) - filed, 0),
+            "status": rec.get("status", "draft"),
+            "branch_index": rec.get("branch_index", 0),
+            "submitted_by_name": rec.get("submitted_by_name", ""),
+            "submitted_at": rec.get("submitted_at", ""),
+            "return_note": rec.get("return_note", ""),
+            "validated_by_name": rec.get("validated_by_name", ""),
+            "over_reported": breaches,
+        })
+    rows.sort(key=lambda r: r["branch"])
+    return {"rows": rows, "date": iso, "mode": scope.get("mode", ""),
+            "all_view": bool(scope.get("all_view")), "working_day": True}
+
+
+@router.post("/branch-days/submit")
+def branch_log_branch_day_submit(payload: dict = Body(default_factory=dict),
+                                 user: dict = Depends(get_current_user)):
+    """TIER 1: the Branch Manager closes the day.
+
+    Refuses while the over-reporting gate is breached — "nothing should flow if
+    what is being submitted is more than the actual branch performance".
+    """
+    from datetime import date as _date
+    me = _identity(user)
+    branch = str(payload.get("branch", "") or "").strip()
+    day = str(payload.get("date") or _date.today())[:10]
+    if not branch:
+        raise HTTPException(status_code=400, detail="branch is required")
+
+    try:
+        from utils.org_validator import staff_validated_by
+        scope = staff_validated_by(me.get("staff_code", ""))
+    except Exception:
+        scope = {"mode": "", "codes": []}
+    if scope.get("mode") != "triad" and not _is_admin(user):
+        raise HTTPException(status_code=403,
+                            detail="Only the branch management triad can close a branch day.")
+
+    blm = BranchLogManager()
+    logs = [l for l in blm.get_history(days=45) if str(l.get("log_date"))[:10] == day]
+    try:
+        from utils.branch_log_reconcile import reconcile_branch_day
+        recon = reconcile_branch_day(logs, branch, day) or {}
+    except Exception:
+        recon = {}
+    if int(recon.get("anomaly_count", 0)) > 0:
+        over = [k for k, m in (recon.get("metrics") or {}).items() if m.get("anomaly")]
+        raise HTTPException(
+            status_code=409,
+            detail="Over-reported against the branch actual: " + ", ".join(over[:6]))
+
+    from utils.branch_day import submit_branch_day
+    rec = submit_branch_day(
+        branch, day, me.get("staff_code", ""), me.get("staff_name", ""),
+        float(payload.get("branch_index") or 0),
+        payload.get("staff_totals") or {}, payload.get("control_totals") or {},
+        payload.get("counts") or {})
+    audit_log("BRANCH_DAY_SUBMIT", str(user.get("username", "") or ""),
+              detail=f"branch={branch} date={day} index={rec.get('branch_index')}")
+    return {"branch_day": rec}
+
+
+@router.post("/branch-days/validate")
+def branch_log_branch_day_validate(payload: dict = Body(default_factory=dict),
+                                   user: dict = Depends(get_current_user)):
+    """TIER 2: countersign, or return to the Branch Manager with a reason."""
+    from datetime import date as _date
+    me = _identity(user)
+    branch = str(payload.get("branch", "") or "").strip()
+    day = str(payload.get("date") or _date.today())[:10]
+    approve = bool(payload.get("approved", True))
+    note = str(payload.get("note", "") or "")
+    if not branch:
+        raise HTTPException(status_code=400, detail="branch is required")
+
+    try:
+        from utils.org_validator import branches_validated_by
+        scope = branches_validated_by(me.get("staff_code", ""))
+    except Exception:
+        scope = {"branches": []}
+    if branch not in (scope.get("branches") or []) and not _is_admin(user):
+        raise HTTPException(status_code=403,
+                            detail=f"{branch} is not a branch you countersign.")
+
+    from utils.branch_day import validate_branch_day, return_branch_day
+    try:
+        rec = (validate_branch_day(branch, day, me.get("staff_code", ""),
+                                   me.get("staff_name", ""), note)
+               if approve else
+               return_branch_day(branch, day, me.get("staff_code", ""),
+                                 me.get("staff_name", ""), note))
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    if not approve:
+        # E4: tell the branch manager who submitted it, not the branch at large.
+        try:
+            from utils.branch_log_notify import notify_branch_day_returned
+            notify_branch_day_returned(str(rec.get("submitted_by") or ""),
+                                       branch, day,
+                                       str(me.get("staff_name") or ""), note)
+        except Exception:
+            pass
+    audit_log("BRANCH_DAY_VALIDATE" if approve else "BRANCH_DAY_RETURN",
+              str(user.get("username", "") or ""),
+              detail=f"branch={branch} date={day}")
+    return {"branch_day": rec}
+
+
+@router.get("/exception-reasons")
+def branch_log_exception_reasons(user: dict = Depends(get_current_user)):
+    """The exception taxonomy for the UI, straight from config.
+
+    Each entry carries excuses_target so the client can warn a manager that a
+    reason will (or will not) remove the day's target before they commit to it.
+    """
+    from utils.branch_log_exceptions import reasons
+    return {"reasons": reasons()}
+
+
+@router.post("/exceptions")
+def branch_log_set_exception(payload: dict = Body(default_factory=dict),
+                             user: dict = Depends(get_current_user)):
+    """Record WHY a staff member has no log for a day.
+
+    Permission is the same as validating that person's log — the branch triad
+    inside a branch, the line manager at Head Office — because excusing a day
+    changes their variance, which is a validation-weight decision.
+
+    payload: { staff_code, date, reason, note }
+    """
+    from datetime import date as _date
+    me = _identity(user)
+    staff_code = str(payload.get("staff_code", "") or "").strip()
+    day = str(payload.get("date") or _date.today())[:10]
+    reason = str(payload.get("reason", "") or "").strip()
+    note = str(payload.get("note", "") or "")
+    if not staff_code:
+        raise HTTPException(status_code=400, detail="staff_code is required")
+
+    if not _is_admin(user):
+        try:
+            from utils.org_validator import can_validate_daily_log
+            allowed = can_validate_daily_log(me.get("staff_code", ""), staff_code)
+        except Exception:
+            allowed = False
+        if not allowed:
+            raise HTTPException(
+                status_code=403,
+                detail="You are not a permitted validator for this staff member.")
+
+    # A working day only: excusing a rest day is meaningless, and allowing it
+    # would let a manager paper over days that never carried a target anyway.
+    try:
+        from utils import workcal as _wc
+        if not _wc.is_working_day(day):
+            raise HTTPException(
+                status_code=400,
+                detail="That date is not a working day — it already carries no target.")
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
+    from utils.branch_log_exceptions import set_exception
+    try:
+        rec = set_exception(staff_code, day, reason, note,
+                            me.get("staff_code", ""), me.get("staff_name", ""))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    audit_log("BRANCH_LOG_EXCEPTION", str(user.get("username", "") or ""),
+              detail=f"staff={staff_code} date={day} reason={reason} "
+                     f"excuses={rec.get('excuses_target')}")
+    return {"exception": rec}
+
+
+@router.post("/exceptions/clear")
+def branch_log_clear_exception(payload: dict = Body(default_factory=dict),
+                               user: dict = Depends(get_current_user)):
+    """Remove an exception — the day reverts to carrying its normal target."""
+    from datetime import date as _date
+    me = _identity(user)
+    staff_code = str(payload.get("staff_code", "") or "").strip()
+    day = str(payload.get("date") or _date.today())[:10]
+    if not staff_code:
+        raise HTTPException(status_code=400, detail="staff_code is required")
+    if not _is_admin(user):
+        try:
+            from utils.org_validator import can_validate_daily_log
+            allowed = can_validate_daily_log(me.get("staff_code", ""), staff_code)
+        except Exception:
+            allowed = False
+        if not allowed:
+            raise HTTPException(status_code=403,
+                                detail="You are not a permitted validator for this staff member.")
+    from utils.branch_log_exceptions import clear_exception
+    removed = clear_exception(staff_code, day)
+    audit_log("BRANCH_LOG_EXCEPTION_CLEAR", str(user.get("username", "") or ""),
+              detail=f"staff={staff_code} date={day} removed={removed}")
+    return {"removed": removed}
+
+
+@router.get("/non-submitters")
+def branch_log_non_submitters(date: str = "", user: dict = Depends(get_current_user)):
+    """TIER 2 accountability: everyone across the caller's branches who has not
+    filed for this day, aged in BUSINESS days.
+
+    "Days outstanding" is the run of consecutive WORKING days ending on this
+    date that the person has missed — so a Sunday or a gazetted holiday never
+    inflates it, and neither does a day they were excused for. The oldest
+    neglect sorts to the top, because that is what needs chasing first.
+
+    Excused days are excluded outright: a person on approved leave is not a
+    follow-up item, and listing them would train managers to ignore the list.
+    """
+    from datetime import date as _date, timedelta as _td
+    from utils.staff_code import canon as _canon_n
+
+    me = _identity(user)
+    my_code = str(me.get("staff_code", "") or "")
+    try:
+        day = _date.fromisoformat(str(date)[:10]) if date else _date.today()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+
+    # R3: the MD and Business Manager observe the WHOLE bank, so their follow-up
+    # list is not confined to branches — a Head Office unit that never files is
+    # exactly as much a follow-up item as a branch that never files.
+    top = False
+    try:
+        from utils.org_validator import branches_validated_by, units_validated_by
+        scope = branches_validated_by(my_code)
+        top = bool((units_validated_by(my_code) or {}).get("top_of_house"))
+    except Exception:
+        scope = {"branches": []}
+    branches = set(scope.get("branches") or [])
+    if not branches and not top:
+        return {"rows": [], "date": day.isoformat(), "total": 0}
+
+    try:
+        from utils import workcal as _wc
+        if not _wc.is_working_day(day):
+            return {"rows": [], "date": day.isoformat(), "total": 0,
+                    "working_day": False}
+    except Exception:
+        pass
+
+    # The last 15 working days, newest first — enough to age a streak without
+    # walking the whole store.
+    window, d = [], day
+    while len(window) < 15:
+        try:
+            from utils import workcal as _wc2
+            if _wc2.is_working_day(d):
+                window.append(d)
+        except Exception:
+            if d.weekday() != 6:
+                window.append(d)
+        d -= _td(days=1)
+
+    blm = BranchLogManager()
+    logs = blm.get_history(days=40)
+    filed = set()
+    for l in logs:
+        filed.add((_canon_n(l.get("staff_code")), str(l.get("log_date"))[:10]))
+
+    try:
+        from utils.branch_log_exceptions import exception_for
+    except Exception:
+        exception_for = lambda *_a, **_k: None   # noqa: E731
+
+    dims = _roster_dims()
+    rows = []
+    iso = day.isoformat()
+    for ck, dd in dims.items():
+        branch = str((dd or {}).get("branch") or "").strip()
+        if not top and branch not in branches:
+            continue
+        code = dd.get("code") or ck
+        if (_canon_n(code), iso) in filed:
+            continue
+        exc = exception_for(code, iso) or {}
+        if exc.get("excuses_target"):
+            continue          # excused is not a follow-up item
+
+        streak = 0
+        for wd in window:
+            wiso = wd.isoformat()
+            if (_canon_n(code), wiso) in filed:
+                break
+            e = exception_for(code, wiso) or {}
+            if e.get("excuses_target"):
+                break
+            streak += 1
+
+        rows.append({
+            "staff_code": code,
+            "staff_name": dd.get("full_name", ""),
+            "role": dd.get("role", ""),
+            "branch": branch,
+            "department": dd.get("department", ""),
+            "days_outstanding": streak,
+            "exception": exc.get("reason", ""),
+            "exception_note": exc.get("note", ""),
+        })
+
+    rows.sort(key=lambda r: (-r["days_outstanding"], r["branch"], r["staff_name"]))
+    return {"rows": rows, "date": iso, "total": len(rows), "working_day": True,
+            "bank_wide": top}
+
+
+@router.get("/validation-queue")
+def branch_log_validation_queue(date: str = "", branch: str = "", unit: str = "",
+                                user: dict = Depends(get_current_user)):
+    """Daily-log validation queue for ONE day, in the same row shape as the
+    history grid so Manager Queues can reuse its column and colour vocabulary.
+
+    WHO APPEARS: every staff member this caller is a permitted validator for,
+    per utils.org_validator.daily_log_validators_for — the branch management
+    triad inside a branch, the pure line manager at Head Office. This endpoint
+    does not decide that rule; it asks for it.
+
+    Staff who filed NOTHING are included (ruling 2026-08-08) so a manager can
+    see who owes a log, carrying status='missing' and no actions.
+
+    Rest days are excluded outright: nobody should be asked to validate a Sunday.
+    """
+    from datetime import date as _date
+    from utils.branch_log import metric_keys, fields_schema
+    from utils.branch_log_analytics import _target_for
+    from utils.staff_code import canon as _canon_q
+
+    me = _identity(user)
+    my_code = str(me.get("staff_code", "") or "")
+
+    try:
+        day = _date.fromisoformat(str(date)[:10]) if date else _date.today()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+
+    # Rest days carry no target and nothing to validate.
+    try:
+        from utils import workcal as _wc
+        if not _wc.is_working_day(day):
+            return {"rows": [], "columns": [], "date": day.isoformat(),
+                    "working_day": False, "label": _wc.holiday_label(day),
+                    "mode": "", "pending": 0}
+    except Exception:
+        pass
+
+    dims = _roster_dims()
+
+    # Everyone this caller may validate — ONE register scan via the inverse
+    # lookup. Asking daily_log_validators_for() per staff member was O(n^2)
+    # across 363 people (~132k pandas row reads) and hung the tab.
+    from utils.org_validator import staff_validated_by
+    inspect_only = False
+    if unit:
+        # R3: inspect a HEAD OFFICE unit read-only. Members are the unit's DIRECT
+        # REPORTS (ruling 2026-08-09) — a subtree would re-absorb the branches.
+        try:
+            from utils.org_validator import units_validated_by, direct_reports_of_role
+            uscope = units_validated_by(my_code)
+        except Exception:
+            uscope, direct_reports_of_role = {"units": []}, None
+        if unit not in (uscope.get("units") or []) and not _is_admin(user):
+            raise HTTPException(status_code=403,
+                                detail=f"{unit} is not a unit you oversee.")
+        inspect_only = True
+        mode = "inspect-unit"
+        codes = set()
+        if direct_reports_of_role:
+            try:
+                codes = {_canon_q(c) for c in direct_reports_of_role(unit)}
+            except Exception:
+                codes = set()
+        mine = [(d.get("code") or ck, d) for ck, d in dims.items()
+                if _canon_q(d.get("code") or ck) in codes]
+    elif branch:
+        # B3: TIER-2 INSPECTION. A Head of Branches opening a branch sees that
+        # branch's staff READ-ONLY — they countersign the branch, they do not
+        # validate individuals (ruling 2026-08-08). can_act is forced false
+        # below, so the buttons never render for them.
+        try:
+            from utils.org_validator import branches_validated_by
+            scope2 = branches_validated_by(my_code)
+        except Exception:
+            scope2 = {"branches": []}
+        if branch not in (scope2.get("branches") or []) and not _is_admin(user):
+            raise HTTPException(status_code=403,
+                                detail=f"{branch} is not a branch you oversee.")
+        inspect_only = True
+        mode = "inspect"
+        mine = [(d.get("code") or ck, d) for ck, d in dims.items()
+                if str((d or {}).get("branch") or "").strip() == branch]
+    else:
+        try:
+            res = staff_validated_by(my_code)
+        except Exception:
+            res = {"mode": "", "codes": []}
+        mode = res.get("mode", "")
+        mine = []
+        for code in res.get("codes", []):
+            d = dims.get(_canon_q(code)) or {}
+            mine.append((d.get("code") or code, d))
+
+    if not mine:
+        return {"rows": [], "columns": [], "date": day.isoformat(),
+                "working_day": True, "label": "", "mode": mode, "pending": 0}
+
+    blm = BranchLogManager()
+    logs = blm.get_history(days=45)
+    iso = day.isoformat()
+    by_code = {}
+    for l in logs:
+        if str(l.get("log_date"))[:10] == iso:
+            by_code[_canon_q(l.get("staff_code"))] = l
+
+    mkeys = metric_keys()
+    rows, pending = [], 0
+    for code, d in mine:
+        l = by_code.get(_canon_q(code))
+        base = {
+            "log_date": iso,
+            "staff_code": code,
+            "staff_name": d.get("full_name", ""),
+            "role": d.get("role", ""),
+            "department": d.get("department", ""),
+            "branch": d.get("branch", ""),
+        }
+        if not l:
+            # E2: a missing day may carry an exception. An EXCUSED one has no
+            # target, so it must not read as a deficit the manager should chase.
+            try:
+                from utils.branch_log_exceptions import exception_for
+                exc = exception_for(code, iso) or {}
+            except Exception:
+                exc = {}
+            base.update({"log_id": "", "status": "missing", "validated": False,
+                         "auto_submitted": False, "index": 0.0,
+                         "target": _target_for({"log_date": iso,
+                                                "staff_code": code}),
+                         "remarks": "", "manager_note": "", "can_act": False,
+                         "exception": exc.get("reason", ""),
+                         "exception_note": exc.get("note", ""),
+                         "excused": bool(exc.get("excuses_target"))})
+            for k in mkeys:
+                base[k] = 0
+        else:
+            status = str(l.get("status", "submitted"))
+            validated = bool(l.get("validated"))
+            base.update({
+                "log_id": str(l.get("id", "")),
+                "status": status,
+                "validated": validated,
+                "auto_submitted": bool(l.get("auto_submitted")),
+                "index": round(float(l.get("index") or 0), 2),
+                "target": _target_for(l),
+                "remarks": str(l.get("remarks") or ""),
+                "manager_note": str(l.get("manager_note") or ""),
+                "validated_by": str(l.get("validated_by") or ""),
+                "can_act": (not inspect_only) and (not validated)
+                           and status in ("submitted", "auto_submitted"),
+            })
+            for k in mkeys:
+                base[k] = l.get(k, 0)
+            if base["can_act"]:
+                pending += 1
+        rows.append(base)
+
+    rows.sort(key=lambda r: (r["status"] != "missing", str(r.get("staff_name") or "")))
+
+    from utils.branch_log_analytics import tier_of
+    columns = [{"key": f["key"], "label": f["label"], "unit": f.get("unit", ""),
+                "type": f.get("type", "int"), "tier": tier_of(f["key"])}
+               for f in fields_schema() if f.get("type") != "text"]
+
+    # B1: the branch the caller closes, its control totals for the day, and the
+    # over-reporting reconciliation. The branch line is BOTH the manager's entry
+    # point for unattributed activity AND the control total the checker uses —
+    # one number, not two competing ones.
+    branch = ""
+    for _c, _d in mine:
+        b = str((_d or {}).get("branch") or "").strip()
+        if b:
+            branch = b
+            break
+    control, recon = {}, {}
+    if branch:
+        try:
+            from utils.branch_log_reconcile import control_totals_for, reconcile_branch_day
+            control = control_totals_for(branch, iso) or {}
+            recon = reconcile_branch_day(logs, branch, iso) or {}
+        except Exception:
+            control, recon = {}, {}
+
+    # Branch productivity index (ruling 2026-08-08): the sum of validated staff
+    # indices PLUS whatever the manager adds on the branch line, scored on the
+    # SAME activity weights — one scale, not a second scoring system. Because
+    # the gate guarantees reported <= actual, the branch line's addition is the
+    # unattributed remainder, so a column with a control total scores its actual
+    # and a column without one scores what staff reported.
+    try:
+        from utils.branch_log import activity_weights
+        w = activity_weights()
+    except Exception:
+        w = {}
+    staff_totals = {}
+    for r in rows:
+        if r.get("status") == "missing":
+            continue
+        for k in mkeys:
+            staff_totals[k] = staff_totals.get(k, 0) + float(r.get(k) or 0)
+    branch_index = 0.0
+    for k in mkeys:
+        reported = float(staff_totals.get(k, 0) or 0)
+        actual = control.get(k)
+        use = float(actual) if actual not in (None, "") else reported
+        branch_index += use * float(w.get(k, 0) or 0)
+
+    return {"rows": rows, "columns": columns, "date": iso, "working_day": True,
+            "label": "", "mode": mode, "pending": pending,
+            "branch": branch,
+            "staff_totals": {k: round(v, 2) for k, v in staff_totals.items()},
+            "control_totals": control,
+            "reconciliation": recon,
+            "branch_index": round(branch_index, 2),
+            "validated_count": sum(1 for r in rows if r.get("validated")),
+            "filed_count": sum(1 for r in rows if r.get("status") != "missing")}
+
+
+@router.get("/history-grid")
+def branch_log_history_grid(days: int = 30, unit: str = "", include_missing: bool = True,
+                            user: dict = Depends(get_current_user)):
+    """Wide history grid: one row per staff per day with all metric columns, the daily index,
+    target, variance, and the running CARRIED-FORWARD variance (per staff). Scope-aware:
+    admin sees all; a manager sees their reporting subtree; everyone else sees themselves.
+
+    Carried-forward variance is computed at read time per staff member (honouring admin reset
+    markers and healing on validation) via utils.branch_log_analytics.carried_forward.
+    """
+    from utils.branch_log import metric_keys, fields_schema
+    from utils.branch_log_analytics import carried_forward, deadline_time
+
+    me = _identity(user)
+    blm = BranchLogManager()
+    logs = blm.get_history(days=days)
+    if unit and unit != "All":
+        logs = [l for l in logs if str(l.get("unit", "")) == unit]
+
+    # SCOPE IS NOT DECIDED HERE. get_visible_staff_codes -> core_audit.
+    # get_visible_staff is the same engine the Pipeline, Referrals and BSC use.
+    # It already knows admins, the MD, _ALL_VIEW_ROLES (which includes Head of
+    # Branches), register root roles, data custodians, Head-Office segment scope
+    # for CIB/CCB/Consumer/Commercial, and the REPORTING_TREE walk.
+    #
+    # It reads full_name, unit, department and can_view_all from user_data - a
+    # stripped-down dict silently degrades it toward self-only - so enrich the
+    # caller context from the stored record before calling.
+    _stored = {}
+    try:
+        from utils.core import UserManager
+        _stored = UserManager().users.get(str(user.get("username", "")) or "") or {}
+    except Exception:
+        _stored = {}
+    user_ctx = {
+        "staff_code":   me.get("staff_code", "") or str(_stored.get("staff_code", "") or ""),
+        "role":         me.get("role", "") or str(_stored.get("role", "") or ""),
+        "full_name":    str(_stored.get("full_name", "") or me.get("staff_name", "") or ""),
+        "unit":         me.get("unit", "") or str(_stored.get("unit", "") or ""),
+        "department":   str(_stored.get("department", "") or ""),
+        "is_admin":     bool(user.get("is_admin") or _stored.get("is_admin")),
+        "can_view_all": bool(user.get("can_view_all") or _stored.get("can_view_all")),
+    }
+    from utils.staff_code import canon as _canon_scope
+    try:
+        from utils.api_pipeline_scope import get_visible_staff_codes
+        visible = {_canon_scope(c) for c in get_visible_staff_codes(user_ctx)}
+    except Exception:
+        visible = set()
+    visible.discard("")
+    if not visible and user_ctx["staff_code"]:
+        visible = {_canon_scope(user_ctx["staff_code"])}
+
+    scoped = [l for l in logs if _canon_scope(l.get("staff_code")) in visible]
+
+    # Group by staff so carried-forward runs per person, then flatten to grid rows.
+    by_staff: dict = {}
+    for l in scoped:
+        by_staff.setdefault(str(l.get("staff_code") or ""), []).append(l)
+
+    mkeys = metric_keys()
+
+    # Resolve the roster ONCE per request; the row loop then does plain dict
+    # lookups instead of re-deriving the map for every row.
+    from utils.staff_code import canon as _canon_code
+    _dims = _roster_dims()
+
+    if include_missing:
+        from datetime import date as _date, timedelta as _td
+        from utils.staff_code import canon as _canon
+        try:
+            from utils import workcal as _wc
+        except Exception:
+            _wc = None
+
+        dims = _dims
+        # One scope decision per request, made above by the canonical engine.
+        # Intersected with the roster so rows are only synthesised for people
+        # who actually exist in staff_register.xlsx.
+        scope_codes = {c for c in visible if c in dims} or set(visible)
+        scope_codes.discard("")
+
+        # Working days in the window, newest-inclusive.
+        today = _date.today()
+        window = [today - _td(days=i) for i in range(int(days))]
+        work_days = [d for d in window if (_wc.is_working_day(d) if _wc else d.weekday() != 6)]
+
+        # Index existing logs by canonical code + date so the fill never
+        # duplicates a day someone actually filed.
+        filed = {}
+        for code, ls in by_staff.items():
+            for l in ls:
+                filed.setdefault(_canon(code), set()).add(str(l.get("log_date"))[:10])
+
+        for ck in scope_codes:
+            d = dims.get(ck) or {}
+            have = filed.get(ck, set())
+            bucket = by_staff.setdefault(d.get("code") or ck, [])
+            for day in work_days:
+                iso = day.isoformat()
+                if iso in have:
+                    continue
+                blank = {
+                    "log_date": iso,
+                    "staff_code": d.get("code") or ck,
+                    "staff_name": d.get("full_name", ""),
+                    "role": d.get("role", ""),
+                    "unit": d.get("branch", ""),
+                    "status": "missing",
+                    "validated": False,
+                    "auto_submitted": False,
+                    "index": 0.0,
+                    "remarks": "",
+                    "manager_note": "",
+                }
+                for k in mkeys:
+                    blank[k] = 0
+                bucket.append(blank)
+    rows = []
+    for sc, staff_logs in by_staff.items():
+        annotated = carried_forward(staff_logs)  # sorted asc, adds target/variance/cf_variance
+        for r in annotated:
+            row = {
+                "log_date":   r.get("log_date"),
+                "staff_code": r.get("staff_code"),
+                "staff_name": r.get("staff_name"),
+                "role":       r.get("role"),
+                "unit":       r.get("unit"),
+                "status":     r.get("status", "submitted"),
+                "validated":  bool(r.get("validated")),
+                "auto_submitted": bool(r.get("auto_submitted")),
+                "index":      round(float(r.get("index") or 0), 2),
+                "target":     r.get("target"),
+                "variance":   r.get("variance"),
+                "cf_variance": r.get("cf_variance"),
+                # WC-2b sets working_day on the annotated row (false on Sundays
+                # and gazetted holidays). The endpoint was dropping it, so the
+                # grid could never distinguish a rest day from a missed one and
+                # rendered every Sunday as 0/0/0.
+                "working_day":  bool(r.get("working_day", True)),
+                # P3b: the day's note travels with the row so a manager reading
+                # the spreadsheet sees the context without opening each entry.
+                "remarks":      str(r.get("remarks") or ""),
+                "manager_note": str(r.get("manager_note") or ""),
+            }
+            # P3c: canonical dimensions from the roster. The log's own free-text
+            # `unit` stays on the row for backward compatibility, but the grid
+            # filters on department/branch because those are the structure the
+            # bank actually reports against.
+            _d = _dims.get(_canon_code(r.get("staff_code"))) or {}
+            row["department"] = _d.get("department", "")
+            row["branch"] = _d.get("branch", "") or str(r.get("unit") or "")
+            if _d.get("full_name"):
+                row["staff_name"] = _d["full_name"]
+            for k in mkeys:
+                row[k] = r.get(k, 0)
+            rows.append(row)
+
+    # newest first for display; the client can re-sort
+    rows.sort(key=lambda x: (str(x.get("log_date", "")), str(x.get("staff_code", ""))), reverse=True)
+
+    # column metadata for the grid header (label + unit + tier), derived from the schema
+    from utils.branch_log_analytics import tier_of
+    schema = fields_schema()
+    columns = [{"key": f["key"], "label": f["label"], "unit": f.get("unit", ""),
+                "type": f.get("type", "int"), "tier": tier_of(f["key"])}
+               for f in schema if f.get("type") != "text"]
+
+    return {
+        "rows": rows,
+        "columns": columns,
+        "days": days,
+        # Derived from what the engine RETURNED, so the chip reflects real
+        # visibility rather than a role-string guess.
+        "scope_tier": ("bank" if len(visible) >= max(len(_dims), 1)
+                       else ("subtree" if len(visible) > 1 else "self")),
+        "visible_staff": len(visible),
+
+        "deadline_time": deadline_time(),
+    }
+
+
+@router.post("/{log_id}/return")
+def branch_log_return(log_id: str, payload: dict = Body(default_factory=dict),
+                      user: dict = Depends(get_current_user)):
+    """Manager returns a submitted/auto-submitted log for fill/resubmission (within 3 days)."""
+    if not _is_manager(user):
+        raise HTTPException(status_code=403, detail="Supervisor/manager access required.")
+    from utils.branch_log_state import return_log
+    note = str(payload.get("note", "") or "")
+    blm = BranchLogManager()
+    try:
+        rec = return_log(blm, log_id, str(user.get("username", "") or ""), note)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    # E4: the person must know their log came back, and why. Best-effort - a
+    # mail failure must never fail the return itself.
+    try:
+        from utils.branch_log_notify import notify_log_returned
+        notify_log_returned(str(rec.get("staff_code") or ""),
+                            str(rec.get("log_date") or ""),
+                            str(_identity(user).get("staff_name") or ""), note)
+    except Exception:
+        pass
+    audit_log("BRANCH_LOG_RETURN", str(user.get("username", "") or ""), detail=f"log={log_id}")
+    return {"log": rec}
+
+
+@router.post("/{log_id}/unlock")
+def branch_log_unlock(log_id: str, user: dict = Depends(get_current_user)):
+    """Admin reopens a locked log to 'returned' (editable by the author)."""
+    if not _is_admin(user):
+        raise HTTPException(status_code=403, detail="Admin authority required.")
+    from utils.branch_log_state import admin_unlock
+    blm = BranchLogManager()
+    try:
+        rec = admin_unlock(blm, log_id, str(user.get("username", "") or ""))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    audit_log("BRANCH_LOG_UNLOCK", str(user.get("username", "") or ""), detail=f"log={log_id}")
+    return {"log": rec}
+
+
+@router.get("/impact-tiers")
+def branch_log_impact_tiers_get(user: dict = Depends(get_current_user)):
+    """The 80/20 impact matrix: {activity_key: 'high'|'medium'|'low'} + the activity schema."""
+    from utils.branch_log_analytics import impact_tiers
+    from utils.branch_log import fields_schema
+    schema = [{"key": f["key"], "label": f["label"], "unit": f.get("unit", "")}
+              for f in fields_schema() if f.get("type") != "text"]
+    return {"impact_tiers": impact_tiers(), "activities": schema}
+
+
+@router.post("/impact-tiers")
+def branch_log_impact_tiers_set(payload: dict = Body(default_factory=dict),
+                                user: dict = Depends(get_current_user)):
+    """Admin assigns activities to impact tiers. payload: {tiers: {activity_key: tier}}."""
+    if not _is_admin(user):
+        raise HTTPException(status_code=403, detail="Admin authority required.")
+    from utils.branch_log_analytics import set_impact_tier, impact_tiers
+    tiers_in = payload.get("tiers", {})
+    if not isinstance(tiers_in, dict):
+        raise HTTPException(status_code=400, detail="tiers must be an object")
+    for k, v in tiers_in.items():
+        try:
+            set_impact_tier(str(k), str(v))
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    audit_log("BRANCH_LOG_IMPACT_TIERS", str(user.get("username", "") or ""), "tiers updated")
+    return {"status": "saved", "impact_tiers": impact_tiers()}
+
+
+@router.post("/cf-reset")
+def branch_log_cf_reset(payload: dict = Body(default_factory=dict),
+                        user: dict = Depends(get_current_user)):
+    """Admin records a carried-forward variance reset effective on a date (default today)."""
+    if not _is_admin(user):
+        raise HTTPException(status_code=403, detail="Admin authority required.")
+    from utils.branch_log_analytics import add_cf_reset_marker
+    from datetime import date as _date
+    reset_date = str(payload.get("date") or _date.today())
+    markers = add_cf_reset_marker(reset_date, str(user.get("username", "") or ""))
+    audit_log("BRANCH_LOG_CF_RESET", str(user.get("username", "") or ""), detail=f"date={reset_date}")
+    return {"status": "saved", "cf_reset_markers": markers}
+
+
+@router.get("/leaderboard")
+def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
+                           branch: str = "", unit: str = "", segment: str = "",
+                           start: str = "", end: str = "",
+                           user: dict = Depends(get_current_user)):
+    """Cumulative ranking, drillable: staff -> role -> branch -> unit.
+
+    Every person is counted EXACTLY ONCE at each level, so a level always sums
+    to the same bank total. Ranking is a different lens from index ownership:
+    the ruling that a person's index belongs to their employing unit governs
+    what a unit's OWN number is; this asks how much activity sits beneath a
+    unit in total. The SOLID line is used for the unit roll-up — the dotted
+    line would place a branch RM in both Fortis and Consumer and the level
+    would stop summing.
+
+    level:  staff | role | branch | unit
+    role/branch/unit: optional filters, so a Branch Manager can rank tellers
+    inside their own branch.
+
+    Scope is the canonical engine (get_visible_staff_codes), the same call the
+    history grid and the pipeline use.
+    """
+    from utils.branch_log import metric_keys
+    from utils.branch_log_analytics import carried_forward, _target_for
+    from utils.staff_code import canon as _canon_l
+
+    me = _identity(user)
+    my_code = str(me.get("staff_code", "") or "")
+
+    _stored = {}
+    try:
+        from utils.core import UserManager
+        _stored = UserManager().users.get(str(user.get("username", "")) or "") or {}
+    except Exception:
+        _stored = {}
+    user_ctx = {
+        "staff_code":   my_code or str(_stored.get("staff_code", "") or ""),
+        "role":         me.get("role", "") or str(_stored.get("role", "") or ""),
+        "full_name":    str(_stored.get("full_name", "") or me.get("staff_name", "") or ""),
+        "unit":         me.get("unit", "") or str(_stored.get("unit", "") or ""),
+        "department":   str(_stored.get("department", "") or ""),
+        "is_admin":     bool(user.get("is_admin") or _stored.get("is_admin")),
+        "can_view_all": bool(user.get("can_view_all") or _stored.get("can_view_all")),
+    }
+    try:
+        from utils.api_pipeline_scope import get_visible_staff_codes
+        visible = {_canon_l(c) for c in get_visible_staff_codes(user_ctx)}
+    except Exception:
+        visible = set()
+    visible.discard("")
+    if not visible and user_ctx["staff_code"]:
+        visible = {_canon_l(user_ctx["staff_code"])}
+
+    dims = _roster_dims()
+    try:
+        from utils.org_validator import unit_for_role
+    except Exception:
+        unit_for_role = lambda _r: ""      # noqa: E731
+
+    # A rolling window (days) or an EXPLICIT one (start/end). Quarters and
+    # year-to-date are fixed calendar windows, not "the last N days", so they
+    # cannot be expressed as a day count without drifting as the year advances.
+    blm = BranchLogManager()
+    if start or end:
+        lo = str(start or "0000-01-01")[:10]
+        hi = str(end or "9999-12-31")[:10]
+        pool = [l for l in blm.get_history(days=400)
+                if lo <= str(l.get("log_date"))[:10] <= hi]
+    else:
+        pool = blm.get_history(days=days)
+    logs = [l for l in pool if _canon_l(l.get("staff_code")) in visible]
+
+    # Per-staff cumulative: index actually achieved, target that applied, and
+    # the closing carried-forward balance from the same read-time engine the
+    # grid uses — so a leaderboard can never disagree with the history.
+    by_staff = {}
+    for l in logs:
+        by_staff.setdefault(_canon_l(l.get("staff_code")), []).append(l)
+
+    people = []
+    for ck, dd in dims.items():
+        code = dd.get("code") or ck
+        if _canon_l(code) not in visible:
+            continue
+        r = str(dd.get("role") or "")
+        b = str(dd.get("branch") or "")
+        u = unit_for_role(r) or ""
+        seg = ""
+        try:
+            from utils.org_validator import segment_for_role
+            seg = segment_for_role(r) or ""
+        except Exception:
+            seg = ""
+        if role and r != role:
+            continue
+        if branch and b != branch:
+            continue
+        if unit and u != unit:
+            continue
+        if segment and seg != segment:
+            continue
+        mine = by_staff.get(_canon_l(code), [])
+        rows = carried_forward(mine) if mine else []
+        idx = round(sum(float(x.get("index") or 0) for x in rows), 2)
+        tgt = round(sum(float(x.get("target") or 0) for x in rows), 2)
+        # MET vs NOT MET, per person-day. Only days that CARRIED a target count:
+        # rest days and excused days have no target, so counting them either way
+        # would flatter or punish people for days nobody expected work on.
+        scored = [x for x in rows if float(x.get("target") or 0) > 0]
+        met = sum(1 for x in scored
+                  if float(x.get("index") or 0) >= float(x.get("target") or 0))
+        people.append({
+            "staff_code": code, "staff_name": dd.get("full_name", ""),
+            "role": r, "branch": b, "unit": u, "segment": seg,
+            "index": idx, "target": tgt,
+            "days_filed": len(mine),
+            "validated": sum(1 for x in mine if x.get("validated")),
+            "cf_variance": rows[-1].get("cf_variance", 0) if rows else 0,
+            "met_days": met,
+            "scored_days": len(scored),
+            # RULING 2026-08-09: the index is a DAILY measure, so a fair ranking
+            # averages it over the days a person was ACTUALLY ON DUTY. Total
+            # accumulation punishes a new joiner and anyone who took approved
+            # leave, which is precisely what the exception model exists to
+            # prevent. scored_days already excludes rest days and excused days,
+            # so it is exactly "days on duty".
+            "avg_index": round(idx / len(scored), 2) if scored else 0.0,
+            "avg_target": round(tgt / len(scored), 2) if scored else 0.0,
+        })
+
+    def agg(rows, keyfn, label):
+        out = {}
+        for p in rows:
+            k = keyfn(p) or "(unassigned)"
+            e = out.setdefault(k, {label: k, "index": 0.0, "target": 0.0,
+                                   "headcount": 0, "days_filed": 0, "validated": 0,
+                                   "met_days": 0, "scored_days": 0})
+            e["index"] += p["index"]; e["target"] += p["target"]
+            e["headcount"] += 1; e["days_filed"] += p["days_filed"]
+            e["validated"] += p["validated"]
+            e["met_days"] += p["met_days"]; e["scored_days"] += p["scored_days"]
+        for e in out.values():
+            e["index"] = round(e["index"], 1)
+            e["target"] = round(e["target"], 1)
+            e["achievement"] = round((e["index"] / e["target"]) * 100, 1) if e["target"] else 0.0
+            e["index_per_head"] = round(e["index"] / e["headcount"], 1) if e["headcount"] else 0.0
+            e["met_rate"] = (round(e["met_days"] / e["scored_days"] * 100, 1)
+                             if e["scored_days"] else 0.0)
+            # Average per on-duty day, so a large unit cannot outrank a small
+            # one on headcount alone.
+            e["avg_index"] = (round(e["index"] / e["scored_days"], 2)
+                              if e["scored_days"] else 0.0)
+            e["avg_target"] = (round(e["target"] / e["scored_days"], 2)
+                               if e["scored_days"] else 0.0)
+        return list(out.values())
+
+    if level == "role":
+        rows = agg(people, lambda p: p["role"], "name")
+        sort_key = "index_per_head"
+    elif level == "branch":
+        rows = agg(people, lambda p: p["branch"], "name")
+        sort_key = "index"
+    elif level == "unit":
+        rows = agg(people, lambda p: p["unit"], "name")
+        sort_key = "index"
+    elif level == "segment":
+        # Consumer / Commercial / Operations — the split that means something at
+        # a branch, where the MD-reporting unit does not.
+        #
+        # Branch managers are EXCLUDED, not bucketed: they cut across all three
+        # and bear the branch instead (ruling 2026-08-09). That means this level
+        # is the ONE that does not sum to the bank total, so the count and index
+        # of the people held back are returned explicitly — a level that quietly
+        # fails to reconcile would be worse than one that says why.
+        segmented = [p for p in people if p["segment"]]
+        unsegmented = [p for p in people if not p["segment"]]
+        rows = agg(segmented, lambda p: p["segment"], "name")
+        sort_key = "avg_index"
+    else:
+        level = "staff"
+        for p in people:
+            p["achievement"] = round((p["index"] / p["target"]) * 100, 1) if p["target"] else 0.0
+            p["met_rate"] = (round(p["met_days"] / p["scored_days"] * 100, 1)
+                             if p["scored_days"] else 0.0)
+        rows = people
+        # Individuals rank on the AVERAGE per on-duty day, not the total: a
+        # person who joined in June or took two weeks' leave should not be
+        # ranked below someone with the same daily performance and more days.
+        # The total stays on the row - it is still what the bank banked.
+        sort_key = "avg_index"
+
+    rows.sort(key=lambda r: -float(r.get(sort_key) or 0))
+    for i, r in enumerate(rows, 1):
+        r["rank"] = i
+
+    total_index = round(sum(float(r.get("index") or 0) for r in rows), 1)
+    _held = locals().get("unsegmented") or []
+    bears_branch = {
+        "headcount": len(_held),
+        "index": round(sum(float(p.get("index") or 0) for p in _held), 1),
+    } if _held else None
+    met_total = sum(int(p.get("met_days") or 0) for p in people)
+    scored_total = sum(int(p.get("scored_days") or 0) for p in people)
+    return {
+        "level": level, "days": days, "start": start, "end": end, "rows": rows,
+        "total_index": total_index,
+        "met_days": met_total, "scored_days": scored_total,
+        "met_rate": round(met_total / scored_total * 100, 1) if scored_total else 0.0,
+        "total_headcount": len(people),
+        "filters": {"role": role, "branch": branch, "unit": unit, "segment": segment},
+        "roles": sorted({p["role"] for p in people if p["role"]}),
+        "branches": sorted({p["branch"] for p in people if p["branch"]}),
+        "units": sorted({p["unit"] for p in people if p["unit"]}),
+        "segments": sorted({p["segment"] for p in people if p["segment"]}),
+        "bears_branch": bears_branch,
+    }
+
+
+@router.get("/analytics")
+def branch_log_analytics(days: int = 30, unit: str = "",
+                         start: str = "", end: str = "",
+                         user: dict = Depends(get_current_user)):
+    """Daily-log analytics, scope-aware. Includes the 80/20 impact-tier breakdown (for the pie),
+    validation split, and totals. Admin sees all; manager sees subtree; else self."""
+    from utils.branch_log_analytics import impact_breakdown, high_impact_keys
+    me = _identity(user)
+    blm = BranchLogManager()
+    try:
+        from utils.branch_log_state import run_maintenance
+        run_maintenance(blm)
+    except Exception:
+        pass
+    if start or end:
+        _lo = str(start or "0000-01-01")[:10]
+        _hi = str(end or "9999-12-31")[:10]
+        logs = [l for l in blm.get_history(days=400)
+                if _lo <= str(l.get("log_date"))[:10] <= _hi]
+    else:
+        logs = blm.get_history(days=days)
+    if unit and unit != "All":
+        logs = [l for l in logs if str(l.get("unit", "")) == unit]
+
+    # Scope from the CANONICAL engine, as the history grid and leaderboard do.
+    # This endpoint previously carried its own _is_admin/_is_manager rules, so
+    # analytics and the grid could disagree about the same population — the
+    # second-hierarchy fault fixed in P3f, still present here.
+    from utils.staff_code import canon as _canon_a
+    _stored = {}
+    try:
+        from utils.core import UserManager
+        _stored = UserManager().users.get(str(user.get("username", "")) or "") or {}
+    except Exception:
+        _stored = {}
+    _ctx = {
+        "staff_code":   me.get("staff_code", "") or str(_stored.get("staff_code", "") or ""),
+        "role":         me.get("role", "") or str(_stored.get("role", "") or ""),
+        "full_name":    str(_stored.get("full_name", "") or me.get("staff_name", "") or ""),
+        "unit":         me.get("unit", "") or str(_stored.get("unit", "") or ""),
+        "department":   str(_stored.get("department", "") or ""),
+        "is_admin":     bool(user.get("is_admin") or _stored.get("is_admin")),
+        "can_view_all": bool(user.get("can_view_all") or _stored.get("can_view_all")),
+    }
+    try:
+        from utils.api_pipeline_scope import get_visible_staff_codes
+        _visible = {_canon_a(c) for c in get_visible_staff_codes(_ctx)}
+    except Exception:
+        _visible = set()
+    _visible.discard("")
+    if not _visible and _ctx["staff_code"]:
+        _visible = {_canon_a(_ctx["staff_code"])}
+    scoped = [l for l in logs if _canon_a(l.get("staff_code")) in _visible]
+
+    breakdown = impact_breakdown(scoped)
+    submitters = len({str(l.get("staff_code")) for l in scoped if l.get("staff_code")})
+    validated = sum(1 for l in scoped if l.get("validated"))
+    auto = sum(1 for l in scoped if l.get("auto_submitted"))
+    returned = sum(1 for l in scoped if l.get("status") == "returned")
+    pending = sum(1 for l in scoped
+                  if l.get("status") in ("submitted", "auto_submitted") and not l.get("validated"))
+    return {
+        "days": days,
+        "scope_tier": ("bank" if len(_visible) >= max(len(_roster_dims()), 1)
+                       else ("subtree" if len(_visible) > 1 else "self")),
+        "visible_staff": len(_visible),
+        "impact": breakdown,
+        "high_impact_keys": sorted(high_impact_keys()),
+        "totals": {
+            "logs": len(scoped),
+            "submitters": submitters,
+            "validated": validated,
+            "auto_submitted": auto,
+            "returned": returned,
+            "pending": pending,
+            "validation_rate": round((validated / len(scoped)) * 100, 1) if scoped else 0.0,
+        },
+    }
+
+
+@router.post("/control-totals")
+def branch_log_control_totals_set(payload: dict = Body(default_factory=dict),
+                                  user: dict = Depends(get_current_user)):
+    """Manager/admin sets branch control totals for a date (the reconciliation source).
+    payload: { branch, date, totals: {metric: actual} }. Designed to be replaced later by an
+    automatic CBS end-of-day feed without changing the reconciliation checker."""
+    if not _is_manager(user):
+        raise HTTPException(status_code=403, detail="Supervisor/manager access required.")
+    from utils.branch_log_reconcile import set_control_totals
+    from datetime import date as _date
+    branch = str(payload.get("branch", "") or "").strip()
+    day = str(payload.get("date") or _date.today())
+    totals = payload.get("totals", {})
+    if not branch:
+        raise HTTPException(status_code=400, detail="branch is required")
+    if not isinstance(totals, dict):
+        raise HTTPException(status_code=400, detail="totals must be an object")
+    stored = set_control_totals(branch, day, totals)
+    audit_log("BRANCH_LOG_CONTROL_TOTALS", str(user.get("username", "") or ""),
+              detail=f"branch={branch} date={day}")
+    return {"status": "saved", "branch": branch, "date": day, "totals": stored}
+
+
+@router.get("/reconciliation")
+def branch_log_reconciliation(days: int = 7, user: dict = Depends(get_current_user)):
+    """Over-reporting anomaly report: per branch+day, where the summed individual reports exceed the
+    branch control total for a metric. Scope-aware: admin sees all branches; a manager sees the
+    branches present in their reporting subtree; individuals get an empty report (not their view)."""
+    if not _is_manager(user):
+        return {"reconciliations": [], "scope_tier": "self"}
+    from utils.branch_log_reconcile import reconcile_branch_day
+    me = _identity(user)
+    blm = BranchLogManager()
+    logs = blm.get_history(days=days)
+    if not _is_admin(user):
+        logs = _subtree_logs(logs, user, me)
+    # distinct branch+day pairs present in scope
+    pairs = sorted({(str(l.get("unit", "")), str(l.get("log_date", "")))
+                    for l in logs if l.get("unit") and l.get("log_date")}, reverse=True)
+    out = []
+    for branch, day in pairs:
+        rec = reconcile_branch_day(logs, branch, day)
+        if rec["metrics"]:  # only include branch+days that HAVE control totals to check
+            out.append(rec)
+    anomaly_total = sum(r["anomaly_count"] for r in out)
+    return {
+        "reconciliations": out,
+        "anomaly_total": anomaly_total,
+        "days": days,
+        "scope_tier": "bank" if _is_admin(user) else "subtree",
+    }
+
+
 @router.get("/mine")
 def branch_log_mine(days: int = 14, user: dict = Depends(get_current_user)):
     """The caller's own recent log entries."""
@@ -306,6 +1782,11 @@ def branch_log_pending(user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Supervisor/manager access required.")
     me = _identity(user)
     blm = BranchLogManager()
+    try:
+        from utils.branch_log_state import run_maintenance
+        run_maintenance(blm)
+    except Exception:
+        pass
     all_pending = blm.get_pending_validation(unit=None)
     if _is_admin(user):
         return {"logs": all_pending}
@@ -361,7 +1842,13 @@ def branch_log_submit(payload: dict = Body(default_factory=dict),
         raise HTTPException(status_code=400, detail="Your staff identity could not be resolved.")
     values = payload.get("values") if isinstance(payload.get("values"), dict) else payload
     blm = BranchLogManager()
-    rec = blm.submit(me["staff_code"], me["staff_name"], me["unit"], me["role"], values or {})
+    try:
+        rec = blm.submit(me["staff_code"], me["staff_name"], me["unit"], me["role"],
+                         values or {})
+    except ValueError as exc:
+        # Plausibility bounds. 400, not 500: the entry is wrong, not the server,
+        # and the message names every field so it can be fixed in one pass.
+        raise HTTPException(status_code=400, detail=str(exc))
     audit_log("BRANCH_LOG_SUBMIT", user.get("username", "unknown"),
               detail=f"log={rec.get('id')} unit={me['unit']}")
     return {"log": rec}
@@ -370,9 +1857,30 @@ def branch_log_submit(payload: dict = Body(default_factory=dict),
 @router.post("/{log_id}/validate")
 def branch_log_validate(log_id: str, payload: dict = Body(default_factory=dict),
                         user: dict = Depends(get_current_user)):
-    """Supervisor validates (approves/rejects) a submitted log."""
-    if not _is_manager(user):
-        raise HTTPException(status_code=403, detail="Supervisor/manager access required.")
+    """Validate (approve/reject) a submitted log.
+
+    Permission comes from utils.org_validator.can_validate_daily_log - the
+    branch triad inside a branch, the line manager at Head Office - not from a
+    role-substring guess. Admins retain an override.
+    """
+    me = _identity(user)
+    blm_probe = BranchLogManager()
+    _target = next((l for l in blm_probe.get_history(days=120)
+                    if str(l.get("id")) == str(log_id)), None)
+    if not _target:
+        raise HTTPException(status_code=404, detail=f"Log {log_id} not found")
+    if not _is_admin(user):
+        try:
+            from utils.org_validator import can_validate_daily_log
+            allowed = can_validate_daily_log(me.get("staff_code", ""),
+                                             str(_target.get("staff_code") or ""))
+        except Exception:
+            allowed = False
+        if not allowed:
+            raise HTTPException(
+                status_code=403,
+                detail="You are not a permitted validator for this staff member.")
+
     approved = bool(payload.get("approved", True))
     note = str(payload.get("note", "") or "")
     blm = BranchLogManager()

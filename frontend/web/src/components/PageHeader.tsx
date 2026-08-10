@@ -25,14 +25,19 @@ interface PageHeaderProps {
   /** Opt-in Ecobank-blue ribbon (matches the credit WorkbenchShell) for
    *  visual consistency across the app. Defaults to the white header. */
   ribbon?:      boolean;
+  /** Opt-in: pin the header to the top of the scrolling area (AppShell's <main>)
+   *  so it stays put as the page scrolls. Off by default — every other page
+   *  keeps its existing scroll-away behaviour. */
+  sticky?:      boolean;
 }
 
-export function PageHeader({ title, subtitle, breadcrumbs, actions, ribbon }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, breadcrumbs, actions, ribbon, sticky }: PageHeaderProps) {
   const navigate = useNavigate();
   const hasRow = Boolean(subtitle) || Boolean(actions);
-  const headerCls = ribbon
+  const headerCls = (ribbon
     ? 'bg-gradient-to-r from-[#0082BB] to-[#005B82] shadow-sm'
-    : 'bg-white border-b border-gray-200';
+    : 'bg-white border-b border-gray-200')
+    + (sticky ? ' sticky top-0 z-30' : '');
   const crumbNav    = ribbon ? 'text-white/70' : 'text-gray-400';
   const crumbSep    = ribbon ? 'text-white/40' : 'text-gray-300';
   const crumbLink   = ribbon ? 'hover:text-white transition-colors' : 'hover:text-gray-600 transition-colors';

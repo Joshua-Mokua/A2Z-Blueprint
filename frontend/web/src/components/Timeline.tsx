@@ -5,6 +5,7 @@
 // view of where a case is and how long each step took.
 
 import type { LoanAppHistoryEvent } from '@/types/lms';
+import { fmtWhen } from '@/lib/datetime';
 
 const EVENT_LABELS: Record<string, string> = {
   application_created: 'Application created',
@@ -57,13 +58,6 @@ function eventTone(ev: string): { dot: string; text: string } {
     return { dot: '#D97706', text: 'text-amber-700' };
   if (ev === 'decision_approved') return { dot: '#059669', text: 'text-emerald-700' };
   return { dot: 'var(--brand-primary)', text: 'text-gray-900' };
-}
-
-function fmtWhen(at?: string): string {
-  if (!at) return '';
-  const d = new Date(at);
-  if (Number.isNaN(d.getTime())) return at;
-  return d.toLocaleString();
 }
 
 export interface TimelineProps {

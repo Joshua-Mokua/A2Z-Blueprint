@@ -31,9 +31,6 @@ import {
 function formatAmount(v: number | undefined, symbol: string): string {
   const n = Number(v);
   if (!Number.isFinite(n) || n === 0) return '—';
-  if (n >= 1e9) return `${symbol} ${(n / 1e9).toFixed(2)}B`;
-  if (n >= 1e6) return `${symbol} ${(n / 1e6).toFixed(2)}M`;
-  if (n >= 1e3) return `${symbol} ${(n / 1e3).toFixed(0)}K`;
   return `${symbol} ${n.toLocaleString()}`;
 }
 

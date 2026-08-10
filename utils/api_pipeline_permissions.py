@@ -170,6 +170,30 @@ def resolve_deal_permissions(
     # Relationship determination
     is_owner = bool(my_code) and my_code == deal_staff
     is_backup = bool(my_code) and my_code in backup_codes_str
+    # Referral participant: the caller (or anyone in their visible scope — i.e. a
+    # head/manager whose TEAM made the referral) referred this deal, or it was
+    # referred TO them/their team. Grants read-only VIEW so they can track a
+    # referred case to closure even though they don't own it (the deal is owned by
+    # the recipient RM, who may be outside the caller's cascade scope). Uses
+    # canon() so a zero-padded FLEXCUBE code (KE0439) matches the roster (KE439).
+    try:
+        from utils.staff_code import canon as _canon_pc
+        _my = _canon_pc(my_code) if my_code else ""
+        _rby = _canon_pc(str(deal.get("referred_by_code", "") or "").strip())
+        _rto = _canon_pc(str(deal.get("referred_to_code", "") or "").strip())
+        _vis_canon = {_canon_pc(str(c).strip()) for c in (visible_staff_codes or []) if str(c).strip()}
+        is_referral_participant = bool(_rby or _rto) and (
+            (bool(_my) and (_my == _rby or _my == _rto))
+            or (_rby in _vis_canon) or (_rto in _vis_canon)
+        )
+    except Exception:
+        _rby = str(deal.get("referred_by_code", "") or "").strip()
+        _rto = str(deal.get("referred_to_code", "") or "").strip()
+        _vis = {str(c).strip() for c in (visible_staff_codes or [])}
+        is_referral_participant = bool(_rby or _rto) and (
+            (bool(my_code) and (my_code == _rby or my_code == _rto))
+            or (_rby in _vis) or (_rto in _vis)
+        )
     # Manager-in-scope: caller is a manager (or admin) AND the deal's
     # owner is visible in the caller's cascade. Admins always pass scope.
     if is_admin:
@@ -181,8 +205,8 @@ def resolve_deal_permissions(
     else:
         is_manager_in_scope = False
 
-    # If none of owner/backup/manager-in-scope, treat as out-of-scope
-    if not (is_owner or is_backup or is_manager_in_scope):
+    # If none of owner/backup/manager-in-scope/referral-participant, out-of-scope.
+    if not (is_owner or is_backup or is_manager_in_scope or is_referral_participant):
         return _all_false()
 
     # Stage gates
@@ -190,7 +214,7 @@ def resolve_deal_permissions(
     in_validation_stage = stage in VALIDATION_STAGES
 
     # ── Permission computation ─────────────────────────────────────
-    can_view = is_owner or is_backup or is_manager_in_scope
+    can_view = is_owner or is_backup or is_manager_in_scope or is_referral_participant
 
     # B7: a non-admin manager oversees/validates/queries but does NOT operate a
     # subordinate's deal — the owner drives it (advance/edit). Admin retains
@@ -214,7 +238,7 @@ def resolve_deal_permissions(
     # Anyone with view can request — but not on already-requested
     # or terminal deals
     can_request_cancel = (
-        can_view
+        (is_owner or is_backup or is_manager_in_scope)
         and not cancel_requested
         and not in_terminal_stage
     )

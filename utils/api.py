@@ -1419,7 +1419,14 @@ def pipeline_summary(user: dict = Depends(get_current_user)):
     visible_codes = get_visible_staff_codes(user)
     deals = filter_deals_by_visible_codes(deals, visible_codes)
 
-    from utils.core import ACTIVE_STAGES as _ACTIVE
+    # Config-derived active stages; the hardcoded list is only a fallback.
+    try:
+        from utils.pipeline_funnel import all_active_stages as _cfg_act
+        _ACTIVE = _cfg_act() or None
+    except Exception:
+        _ACTIVE = None
+    if not _ACTIVE:
+        from utils.core import ACTIVE_STAGES as _ACTIVE
     by_stage: dict = {}
     total_val = 0.0
     won_val   = 0.0
@@ -3837,10 +3844,33 @@ def pipeline_submit_to_credit(
 # to JSON-first as an emergency patch when the sync was best-effort.)
 _PIPELINE_READ_DB_FIRST = True
 
+# RULING 2026-08-09: "the stages should not be hardcoded". This map knew SIX
+# stages, so a deal at Application, Credit Assessment or Offer / Proposal
+# contributed ZERO weighted value - silently, in every headline figure. It is
+# kept ONLY as the last-resort fallback for a deal whose flow cannot be
+# resolved, and nothing reads it directly any more.
 _STAGE_WEIGHTS = {
     "Lead": 0.05, "Contacted": 0.10, "Qualified": 0.25, "Proposal": 0.40,
     "Negotiation": 0.60, "Compliance": 0.80, "Closed Won": 1.0, "Closed Lost": 0.0,
 }
+
+
+def _deal_probability(d: dict) -> float:
+    """Win probability for a deal, PER STAGE WITHIN ITS FLOW, from admin config.
+
+    One model, used by the funnel and by every weighted figure, so the two can
+    never disagree about the same deal. Falls back to the legacy map only when
+    the flow cannot be resolved at all - and even then never returns a silent
+    zero for a stage the bank has configured.
+    """
+    try:
+        from utils.pipeline_funnel import flow_for_deal, probability_for
+        p = probability_for(flow_for_deal(d), str(d.get("stage") or ""))
+        if p:
+            return float(p)
+    except Exception:
+        pass
+    return float(_STAGE_WEIGHTS.get(d.get("stage"), 0) or 0)
 
 
 def _deal_value(d: dict) -> float:
@@ -4300,7 +4330,20 @@ def _customer_segments() -> dict:
     m = cfg.get("customer_segments") if isinstance(cfg, dict) else None
     out = dict(_DEFAULT_CUSTOMER_SEGMENTS)
     if isinstance(m, dict) and m:
-        out.update(m)
+        # Strip whitespace from keys (and list values) before overlaying, so a
+        # stray "Consumer " in the config correctly overrides "Consumer" instead
+        # of forking into a duplicate segment entry. Storage is untouched; this is
+        # read-time hygiene only.
+        cleaned = {}
+        for _k, _v in m.items():
+            _ck = str(_k).strip()
+            if isinstance(_v, list):
+                _cv = [str(x).strip() for x in _v if str(x).strip()]
+            else:
+                _cv = _v
+            if _ck:
+                cleaned[_ck] = _cv
+        out.update(cleaned)
     return out
 
 
@@ -4348,13 +4391,26 @@ def _acquire_scoped_deals(user: dict) -> list:
     return filter_deals_by_visible_codes(deals, visible_codes)
 
 
-def _compute_pipeline_analytics(deals: list) -> dict:
+def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = None) -> dict:
     """Headline totals + overall funnel + per-category funnels. Pure function
     over a deal list (already scope-filtered) — mirrors 3_pipeline.py."""
     from utils.core import (
-        ACTIVE_STAGES, ALL_ACTIVE_STAGES,
+        ACTIVE_STAGES as _LEGACY_ACTIVE, ALL_ACTIVE_STAGES as _LEGACY_ALL_ACTIVE,
         get_pipeline_category, get_stages_for_category,
     )
+    # ACTIVE STAGES FROM CONFIG, not from the hardcoded PIPELINE_STAGES lists.
+    # Those carry the retired vocabulary, so after the bucket migration NO deal
+    # matched them: "active" came out empty and every headline value collapsed
+    # to zero. The legacy lists remain as a fallback for a build with no
+    # configured buckets.
+    try:
+        from utils.pipeline_funnel import all_active_stages as _cfg_active
+        _ACTIVE_NOW = _cfg_active() or list(_LEGACY_ACTIVE)
+    except Exception:
+        _ACTIVE_NOW = list(_LEGACY_ACTIVE)
+    ACTIVE_STAGES = _ACTIVE_NOW
+    ALL_ACTIVE_STAGES = _ACTIVE_NOW
+
     live = [d for d in deals if not d.get("draft") and not _referral_blocked(d)]
     active = [d for d in live if d.get("stage") in ACTIVE_STAGES]
     # Validation split: management anchors on VALIDATED (manager-assured) deals.
@@ -4366,7 +4422,7 @@ def _compute_pipeline_analytics(deals: list) -> dict:
 
     total_value = sum(_deal_value(d) for d in validated_active)        # assured
     pending_value = sum(_deal_value(d) for d in pending_active)        # pending assurance
-    weighted_value = sum(_deal_value(d) * _STAGE_WEIGHTS.get(d.get("stage"), 0)
+    weighted_value = sum(_deal_value(d) * _deal_probability(d)
                          for d in validated_active)
     won_value = sum(_deal_value(d) for d in won)
     win_rate = (round(len(won) / (len(won) + len(lost)) * 100, 1)
@@ -4408,7 +4464,7 @@ def _compute_pipeline_analytics(deals: list) -> dict:
             "count": len(cdeals),
             "active_count": len(c_active),
             "value": sum(_deal_value(d) for d in c_active),
-            "weighted": sum(_deal_value(d) * _STAGE_WEIGHTS.get(d.get("stage"), 0)
+            "weighted": sum(_deal_value(d) * _deal_probability(d)
                             for d in cdeals),
             "funnel": c_funnel,
         })
@@ -4434,7 +4490,7 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         return {
             "value": sum(_deal_value(d) for d in val_act),        # assured headline
             "pending_value": sum(_deal_value(d) for d in pend_act),  # pending assurance
-            "weighted": sum(_deal_value(d) * _STAGE_WEIGHTS.get(d.get("stage"), 0)
+            "weighted": sum(_deal_value(d) * _deal_probability(d)
                             for d in val_act),
             "active_count": len(val_act),
             "pending_count": len(pend_act),
@@ -4722,6 +4778,101 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         e["count"] += 1
     _by_client_type = sorted(_ctype.values(), key=lambda x: x["value"], reverse=True)
 
+    # by_referral_department: referral flow rolled up by the RECEIVING department.
+    # For each dept: total referrals received (count + value), the dept head count,
+    # and the referrers who sent in (name + count), as an expandable breakdown.
+    # A "referral" deal is one carrying referred_to_code (it was referred to someone).
+    # Department resolves via _referral_dept_for(recipient); falls back to the
+    # recipient's stored to_dept, then the deal's unit, so it's never blank when a
+    # department can be inferred. This is the Sales Pro "Referral Pipeline" view.
+    _headcounts = _dept_head_counts()
+    # Referral sections run over a referral-INCLUSIVE set when the endpoint supplies
+    # one (deals owned OR referred by the caller's scope) so a support unit sees its
+    # outgoing contribution. Falls back to `live` (scoped) when none is supplied.
+    _ref_all = referral_deals if referral_deals is not None else deals
+    _ref_live = [d for d in _ref_all if not d.get("draft") and not _referral_blocked(d)]
+    _ref_active = [d for d in _ref_live if d.get("stage") in ACTIVE_STAGES]
+    _ref_won = [d for d in _ref_live if d.get("stage") == "Closed Won"]
+    _refdept: dict = {}
+    _branch_split = {"in_branch": 0, "cross_branch": 0}
+    # referral_vs_originated: split OPEN (active) and CLOSED (won) deals into
+    # referred (carries referred_to_code) vs originated. Powers the donut that
+    # showcases referral contribution (shadow reporting) in both the live pipeline
+    # and the closed-deal analysis.
+    _rvo_open = {"referred": {"count": 0, "value": 0.0}, "originated": {"count": 0, "value": 0.0}}
+    _rvo_closed = {"referred": {"count": 0, "value": 0.0}, "originated": {"count": 0, "value": 0.0}}
+    for d in _ref_active:
+        _k = "referred" if str(d.get("referred_to_code") or "").strip() else "originated"
+        _rvo_open[_k]["count"] += 1
+        _rvo_open[_k]["value"] += _deal_value(d)
+    for d in _ref_won:
+        _k = "referred" if str(d.get("referred_to_code") or "").strip() else "originated"
+        _rvo_closed[_k]["count"] += 1
+        _rvo_closed[_k]["value"] += _deal_value(d)
+    for d in _ref_live:
+        _to_code = str(d.get("referred_to_code") or "").strip()
+        if not _to_code:
+            continue  # not a referred deal
+        # recipient department: helper -> stored to_dept -> deal unit -> Unassigned
+        _dept = (_referral_dept_for(_to_code)
+                 or str(d.get("to_dept") or "").strip()
+                 or str(d.get("unit") or "").strip()
+                 or "Unassigned")
+        e = _refdept.setdefault(_dept, {
+            "department": _dept, "value": 0.0, "count": 0,
+            "head_count": _headcounts.get(_dept, 0),
+            "_referrers": {},
+        })
+        e["value"] += _deal_value(d)
+        e["count"] += 1
+        _rby = (str(d.get("referred_by_name") or "").strip()
+                or str(d.get("referred_by_code") or "").strip()
+                or "Unknown")
+        rc = e["_referrers"].setdefault(_rby, {"referrer": _rby, "count": 0, "value": 0.0})
+        rc["count"] += 1
+        rc["value"] += _deal_value(d)
+        # In-Branch vs Cross-Branch: compare referrer's unit to recipient's unit,
+        # derived from the roster (never stored). Same unit = in-branch; different
+        # = cross-branch. Unknown units don't count either way.
+        _ru = _referral_unit_for(str(d.get("referred_by_code") or "").strip())
+        _tu = (_referral_unit_for(_to_code)
+               or str(d.get("unit") or "").strip())
+        if _ru and _tu:
+            if _ru == _tu:
+                e["in_branch"] = e.get("in_branch", 0) + 1
+                _branch_split["in_branch"] += 1
+            else:
+                e["cross_branch"] = e.get("cross_branch", 0) + 1
+                _branch_split["cross_branch"] += 1
+        # Outgoing side: credit the REFERRER's department with a referral SENT OUT.
+        # This is what a support unit (e.g. Internal Audit) contributes — they mostly
+        # refer business out rather than receive. Resolves the referrer's dept the
+        # same way (helper -> referrer unit -> Unassigned).
+        _by_code = str(d.get("referred_by_code") or "").strip()
+        if _by_code:
+            _from_dept = (_referral_dept_for(_by_code)
+                          or _referral_unit_for(_by_code)
+                          or "Unassigned")
+            fe = _refdept.setdefault(_from_dept, {
+                "department": _from_dept, "value": 0.0, "count": 0,
+                "head_count": _headcounts.get(_from_dept, 0),
+                "_referrers": {},
+            })
+            fe["referred_out"] = fe.get("referred_out", 0) + 1
+            fe["referred_out_value"] = fe.get("referred_out_value", 0.0) + _deal_value(d)
+    # flatten referrers (sorted by count desc) onto each dept
+    _by_referral_department = []
+    for _dept, e in _refdept.items():
+        referrers = sorted(e.pop("_referrers").values(),
+                           key=lambda x: x["count"], reverse=True)
+        e["referrers"] = referrers
+        e.setdefault("in_branch", 0)
+        e.setdefault("cross_branch", 0)
+        e.setdefault("referred_out", 0)
+        e.setdefault("referred_out_value", 0.0)
+        _by_referral_department.append(e)
+    _by_referral_department.sort(key=lambda x: x["count"], reverse=True)
+
     return {
         "totals": {
             "total_value": total_value,
@@ -4750,6 +4901,9 @@ def _compute_pipeline_analytics(deals: list) -> dict:
         "by_region": _by_region,
         "by_area": _by_area,
         "by_client_type": _by_client_type,
+        "by_referral_department": _by_referral_department,
+        "referral_branch_split": _branch_split,
+        "referral_vs_originated": {"open": _rvo_open, "closed": _rvo_closed},
     }
 
 
@@ -4758,7 +4912,24 @@ def pipeline_analytics(user: dict = Depends(get_current_user)):
     """Funnel + headline pipeline metrics over the caller's visible deals."""
     _audit("API_PIPELINE_ANALYTICS", user, "")
     deals = _acquire_scoped_deals(user)
-    result = _compute_pipeline_analytics(deals)
+    # Referral-inclusive set: the scoped deals PLUS any deal referred BY someone in
+    # the caller's visible scope (their outgoing referrals, owned by recipients
+    # elsewhere). Lets a support unit see its referral contribution.
+    referral_deals = deals
+    try:
+        from utils.api_pipeline_scope import get_visible_staff_codes
+        from utils.staff_code import canon as _canon
+        _vis = {_canon(c) for c in (get_visible_staff_codes(user) or [])}
+        _seen = {d.get("id") for d in deals}
+        _all = _all_pipeline_deals()
+        _extra = [d for d in _all
+                  if d.get("id") not in _seen
+                  and _canon(str(d.get("referred_by_code") or "").strip()) in _vis]
+        if _extra:
+            referral_deals = deals + _extra
+    except Exception as _exc:
+        logger.warning("referral-inclusive set failed: %s", _exc)
+    result = _compute_pipeline_analytics(deals, referral_deals=referral_deals)
     # Scope-aware manager queue counts (one call serves all dashboard tiles).
     from utils.api_pipeline_manager_actions import is_manager as _is_mgr
     pending_validation = 0
@@ -4843,7 +5014,14 @@ def pipeline_funnel_drill(
     _acquire_scoped_deals. Reuses _classify_product / _segment_of so it can't
     drift from the analytics dimensions."""
     _audit("API_PIPELINE_FUNNEL_DRILL", user, f"cls={cls} stage={stage}")
-    from utils.core import ACTIVE_STAGES as _ACTIVE
+    # Config-derived active stages; the hardcoded list is only a fallback.
+    try:
+        from utils.pipeline_funnel import all_active_stages as _cfg_act
+        _ACTIVE = _cfg_act() or None
+    except Exception:
+        _ACTIVE = None
+    if not _ACTIVE:
+        from utils.core import ACTIVE_STAGES as _ACTIVE
     deals = _acquire_scoped_deals(user)
 
     def _match(d: dict) -> bool:
@@ -5047,6 +5225,29 @@ def pipeline_export_xlsx(user: dict = Depends(get_current_user)):
 # the next GET reflects the mutation.
 
 
+def _dept_head_counts() -> dict:
+    """Staff count per department from the roster. Uses the 'Department' column
+    when present; falls back to 'Unit' so it still returns useful counts on data
+    (like dev) that lacks a Department column. Cached-cheap; safe on any error."""
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        roster = get_staff_roster()
+        if roster is None:
+            return {}
+        cols = list(getattr(roster, "columns", []))
+        keycol = "Department" if "Department" in cols else ("Unit" if "Unit" in cols else None)
+        if not keycol:
+            return {}
+        out = {}
+        for _, r in roster.iterrows():
+            k = str(r.get(keycol, "") or "").strip()
+            if k:
+                out[k] = out.get(k, 0) + 1
+        return out
+    except Exception:
+        return {}
+
+
 def _referral_dept_for(code: str) -> str:
     """Department for a staff_code from the roster (for referral chain hops)."""
     code = str(code or "").strip()
@@ -5059,6 +5260,24 @@ def _referral_dept_for(code: str) -> str:
             m = roster[roster["Staff Code"].astype(str).str.strip() == code]
             if len(m):
                 return str(m.iloc[0].get("Department") or "").strip()
+    except Exception:
+        pass
+    return ""
+
+
+def _referral_unit_for(code: str) -> str:
+    """Branch (Unit) for a staff_code from the roster — for In-Branch vs Cross-Branch
+    referral classification. Comparison/derivation only; no stored data."""
+    code = str(code or "").strip()
+    if not code:
+        return ""
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        roster = get_staff_roster()
+        if roster is not None and "Unit" in getattr(roster, "columns", []):
+            m = roster[roster["Staff Code"].astype(str).str.strip() == code]
+            if len(m):
+                return str(m.iloc[0].get("Unit") or "").strip()
     except Exception:
         pass
     return ""
@@ -5854,6 +6073,30 @@ def pipeline_referrals_outgoing_analytics(user: dict = Depends(get_current_user)
     }
 
 
+def _unit_peer_codes(user: dict) -> set:
+    """All staff codes sharing the caller's Unit (branch/dept unit) — so every
+    member of a unit sees the unit's referrals, regardless of hierarchy. Derived
+    from the roster Unit column. Read-only."""
+    try:
+        from utils.core import UserManager as _UM
+        rec = _UM().users.get(str(user.get("username", "") or "")) or {}
+        my_unit = str(rec.get("unit", "") or user.get("unit", "") or "").strip()
+        if not my_unit:
+            return set()
+        from utils.api_pipeline_scope import get_staff_roster
+        roster = get_staff_roster()
+        out = set()
+        if roster is not None and "Unit" in getattr(roster, "columns", []):
+            for _, row in roster.iterrows():
+                if str(row.get("Unit", "") or "").strip() == my_unit:
+                    c = str(row.get("Staff Code", "") or "").strip()
+                    if c:
+                        out.add(c)
+        return out
+    except Exception:
+        return set()
+
+
 @app.get("/api/pipeline/referrals/analytics/by-department")
 def pipeline_referrals_by_department(user: dict = Depends(get_current_user)):
     """Department-level referral analytics — referrals grouped by the REFERRER's
@@ -5861,17 +6104,25 @@ def pipeline_referrals_by_department(user: dict = Depends(get_current_user)):
     This is the basis for a department-level referral BSC KPI that flows to Head /
     Chief scorecards, mirroring the individual-level KPI. Management roles only."""
     _c, _n, priv = _resolve_actor(user)
-    # Execs (chief/director/MD/admin) see bank-wide; a manager sees the breakdown
-    # for their own branch/reporting subtree; everyone else is denied.
+    # Tier-aware scope (no more 403 for non-managers):
+    #   priv (chief/managing/director/admin) -> bank-wide (all referrals)
+    #   manager (visible codes > 1)          -> their reporting subtree
+    #   everyone else                        -> their UNIT (all unit peers), so a
+    #                                           support-unit member still sees the
+    #                                           unit's referral contribution.
     scope_codes = None
+    scope_tier = "bank"
     if not priv:
         from utils.api_pipeline_scope import get_visible_staff_codes
         _codes = {str(x) for x in (get_visible_staff_codes(user) or [])}
-        if len(_codes) <= 1:
-            raise HTTPException(
-                status_code=403,
-                detail="Department referral analytics require a management role.")
-        scope_codes = _codes
+        if len(_codes) > 1:
+            scope_codes = _codes
+            scope_tier = "department"
+        else:
+            # unit tier: everyone sharing the caller's Unit
+            _unit_codes = _unit_peer_codes(user)
+            scope_codes = _unit_codes if _unit_codes else _codes
+            scope_tier = "unit"
 
     # referrer staff_code -> normalized department, from the roster
     dept_of: dict = {}
@@ -5910,11 +6161,106 @@ def pipeline_referrals_by_department(user: dict = Depends(get_current_user)):
             a["closed"]["lost"] += 1
 
     departments = sorted(agg.values(), key=lambda x: x["total"], reverse=True)
+
+    # --- vibrant overview extras (leaderboard + donuts + recent), tier-scoped ---
+    def _in_scope(d):
+        rbc = str(d.get("referred_by_code") or "")
+        rtc = str(d.get("referred_to_code") or "")
+        if scope_codes is None:
+            return True  # bank
+        return (rbc in scope_codes) or (rtc in scope_codes)
+
+    _ref_deals = [d for d in _all_pipeline_deals()
+                  if str(d.get("referral_status") or "") and _in_scope(d)]
+
+    # Leaderboard: top referrers (name + count + value + accepted + won).
+    _lb: dict = {}
+    for d in _ref_deals:
+        rbc = str(d.get("referred_by_code") or "")
+        if not rbc:
+            continue
+        name = (str(d.get("referred_by_name") or "").strip() or rbc)
+        e = _lb.setdefault(rbc, {"code": rbc, "referrer": name, "count": 0,
+                                 "value": 0.0, "accepted": 0, "won": 0})
+        e["count"] += 1
+        e["value"] += _deal_value(d)
+        if str(d.get("referral_status") or "") == "accepted":
+            e["accepted"] += 1
+        if str(d.get("stage") or "") == "Closed Won":
+            e["won"] += 1
+    by_referrer = sorted(_lb.values(), key=lambda x: x["count"], reverse=True)
+
+    # Donuts: referred-vs-originated (open/closed) + in/cross-branch, over the tier scope.
+    _open = {"referred": {"count": 0, "value": 0.0}, "originated": {"count": 0, "value": 0.0}}
+    _closed = {"referred": {"count": 0, "value": 0.0}, "originated": {"count": 0, "value": 0.0}}
+    _bsplit = {"in_branch": 0, "cross_branch": 0}
+    # referred-vs-originated needs the WHOLE scoped pipeline (not only referrals),
+    # so pull scoped deals once.
+    _scoped_all = [d for d in _all_pipeline_deals()
+                   if scope_codes is None
+                   or str(d.get("staff_code") or "") in scope_codes
+                   or str(d.get("referred_by_code") or "") in scope_codes]
+    for d in _scoped_all:
+        if d.get("draft"):
+            continue
+        stage = str(d.get("stage") or "")
+        k = "referred" if str(d.get("referred_to_code") or "").strip() else "originated"
+        if stage in ACTIVE_STAGES:
+            _open[k]["count"] += 1; _open[k]["value"] += _deal_value(d)
+        elif stage == "Closed Won":
+            _closed[k]["count"] += 1; _closed[k]["value"] += _deal_value(d)
+    for d in _ref_deals:
+        _ru = _referral_unit_for(str(d.get("referred_by_code") or "").strip())
+        _tu = (_referral_unit_for(str(d.get("referred_to_code") or "").strip())
+               or str(d.get("unit") or "").strip())
+        if _ru and _tu:
+            _bsplit["in_branch" if _ru == _tu else "cross_branch"] += 1
+
+    # Recent referrals with deal id for click-through to the case journey.
+    def _rt(d):
+        return str(d.get("referred_at") or "")
+    # Full scoped referral list (table searches/paginates/filters client-side).
+    _recent = sorted(_ref_deals, key=_rt, reverse=True)
+    recent = [{
+        "id": d.get("id"),
+        "client_name": d.get("client_name"),
+        "product": (d.get("product") or d.get("product_type") or ""),
+        "referred_by_name": d.get("referred_by_name"),
+        "referred_by_code": d.get("referred_by_code"),
+        "referred_to": d.get("referred_to"),
+        "referral_status": d.get("referral_status"),
+        "referral_tier": (_classify_referral_tier(
+            str(d.get("referred_by_code") or ""),
+            str(d.get("referred_to_code") or "")).get("referral_tier")),
+        "stage": d.get("stage"),
+        "value": _deal_value(d),
+        "referred_at": d.get("referred_at"),
+    } for d in _recent]
+
+    _tot_ref = len(_ref_deals)
+    _accepted = sum(1 for d in _ref_deals if str(d.get("referral_status") or "") == "accepted")
+    _pending = sum(1 for d in _ref_deals if str(d.get("referral_status") or "") == "pending")
+    _declined = sum(1 for d in _ref_deals if str(d.get("referral_status") or "") == "declined")
+    _won = sum(1 for d in _ref_deals if str(d.get("stage") or "") == "Closed Won")
+    _lost = sum(1 for d in _ref_deals if str(d.get("stage") or "") == "Closed Lost")
+    _infl = sum(_deal_value(d) for d in _ref_deals)
+    _conv = round((_won / _tot_ref * 100), 1) if _tot_ref else 0.0
+
     return {
         "departments": departments,
         "total": sum(a["total"] for a in departments),
         "department_count": len(departments),
-        "scope": "bank" if priv else "branch",
+        "scope": scope_tier,
+        "scope_tier": scope_tier,
+        "totals": {
+            "total": _tot_ref, "accepted": _accepted, "pending": _pending,
+            "declined": _declined, "won": _won, "lost": _lost,
+            "value_influenced": _infl, "conversion_rate": _conv,
+        },
+        "by_referrer": by_referrer,
+        "referral_vs_originated": {"open": _open, "closed": _closed},
+        "referral_branch_split": _bsplit,
+        "recent": recent,
     }
 
 
@@ -10124,8 +10470,361 @@ app.include_router(credit_admin_router)
 # v10.530 Phase 5 Batch gamma1 -- CBS lookup routes
 from utils.api_cbs_routes import router as cbs_router
 app.include_router(cbs_router)
+@app.get("/api/pipeline/referrals/bench")
+def pipeline_referral_bench(user: dict = Depends(get_current_user)):
+    """The referral bench: what is waiting on ME, and what I sent that is still
+    unactioned.
+
+    The second list is the point. Today a referrer sends a referral and hears
+    nothing - there is no screen that says "three people have been sitting on
+    yours". Referrals do not expire (ruling 2026-08-09); they escalate, so an
+    overdue one carries the ladder of people to lean on.
+    """
+    from utils.staff_code import canon as _canon_b
+    from utils.referral_escalation import clock_for, referred_at_of
+
+    # _resolve_actor is defined later in this module but resolved at CALL time,
+    # so a direct call is correct and a globals() guard would only mask a real
+    # failure by silently yielding an empty staff code - which would return an
+    # empty bench that looks like "nothing waiting on you".
+    actor_code, _actor_name, _priv = _resolve_actor(user)
+    my = _canon_b(actor_code or "")
+    if not my:
+        raise HTTPException(status_code=400,
+                            detail="Your staff identity could not be resolved.")
+    deals = _acquire_scoped_deals(user)
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _row(d):
+        c = clock_for(d)
+        return {
+            "deal_id": str(d.get("id") or ""),
+            "client": str(d.get("client_name") or d.get("client_cif") or ""),
+            "product": str(d.get("product") or d.get("deal_category") or ""),
+            "value": _val(d),
+            "from_code": str(d.get("referred_by_code") or ""),
+            "from_name": str(d.get("referred_by") or d.get("referred_by_name") or ""),
+            "to_code": str(d.get("referred_to_code") or ""),
+            "to_name": str(d.get("referred_to") or ""),
+            "sent_at": referred_at_of(d),
+            "clock": c,
+        }
+
+    referrals = [d for d in deals if d.get("is_referral")]
+    pending = [d for d in referrals
+               if str(d.get("referral_status") or "") == "pending"]
+
+    incoming = [_row(d) for d in pending
+                if _canon_b(d.get("referred_to_code")) == my]
+    outgoing = [_row(d) for d in pending
+                if _canon_b(d.get("referred_by_code")) == my]
+
+    # Oldest first: the one nobody has touched is the one that needs a name
+    # attached to it.
+    incoming.sort(key=lambda r: r["sent_at"])
+    outgoing.sort(key=lambda r: r["sent_at"])
+
+    return {
+        "incoming": incoming,
+        "outgoing": outgoing,
+        "incoming_overdue": sum(1 for r in incoming if r["clock"]["status"] == "overdue"),
+        "outgoing_overdue": sum(1 for r in outgoing if r["clock"]["status"] == "overdue"),
+    }
+
+
+@app.get("/api/pipeline/leaderboard")
+def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
+                         level: str = "staff", origin: str = "all",
+                         branch: str = "", unit: str = "",
+                         user: dict = Depends(get_current_user)):
+    """Pipeline ranking, in TWO LEVELS: referral and direct.
+
+    Ruling 2026-08-09: "on the pipeline ranking we will also have it in two
+    levels, the referral and the direct pipeline from the sales team."
+
+    A deal's VALUE counts once, for whoever owns it. The REFERRER is credited
+    separately, under origin=referred, so a referred deal never inflates both
+    the owner's and the referrer's totals as though the bank booked it twice.
+
+    A referral counts only once ACCEPTED, matching the daily-log credit rule -
+    a pending referral is an intention, not an outcome.
+
+    level:  staff | role | branch | unit
+    origin: all | referred | direct
+    """
+    from datetime import date as _date, timedelta as _td
+    from utils.staff_code import canon as _canon_p
+
+    deals = _acquire_scoped_deals(user)
+
+    if start or end:
+        lo = str(start or "0000-01-01")[:10]
+        hi = str(end or "9999-12-31")[:10]
+    else:
+        hi = _date.today().isoformat()
+        lo = (_date.today() - _td(days=max(int(days or 30), 1))).isoformat()
+
+    def _when(d):
+        return str(d.get("created_at") or d.get("open_date") or "")[:10]
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _accepted_referral(d):
+        return bool(d.get("is_referral")) and str(d.get("referral_status") or "") == "accepted"
+
+    live = [d for d in deals if not d.get("draft") and lo <= (_when(d) or lo) <= hi]
+    if origin == "referred":
+        live = [d for d in live if _accepted_referral(d)]
+    elif origin == "direct":
+        live = [d for d in live if not _accepted_referral(d)]
+
+    # The roster dimensions the daily log already builds - cached, canonical,
+    # and the same source the rankings and grids use. Inventing a second reader
+    # here is how this codebase grew two of everything.
+    from utils.api_branch_log import _roster_dims
+    dims = _roster_dims()
+    try:
+        from utils.org_validator import unit_for_role, segment_for_role
+    except Exception:
+        unit_for_role = segment_for_role = lambda _r: ""
+
+    # Attribute to the OWNER. For origin=referred we attribute to the REFERRER
+    # instead - that is the whole point of the second level.
+    rows_by_key: dict = {}
+    for d in live:
+        if origin == "referred":
+            code = _canon_p(d.get("referred_by_code")
+                            or (d.get("referral_chain") or [{}])[0].get("referred_by_code")
+                            or "")
+        else:
+            code = _canon_p(d.get("staff_code") or "")
+        if not code:
+            continue
+        dd = dims.get(code) or {}
+        role = str(dd.get("role") or "")
+        b = str(dd.get("branch") or "")
+        u = unit_for_role(role) or ""
+        if branch and b != branch:
+            continue
+        if unit and u != unit:
+            continue
+        key = {"staff": code, "role": role, "branch": b, "unit": u}.get(level, code)
+        if not key:
+            key = "(unassigned)"
+        e = rows_by_key.setdefault(key, {
+            "key": key,
+            "staff_code": code if level == "staff" else "",
+            "name": (dd.get("full_name") or code) if level == "staff" else key,
+            "role": role if level == "staff" else "",
+            "branch": b if level == "staff" else "",
+            "deals": 0, "value": 0.0, "weighted": 0.0, "won": 0, "lost": 0,
+            "referred": 0,
+        })
+        e["deals"] += 1
+        e["value"] += _val(d)
+        e["weighted"] += _val(d) * _deal_probability(d)
+        st = str(d.get("stage") or "")
+        if st == "Closed Won":
+            e["won"] += 1
+        elif st == "Closed Lost":
+            e["lost"] += 1
+        if _accepted_referral(d):
+            e["referred"] += 1
+
+    rows = []
+    for e in rows_by_key.values():
+        closed = e["won"] + e["lost"]
+        e["value"] = round(e["value"], 2)
+        e["weighted"] = round(e["weighted"], 2)
+        e["win_rate"] = round(e["won"] / closed * 100, 1) if closed else 0.0
+        rows.append(e)
+    rows.sort(key=lambda r: -r["value"])
+    for i, r in enumerate(rows, 1):
+        r["rank"] = i
+
+    return {
+        "level": level, "origin": origin, "start": lo, "end": hi,
+        "rows": rows,
+        "total_deals": len(live),
+        "total_value": round(sum(r["value"] for r in rows), 2),
+        "total_weighted": round(sum(r["weighted"] for r in rows), 2),
+        "branches": sorted({r["branch"] for r in rows if r.get("branch")}),
+    }
+
+
+@app.get("/api/pipeline/analytics/summary")
+def pipeline_analytics_summary(days: int = 30, start: str = "", end: str = "",
+                               user: dict = Depends(get_current_user)):
+    """Pipeline analytics over a reporting period, mirroring the index analytics.
+
+    Same period model (rolling days, or an explicit calendar window for a
+    quarter / year-to-date) and the same scope read, so the two analytics pages
+    cannot disagree about the same population.
+
+    Returns the journey conversion by bucket, the referred-vs-direct split, and
+    the win/loss picture.
+    """
+    from datetime import date as _date, timedelta as _td
+    from utils.pipeline_funnel import (
+        stage_flows, flow_for_deal, bucket_view, micro_steps,
+    )
+
+    deals = _acquire_scoped_deals(user)
+
+    if start or end:
+        lo = str(start or "0000-01-01")[:10]
+        hi = str(end or "9999-12-31")[:10]
+    else:
+        hi = _date.today().isoformat()
+        lo = (_date.today() - _td(days=max(int(days or 30), 1))).isoformat()
+
+    def _when(d):
+        return str(d.get("created_at") or d.get("open_date") or "")[:10]
+
+    live = [d for d in deals
+            if not d.get("draft") and lo <= (_when(d) or lo) <= hi]
+
+    won = [d for d in live if str(d.get("stage")) == "Closed Won"]
+    lost = [d for d in live if str(d.get("stage")) == "Closed Lost"]
+    open_deals = [d for d in live if str(d.get("stage")) not in ("Closed Won", "Closed Lost")]
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    # Journey conversion, per flow, using the SAME bucket view the funnel draws
+    # so the two can never show different counts for the same stage.
+    journey = []
+    for flow in (stage_flows() or {}):
+        mine = [d for d in open_deals if flow_for_deal(d) == flow]
+        if not mine:
+            continue
+        journey.append({"flow": flow, "buckets": bucket_view(mine, flow),
+                        "deals": len(mine)})
+    journey.sort(key=lambda f: -f["deals"])
+
+    # Referred vs direct. A referral is only counted once it has been ACCEPTED,
+    # matching the daily-log credit rule - a pending referral is an intention.
+    def _is_ref(d):
+        return bool(d.get("is_referral")) and str(d.get("referral_status") or "") == "accepted"
+
+    referred = [d for d in live if _is_ref(d)]
+    direct = [d for d in live if not _is_ref(d)]
+    origin = [
+        {"origin": "Referred", "count": len(referred),
+         "value": round(sum(_val(d) for d in referred), 2),
+         "won": sum(1 for d in referred if str(d.get("stage")) == "Closed Won")},
+        {"origin": "Direct", "count": len(direct),
+         "value": round(sum(_val(d) for d in direct), 2),
+         "won": sum(1 for d in direct if str(d.get("stage")) == "Closed Won")},
+    ]
+
+    closed = len(won) + len(lost)
+    return {
+        "start": lo, "end": hi, "days": days,
+        "totals": {
+            "deals": len(live),
+            "open": len(open_deals),
+            "won": len(won),
+            "lost": len(lost),
+            "open_value": round(sum(_val(d) for d in open_deals), 2),
+            "won_value": round(sum(_val(d) for d in won), 2),
+            "weighted": round(sum(_val(d) * _deal_probability(d) for d in open_deals), 2),
+            "win_rate": round(len(won) / closed * 100, 1) if closed else 0.0,
+        },
+        "journey": journey,
+        "origin": origin,
+    }
+
+
+@app.get("/api/pipeline/funnel")
+def pipeline_funnel_defined(user: dict = Depends(get_current_user)):
+    """The DEFINED journey per product flow — from admin config, not from code.
+
+    Returns every configured stage of every flow in order, including the ones
+    holding nothing: a funnel that hides its empty steps is a bar chart of
+    whatever happened to be busy, and the gap is usually the finding.
+
+    Each stage carries its win probability PER FLOW (ruling 2026-08-09) and the
+    credit band that probability implies. The band is a SIDE LAYER describing
+    where the deal probably sits inside the bank — it is not a sales stage and
+    it never filters the journey.
+
+    Scope is the caller's own: the same visible-deal rule the rest of the
+    pipeline uses, so this can never show a deal the list would hide.
+    """
+    from utils.pipeline_funnel import (
+        stage_flows, flow_for_deal, buckets_for, bucket_view, micro_steps,
+    )
+
+    # _acquire_scoped_deals is the canonical scope read used by the pipeline
+    # list and analytics. NO try/except fallback here on purpose: a fallback to
+    # "all deals" would silently show a caller deals outside their cascade, and
+    # a scope bypass that looks like a working page is worse than an error.
+    deals = _acquire_scoped_deals(user)
+
+    grouped: dict = {}
+    for d in deals:
+        grouped.setdefault(flow_for_deal(d), []).append(d)
+
+    flows_out = []
+    for flow in (stage_flows() or {}):
+        mine = grouped.get(flow, [])
+        # BUCKETS are the journey (ruling 2026-08-09). Management reads six rows
+        # for a loan, not eleven; the micro-steps travel inside their bucket so
+        # an officer can still see exactly where a deal sits.
+        buckets = bucket_view(mine, flow)
+        weighted = 0.0
+        for b in buckets:
+            for st in b["steps"]:
+                weighted += float(st["value"]) * float(st["probability"])
+        flows_out.append({
+            "flow": flow,
+            "buckets": buckets,
+            "deals": len(mine),
+            "value": round(sum(float(b["value"]) for b in buckets), 2),
+            "weighted": round(weighted, 2),
+        })
+    flows_out.sort(key=lambda f: -f["deals"])
+
+    # Deals sitting at a stage no configured bucket contains. Reported, never
+    # dropped: silently vanishing deals is the defect this endpoint replaces.
+    unplaced = 0
+    for d in deals:
+        st = str(d.get("stage") or "").strip()
+        if st in ("Closed Won", "Closed Lost"):
+            continue
+        if st not in micro_steps(flow_for_deal(d)):
+            unplaced += 1
+
+    return {
+        "flows": flows_out,
+        "total_deals": len(deals),
+        # Deals sitting at a stage NO configured flow contains. Reported rather
+        # than dropped: silently vanishing deals is the defect this replaces.
+        "unplaced_deals": unplaced,
+    }
+
+
 from utils.api_branch_log import router as branch_log_router
 app.include_router(branch_log_router)
+
+# Pipeline validation - the same tier structure and the same calendar as the
+# Daily Log, sharing utils.branch_day under domain="pipeline" rather than a
+# parallel store.
+from utils.api_pipeline_validation import router as pipeline_validation_router
+app.include_router(pipeline_validation_router)
 
 
 # v10.532 Phase 5 Batch gamma3 -- Target Cascade read-only routes

@@ -6,21 +6,17 @@ import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { fetchPipelineDrill, fetchSlaViolations } from '@/lib/api';
-import type { UnitBreakdown, PipelineDrillResponse, ProductFunnel, ProbabilityBandBreakdown } from '@/types/pipeline';
+import type { UnitBreakdown, PipelineDrillResponse, ProductFunnel, ProbabilityBandBreakdown, ReferralDepartmentBreakdown } from '@/types/pipeline';
 import { useBranding } from '@/hooks/useBranding';
 import { Card } from '@/components/Card';
 import { Badge, type BadgeTone } from '@/components/Badge';
 import { PageHeader } from '@/components/PageHeader';
+import PipelineAnalytics from '@/components/PipelineAnalytics';
 import { Skeleton } from '@/components/Skeleton';
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
 import { DonutChart } from '@/components/charts/DonutChart';
 
 function abbrev(n: number): string {
-  const a = Math.abs(n);
-  if (a >= 1e12) return (n / 1e12).toFixed(2) + 'T';
-  if (a >= 1e9)  return (n / 1e9).toFixed(2) + 'B';
-  if (a >= 1e6)  return (n / 1e6).toFixed(1) + 'M';
-  if (a >= 1e3)  return (n / 1e3).toFixed(1) + 'K';
   return n.toLocaleString();
 }
 
@@ -105,7 +101,7 @@ export function Analytics() {
   // Model A — slice the pipeline by a chosen dimension. Each dimension maps to
   // a normalized [{label, value, count}] list. Branch/RM may be thin until the
   // pipeline carries populated unit/RM data (see seed-data note).
-  const DIMENSIONS = ['Product', 'Segment', 'Sector', 'Stage', 'Product Funnel', 'Probability', 'Currency', 'Branch', 'RM'] as const;
+  const DIMENSIONS = ['Product', 'Segment', 'Sector', 'Stage', 'Product Funnel', 'Probability', 'Currency', 'Branch', 'RM', 'Departments'] as const;
   type Dimension = typeof DIMENSIONS[number];
 
   const sliceFor = (dim: Dimension): { label: string; value: number; count: number }[] => {
@@ -134,6 +130,9 @@ export function Analytics() {
         return (data.by_unit ?? []).map((x) => ({ label: x.unit, value: x.value, count: x.count }));
       case 'RM':
         return (data.by_rm ?? []).map((x) => ({ label: x.rm, value: x.value, count: x.count }));
+      case 'Departments':
+        // Handled specially in the slicer (two-level dept -> referrers); return empty here.
+        return [];
     }
   };
 
@@ -141,11 +140,13 @@ export function Analytics() {
     <>
       <PageHeader
         ribbon
-        breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'EKE Sales Pro Analytics' }]}
-        title="EKE Sales Pro Analytics"
-        subtitle="Assured pipeline in KES-equivalent — consistent with the MD dashboard."
+        breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'A2Z Sales Pro Analytics' }]}
+        title="A2Z Sales Pro Analytics"
+        subtitle="Assured pipeline value, in KES."
       />
       <div className="p-6 max-w-7xl 2xl:max-w-[1680px] mx-auto">
+
+      <PipelineAnalytics />
 
       {/* Headline KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -159,7 +160,7 @@ export function Analytics() {
       </div>
 
       {/* Model A slicer */}
-      <PipelineSlicer dimensions={DIMENSIONS} sliceFor={sliceFor} kes={kes} productFunnels={data.by_product_funnel ?? []} probabilityBands={data.by_probability_band ?? []} />
+      <PipelineSlicer dimensions={DIMENSIONS} sliceFor={sliceFor} kes={kes} productFunnels={data.by_product_funnel ?? []} probabilityBands={data.by_probability_band ?? []} referralDepartments={data.by_referral_department ?? []} referralBranchSplit={data.referral_branch_split} referralVsOriginated={data.referral_vs_originated} />
 
       {/* SLA status summary — click a tile to open the filtered Sales Pro list */}
       <SlaSummaryCard />
@@ -191,16 +192,23 @@ export function Analytics() {
 
 // ── Model A: pick a dimension, see the pipeline sliced by it ─────────────
 function PipelineSlicer({
-  dimensions, sliceFor, kes, productFunnels, probabilityBands,
+  dimensions, sliceFor, kes, productFunnels, probabilityBands, referralDepartments, referralBranchSplit, referralVsOriginated,
 }: {
   dimensions: readonly string[];
   sliceFor: (d: never) => { label: string; value: number; count: number }[];
   kes: (n: number) => string;
   productFunnels: ProductFunnel[];
   probabilityBands: ProbabilityBandBreakdown[];
+  referralDepartments: ReferralDepartmentBreakdown[];
+  referralBranchSplit?: { in_branch: number; cross_branch: number };
+  referralVsOriginated?: {
+    open:   { referred: { count: number; value: number }; originated: { count: number; value: number } };
+    closed: { referred: { count: number; value: number }; originated: { count: number; value: number } };
+  };
 }) {
   const [dim, setDim] = useState<string>('Product');
   const [expandedBand, setExpandedBand] = useState<string | null>(null);
+  const [expandedDept, setExpandedDept] = useState<string | null>(null);
   const [pfProduct, setPfProduct] = useState<string>('');
   // Default the product-funnel picker to the highest-value product.
   const activePf = useMemo(() => {
@@ -211,6 +219,7 @@ function PipelineSlicer({
   // as donuts (share); everything else as ranked bars (value-sorted).
   const isProductFunnel = dim === 'Product Funnel';
   const isProbability = dim === 'Probability';
+  const isReferralDept = dim === 'Departments';
   const isFunnel = dim === 'Stage' || isProductFunnel;
   const isDonut = dim === 'Sector' || dim === 'Segment' || dim === 'Currency';
   const rows = useMemo(() => {
@@ -270,7 +279,90 @@ function PipelineSlicer({
             </select>
           </div>
         )}
-        {isProbability ? (
+        {isReferralDept ? (
+          referralDepartments.length === 0 ? (
+            <p className="text-sm text-gray-500">No referral activity yet. Referrals appear here grouped by the receiving department.</p>
+          ) : (
+            <div className="space-y-2">
+              {/* Referred-vs-Originated donut + In/Cross-branch split — the shadow-reporting overview */}
+              {(referralVsOriginated || referralBranchSplit) && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                  {referralVsOriginated && (
+                    <div className="rounded border p-3">
+                      <p className="text-xs font-medium text-gray-600 mb-2">Referred vs Originated (open pipeline)</p>
+                      <DonutChart height={200}
+                        data={[
+                          { name: 'Referred',   value: referralVsOriginated.open.referred.value },
+                          { name: 'Originated', value: referralVsOriginated.open.originated.value },
+                        ]}
+                        centerLabel="Deals"
+                        centerValue={String(referralVsOriginated.open.referred.count + referralVsOriginated.open.originated.count)} />
+                      <p className="mt-2 text-[11px] text-gray-500">
+                        Closed-won: {referralVsOriginated.closed.referred.count} referred · {referralVsOriginated.closed.originated.count} originated
+                        ({kes(referralVsOriginated.closed.referred.value)} vs {kes(referralVsOriginated.closed.originated.value)})
+                      </p>
+                    </div>
+                  )}
+                  {referralBranchSplit && (
+                    <div className="rounded border p-3">
+                      <p className="text-xs font-medium text-gray-600 mb-2">In-Branch vs Cross-Branch referrals</p>
+                      <DonutChart height={200}
+                        data={[
+                          { name: 'In-Branch',    value: referralBranchSplit.in_branch },
+                          { name: 'Cross-Branch', value: referralBranchSplit.cross_branch },
+                        ]}
+                        centerLabel="Referrals"
+                        centerValue={String(referralBranchSplit.in_branch + referralBranchSplit.cross_branch)} />
+                      <p className="mt-2 text-[11px] text-gray-500">
+                        {referralBranchSplit.in_branch} stayed in-branch · {referralBranchSplit.cross_branch} crossed branches
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mb-2">Per department: referrals <span className="font-medium">received</span> (bar) and <span className="text-emerald-700 font-medium">referred out</span> (support units' contribution), with head count. Click to see who referred in.</p>
+              {(() => {
+                const _sortedDepts = [...referralDepartments].sort((a, b) => (b.count + b.referred_out) - (a.count + a.referred_out));
+                const maxV = Math.max(...referralDepartments.map((r) => Math.max(r.value, r.referred_out_value)), 0);
+                return _sortedDepts.map((r) => {
+                  const pct = maxV > 0 ? (r.value / maxV) * 100 : 0;
+                  const open = expandedDept === r.department;
+                  return (
+                    <div key={r.department} className="rounded border">
+                      <button type="button" onClick={() => setExpandedDept(open ? null : r.department)}
+                        className="w-full flex items-center gap-3 p-2 text-left hover:bg-gray-50">
+                        <span className="w-44 shrink-0 text-xs font-medium text-gray-700 truncate">{r.department}</span>
+                        <span className="flex-1 bg-gray-100 rounded">
+                          <span className="block h-6 rounded flex items-center justify-end px-2 text-[11px] text-white tabular-nums"
+                            style={{ width: `${Math.max(pct, 8)}%`, background: 'var(--brand-primary, #0082BB)' }}>
+                            {r.count} ref{r.count === 1 ? '' : 's'}
+                          </span>
+                        </span>
+                        <span className="w-24 shrink-0 text-right text-[11px] text-emerald-700 tabular-nums" title="referrals sent out by this department">{r.referred_out} out</span>
+                        <span className="w-28 shrink-0 text-right text-[11px] text-gray-500 tabular-nums">{r.in_branch}·in / {r.cross_branch}·cross</span>
+                        <span className="w-20 shrink-0 text-right text-[11px] text-gray-500 tabular-nums">{r.head_count} staff</span>
+                        <span className="w-24 shrink-0 text-right text-xs text-gray-600 tabular-nums">{kes(r.value)}</span>
+                        <span className="w-4 shrink-0 text-xs text-gray-400">{open ? '▾' : '▸'}</span>
+                      </button>
+                      {open && (r.referrers ?? []).length > 0 && (
+                        <div className="border-t bg-gray-50 px-3 py-2 space-y-1">
+                          <p className="text-[11px] font-medium text-gray-500 mb-1">Referred in by:</p>
+                          {(r.referrers ?? []).map((rf, i) => (
+                            <div key={`${rf.referrer}-${i}`} className="flex items-center gap-2 text-xs text-gray-600">
+                              <span className="flex-1">{rf.referrer}</span>
+                              <span className="tabular-nums">{rf.count} ref{rf.count === 1 ? '' : 's'}</span>
+                              <span className="w-24 text-right tabular-nums">{kes(rf.value)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          )
+        ) : isProbability ? (
           probabilityBands.length === 0 ? (
             <p className="text-sm text-gray-500">No probability data yet — win % is set per product stage in Admin.</p>
           ) : (

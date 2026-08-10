@@ -1,0 +1,94 @@
+{
+  "_comment": "Working calendar for A2Z MIS 360. Weekday keys are Python weekday(): 0=Mon .. 6=Sun. Values are the fraction of the daily index target that applies on that day (0 = non-working). Labels are editable; the `key` is the stable identifier. Islamic holidays are gazetted on moon sighting, so entries with confirmed=false are forecasts.",
+  "timezone": "Africa/Nairobi",
+  "weekly_pattern": {
+    "0": 1.0,
+    "1": 1.0,
+    "2": 1.0,
+    "3": 1.0,
+    "4": 1.0,
+    "5": 0.5,
+    "6": 0.0
+  },
+  "sunday_substitution": true,
+  "recurring_holidays": [
+    {
+      "key": "new_year",
+      "label": "New Year's Day",
+      "month": 1,
+      "day": 1
+    },
+    {
+      "key": "labour_day",
+      "label": "Labour Day",
+      "month": 5,
+      "day": 1
+    },
+    {
+      "key": "madaraka_day",
+      "label": "Madaraka Day",
+      "month": 6,
+      "day": 1
+    },
+    {
+      "key": "oct_10",
+      "label": "Mazingira Day",
+      "month": 10,
+      "day": 10
+    },
+    {
+      "key": "mashujaa_day",
+      "label": "Mashujaa Day",
+      "month": 10,
+      "day": 20
+    },
+    {
+      "key": "jamhuri_day",
+      "label": "Jamhuri Day",
+      "month": 12,
+      "day": 12
+    },
+    {
+      "key": "christmas",
+      "label": "Christmas Day",
+      "month": 12,
+      "day": 25
+    },
+    {
+      "key": "boxing_day",
+      "label": "Utamaduni Day",
+      "month": 12,
+      "day": 26
+    }
+  ],
+  "easter_holidays": [
+    {
+      "key": "good_friday",
+      "label": "Good Friday",
+      "offset_days": -2
+    },
+    {
+      "key": "easter_monday",
+      "label": "Easter Monday",
+      "offset_days": 1
+    }
+  ],
+  "gazetted": [
+    {
+      "date": "2026-03-20",
+      "key": "idd_ul_fitr",
+      "label": "Idd-ul-Fitr",
+      "confirmed": true,
+      "note": "Gazetted for Friday 20 March 2026."
+    },
+    {
+      "date": "2026-05-27",
+      "key": "idd_ul_azha",
+      "label": "Idd-ul-Azha",
+      "confirmed": false,
+      "note": "Approximate. Confirm against the gazette before relying on it."
+    }
+  ],
+  "closures": [],
+  "hours_per_day": 8.0
+}

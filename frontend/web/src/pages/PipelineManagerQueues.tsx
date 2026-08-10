@@ -32,19 +32,27 @@ import { useToast } from '@/components/Toast';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { isManager } from '@/lib/role';
 import {
-  fetchValidationQueue, fetchCancellationQueue, AuthExpiredError,
+  fetchValidationQueue, AuthExpiredError,
 } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
 import { PageHeader } from '@/components/PageHeader';
+import DailyLogValidation from '@/components/DailyLogValidation';
+import BranchCountersign from '@/components/BranchCountersign';
+import UnitRollup from '@/components/UnitRollup';
+import Leaderboard from '@/components/Leaderboard';
+import DailyLogAnalytics from '@/components/DailyLogAnalytics';
+import PipelineLeaderboard from '@/components/PipelineLeaderboard';
+import PipelineDayCountersign from '@/components/PipelineDayCountersign';
+import { fetchUnitDays } from '@/lib/api';
 import {
   stageTone, type PipelineDeal,
 } from '@/types/pipeline';
 
 
-type TabKey = 'validation' | 'cancellation';
+type TabKey = 'validation' | 'dailylog' | 'ranking' | 'analytics';
 
 
 // ── Page component ──────────────────────────────────────────────────────
@@ -61,11 +69,18 @@ export function PipelineManagerQueues() {
 
   const [activeTab, setActiveTab] = useState<TabKey>('validation');
   const [validationDeals, setValidationDeals] = useState<PipelineDeal[]>([]);
-  const [cancellationDeals, setCancellationDeals] = useState<PipelineDeal[]>([]);
   const [loadingV, setLoadingV] = useState(false);
-  const [loadingC, setLoadingC] = useState(false);
   const [errorV,   setErrorV]   = useState<string | null>(null);
-  const [errorC,   setErrorC]   = useState<string | null>(null);
+  // Daily-log queue owns its own fetching; the page only tracks the count
+  // for the tab badge.
+  const [dailyLogPending, setDailyLogPending] = useState(0);
+  // Tier 2 (Head of Branches, MD) countersigns BRANCHES; everyone else
+  // validates individuals. Decided by asking the server what this caller
+  // oversees rather than by inspecting their role string here.
+  // 'staff' = validates individuals, 'branch' = countersigns branches,
+  // 'rollup' = MD / Business Manager, observes and may return.
+  const [tier, setTier] = useState<'staff' | 'branch' | 'rollup' | null>(null);
+  const [rankView, setRankView] = useState<'index' | 'pipeline'>('index');
 
   // ── Fetchers ─────────────────────────────────────────────────────────
 
@@ -86,28 +101,29 @@ export function PipelineManagerQueues() {
     }
   }, [userIsManager]);
 
-  const loadCancellation = useCallback(async () => {
-    if (!userIsManager) return;
-    setLoadingC(true);
-    setErrorC(null);
-    try {
-      const res = await fetchCancellationQueue();
-      setCancellationDeals(res.deals);
-    } catch (e) {
-      if (e instanceof AuthExpiredError) return;
-      const msg = e instanceof Error ? e.message : 'Failed to load cancellation queue';
-      setErrorC(msg);
-      setCancellationDeals([]);
-    } finally {
-      setLoadingC(false);
-    }
-  }, [userIsManager]);
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        // One probe. /unit-days answers both questions: top_of_house marks the
+        // observation tier, and a Branches node means this caller countersigns
+        // branches. Asking the server beats inspecting a role string here.
+        const r = await fetchUnitDays();
+        if (!alive) return;
+        if (r.top_of_house) setTier('rollup');
+        else if ((r.branches?.children?.length ?? 0) > 0) setTier('branch');
+        else setTier('staff');
+      } catch {
+        if (alive) setTier('staff');
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
 
   // Initial load + reload on tab focus to keep queues fresh
   useEffect(() => {
     void loadValidation();
-    void loadCancellation();
-  }, [loadValidation, loadCancellation]);
+  }, [loadValidation]);
 
   // ── Render guards ────────────────────────────────────────────────────
 
@@ -157,10 +173,12 @@ export function PipelineManagerQueues() {
 
   // ── Active tab data ──────────────────────────────────────────────────
 
-  const activeDeals    = activeTab === 'validation' ? validationDeals : cancellationDeals;
-  const activeLoading  = activeTab === 'validation' ? loadingV : loadingC;
-  const activeError    = activeTab === 'validation' ? errorV : errorC;
-  const activeReload   = activeTab === 'validation' ? loadValidation : loadCancellation;
+  // Cancellation was removed from this page (ruling 2026-08-09); the deal list
+  // here is now only ever the pipeline validation queue.
+  const activeDeals    = validationDeals;
+  const activeLoading  = loadingV;
+  const activeError    = errorV;
+  const activeReload   = loadValidation;
 
   // ── Main render ──────────────────────────────────────────────────────
 
@@ -177,16 +195,30 @@ export function PipelineManagerQueues() {
         <TabBtn
           active={activeTab === 'validation'}
           onClick={() => setActiveTab('validation')}
-          label="Validation"
+          label="Pipeline validation"
           count={validationDeals.length}
           loading={loadingV}
         />
         <TabBtn
-          active={activeTab === 'cancellation'}
-          onClick={() => setActiveTab('cancellation')}
-          label="Cancellation"
-          count={cancellationDeals.length}
-          loading={loadingC}
+          active={activeTab === 'dailylog'}
+          onClick={() => setActiveTab('dailylog')}
+          label="Daily log validation"
+          count={dailyLogPending}
+          loading={false}
+        />
+        <TabBtn
+          active={activeTab === 'ranking'}
+          onClick={() => setActiveTab('ranking')}
+          label="Ranking"
+          count={0}
+          loading={false}
+        />
+        <TabBtn
+          active={activeTab === 'analytics'}
+          onClick={() => setActiveTab('analytics')}
+          label="Index analytics"
+          count={0}
+          loading={false}
         />
         <div className="flex-1" />
         <Button
@@ -199,8 +231,57 @@ export function PipelineManagerQueues() {
         </Button>
       </div>
 
+      {/* Daily-log validation owns its own loading, empty and error states. */}
+      {activeTab === 'dailylog' && tier === null && (
+        <Card className="mt-4"><Card.Body>
+          <div className="text-sm text-gray-400">Loading…</div>
+        </Card.Body></Card>
+      )}
+      {activeTab === 'dailylog' && tier === 'rollup' && (
+        <UnitRollup onCount={setDailyLogPending} />
+      )}
+      {activeTab === 'dailylog' && tier === 'branch' && (
+        <BranchCountersign onCount={setDailyLogPending} />
+      )}
+      {activeTab === 'dailylog' && tier === 'staff' && (
+        <DailyLogValidation onCount={setDailyLogPending} />
+      )}
+
+      {/* Ranking and analytics live here too: a manager works out of this page,
+          and making them navigate elsewhere to see how their team is doing
+          splits one job across two screens. Both components are scope-aware
+          server-side, so each manager sees their own population. */}
+      {/* Pipeline validation follows the daily log's tier routing: a branch or
+          roll-up caller countersigns days; everyone else works the deal queue
+          below. Same shape, so a manager learns one screen and knows both. */}
+      {activeTab === 'validation' && (tier === 'branch' || tier === 'rollup') && (
+        <PipelineDayCountersign onCount={() => { /* count shown on the tab */ }} />
+      )}
+
+      {/* Two rankings, one tab: the productivity INDEX and the PIPELINE. They
+          measure different things over the same people, so they sit side by
+          side rather than being blended into a single misleading number. */}
+      {activeTab === 'ranking' && (
+        <div className="mt-4 space-y-4">
+          <div className="flex gap-1.5 text-xs">
+            {(['index', 'pipeline'] as const).map((k) => (
+              <button key={k} type="button" onClick={() => setRankView(k)}
+                className={'rounded-full px-3 py-1 font-medium '
+                  + (rankView === k ? 'bg-[#005B82] text-white'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-[#0082BB]/10')}>
+                {k === 'index' ? 'Index ranking' : 'Pipeline ranking'}
+              </button>
+            ))}
+          </div>
+          {rankView === 'index' ? <Leaderboard /> : <PipelineLeaderboard />}
+        </div>
+      )}
+      {activeTab === 'analytics' && <DailyLogAnalytics />}
+
       {/* Error panel */}
-      {activeError && (
+      {!['dailylog', 'ranking', 'analytics'].includes(activeTab)
+        && !(activeTab === 'validation' && (tier === 'branch' || tier === 'rollup'))
+        && activeError && (
         <Card className="mt-4">
           <Card.Body>
             <div className="flex items-center gap-3">
@@ -215,7 +296,9 @@ export function PipelineManagerQueues() {
       )}
 
       {/* Empty / loading / content */}
-      {activeLoading && activeDeals.length === 0 ? (
+      {['dailylog', 'ranking', 'analytics'].includes(activeTab)
+        || (activeTab === 'validation' && (tier === 'branch' || tier === 'rollup'))
+        ? null : activeLoading && activeDeals.length === 0 ? (
         <Card className="mt-4">
           <Card.Body>
             <Skeleton shape="line" className="w-1/3" />
@@ -256,8 +339,8 @@ export function PipelineManagerQueues() {
                 deal={deal}
                 onNavigate={() => navigate(`/pipeline/${encodeURIComponent(deal.id)}`)}
                 onResolved={() => {
-                  toast({ tone: 'success', message: 'Cancellation decision recorded.' });
-                  void loadCancellation();
+                  toast({ tone: 'success', message: 'Decision recorded.' });
+                  void loadValidation();
                 }}
                 onErrorToast={(msg) => toast({ tone: 'danger', message: msg })}
               />
