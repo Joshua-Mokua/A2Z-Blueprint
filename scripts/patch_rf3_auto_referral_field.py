@@ -1,4 +1,121 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+RF3 - the referral field becomes AUTO and uneditable. Closes the referral arc.
+
+RULING (2026-08-09): "if we confirm that, then we should make the referral place
+on the daily log uneditable since it is auto."
+
+Now safe to do, because RF1 made the credit real: accepted referrals credit the
+referrer's day, derived at read time. Leaving the field typeable as well would
+count the same referral TWICE - once by hand, once by machine.
+
+SEQUENCING MATTERED and was honoured: this lands AFTER the auto-credit works,
+not before. Doing it first would simply have removed people's ability to record
+referrals at all.
+
+THREE PARTS, and the middle one is the only real enforcement:
+
+  1. SCHEMA   fields_schema() marks the field `auto: true`. Config-driven via
+     branch_log_config.auto_fields, defaulting to referral_credit.credit_field(),
+     so the next derived metric needs no code change.
+
+  2. SERVER   submit() DISCARDS whatever arrives for an auto field. A read-only
+     input is a UI courtesy; a crafted request would still write. Scoped to
+     submit() only - the DRAFT path is untouched, on the same reasoning that
+     already exempts drafts from bounds checking: a half-typed number is not an
+     error yet.
+
+  3. UI       DayPlanner renders an "auto - counted when accepted" chip instead
+     of a number box. SHOWN, not hidden: the activity still counts toward the
+     index, and a person who cannot see the row would reasonably assume it does
+     not.
+
+MEASURED: a submit posting loans_referred=99 stores 0, while accounts_opened=3
+in the same request survives as 3.
+
+Verified: py_compile clean, tsc --noEmit clean, vite build clean.
+
+REQUIRES RF1.
+
+Usage (from project root, .venv active):
+    python scripts\patch_rf3_auto_referral_field.py            # dry run
+    python scripts\patch_rf3_auto_referral_field.py --apply    # write + .pre_rf3 backups
+"""
+import os
+import shutil
+import sys
+
+BL = os.path.join("utils", "branch_log.py")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+DP = os.path.join("frontend", "web", "src", "components", "DayPlanner.tsx")
+BACKUP_SUFFIX = ".pre_rf3"
+
+SCHEMA_OLD = '''def fields_schema() -> list:
+    w = activity_weights()
+    return [{"key": k, "label": lbl, "type": t, "unit": u, "bsc_kpi": kpi,
+             "weight": float(w.get(k, 0) or 0)}
+            for k, lbl, t, u, kpi in LOG_FIELDS]'''
+
+TS_OLD = ("export interface BranchLogField { key: string; label: string; "
+          "type: string; unit: string; bsc_kpi: string | null; weight?: number; }")
+TS_NEW = ("export interface BranchLogField { key: string; label: string; "
+          "type: string; unit: string; bsc_kpi: string | null; weight?: number; "
+          "auto?: boolean; }")
+
+REMARKS = '        remarks = str(values.get("remarks", "") or "")'
+
+SCHEMA_NEW = r'''def auto_fields() -> set:
+    """Fields the SYSTEM derives; a person must not type them.
+
+    Ruling 2026-08-09: the referral field becomes uneditable once referral
+    credit is automatic (RF1), because otherwise the same referral is counted
+    twice - once by hand and once by machine.
+
+    Config-driven, so the next derived metric needs no code change.
+    """
+    try:
+        cfg = load_log_config() or {}
+        v = cfg.get("auto_fields")
+        if isinstance(v, list):
+            return {str(x) for x in v if str(x).strip()}
+    except Exception:
+        pass
+    try:
+        from utils.referral_credit import credit_field
+        return {credit_field()}
+    except Exception:
+        return {"loans_referred"}
+
+
+def fields_schema() -> list:
+    w = activity_weights()
+    auto = auto_fields()
+    return [{"key": k, "label": lbl, "type": t, "unit": u, "bsc_kpi": kpi,
+             "weight": float(w.get(k, 0) or 0), "auto": k in auto}
+            for k, lbl, t, u, kpi in LOG_FIELDS]
+
+
+def fields_schema() -> list:
+    w = activity_weights()
+    auto = auto_fields()
+    return [{"key": k, "label": lbl, "type": t, "unit": u, "bsc_kpi": kpi,
+             "weight": float(w.get(k, 0) or 0), "auto": k in auto}
+            for k, lbl, t, u, kpi in LOG_FIELDS]'''
+
+ENFORCE = r'''        # AUTO FIELDS ARE IGNORED, not trusted. A read-only input is a UI
+        # courtesy; a crafted request would still write. Whatever arrives for an
+        # auto field is discarded, and the value is derived at read time instead
+        # (utils.referral_credit), so a machine count and a typed count can
+        # never disagree. Drafts are NOT touched - same reasoning that exempts
+        # them from bounds checking.
+        for _k in auto_fields():
+            if _k in metrics:
+                metrics[_k] = 0
+
+'''
+
+DP_NEW = r'''import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BranchLogField, HourlyMap, HourBlock } from '@/lib/api';
 
 // Metric-family color coding (matches the approved mockup):
@@ -296,3 +413,88 @@ export default function DayPlanner({
     </div>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (BL, APITS, DP):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found. Run from the project root." % p)
+            return 1
+
+    bl = open(BL, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+    dp = open(DP, encoding="utf-8").read()
+
+    if "auto_fields" in bl:
+        print("ABORT: auto_fields already present - RF3 looks applied.")
+        return 1
+    if not os.path.isfile(os.path.join("utils", "referral_credit.py")):
+        print("ABORT: apply patch_rf1_referral_credit.py first. Making the field")
+        print("       uneditable BEFORE the credit works would simply remove the")
+        print("       ability to record referrals at all.")
+        return 1
+    if bl.count(SCHEMA_OLD) != 1:
+        print("ABORT: fields_schema matched %d times." % bl.count(SCHEMA_OLD))
+        return 1
+    if ts.count(TS_OLD) != 1:
+        print("ABORT: BranchLogField type matched %d times." % ts.count(TS_OLD))
+        return 1
+
+    bl = bl.replace(SCHEMA_OLD, SCHEMA_NEW, 1)
+    print("  ok  fields_schema marks auto fields")
+
+    # Scope enforcement to submit() ONLY - the draft path shares this line.
+    fn = bl.index("    def submit(self, staff_code: str, staff_name: str, "
+                  "unit: str, role: str,")
+    i = bl.index(REMARKS, fn)
+    bl = bl[:i] + ENFORCE + bl[i:]
+    print("  ok  submit discards posted auto-field values (drafts untouched)")
+
+    ts = ts.replace(TS_OLD, TS_NEW, 1)
+    print("  ok  api.ts - auto flag on the field type")
+
+    # post-checks
+    if bl.count("for _k in auto_fields()") != 1:
+        print("ABORT: post-check - enforcement appears %d times, expected 1."
+              % bl.count("for _k in auto_fields()"))
+        return 1
+    sub = bl.index("def submit(self")
+    nxt = bl.index("\n    def ", sub + 20)
+    if "for _k in auto_fields()" not in bl[sub:nxt]:
+        print("ABORT: post-check - enforcement did not land inside submit().")
+        return 1
+    if "auto" not in DP_NEW or "counted when accepted" not in DP_NEW:
+        print("ABORT: DayPlanner does not render the auto chip.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if DP_NEW.count(op) != DP_NEW.count(cl):
+            print("ABORT: DayPlanner unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks clean")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((BL, bl), (APITS, ts), (DP, DP_NEW)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    try:
+        py_compile.compile(BL, doraise=True)
+        print("  ok  branch_log.py compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("\nRestart uvicorn. The referral field is now a chip, not a box, and")
+    print("a crafted request cannot write to it.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

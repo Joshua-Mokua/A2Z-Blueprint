@@ -758,7 +758,7 @@ export async function fetchDealJourney(dealId: string): Promise<{ journey: LoanA
 }
 
 // ── Daily Branch Log ───────────────────────────────────────────
-export interface BranchLogField { key: string; label: string; type: string; unit: string; bsc_kpi: string | null; weight?: number; }
+export interface BranchLogField { key: string; label: string; type: string; unit: string; bsc_kpi: string | null; weight?: number; auto?: boolean; }
 export interface BranchLogEntry {
   id: string; log_date: string; staff_code: string; staff_name: string; unit: string; role: string;
   submitted_at?: string; updated_at?: string; validated?: boolean; rejected?: boolean;
