@@ -202,12 +202,65 @@ def fields_schema() -> list:
             for k, lbl, t, u, kpi in LOG_FIELDS]
 
 
+# ── PER-UNIT ACTIVITY SETS (pilot request, 2026-08-10) ──────────────────────
+# "each department has unique set of activities, and the one that will cut
+#  across currently is the referral ... enable the admin to select from a list
+#  of all units and create the unique listing."
+#
+# RULINGS: the daily target stays the SAME for everyone - only the WEIGHTS vary
+# per activity. Head Office units keep NOTHING from the branch base except the
+# referral.
+#
+# Until a unit has a set defined, it keeps the branch base. That is deliberate:
+# switching a unit to an empty set would drop every activity its people log and
+# their index would read zero - not because they did nothing, but because
+# nothing is configured. Absence of config must not look like absence of work.
+COMMON_KEYS = ("loans_referred",)
+
+
+def activity_sets() -> dict:
+    """{unit: [field key, ...]} from branch_log_config.activity_sets."""
+    try:
+        cfg = load_log_config() or {}
+        v = cfg.get("activity_sets")
+        if isinstance(v, dict):
+            return {str(k): [str(x) for x in (vv or [])] for k, vv in v.items()}
+    except Exception:
+        pass
+    return {}
+
+
+def fields_for_unit(unit: str) -> list:
+    """The base activity set for a unit.
+
+    A unit with no configured set falls back to the FULL branch base - see the
+    note above on why an empty set is the wrong default.
+    """
+    sets = activity_sets()
+    keys = sets.get(str(unit or "").strip())
+    base = fields_schema()
+    if not keys:
+        return base
+    # COMMON_KEYS always travel, whatever the unit configured. The referral is
+    # the one activity that genuinely cuts across every desk in the bank.
+    want = list(dict.fromkeys(list(keys) + list(COMMON_KEYS)))
+    by_key = {f["key"]: f for f in base}
+    return [by_key[k] for k in want if k in by_key]
+
+
 def fields_for_role(role: str) -> list:
     """Activity fields for a role: the common base + admin extras whose 'roles'
     is empty (common) or includes this role."""
-    out = fields_schema()
+    return fields_for(role, "")
+
+
+def fields_for(role: str, unit: str = "") -> list:
+    """Activity fields for a person: their UNIT's set, plus admin extras scoped
+    to their role or unit (or scoped to neither, meaning common)."""
+    out = fields_for_unit(unit) if unit else fields_schema()
     w = activity_weights()
     rl = str(role or "").strip().lower()
+    un = str(unit or "").strip().lower()
     for a in _extra_activities():
         k = str(a.get("key") or "").strip()
         if not k:
@@ -215,80 +268,15 @@ def fields_for_role(role: str) -> list:
         roles = [str(x).strip().lower() for x in (a.get("roles") or [])]
         if roles and rl and rl not in roles:
             continue
+        # Unit scoping, alongside the role scoping that already existed.
+        units = [str(x).strip().lower() for x in (a.get("units") or [])]
+        if units and un and un not in units:
+            continue
         out.append({"key": k, "label": a.get("label", k), "type": a.get("type", "int"),
                     "unit": a.get("unit", ""), "bsc_kpi": None,
                     "weight": float(w.get(k, a.get("weight", 0)) or 0),
-                    "roles": a.get("roles") or []})
-    return out
-
-
-# ── Plausibility bounds ──────────────────────────────────────────────────────
-# A count field accepted 708,309,885 in live data, and a KES figure typed into a
-# count box (500,000 DFS registrations in one day) produced a carried-forward
-# balance of 1.5 million that then propagated into every ranking and analytic.
-# The reconciliation gate only catches over-reporting against a branch control
-# total, and only where one exists - nothing stopped the number entering.
-#
-# Bounds are per field and live in data/branch_log_config.json under
-# `field_bounds`, so a branch that genuinely does more can be raised without a
-# deploy. Type matters: a COUNT and a KES VALUE need very different ceilings,
-# which is why the defaults below are split by type.
-_DEFAULT_BOUNDS = {
-    "transactions_count": 500,
-    "customer_visits":    400,
-    "digital_txns":       300,
-    "nps_collected":      150,
-    "accounts_opened":     60,
-    "accounts_activated":  60,
-    "cards_issued":       100,
-    "dfs_registrations":  150,
-    "loans_referred":      50,
-    "bancassurance_sold":  50,
-    "complaints_received": 100,
-    "complaints_resolved": 100,
-    "new_leads":          150,
-    "cross_sell_success":  60,
-    "teller_errors":       50,
-    # KES values - generous, but a person booking more than this in one day is
-    # an event worth a conversation, not a silent record.
-    "loans_disbursed":    500000000,
-    "deposits_mobilised": 500000000,
-}
-
-
-def field_bounds() -> dict:
-    """{field_key: max_per_day}, from config, falling back to the defaults."""
-    cfg = load_log_config().get("field_bounds") or {}
-    out = dict(_DEFAULT_BOUNDS)
-    for k, v in cfg.items():
-        try:
-            out[str(k)] = float(v)
-        except (TypeError, ValueError):
-            continue
-    return out
-
-
-def check_bounds(metrics: dict) -> list:
-    """Human-readable breaches; empty when the entry is plausible.
-
-    Reports EVERY breach rather than the first, so someone correcting an entry
-    fixes it once instead of meeting the next problem on resubmit.
-    """
-    bounds = field_bounds()
-    schema = {f["key"]: f for f in fields_schema()}
-    out = []
-    for k, v in (metrics or {}).items():
-        try:
-            val = float(v or 0)
-        except (TypeError, ValueError):
-            continue
-        cap = bounds.get(k)
-        if cap is None or val <= float(cap):
-            continue
-        f = schema.get(k, {})
-        out.append("%s: %s %s exceeds the daily maximum of %s"
-                   % (f.get("label", k), format(int(val), ","),
-                      f.get("unit", ""), format(int(float(cap)), ",")))
+                    "roles": a.get("roles") or [],
+                    "units": a.get("units") or []})
     return out
 
 
