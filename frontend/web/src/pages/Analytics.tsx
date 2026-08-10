@@ -11,16 +11,12 @@ import { useBranding } from '@/hooks/useBranding';
 import { Card } from '@/components/Card';
 import { Badge, type BadgeTone } from '@/components/Badge';
 import { PageHeader } from '@/components/PageHeader';
+import PipelineAnalytics from '@/components/PipelineAnalytics';
 import { Skeleton } from '@/components/Skeleton';
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
 import { DonutChart } from '@/components/charts/DonutChart';
 
 function abbrev(n: number): string {
-  const a = Math.abs(n);
-  if (a >= 1e12) return (n / 1e12).toFixed(2) + 'T';
-  if (a >= 1e9)  return (n / 1e9).toFixed(2) + 'B';
-  if (a >= 1e6)  return (n / 1e6).toFixed(1) + 'M';
-  if (a >= 1e3)  return (n / 1e3).toFixed(1) + 'K';
   return n.toLocaleString();
 }
 
@@ -144,11 +140,13 @@ export function Analytics() {
     <>
       <PageHeader
         ribbon
-        breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'EKE Sales Pro Analytics' }]}
-        title="EKE Sales Pro Analytics"
-        subtitle="Assured pipeline in KES-equivalent — consistent with the MD dashboard."
+        breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'A2Z Sales Pro Analytics' }]}
+        title="A2Z Sales Pro Analytics"
+        subtitle="Assured pipeline value, in KES."
       />
       <div className="p-6 max-w-7xl 2xl:max-w-[1680px] mx-auto">
+
+      <PipelineAnalytics />
 
       {/* Headline KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">

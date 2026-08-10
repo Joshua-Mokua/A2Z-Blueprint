@@ -117,10 +117,38 @@ def _effective_index(log: dict) -> float:
     idx = log.get("index")
     if idx is not None:
         try:
-            return float(idx or 0)
+            base = float(idx or 0)
         except (TypeError, ValueError):
-            pass
-    return compute_index({k: log.get(k, 0) for k in metric_keys()})
+            base = compute_index({k: log.get(k, 0) for k in metric_keys()})
+    else:
+        base = compute_index({k: log.get(k, 0) for k in metric_keys()})
+
+    # REFERRAL CREDIT, derived not stored (ruling 2026-08-09). Referrals credit
+    # on ACCEPTANCE and never expire, so a decision can land after the day has
+    # locked. Adding it here means the day heals on the next read instead of
+    # needing an unlock and a correcting entry.
+    try:
+        from utils.referral_credit import credit_index_for
+        base += credit_index_for(str(log.get("staff_code", "") or ""),
+                                 str(log.get("log_date", ""))[:10])
+    except Exception:
+        pass
+    return round(base, 2)
+
+
+def _excused(log: dict) -> bool:
+    """True when this staff-day carries an exception that removes its target.
+
+    An EXCUSED day behaves exactly like a rest day for that person: no target,
+    no variance, skipped by the carried-forward walk. Refusal and "no
+    explanation" do NOT excuse — see utils.branch_log_exceptions.
+    """
+    try:
+        from utils.branch_log_exceptions import is_excused
+        return is_excused(str(log.get("staff_code", "") or ""),
+                          str(log.get("log_date", ""))[:10])
+    except Exception:
+        return False
 
 
 def _working_weight(log: dict) -> float:
@@ -131,6 +159,8 @@ def _working_weight(log: dict) -> float:
     consulted. Over-counting a working day is recoverable; silently zeroing
     everyone's target because a config file went missing is not.
     """
+    if _excused(log):
+        return 0.0
     try:
         from utils import workcal
         return float(workcal.target_weight(str(log.get("log_date", ""))[:10]))
@@ -182,6 +212,19 @@ def carried_forward(logs: list) -> list:
                 running = 0.0
                 applied_marker = mk
         idx = _effective_index(r)
+        # Surface the EFFECTIVE index on the row, and say how much of it came
+        # from accepted referrals. Leaving the stored index on display while
+        # scoring the effective one would show a manager 10 - 25 = -12 and
+        # invite them to distrust the whole column.
+        try:
+            from utils.referral_credit import credit_index_for
+            _rc = credit_index_for(str(r.get("staff_code", "") or ""),
+                                   str(r.get("log_date", ""))[:10])
+        except Exception:
+            _rc = 0.0
+        if _rc:
+            r["referral_credit"] = _rc
+        r["index"] = round(idx, 2)
         if not _is_working_day(r):
             # RULING: Sundays and public holidays are excluded from the walk
             # entirely — no target, so no deficit can accrue. Work genuinely
@@ -191,6 +234,18 @@ def carried_forward(logs: list) -> list:
             r["variance"] = 0.0
             r["cf_variance"] = running
             r["working_day"] = False
+            # Distinguish "the bank was closed" from "this person was excused",
+            # so the grid can say which and a manager is not left guessing.
+            if _excused(r):
+                try:
+                    from utils.branch_log_exceptions import exception_for
+                    exc = exception_for(str(r.get("staff_code", "") or ""),
+                                        str(r.get("log_date", ""))[:10]) or {}
+                except Exception:
+                    exc = {}
+                r["excused"] = True
+                r["exception_reason"] = exc.get("reason", "")
+                r["exception_note"] = exc.get("note", "")
             continue
         tgt = _target_for(r)
         var = round(idx - tgt, 2)

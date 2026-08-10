@@ -190,6 +190,76 @@ def fields_for_role(role: str) -> list:
     return out
 
 
+# ── Plausibility bounds ──────────────────────────────────────────────────────
+# A count field accepted 708,309,885 in live data, and a KES figure typed into a
+# count box (500,000 DFS registrations in one day) produced a carried-forward
+# balance of 1.5 million that then propagated into every ranking and analytic.
+# The reconciliation gate only catches over-reporting against a branch control
+# total, and only where one exists - nothing stopped the number entering.
+#
+# Bounds are per field and live in data/branch_log_config.json under
+# `field_bounds`, so a branch that genuinely does more can be raised without a
+# deploy. Type matters: a COUNT and a KES VALUE need very different ceilings,
+# which is why the defaults below are split by type.
+_DEFAULT_BOUNDS = {
+    "transactions_count": 500,
+    "customer_visits":    400,
+    "digital_txns":       300,
+    "nps_collected":      150,
+    "accounts_opened":     60,
+    "accounts_activated":  60,
+    "cards_issued":       100,
+    "dfs_registrations":  150,
+    "loans_referred":      50,
+    "bancassurance_sold":  50,
+    "complaints_received": 100,
+    "complaints_resolved": 100,
+    "new_leads":          150,
+    "cross_sell_success":  60,
+    "teller_errors":       50,
+    # KES values - generous, but a person booking more than this in one day is
+    # an event worth a conversation, not a silent record.
+    "loans_disbursed":    500000000,
+    "deposits_mobilised": 500000000,
+}
+
+
+def field_bounds() -> dict:
+    """{field_key: max_per_day}, from config, falling back to the defaults."""
+    cfg = load_log_config().get("field_bounds") or {}
+    out = dict(_DEFAULT_BOUNDS)
+    for k, v in cfg.items():
+        try:
+            out[str(k)] = float(v)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def check_bounds(metrics: dict) -> list:
+    """Human-readable breaches; empty when the entry is plausible.
+
+    Reports EVERY breach rather than the first, so someone correcting an entry
+    fixes it once instead of meeting the next problem on resubmit.
+    """
+    bounds = field_bounds()
+    schema = {f["key"]: f for f in fields_schema()}
+    out = []
+    for k, v in (metrics or {}).items():
+        try:
+            val = float(v or 0)
+        except (TypeError, ValueError):
+            continue
+        cap = bounds.get(k)
+        if cap is None or val <= float(cap):
+            continue
+        f = schema.get(k, {})
+        out.append("%s: %s %s exceeds the daily maximum of %s"
+                   % (f.get("label", k), format(int(val), ","),
+                      f.get("unit", ""), format(int(float(cap)), ",")))
+    return out
+
+
 class BranchLogManager:
     def __init__(self):
         self.file = Path(DATA_DIR) / "branch_logs.json"
@@ -241,6 +311,18 @@ class BranchLogManager:
         else:
             metrics = {k: _num(values.get(k, 0)) for k in metric_keys()}
         remarks = str(values.get("remarks", "") or "")
+
+        # Reject, never clamp: a clamped number looks like a real one, and the
+        # person who typed it would never learn they had made a mistake.
+        # Drafts are deliberately NOT checked - a half-typed number is not an
+        # error yet, and blocking mid-typing would be hostile.
+        breaches = check_bounds(metrics)
+        if breaches:
+            raise ValueError(
+                "This entry looks implausible and was not saved. "
+                + "; ".join(breaches)
+                + ". Correct it, or ask an admin to raise the limit if it is genuine."
+            )
 
         existing = next((l for l in self.logs
                          if str(l.get("staff_code")) == code and l.get("log_date") == today), None)

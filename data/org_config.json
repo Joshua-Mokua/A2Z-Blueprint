@@ -814,5 +814,10 @@
     "Thika": "KE637",
     "Karatina": "KE546",
     "Nyeri": "KE461"
-  }
+  },
+  "daily_log_branch_validator_roles": [
+    "Branch Manager",
+    "Assistant Branch Service & Operations Manager",
+    "Customer Service Manager"
+  ]
 }

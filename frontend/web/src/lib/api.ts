@@ -782,6 +782,170 @@ export async function saveBranchLogActivities(extra_activities: ExtraActivity[])
   return postJson<{ status: string }, { extra_activities: ExtraActivity[] }>('/branch-log/activities', { extra_activities });
 }
 export interface BranchLogRankRow { rank: number; staff_code: string; staff_name: string; unit: string; index: number; days: number; avg_per_day: number; target: number; }
+// ── Pipeline validation (same tier structure as the Daily Log) ────────────
+export interface PipelineQueueRow {
+  deal_id: string; staff_code: string; staff_name: string; role: string;
+  branch: string; client: string; product: string; stage: string;
+  deal_value: number; validated: boolean; validated_by: string; can_act: boolean;
+}
+export interface PipelineQueue {
+  rows: PipelineQueueRow[]; date: string; working_day: boolean; label: string;
+  pending: number; branch?: string; mode: string;
+}
+export interface PipelineDayRow {
+  branch: string; deals: number; validated: number; pending: number; value: number;
+  status: string; submitted_by_name: string; validated_by_name: string;
+  return_note: string;
+}
+export interface PipelineDays {
+  rows: PipelineDayRow[]; date: string; working_day?: boolean; label?: string;
+  top_of_house: boolean; can_return?: boolean;
+}
+export async function fetchPipelineValidationQueue(
+  date = '', branch = '',
+): Promise<PipelineQueue> {
+  const q = new URLSearchParams();
+  if (date) q.set('date', date);
+  if (branch) q.set('branch', branch);
+  const s = q.toString();
+  return getJson<PipelineQueue>(`/pipeline-validation/queue${s ? `?${s}` : ''}`);
+}
+export async function fetchPipelineValidationDays(date = ''): Promise<PipelineDays> {
+  return getJson<PipelineDays>(
+    `/pipeline-validation/days${date ? `?date=${encodeURIComponent(date)}` : ''}`);
+}
+export async function submitPipelineDay(
+  branch: string, date: string,
+): Promise<{ pipeline_day: Record<string, unknown> }> {
+  return postJson<{ pipeline_day: Record<string, unknown> },
+                  { branch: string; date: string }>(
+    '/pipeline-validation/days/submit', { branch, date });
+}
+export async function decidePipelineDay(
+  branch: string, date: string, approved: boolean, note = '',
+): Promise<{ pipeline_day: Record<string, unknown> }> {
+  return postJson<{ pipeline_day: Record<string, unknown> },
+                  { branch: string; date: string; approved: boolean; note: string }>(
+    '/pipeline-validation/days/validate', { branch, date, approved, note });
+}
+
+// ── Defined funnel (journey from admin config + credit side layer) ────────
+export interface DefinedStep {
+  stage: string; count: number; value: number; probability: number;
+}
+export interface BucketHealth {
+  status: 'green' | 'amber' | 'red' | 'idle';
+  avg_days: number; target_days: number; oldest_days: number; at_risk: number;
+}
+export interface DefinedBucket {
+  key: string; label: string; weight: number;
+  count: number; value: number; probability: number;
+  steps: DefinedStep[];
+  health: BucketHealth;
+}
+export interface DefinedFlow {
+  flow: string; buckets: DefinedBucket[];
+  deals: number; value: number; weighted: number;
+}
+export interface DefinedFunnel {
+  flows: DefinedFlow[];
+  total_deals: number;
+  unplaced_deals: number;
+}
+export interface PipelineLeaderboardRow {
+  key: string; rank: number; name: string;
+  staff_code: string; role: string; branch: string;
+  deals: number; value: number; weighted: number;
+  won: number; lost: number; referred: number; win_rate: number;
+}
+export interface PipelineLeaderboard {
+  level: string; origin: string; start: string; end: string;
+  rows: PipelineLeaderboardRow[];
+  total_deals: number; total_value: number; total_weighted: number;
+  branches: string[];
+}
+export async function fetchPipelineLeaderboard(opts: {
+  days?: number; start?: string; end?: string;
+  level?: string; origin?: string; branch?: string; unit?: string;
+} = {}): Promise<PipelineLeaderboard> {
+  const q = new URLSearchParams();
+  if (opts.days) q.set('days', String(opts.days));
+  if (opts.start) q.set('start', opts.start);
+  if (opts.end) q.set('end', opts.end);
+  if (opts.level) q.set('level', opts.level);
+  if (opts.origin) q.set('origin', opts.origin);
+  if (opts.branch) q.set('branch', opts.branch);
+  if (opts.unit) q.set('unit', opts.unit);
+  return getJson<PipelineLeaderboard>(`/pipeline/leaderboard?${q.toString()}`);
+}
+
+export interface PipelineOriginSplit {
+  origin: string; count: number; value: number; won: number;
+}
+export interface PipelineJourneyFlow {
+  flow: string; deals: number; buckets: DefinedBucket[];
+}
+export interface PipelineAnalyticsSummary {
+  start: string; end: string; days: number;
+  totals: {
+    deals: number; open: number; won: number; lost: number;
+    open_value: number; won_value: number; weighted: number; win_rate: number;
+  };
+  journey: PipelineJourneyFlow[];
+  origin: PipelineOriginSplit[];
+}
+export async function fetchPipelineAnalyticsSummary(
+  days = 30, start = '', end = '',
+): Promise<PipelineAnalyticsSummary> {
+  const q = new URLSearchParams();
+  if (days) q.set('days', String(days));
+  if (start) q.set('start', start);
+  if (end) q.set('end', end);
+  return getJson<PipelineAnalyticsSummary>(`/pipeline/analytics/summary?${q.toString()}`);
+}
+
+export async function fetchPipelineDefinedFunnel(): Promise<DefinedFunnel> {
+  return getJson<DefinedFunnel>('/pipeline/funnel');
+}
+
+// ── Cumulative leaderboard (staff / role / branch / unit) ─────────────────
+export interface LeaderboardRow {
+  rank?: number;
+  name?: string;                       // role / branch / unit rows
+  staff_code?: string; staff_name?: string; role?: string; branch?: string; unit?: string;
+  index: number; target: number; achievement?: number;
+  headcount?: number; index_per_head?: number;
+  days_filed: number; validated: number; cf_variance?: number;
+  met_days?: number; scored_days?: number; met_rate?: number;
+  segment?: string;
+  avg_index?: number; avg_target?: number;   // per ON-DUTY day
+}
+export interface Leaderboard {
+  level: string; days: number; rows: LeaderboardRow[];
+  total_index: number; total_headcount: number;
+  met_days?: number; scored_days?: number; met_rate?: number;
+  filters: { role: string; branch: string; unit: string };
+  roles: string[]; branches: string[]; units: string[]; segments?: string[];
+  // Segment level only: people held back because they bear the branch.
+  bears_branch?: { headcount: number; index: number } | null;
+}
+export async function fetchBranchLogLeaderboard(opts: {
+  days?: number; level?: string; role?: string; branch?: string; unit?: string;
+  segment?: string; start?: string; end?: string;
+} = {}): Promise<Leaderboard> {
+  const q = new URLSearchParams();
+  if (opts.days) q.set('days', String(opts.days));
+  if (opts.start) q.set('start', opts.start);
+  if (opts.end) q.set('end', opts.end);
+  if (opts.level) q.set('level', opts.level);
+  if (opts.role) q.set('role', opts.role);
+  if (opts.branch) q.set('branch', opts.branch);
+  if (opts.unit) q.set('unit', opts.unit);
+  if (opts.segment) q.set('segment', opts.segment);
+  const s = q.toString();
+  return getJson<Leaderboard>(`/branch-log/leaderboard${s ? `?${s}` : ''}`);
+}
+
 export async function fetchBranchLogRanking(days = 30): Promise<{ ranking: BranchLogRankRow[]; days: number; daily_index_target: number }> {
   return getJson<{ ranking: BranchLogRankRow[]; days: number; daily_index_target: number }>(`/branch-log/ranking?days=${days}`);
 }
@@ -820,8 +984,15 @@ export interface BranchLogAnalytics {
   totals: { logs: number; submitters: number; validated: number; auto_submitted: number;
             returned: number; pending: number; validation_rate: number };
 }
-export async function fetchBranchLogAnalytics(days = 30, unit = ''): Promise<BranchLogAnalytics> {
-  const q = unit ? `?days=${days}&unit=${encodeURIComponent(unit)}` : `?days=${days}`;
+export async function fetchBranchLogAnalytics(
+  days = 30, unit = '', start = '', end = '',
+): Promise<BranchLogAnalytics> {
+  const p = new URLSearchParams();
+  if (days) p.set('days', String(days));
+  if (unit) p.set('unit', unit);
+  if (start) p.set('start', start);   // calendar window (quarter / YTD)
+  if (end) p.set('end', end);
+  const q = `?${p.toString()}`;
   return getJson<BranchLogAnalytics>(`/branch-log/analytics${q}`);
 }
 
@@ -831,12 +1002,125 @@ export interface HistoryGridRow {
   log_date: string; staff_code: string; staff_name: string; role: string; unit: string;
   status: string; validated: boolean; auto_submitted: boolean;
   index: number; target: number; variance: number; cf_variance: number;
+  working_day?: boolean;   // false on Sundays / gazetted holidays (no target, no deficit)
+  remarks?: string; manager_note?: string;
+  department?: string; branch?: string;   // canonical, joined from the roster
   [metric: string]: unknown;
 }
 export interface HistoryGrid {
   rows: HistoryGridRow[]; columns: HistoryGridColumn[]; days: number;
   scope_tier: string; deadline_time: string;
 }
+// Daily-log validation queue: one day, the staff this manager may validate.
+export interface ValidationQueueRow {
+  log_id: string; log_date: string;
+  staff_code: string; staff_name: string; role: string;
+  department: string; branch: string;
+  status: string; validated: boolean; auto_submitted: boolean;
+  index: number; target: number;
+  remarks: string; manager_note: string; validated_by?: string;
+  can_act: boolean;
+  [metric: string]: unknown;
+}
+export interface ValidationQueue {
+  rows: ValidationQueueRow[]; columns: HistoryGridColumn[];
+  date: string; working_day: boolean; label: string;
+  mode: string; pending: number;
+  branch?: string;
+  staff_totals?: Record<string, number>;
+  control_totals?: Record<string, number>;
+  // ReconBranchDay/ReconMetric are declared further down this file with the
+  // other reconciliation types — reuse them rather than restating the shape.
+  reconciliation?: Partial<ReconBranchDay>;
+  branch_index?: number;
+  validated_count?: number;
+  filed_count?: number;
+}
+export async function saveBranchControlTotals(
+  branch: string, date: string, totals: Record<string, number>,
+): Promise<{ status: string; totals: Record<string, number> }> {
+  return postJson<{ status: string; totals: Record<string, number> },
+                  { branch: string; date: string; totals: Record<string, number> }>(
+    '/branch-log/control-totals', { branch, date, totals });
+}
+export async function fetchBranchLogValidationQueue(
+  date = '', branch = '', unit = '',
+): Promise<ValidationQueue> {
+  const q = new URLSearchParams();
+  if (date) q.set('date', date);
+  if (branch) q.set('branch', branch);      // tier-2 read-only inspection
+  if (unit) q.set('unit', unit);            // Head Office unit, read-only
+  const s = q.toString();
+  return getJson<ValidationQueue>(`/branch-log/validation-queue${s ? `?${s}` : ''}`);
+}
+
+// ── Tier 2: branch-day countersign ────────────────────────────────────────
+export interface BranchDayRow {
+  branch: string;
+  expected: number; filed: number; validated: number; pending: number; not_filed: number;
+  status: string;               // draft | submitted | validated | returned
+  branch_index: number;
+  submitted_by_name: string; submitted_at: string;
+  return_note: string; validated_by_name: string;
+  over_reported: number;
+}
+export interface BranchDays {
+  rows: BranchDayRow[]; date: string; mode: string;
+  all_view: boolean; working_day: boolean; label?: string;
+}
+export interface NonSubmitterRow {
+  staff_code: string; staff_name: string; role: string;
+  branch: string; department: string;
+  days_outstanding: number;
+  exception: string; exception_note: string;
+}
+export interface NonSubmitters {
+  rows: NonSubmitterRow[]; date: string; total: number; working_day?: boolean;
+  bank_wide?: boolean;
+}
+export async function fetchNonSubmitters(date = ''): Promise<NonSubmitters> {
+  return getJson<NonSubmitters>(
+    `/branch-log/non-submitters${date ? `?date=${encodeURIComponent(date)}` : ''}`);
+}
+export interface UnitRow {
+  key: string; name: string; kind: string;            // branch | unit | rollup
+  expected: number; filed: number; validated: number; not_filed: number;
+  status: string; index: number; owner: string; over_reported: number;
+  can_countersign?: boolean;
+  count?: number; countersigned?: number;             // rollup only
+  children?: UnitRow[];
+}
+export interface UnitDays {
+  branches: UnitRow | null; units: UnitRow[];
+  date: string; working_day?: boolean; label?: string;
+  top_of_house: boolean; can_return?: boolean;
+}
+export async function fetchUnitDays(date = ''): Promise<UnitDays> {
+  return getJson<UnitDays>(
+    `/branch-log/unit-days${date ? `?date=${encodeURIComponent(date)}` : ''}`);
+}
+export async function fetchBranchDays(date = ''): Promise<BranchDays> {
+  return getJson<BranchDays>(
+    `/branch-log/branch-days${date ? `?date=${encodeURIComponent(date)}` : ''}`);
+}
+export async function submitBranchDay(
+  branch: string, date: string, branchIndex: number,
+  staffTotals: Record<string, number>, controlTotals: Record<string, number>,
+  counts: Record<string, number>,
+): Promise<{ branch_day: Record<string, unknown> }> {
+  return postJson<{ branch_day: Record<string, unknown> }, Record<string, unknown>>(
+    '/branch-log/branch-days/submit',
+    { branch, date, branch_index: branchIndex, staff_totals: staffTotals,
+      control_totals: controlTotals, counts });
+}
+export async function decideBranchDay(
+  branch: string, date: string, approved: boolean, note = '',
+): Promise<{ branch_day: Record<string, unknown> }> {
+  return postJson<{ branch_day: Record<string, unknown> },
+                  { branch: string; date: string; approved: boolean; note: string }>(
+    '/branch-log/branch-days/validate', { branch, date, approved, note });
+}
+
 export async function fetchBranchLogHistoryGrid(days = 30, unit = ''): Promise<HistoryGrid> {
   const q = unit ? `?days=${days}&unit=${encodeURIComponent(unit)}` : `?days=${days}`;
   return getJson<HistoryGrid>(`/branch-log/history-grid${q}`);

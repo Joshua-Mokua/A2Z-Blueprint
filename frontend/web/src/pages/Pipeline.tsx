@@ -32,13 +32,13 @@ import { usePipelineDeals } from '@/hooks/usePipelineDeals';
 import { useRole } from '@/hooks/useRole';
 import { fetchPipelineConfig, fetchPipelineAnalytics, fetchFunnelDrill, downloadFile } from '@/lib/api';
 import { Card } from '@/components/Card';
+import DefinedFunnel from '@/components/DefinedFunnel';
 import { PageHeader } from '@/components/PageHeader';
 import { Stat } from '@/components/Stat';
 import { Badge, type BadgeTone } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Table, type Column } from '@/components/Table';
 import { PermissionBadges } from '@/components/PermissionBadges';
-import { PipelineFunnel } from '@/components/PipelineFunnel';
 import { parseTs } from '@/lib/datetime';
 import {
   stageTone,
@@ -54,9 +54,6 @@ import {
 /** Format a deal_value in the tenant's currency. Compact format for table cells. */
 function formatValue(v: number, symbol: string): string {
   if (!Number.isFinite(v) || v === 0) return '—';
-  if (v >= 1e9) return `${symbol} ${(v / 1e9).toFixed(2)}B`;
-  if (v >= 1e6) return `${symbol} ${(v / 1e6).toFixed(2)}M`;
-  if (v >= 1e3) return `${symbol} ${(v / 1e3).toFixed(0)}K`;
   return `${symbol} ${v.toLocaleString()}`;
 }
 
@@ -375,7 +372,7 @@ export function Pipeline() {
         ribbon
         breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'EKE Sales Pro' }]}
         title="EKE Sales Pro"
-        subtitle="Deals across your scope — assured value, stage, and ownership."
+        subtitle="Your pipeline"
         actions={
           <>
             <Button
@@ -484,38 +481,7 @@ export function Pipeline() {
         </div>
 
         {/* Validated pipeline funnel */}
-        <Card className="mt-6">
-          <Card.Header>
-            <h2 className="text-base font-semibold text-gray-900">
-              Validated pipeline funnel
-            </h2>
-            <span className="text-xs text-gray-400">Assured deals by stage</span>
-          </Card.Header>
-          <Card.Body>
-            <PipelineFunnel
-              overall={analytics?.funnel ?? []}
-              categories={analytics ? [
-                { key: 'asset', label: 'Asset', stages: analytics.pipelines.asset.funnel, activeCount: analytics.pipelines.asset.active_count },
-                { key: 'liability', label: 'Liability', stages: analytics.pipelines.liability.funnel, activeCount: analytics.pipelines.liability.active_count },
-                { key: 'insurance', label: 'Insurance', stages: analytics.pipelines.insurance.funnel, activeCount: analytics.pipelines.insurance.active_count },
-                { key: 'other', label: 'Other', stages: analytics.pipelines.other.funnel, activeCount: analytics.pipelines.other.active_count },
-              ] : []}
-              customerSegments={config?.customer_segments}
-              segmentCategories={analytics?.by_segment_funnel
-                ? analytics.by_segment_funnel.map((s) => ({
-                    key: s.segment,
-                    label: s.segment,
-                    stages: s.funnel,
-                    activeCount: s.active_count,
-                  }))
-                : []}
-              currencySymbol={sym}
-              stageFlows={config?.stage_flows}
-              onStageClick={onStageDrill}
-              emptyHint="No validated deals yet — validate deals to populate the funnel."
-            />
-          </Card.Body>
-        </Card>
+        <DefinedFunnel onStageClick={onStageDrill} />
 
         {/* Funnel stage-drill panel */}
         {(drillLoading || drill) && (
@@ -748,18 +714,6 @@ export function Pipeline() {
                 </div>
               }
             />
-          </Card.Body>
-        </Card>
-
-        {/* Status footer — what this page is and isn't */}
-        <Card className="mt-6">
-          <Card.Body>
-            <div className="text-xs text-gray-500 leading-relaxed">
-              Click any deal row to view its detail page. Advance and
-              cancel-request actions live there, gated by the per-deal
-              permissions from α7. Create-deal and manager queues land
-              in subsequent β-batches.
-            </div>
           </Card.Body>
         </Card>
 
