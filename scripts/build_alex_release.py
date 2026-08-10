@@ -71,7 +71,7 @@ CHAIN = [
     "patch_rf2a_referral_clock", "patch_pl2_pipeline_drill",
     "patch_rf2b_referral_bench_ui", "patch_rf3_auto_referral_field",
     "patch_p3_branch_pipeline_day",
-    "patch_perf1_roster_cache", "patch_mail1_smtp_negotiation",
+    "patch_perf1_roster_cache",
 ]
 
 # Patchers that deliberately do NOT ship to the pilot. Anything in scripts/ that
@@ -84,6 +84,11 @@ CHAIN = [
 # datetime.parseTs). Re-running them would only abort as "already applied", but
 # listing them keeps the guard meaningful instead of crying wolf every build.
 NOT_FOR_RELEASE = {
+    # Alex fixed this independently and better: his core.py has ONE send site
+    # that already reads smtp_encryption and sender_username and makes STARTTLS
+    # conditional. Ours had FOUR that did none of that. MAIL1 is for our
+    # divergent core.py only - shipping it would rewrite his working code.
+    "patch_mail1_smtp_negotiation",
     "patch_a8_branch_segment_and_ui",
     "patch_phase2c_dayplanner",
     "patch_phase2cb_layout",
