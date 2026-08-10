@@ -170,6 +170,53 @@ def notify(recipient: str, subject: str, body: str = "",
         return False
 
 
+def open_smtp(cfg: dict):
+    """Open an SMTP connection the way the RELAY wants, not the way we assume.
+
+    ONE helper for every send site, because the bank's relay broke us five times
+    over in exactly the same way.
+
+    WHAT WENT WRONG (2026-08-10): the bank supplied an internal relay at
+    192.168.48.27:25 - no password, anonymous. Port 25 relays usually offer no
+    STARTTLS. Our code called starttls() UNCONDITIONALLY, so it raised, the send
+    returned False, and the failure was only logged. From the outside that is
+    indistinguishable from "email not configured", which is why nobody noticed.
+
+    The config even carried smtp_encryption: "tls" and sender_username - keys
+    NOTHING IN THE CODE READ. Someone configured the encryption mode expecting
+    it to be honoured.
+
+    Rules now:
+      smtp_encryption = "ssl"   connect with SMTP_SSL (usually port 465)
+      smtp_encryption = "none"  never attempt STARTTLS
+      anything else             use STARTTLS ONLY IF THE RELAY ADVERTISES IT
+    Authentication is attempted only when a password is present, using
+    sender_username if given and falling back to sender_email.
+    """
+    import smtplib
+    host = str(cfg.get("smtp_host") or "")
+    port = int(cfg.get("smtp_port", 587) or 587)
+    mode = str(cfg.get("smtp_encryption") or "").strip().lower()
+    timeout = int(cfg.get("smtp_timeout", 20) or 20)
+
+    if mode == "ssl":
+        srv = smtplib.SMTP_SSL(host, port, timeout=timeout)
+        srv.ehlo()
+    else:
+        srv = smtplib.SMTP(host, port, timeout=timeout)
+        srv.ehlo()
+        # Ask the relay rather than assume. has_extn() is the whole fix.
+        if mode != "none" and srv.has_extn("starttls"):
+            srv.starttls()
+            srv.ehlo()
+
+    pwd = cfg.get("sender_password")
+    if pwd:
+        user = str(cfg.get("sender_username") or cfg.get("sender_email") or "")
+        srv.login(user, str(pwd))
+    return srv
+
+
 def send_email(to: str, subject: str, body: str = "",
                attachments=None, **kwargs) -> bool:
     """Send an email via the configured SMTP relay (data/email_config.json).
@@ -206,11 +253,14 @@ def send_email(to: str, subject: str, body: str = "",
         msg["From"]    = cfg["sender_email"]
         msg["To"]      = to
         msg.attach(MIMEText(body or subject, "html"))
-        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port", 587))) as srv:
-            srv.starttls()
-            if cfg.get("sender_password"):
-                srv.login(cfg["sender_email"], cfg["sender_password"])
+        srv = open_smtp(cfg)
+        try:
             srv.sendmail(cfg["sender_email"], [to], msg.as_string())
+        finally:
+            try:
+                srv.quit()
+            except Exception:
+                pass
         _v471_logger.info(f"send_email sent: to={to} subj={subject!r}")
         return True
     except Exception as exc:

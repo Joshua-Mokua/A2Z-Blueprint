@@ -125,10 +125,18 @@ def send_milestone_alert_email(to_email, recipient_name, ms_name, init_name,
         msg["From"]    = cfg["sender_email"]
         msg["To"]      = to_email
         msg.attach(MIMEText(body, "html"))
-        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port",587))) as s:
-            s.starttls()
-            s.login(cfg["sender_email"], cfg["sender_password"])
+        # One SMTP path for the whole system (2026-08-10). The bank's relay
+        # offers no STARTTLS on port 25; calling it unconditionally here
+        # silently failed every send.
+        from utils.notifications import open_smtp
+        s = open_smtp(cfg)
+        try:
             s.sendmail(cfg["sender_email"], to_email, msg.as_string())
+        finally:
+            try:
+                s.quit()
+            except Exception:
+                pass
         return True, "Sent"
     except Exception as e:
         return False, str(e)
@@ -169,10 +177,18 @@ def send_structural_delay_email(to_emails, ms_name, init_name, workstream,
         msg["From"]    = cfg["sender_email"]
         msg["To"]      = ", ".join(to_emails)
         msg.attach(MIMEText(body, "html"))
-        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port",587))) as s:
-            s.starttls()
-            s.login(cfg["sender_email"], cfg["sender_password"])
+        # One SMTP path for the whole system (2026-08-10). The bank's relay
+        # offers no STARTTLS on port 25; calling it unconditionally here
+        # silently failed every send.
+        from utils.notifications import open_smtp
+        s = open_smtp(cfg)
+        try:
             s.sendmail(cfg["sender_email"], to_emails, msg.as_string())
+        finally:
+            try:
+                s.quit()
+            except Exception:
+                pass
         return True, "Sent"
     except Exception as e:
         return False, str(e)
@@ -210,10 +226,18 @@ def send_start_alert_email(to_email, recipient_name, ms_name, init_name, start_d
         msg["From"]    = cfg["sender_email"]
         msg["To"]      = to_email
         msg.attach(MIMEText(body, "html"))
-        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port",587))) as s:
-            s.starttls()
-            s.login(cfg["sender_email"], cfg["sender_password"])
+        # One SMTP path for the whole system (2026-08-10). The bank's relay
+        # offers no STARTTLS on port 25; calling it unconditionally here
+        # silently failed every send.
+        from utils.notifications import open_smtp
+        s = open_smtp(cfg)
+        try:
             s.sendmail(cfg["sender_email"], to_email, msg.as_string())
+        finally:
+            try:
+                s.quit()
+            except Exception:
+                pass
         return True, "Sent"
     except Exception as e:
         return False, str(e)
@@ -328,10 +352,18 @@ def send_welcome_email(to_email, full_name, username, temp_password):
 </div>
 </body></html>"""
         msg.attach(MIMEText(body, "html"))
-        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port", 587))) as s:
-            s.starttls()
-            s.login(cfg["sender_email"], cfg["sender_password"])
+        # One SMTP path for the whole system (2026-08-10). The bank's relay
+        # offers no STARTTLS on port 25; calling it unconditionally here
+        # silently failed every send.
+        from utils.notifications import open_smtp
+        s = open_smtp(cfg)
+        try:
             s.sendmail(cfg["sender_email"], to_email, msg.as_string())
+        finally:
+            try:
+                s.quit()
+            except Exception:
+                pass
         return True, "Email sent"
     except Exception as e:
         return False, str(e)
