@@ -72,6 +72,9 @@ CHAIN = [
     "patch_rf2b_referral_bench_ui", "patch_rf3_auto_referral_field",
     "patch_p3_branch_pipeline_day",
     "patch_perf1_roster_cache",
+    "patch_as1_unit_activities", "patch_as2_unit_weights",
+    "patch_as3_admin_unit_config", "patch_as4_unit_admin_ui",
+    "patch_ul1_unit_labels", "patch_ex1_exclude_md_office",
 ]
 
 # Patchers that deliberately do NOT ship to the pilot. Anything in scripts/ that
@@ -84,6 +87,10 @@ CHAIN = [
 # datetime.parseTs). Re-running them would only abort as "already applied", but
 # listing them keeps the guard meaningful instead of crying wolf every build.
 NOT_FOR_RELEASE = {
+    # Local-only repair. Alex's branch_log.py already DEFINES
+    # field_bounds and check_bounds - verified defs=2 on
+    # origin/alex-dev. This would abort on his tree anyway.
+    "hotfix_bounds_defs",
     # Alex fixed this independently and better: his core.py has ONE send site
     # that already reads smtp_encryption and sender_username and makes STARTTLS
     # conditional. Ours had FOUR that did none of that. MAIL1 is for our
