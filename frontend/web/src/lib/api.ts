@@ -965,6 +965,15 @@ export interface ChannelAnalytics {
 export async function fetchChannelAnalytics(key: string): Promise<ChannelAnalytics> {
   return getJson<ChannelAnalytics>(`/channels/${encodeURIComponent(key)}/analytics`);
 }
+export interface ChannelOwners {
+  units: { value: string; label: string }[];
+  branches: { value: string; label: string }[];
+  mine: { unit: string; branch: string };
+  is_admin: boolean;
+}
+export async function fetchChannelOwners(): Promise<ChannelOwners> {
+  return getJson<ChannelOwners>('/channels/owners');
+}
 export async function fetchChannels(): Promise<{ channels: OriginChannel[] }> {
   return getJson<{ channels: OriginChannel[] }>('/channels');
 }

@@ -1,4 +1,114 @@
-// Origin Channels — one page for every channel the bank invests in.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+CH6 - the owner is PICKED, not typed. Fixes a defect CH2 shipped.
+
+CH2's create form asked the user to TYPE which unit owns a channel. The value
+has to match a unit name exactly - "Director Consumer & Commercial Banking
+(CCB)" - and anything else produces a record owned by a unit nobody has, which
+is invisible to every unit view and to the "Mine" filter.
+
+This is not hypothetical. The lead-generator seeder aborted the same morning for
+exactly this reason: it named "Head of Consumer", which had stopped being a unit
+hours earlier when it was re-parented under CCB. If a script written that day
+could get the name wrong, a person typing it under time pressure certainly will.
+
+    GET /api/channels/owners     the real units (with readable labels), the
+                                 real branches, and the CALLER'S OWN unit and
+                                 branch
+
+THE COMMON CASE NEEDS NO CHOOSING: the form preselects the caller's own unit, so
+recording something for your own department is one less decision.
+
+NON-ADMINS SEE THEIR OWN OWNER, LOCKED. The server already refused a mismatched
+owner with a 403; showing an open list and then rejecting the choice would be a
+worse experience than not offering it. Admins keep the full list.
+
+IT DEGRADES RATHER THAN BLOCKS. If the lookup fails the field falls back to a
+text box saying so. Blocking creation because a dropdown would not load is worse
+than allowing a typo that can be corrected.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+REQUIRES CH5.
+
+Usage (from project root, .venv active):
+    python scripts\patch_ch6_owner_picker.py            # dry run
+    python scripts\patch_ch6_owner_picker.py --apply
+"""
+import os
+import shutil
+import sys
+
+API = os.path.join("utils", "api.py")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+PAGE = os.path.join("frontend", "web", "src", "pages", "OriginChannels.tsx")
+BACKUP_SUFFIX = ".pre_ch6"
+
+API_ANCHOR = '@app.get("/api/channels/{key}/records")'
+TS_ANCHOR = "export async function fetchChannels()"
+
+ENDPOINT = r'''@app.get("/api/channels/owners")
+def channels_owners(user: dict = Depends(get_current_user)):
+    """The units and branches a channel can belong to, plus the caller's own.
+
+    EXISTS BECAUSE TYPING IS NOT AN OPTION. The owner must match a unit name
+    EXACTLY - "Director Consumer & Commercial Banking (CCB)" - and a free-text
+    box guarantees mismatches that make a record invisible to every unit view.
+    The same class of failure aborted the lead-generator seeder when a
+    hardcoded unit name went stale.
+
+    `mine` tells the form what to preselect, so the common case - recording
+    something for your own unit - needs no choosing at all.
+    """
+    units = branches = []
+    try:
+        from utils.org_validator import md_reporting_roles, unit_label
+        units = [{"value": u, "label": unit_label(u)}
+                 for u in sorted(md_reporting_roles() or [])]
+    except Exception as exc:
+        logger.warning("channel owners: units unavailable: %s", exc)
+    try:
+        from utils.config import load_org_config
+        br = (load_org_config() or {}).get("branches") or []
+        if isinstance(br, dict):
+            br = list(br.values())
+        branches = [{"value": str(b.get("name") or ""),
+                     "label": str(b.get("name") or "")}
+                    for b in br if isinstance(b, dict) and b.get("name")]
+        branches.sort(key=lambda x: x["label"])
+    except Exception as exc:
+        logger.warning("channel owners: branches unavailable: %s", exc)
+
+    mine_unit = mine_branch = ""
+    try:
+        from utils.core import UserManager as _UM
+        from utils.org_validator import unit_for_role
+        rec = (_UM().users or {}).get(str(user.get("username", "") or "")) or {}
+        mine_unit = unit_for_role(str(rec.get("role") or "")) or ""
+        mine_branch = str(rec.get("branch") or "")
+    except Exception as exc:
+        logger.debug("channel owners: caller scope: %s", exc)
+
+    return {"units": units, "branches": branches,
+            "mine": {"unit": mine_unit, "branch": mine_branch},
+            "is_admin": bool(user.get("is_admin") or user.get("can_view_all"))}
+
+
+'''
+
+TS_NEW = r'''export interface ChannelOwners {
+  units: { value: string; label: string }[];
+  branches: { value: string; label: string }[];
+  mine: { unit: string; branch: string };
+  is_admin: boolean;
+}
+export async function fetchChannelOwners(): Promise<ChannelOwners> {
+  return getJson<ChannelOwners>('/channels/owners');
+}
+'''
+
+PAGE_SRC = r'''// Origin Channels — one page for every channel the bank invests in.
 //
 // Events, Partnerships and Lead Generators ask the same question: what did we
 // spend, what did it produce, was it worth it. Three sidebar entries would be
@@ -631,3 +741,76 @@ export default function OriginChannels() {
     </>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (API, APITS, PAGE):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found - apply patch_ch5_channels_ui.py first." % p)
+            return 1
+
+    api = open(API, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+
+    if "/api/channels/owners" in api:
+        print("ABORT: the owners endpoint already exists - CH6 looks applied.")
+        return 1
+    if API_ANCHOR not in api:
+        print("ABORT: apply patch_ch2_channels_page.py first.")
+        return 1
+    if ts.count(TS_ANCHOR) != 1:
+        print("ABORT: api.ts anchor matched %d times." % ts.count(TS_ANCHOR))
+        return 1
+
+    api = api.replace(API_ANCHOR, ENDPOINT + API_ANCHOR, 1)
+    ts = ts.replace(TS_ANCHOR, TS_NEW + TS_ANCHOR, 1)
+    print("  ok  owners endpoint and client")
+
+    # The whole point is that the owner is chosen from real values.
+    if "<select className={inp} value={form.owner}" not in PAGE_SRC:
+        print("ABORT: the owner is still a free-text field.")
+        return 1
+    # But a failed lookup must not block creation.
+    if "Could not load the list" not in PAGE_SRC:
+        print("ABORT: there is no fallback when the owner list cannot load -")
+        print("       blocking creation because a dropdown failed is worse")
+        print("       than allowing a correctable typo.")
+        return 1
+    if "md_reporting_roles" not in ENDPOINT or "unit_label" not in ENDPOINT:
+        print("ABORT: units are not read from the hierarchy with readable labels.")
+        return 1
+    if '"mine"' not in ENDPOINT:
+        print("ABORT: the endpoint does not return the caller's own unit, so")
+        print("       the form cannot preselect the common case.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if PAGE_SRC.count(op) != PAGE_SRC.count(cl):
+            print("ABORT: page unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: picked not typed, preselected, degrades safely")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((API, api), (APITS, ts), (PAGE, PAGE_SRC)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    try:
+        py_compile.compile(API, doraise=True)
+        print("  ok  api.py compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd, restart uvicorn.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

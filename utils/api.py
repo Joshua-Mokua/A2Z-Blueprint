@@ -10311,6 +10311,53 @@ def channels_list(user: dict = Depends(get_current_user)):
     return {"channels": channels()}
 
 
+@app.get("/api/channels/owners")
+def channels_owners(user: dict = Depends(get_current_user)):
+    """The units and branches a channel can belong to, plus the caller's own.
+
+    EXISTS BECAUSE TYPING IS NOT AN OPTION. The owner must match a unit name
+    EXACTLY - "Director Consumer & Commercial Banking (CCB)" - and a free-text
+    box guarantees mismatches that make a record invisible to every unit view.
+    The same class of failure aborted the lead-generator seeder when a
+    hardcoded unit name went stale.
+
+    `mine` tells the form what to preselect, so the common case - recording
+    something for your own unit - needs no choosing at all.
+    """
+    units = branches = []
+    try:
+        from utils.org_validator import md_reporting_roles, unit_label
+        units = [{"value": u, "label": unit_label(u)}
+                 for u in sorted(md_reporting_roles() or [])]
+    except Exception as exc:
+        logger.warning("channel owners: units unavailable: %s", exc)
+    try:
+        from utils.config import load_org_config
+        br = (load_org_config() or {}).get("branches") or []
+        if isinstance(br, dict):
+            br = list(br.values())
+        branches = [{"value": str(b.get("name") or ""),
+                     "label": str(b.get("name") or "")}
+                    for b in br if isinstance(b, dict) and b.get("name")]
+        branches.sort(key=lambda x: x["label"])
+    except Exception as exc:
+        logger.warning("channel owners: branches unavailable: %s", exc)
+
+    mine_unit = mine_branch = ""
+    try:
+        from utils.core import UserManager as _UM
+        from utils.org_validator import unit_for_role
+        rec = (_UM().users or {}).get(str(user.get("username", "") or "")) or {}
+        mine_unit = unit_for_role(str(rec.get("role") or "")) or ""
+        mine_branch = str(rec.get("branch") or "")
+    except Exception as exc:
+        logger.debug("channel owners: caller scope: %s", exc)
+
+    return {"units": units, "branches": branches,
+            "mine": {"unit": mine_unit, "branch": mine_branch},
+            "is_admin": bool(user.get("is_admin") or user.get("can_view_all"))}
+
+
 @app.get("/api/channels/{key}/records")
 def channels_records(key: str, active_only: bool = False, mine: bool = False,
                      user: dict = Depends(get_current_user)):
