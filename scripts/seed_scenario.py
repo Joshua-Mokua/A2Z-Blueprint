@@ -100,10 +100,23 @@ def _staff():
 
 
 def _journey():
-    """The real stage names, per flow - never hardcoded."""
+    """EVERY real stage name, per flow - never hardcoded, and never just the
+    first step of each bucket.
+
+    The first version took buckets_for(f)[n]["steps"][0], which covers one stage
+    per BUCKET. But unit_review has three steps and credit_admin has two, so
+    three loan stages ended up with no deals at all and the funnel had holes
+    exactly where approvals stall. The verifier caught it; the seeder was wrong.
+    """
     from utils.pipeline_funnel import buckets_for
-    return {f: [(b["key"], b["steps"][0]) for b in buckets_for(f) if b.get("steps")]
-            for f in ("asset", "liability")}
+    out = {}
+    for f in ("asset", "liability"):
+        pairs = []
+        for b in buckets_for(f):
+            for st in (b.get("steps") or []):
+                pairs.append((b["key"], st))
+        out[f] = pairs
+    return out
 
 
 def main():
