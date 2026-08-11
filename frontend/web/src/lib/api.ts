@@ -931,6 +931,23 @@ export interface PipelineOriginSplit {
   origin: string; label?: string; credits_party?: boolean;
   count: number; value: number; won: number;
 }
+export interface PipelineEvent {
+  id: string; name: string; partner: string; branch: string;
+  department: string; category: string;
+  start_date: string; end_date: string; status: string;
+  budget_kes: number; spent_kes: number;
+  target_leads: number | null; target_accounts: number | null;
+  stored_leads: number | null; stored_accounts: number | null;
+  derived_leads: number; derived_accounts: number; derived_value: number;
+  derived_roi_pct: number | null; stored_roi_pct: number | null;
+}
+export async function fetchPipelineEvents(
+  activeOnly = false,
+): Promise<{ events: PipelineEvent[]; tagged_deals: number; total_deals: number }> {
+  const q = new URLSearchParams({ active_only: String(activeOnly) });
+  return getJson<{ events: PipelineEvent[]; tagged_deals: number; total_deals: number }>(
+    `/pipeline/events?${q.toString()}`);
+}
 export interface OriginSourceOption { id: string; label: string; sub: string }
 export async function fetchOriginSources(
   origin: string, activeOnly = true,

@@ -76,6 +76,7 @@ import { CreditAnalytics } from './pages/CreditAnalytics';
 import { PipelineDealDetail } from './pages/PipelineDealDetail';
 import { PipelineCreate } from './pages/PipelineCreate';
 import { PipelineManagerQueues } from './pages/PipelineManagerQueues';
+import Events from './pages/Events';
 import { Lms } from './pages/Lms';
 import { LmsApplicationDetail } from './pages/LmsApplicationDetail';
 import { CreditAdmin } from './pages/CreditAdmin';
@@ -150,6 +151,7 @@ function App() {
                         documents intent. */}
                     <Route path="/pipeline/new"     element={<PipelineCreate />} />
                     <Route path="/pipeline/queues"  element={<PipelineManagerQueues />} />
+                    <Route path="/pipeline/events"  element={<Events />} />
                     <Route path="/pipeline/:dealId" element={<PipelineDealDetail />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/credit-analytics" element={<CreditAnalytics />} />

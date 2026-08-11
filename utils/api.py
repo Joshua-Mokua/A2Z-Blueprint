@@ -10304,6 +10304,72 @@ def pipeline_referral_bench(user: dict = Depends(get_current_user)):
     }
 
 
+@app.get("/api/pipeline/events")
+def pipeline_events(active_only: bool = False,
+                    user: dict = Depends(get_current_user)):
+    """Sponsored events with what the DEALS say each produced.
+
+    Attribution is computed once over the caller's scoped deals rather than per
+    event - reading the deal store twelve times to answer one page is the
+    per-row cost this codebase has paid for before.
+
+    Every event is returned with BOTH figures. An event whose derived numbers
+    are far below its stored ones is not necessarily wrong: it may simply mean
+    nobody tagged their deals to it, which is worth seeing rather than hiding.
+    """
+    from utils.origin_sources import events as _events
+
+    deals = _acquire_scoped_deals(user)
+    by_event = {}
+    for d in deals:
+        eid = str(d.get("event_id") or "").strip()
+        if eid:
+            by_event.setdefault(eid, []).append(d)
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    out = []
+    for e in _events(bool(active_only)):
+        eid = str(e.get("id") or "")
+        mine = by_event.get(eid, [])
+        won = [d for d in mine if str(d.get("stage") or "") == "Closed Won"]
+        spent = float(e.get("spent_kes") or e.get("budget_kes") or 0)
+        won_value = round(sum(_val(d) for d in won), 2)
+        out.append({
+            "id": eid,
+            "name": e.get("name"),
+            "partner": e.get("partner"),
+            "branch": e.get("branch"),
+            "department": e.get("department"),
+            "category": e.get("category_name") or e.get("event_category"),
+            "start_date": e.get("start_date"),
+            "end_date": e.get("end_date"),
+            "status": e.get("status"),
+            "budget_kes": e.get("budget_kes"),
+            "spent_kes": e.get("spent_kes"),
+            "target_leads": e.get("target_leads"),
+            "target_accounts": e.get("target_accounts"),
+            "stored_leads": e.get("actual_leads"),
+            "stored_accounts": e.get("actual_accounts"),
+            "derived_leads": len(mine),
+            "derived_accounts": len(won),
+            "derived_value": won_value,
+            # Return on what was SPENT, from deals that actually closed. The
+            # stored roi_pct is a generated figure; this one is arithmetic on
+            # real records, and the two are shown side by side rather than one
+            # quietly replacing the other.
+            "derived_roi_pct": (round((won_value - spent) / spent * 100, 1)
+                                if spent else None),
+            "stored_roi_pct": e.get("roi_pct"),
+        })
+    return {"events": out, "tagged_deals": sum(len(v) for v in by_event.values()),
+            "total_deals": len(deals)}
+
+
 @app.get("/api/pipeline/origin-sources")
 def pipeline_origin_sources(origin: str = "", active_only: bool = True,
                             user: dict = Depends(get_current_user)):
