@@ -390,8 +390,16 @@ def archive(prospect_id: str, by_code: str, reason: str = "") -> dict:
 DEFAULT_COMPLETENESS = [
     {"key": "name", "label": "Legal name", "weight": 15,
      "why": "Who they are, as registered."},
-    {"key": "registration_no", "label": "Registration number", "weight": 10,
-     "why": "Proves the entity exists and is the one you think it is."},
+    # REGISTRATION NUMBER REPLACED (ruling 2026-08-11: "that might be hard to
+    # obtain, we can replace it with another piece"). It is real but it is
+    # locked behind BRS, so it would sit unanswered on almost every record and
+    # drag the score down without anybody being able to fix it. A field nobody
+    # can fill is not a standard, it is a permanent deduction.
+    #
+    # Branches are visible, useful to every purpose, and were on the original
+    # wish list for the card.
+    {"key": "branches", "label": "Branches or footprint", "weight": 10,
+     "why": "Where they actually operate - and how big that makes them."},
     {"key": "sector", "label": "Sector", "weight": 10,
      "why": "Decides which products are even relevant."},
     {"key": "county", "label": "County", "weight": 10,
@@ -420,11 +428,38 @@ DEFAULT_COMPLETENESS = [
      "why": "Tells you whether this is a switch, a share, or a first account."},
     {"key": "online_presence", "label": "Website or verified listing", "weight": 3,
      "why": "Somewhere to check the story before the meeting."},
-    {"key": "opportunity", "label": "Identified need", "weight": 8,
-     "why": "Without it there is a business but no deal."},
+    # "IDENTIFIED NEED" WAS PIPELINE LANGUAGE (ruling 2026-08-11: "that would
+    # mean this is only for pipeline - we are building a warehouse that can be
+    # used across various needs, and pipeline is one of them"). A warehouse
+    # should not bake one consumer's vocabulary into its schema.
+    {"key": "value_chain", "label": "Value chain and potential needs", "weight": 8,
+     "why": "What they buy, sell and depend on - which serves sales, credit "
+            "and sector analysis alike, not just a deal."},
 ]
 
 STATUS_VALIDATED = "validated"
+
+# RULING (2026-08-11): "a threshold for submitting for validation to begin
+# should be at least 80% and above, then the additional can be completed from
+# validation."
+#
+# 100% was the wrong bar. It meant a record with fourteen of fifteen fields sat
+# unusable beside one with four, and the last field is often the hardest to get
+# - so demanding it would leave good records stranded in the working set
+# forever. Eighty per cent says "enough to act on"; the remainder is finished
+# during validation by the person who is looking anyway.
+DEFAULT_VALIDATION_THRESHOLD = 80
+
+
+def validation_threshold() -> int:
+    try:
+        from utils.core import get_pipeline_settings
+        v = (get_pipeline_settings() or {}).get("warehouse_validation_threshold")
+        if isinstance(v, (int, float)) and 0 < float(v) <= 100:
+            return int(v)
+    except Exception:
+        pass
+    return DEFAULT_VALIDATION_THRESHOLD
 
 # Legal form can usually be read off the name itself - a register that says
 # "Sacco Society Ltd" has already told you what kind of entity this is, and
@@ -458,8 +493,8 @@ def _has(rec: dict, key: str) -> bool:
 
     if key == "name":
         return _t("name")
-    if key == "registration_no":
-        return _t("registration_no") or "registered no" in str(rec.get("notes", "")).lower()
+    if key == "branches":
+        return _t("branches", "footprint") or _card("association")
     if key == "sector":
         return _t("sector") and str(rec.get("sector")).strip().lower() != "unsorted"
     if key == "county":
@@ -485,8 +520,8 @@ def _has(rec: dict, key: str) -> bool:
     if key == "online_presence":
         return _t("website", "url") or any(
             str(i.get("url") or "").strip() for i in items)
-    if key == "opportunity":
-        return _t("opportunity") or _card("note")
+    if key == "value_chain":
+        return _t("value_chain", "opportunity") or _card("note")
     return _t(key)
 
 
@@ -512,10 +547,15 @@ def completeness(prospect_id_or_rec) -> dict:
             missing.append({"key": f["key"], "label": f.get("label") or f["key"],
                             "why": f.get("why") or "", "weight": f.get("weight")})
     pct = round(got / total * 100)
+    bar = validation_threshold()
     return {
         "prospect_id": rec.get("id"),
         "score": pct,
-        "complete": pct >= 100,
+        # "complete" now means READY TO VALIDATE, not perfect. The two are
+        # reported separately so nobody has to guess which one a number means.
+        "complete": pct >= bar,
+        "fully_complete": pct >= 100,
+        "threshold": bar,
         "have": have,
         "missing": missing,
         "answered": len(have),
@@ -552,8 +592,8 @@ DEFAULT_PROTECTED_PASSWORD = "Pendo"
 EDITABLE_FIELDS = (
     "name", "sector", "town", "physical_address", "contact_name",
     "contact_phone", "contact_email", "notes", "estimated_value",
-    "registration_no", "established", "legal_form", "existing_banker",
-    "website", "opportunity", "business_activity",
+    "branches", "established", "legal_form", "existing_banker",
+    "website", "value_chain", "business_activity", "additional_information",
 )
 
 

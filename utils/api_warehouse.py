@@ -293,10 +293,16 @@ def warehouse_detail(prospect_id: str, user: dict = Depends(get_current_user)):
             or str(rec.get("claimed_by_code") or "") == code)
     visible = mine or _is_admin(user)
 
+    # Every editable field travels, so the completeness table can be filled in
+    # place rather than being a list of things you are told you lack.
+    from utils.deals_warehouse import EDITABLE_FIELDS
     out = {k: rec.get(k) for k in
            ("id", "name", "sector", "town", "status", "estimated_value",
             "source_event", "notes", "created_by_name", "created_at",
             "claimed_by_name", "claimed_at", "deal_id")}
+    for _f in EDITABLE_FIELDS:
+        out.setdefault(_f, rec.get(_f))
+
     out["mine"] = mine
     out["contacts_visible"] = visible
     if visible:

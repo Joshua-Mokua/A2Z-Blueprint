@@ -1027,6 +1027,7 @@ export interface CompletenessField {
 }
 export interface Completeness {
   prospect_id: string; score: number; complete: boolean;
+  fully_complete: boolean; threshold: number;
   have: string[]; missing: CompletenessField[];
   answered: number; of: number;
   validated: boolean; validated_by: string; validated_at: string;
