@@ -449,6 +449,10 @@ export interface CreateDealRequest {
   segment?:              string;     // segment within client type (cascade)
   sector?:               string;     // CBK economic sector (Business clients)
   mou_id?:               string;     // partnership/MOU id (Individual clients)
+  /** How the deal entered - one of the DECLARABLE origins. The server
+   *  validates it and replaces any system-routed value (referral, warehouse),
+   *  which are stamped by the workflow that actually routed the deal. */
+  origin?:               string;
   mou_title?:            string;     // MOU title or free-text partner ("Other")
   client_cif?:           string;     // δ2: CBS CIF when client matched in CBS lookup
   is_ntb?:               boolean;

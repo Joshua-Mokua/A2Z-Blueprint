@@ -1,4 +1,100 @@
-// v10.512 Phase 4 Batch β3 — PipelineCreate page.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+OR4 - the capture form asks where the deal came from. Closes the origin arc.
+
+OR1 built the model, OR2 wired the reporting, OR3 made origin EVIDENCE rather
+than a claim. But nothing let a person declare the origins the system cannot
+derive - so every hand-created deal would have defaulted to Self/Direct and the
+analytics would have shown one bucket with everything in it.
+
+THE FIRST GATE IS THE FIRST QUESTION. "Deal origin" sits above Relationship
+status on the create form, because it is Gate 1 in the architecture and because
+asking it last invites people to leave it alone.
+
+ONLY DECLARABLE ORIGINS APPEAR:
+
+    Self / Direct · Events · Partnerships · Lead Generators · Contact Centre
+
+Referral and Warehouse are filtered out client-side AND rejected server-side.
+Offering them would invite someone to tick "Referral" on a deal that never
+travelled through the engine and never credited anybody - and the server would
+silently rewrite it to Self, which is worse than not offering it: the person
+would believe they had recorded something they had not.
+
+The origin's `note` from config renders under the selector, so an officer
+choosing "Partnerships" sees that the party is an organisation and nobody's
+index moves - the kind of thing that otherwise gets asked once per branch.
+
+A FAILED LOOKUP DOES NOT BLOCK CAPTURE. If /pipeline/origins is unreachable the
+selector simply does not render and the server defaults the origin. A deal that
+cannot be recorded because a dropdown would not load is a worse outcome than a
+deal recorded as Self.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+REQUIRES OR3.
+
+Usage (from project root, .venv active):
+    python scripts\patch_or4_origin_capture.py            # dry run
+    python scripts\patch_or4_origin_capture.py --apply
+"""
+import os
+import shutil
+import sys
+
+PAGE = os.path.join("frontend", "web", "src", "pages", "PipelineCreate.tsx")
+TYPES = os.path.join("frontend", "web", "src", "types", "pipeline.ts")
+BACKUP_SUFFIX = ".pre_or4"
+
+IFACE_OLD_MARK = "export interface CreateDealRequest {"
+
+IFACE = r'''export interface CreateDealRequest {
+  // Required
+  client_name:           string;
+  staff_code:            string;
+  staff_name:            string;
+  deal_value:            number;
+  product_type:          string;
+  stage:                 string;
+
+  // Optional but commonly supplied
+  client_type?:          string;     // 'Individual' or 'Business'
+  currency?:             string;     // ISO code; defaults KES (admin FX table)
+  segment?:              string;     // segment within client type (cascade)
+  sector?:               string;     // CBK economic sector (Business clients)
+  mou_id?:               string;     // partnership/MOU id (Individual clients)
+  /** How the deal entered - one of the DECLARABLE origins. The server
+   *  validates it and replaces any system-routed value (referral, warehouse),
+   *  which are stamped by the workflow that actually routed the deal. */
+  origin?:               string;
+  mou_title?:            string;     // MOU title or free-text partner ("Other")
+  client_cif?:           string;     // δ2: CBS CIF when client matched in CBS lookup
+  is_ntb?:               boolean;
+  pipeline_category?:    string;
+  is_top_up?:            boolean;   // true if topping up an existing facility
+  top_up_amount?:        number;    // the increment (becomes pipeline value)
+  bundle_lines?:         { product_type: string; amount: number }[]; // Bundled Loan Product lines
+  original_facility_amount?: number; // existing facility size (context only)
+  probability?:          number;     // 0..1 (NOT 0..100)
+  next_action?:          string;
+  next_action_date?:     string;     // YYYY-MM-DD
+  expected_close?:       string;     // YYYY-MM-DD
+  notes?:                string;
+  source?:               string;
+  unit?:                 string;
+  account_number?:       string;
+  phone?:                string;
+  email?:                string;
+
+  // Conflict resolution fields (β3)
+  portfolio_owner_code?:    string;
+  portfolio_owner_name?:    string;
+  bsc_credit_to?:           string;
+  manager_override_note?:   string;
+}'''
+
+PAGE_NEW = r'''// v10.512 Phase 4 Batch β3 — PipelineCreate page.
 //
 // Form at /pipeline/new for creating a new pipeline deal. Covers the
 // happy path AND the α5 portfolio-conflict resolution (Refer / Seek
@@ -1900,3 +1996,70 @@ function PathRadio({ active, onClick, disabled, label, sub }: PathRadioProps) {
     </button>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (PAGE, TYPES):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found. Run from the project root." % p)
+            return 1
+    if not os.path.isfile(os.path.join("utils", "deal_origin.py")):
+        print("ABORT: apply patch_or1_deal_origin.py first.")
+        return 1
+
+    cur = open(PAGE, encoding="utf-8").read()
+    tp = open(TYPES, encoding="utf-8").read()
+
+    if "fetchDealOrigins" in cur:
+        print("ABORT: the create form already loads origins - OR4 looks applied.")
+        return 1
+    if IFACE_OLD_MARK not in tp:
+        print("ABORT: CreateDealRequest not found in the types file.")
+        return 1
+
+    i = tp.index(IFACE_OLD_MARK)
+    j = tp.index("\n}", i) + 2
+    tp = tp[:i] + IFACE + tp[j:]
+    print("  ok  CreateDealRequest carries origin")
+
+    # System-routed origins must not be offered.
+    for bad in ("value=\"referral\"", "value=\"warehouse\""):
+        if bad in PAGE_NEW:
+            print("ABORT: the form offers a system-routed origin (%s)." % bad)
+            return 1
+    if "o.key !== 'referral' && o.key !== 'warehouse'" not in PAGE_NEW:
+        print("ABORT: the form does not filter out system-routed origins.")
+        return 1
+    if "Deal origin" not in PAGE_NEW:
+        print("ABORT: the selector is missing from the form.")
+        return 1
+    # A failed lookup must not block capture.
+    if "setOriginOpts([])" not in PAGE_NEW:
+        print("ABORT: a failed origins lookup would not degrade gracefully.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if PAGE_NEW.count(op) != PAGE_NEW.count(cl):
+            print("ABORT: page unbalanced %s%s." % (op, cl))
+            return 1
+    if "origin?:" not in IFACE:
+        print("ABORT: the interface does not declare origin.")
+        return 1
+    print("  ok  post-checks: only declarable origins offered, degrades safely")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((TYPES, tp), (PAGE, PAGE_NEW)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd && echo TSC_PASSED")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
