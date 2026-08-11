@@ -142,6 +142,61 @@ def towns() -> list:
     return []
 
 
+# ── THE DUPLICATE RULE ──────────────────────────────────────────────────────
+# RULING (2026-08-11): "what rule can we put in place that ensures the list is
+# clean and there are no duplicates - we need to build a formidable database."
+#
+# Exact-name matching is not enough. These are the SAME business:
+#
+#     Mwalimu National Sacco Society Ltd
+#     MWALIMU NATIONAL SACCO SOCIETY LIMITED
+#     Mwalimu National Sacco Society Ltd.
+#     Mwalimu  National  Sacco  Society
+#
+# So every prospect carries a CANONICAL KEY: lowercased, punctuation removed,
+# whitespace collapsed, and the legal suffix stripped - because "Ltd" and
+# "Limited" are the same company and a register will spell it both ways across
+# two documents.
+#
+# The key is STORED, not recomputed on read. If the normalising rules change
+# later, existing records keep the key they were admitted under, so a rule
+# change cannot suddenly declare two long-standing prospects to be duplicates.
+# WORD BY WORD, not longest-phrase-first. Phrase matching was inconsistent:
+# "2NK Sacco Society Ltd" stripped "society ltd" leaving "2nk sacco", while
+# "2NK Sacco Society" stripped "sacco society" leaving "2nk" - so the same
+# business produced two keys and the duplicate slipped through. Peeling one
+# trailing word at a time always converges on the same answer.
+_SUFFIX_WORDS = {
+    "limited", "ltd", "ltd.", "plc", "company", "co", "society", "sacco",
+    "incorporated", "inc", "llp", "llc", "cooperative", "coop",
+}
+
+
+def canonical_key(name: str) -> str:
+    """One key per real-world business, whatever the spelling."""
+    n = str(name or "").lower()
+    n = "".join(ch if ch.isalnum() or ch.isspace() else " " for ch in n)
+    n = " ".join(n.split())
+    words = n.split()
+    # Peel trailing suffix words, but NEVER to nothing: a society actually
+    # named "Sacco Society Limited" would otherwise canonicalise to an empty
+    # key and collide with every other fully-stripped name.
+    while len(words) > 1 and words[-1] in _SUFFIX_WORDS:
+        words.pop()
+    return " ".join(words)
+
+
+def find_duplicate(name: str, records: Optional[list] = None) -> Optional[dict]:
+    """The existing prospect this name would duplicate, or None."""
+    key = canonical_key(name)
+    if not key:
+        return None
+    for r in (records if records is not None else all_prospects()):
+        if (r.get("canonical_key") or canonical_key(r.get("name", ""))) == key:
+            return r
+    return None
+
+
 def all_prospects() -> list:
     return list((_read() or {}).values())
 
@@ -170,9 +225,11 @@ def create(*, name: str, created_by_code: str, created_by_name: str,
 
     now = datetime.now().isoformat(timespec="seconds")
     pid = "WH" + uuid.uuid4().hex[:10].upper()
+    key = canonical_key(nm)
     rec = {
         "id": pid,
         "name": nm,
+        "canonical_key": key,
         "sector": str(sector or "").strip(),
         "town": str(town or "").strip(),
         "contact_name": str(contact_name or "").strip(),
@@ -192,6 +249,13 @@ def create(*, name: str, created_by_code: str, created_by_name: str,
     }
     with _lock:
         data = _read()
+        # Checked INSIDE the lock: two imports running a second apart would
+        # otherwise each find nothing and both write the same business.
+        dupe = find_duplicate(nm, list(data.values()))
+        if dupe:
+            raise ValueError(
+                "Already on the shelf as %r (listed by %s)."
+                % (dupe.get("name"), dupe.get("created_by_name") or "someone"))
         data[pid] = rec
         _write(data)
     return rec

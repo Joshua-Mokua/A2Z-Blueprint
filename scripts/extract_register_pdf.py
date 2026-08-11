@@ -69,6 +69,56 @@ NOISE = re.compile(
     re.IGNORECASE)
 
 
+# ── IS THIS A COMPANY NAME, OR A SENTENCE? ──────────────────────────────────
+# A gazette is mostly prose with a table in the middle. Any line carrying a
+# postal box gets treated as an entry, so paragraphs that happen to mention an
+# address arrive as "prospects" - and a warehouse full of sentences is worse
+# than an empty one, because somebody has to clean it by hand later.
+#
+# An entity name is SHORT, has FEW COMMON WORDS, and usually carries a legal
+# suffix. Prose fails all three.
+ENTITY_MARKERS = (
+    "sacco", "society", "ltd", "limited", "plc", "company", "co-op",
+    "cooperative", "co operative", "bank", "insurance", "assurance", "trust",
+    "holdings", "group", "enterprises", "agencies", "services", "investments",
+    "union", "association", "scheme", "fund", "brokers", "consultants",
+)
+# Words that mean prose. "the" alone is not enough - "The Noble Sacco" is real.
+PROSE_MARKERS = (
+    " shall ", " hereby ", " pursuant ", " which ", " thereof ", " herein ",
+    " provided ", " prohibited ", " accordance ", " regulation ", " section ",
+    " period commencing ", " is required ", " are duly ", " has been ",
+    " undertaking ", " thereunder ", " whose ", " and/or ", " any person ",
+    " it is an offence ",
+)
+
+
+def looks_like_entity(name: str) -> tuple:
+    """(ok, why not). Conservative: when unsure, KEEP - a human can delete one
+    bad row, but nobody notices a good one that was silently dropped."""
+    n = " " + str(name or "").strip().lower() + " "
+    if len(name) < 4:
+        return False, "too short"
+    if len(name) > 90:
+        return False, "too long to be a name"
+    if any(p in n for p in PROSE_MARKERS):
+        return False, "reads as prose"
+    words = [w for w in name.split() if w]
+    if len(words) > 12:
+        return False, "%d words" % len(words)
+    # A sentence usually ends in a full stop after a lowercase word.
+    if name.rstrip().endswith(".") and name.rstrip(".").split()[-1].islower():
+        return False, "ends like a sentence"
+    if any(m in n for m in ENTITY_MARKERS):
+        return True, ""
+    # No legal suffix: accept only if it reads like a proper noun phrase -
+    # mostly capitalised words, few of them.
+    caps = sum(1 for w in words if w[:1].isupper())
+    if len(words) <= 8 and caps >= max(1, len(words) - 2):
+        return True, ""
+    return False, "no entity marker and not a name phrase"
+
+
 def _counties():
     """Kenya's 47 counties, from the warehouse's own town list.
 
@@ -151,7 +201,7 @@ def main():
     counties = _counties()
     if not counties:
         print("  (county list unavailable - towns will be blank)")
-    rows, unparsed = [], []
+    rows, unparsed, rejected = [], [], []
     seen = set()
     for text in pages:
         lines = [ln.strip() for ln in (text or "").split("\n") if ln.strip()]
@@ -191,8 +241,9 @@ def main():
                 i = low.rfind(c.lower())
                 if i > best:
                     best, town = i, c
-            if not name or len(name) < 3:
-                unparsed.append(ln[:70])
+            ok, why = looks_like_entity(name)
+            if not ok:
+                rejected.append((name[:56], why))
                 continue
             key = name.lower()
             if key in seen:
@@ -210,12 +261,18 @@ def main():
             })
 
     print("\n  EXTRACTED   %d entries" % len(rows))
+    if rejected:
+        print("  REJECTED    %d lines carried an address but are not names:"
+              % len(rejected))
+        for nm, why in rejected[:8]:
+            print("     %-56s (%s)" % (nm, why))
+        if len(rejected) > 8:
+            print("     ... and %d more" % (len(rejected) - 8))
+        print("  Read these. If a real SACCO is in that list the rule is too")
+        print("  strict and should be loosened - dropping a genuine prospect")
+        print("  silently is the worse failure.")
     if unparsed:
-        print("  UNPARSED    %d lines had an address but no usable name:" % len(unparsed))
-        for u in unparsed[:5]:
-            print("     %s" % u)
-        if len(unparsed) > 5:
-            print("     ... and %d more" % (len(unparsed) - 5))
+        print("  UNPARSED    %d lines had an address but no usable name" % len(unparsed))
 
     if not rows:
         print("\nNOTHING EXTRACTED. The parser anchors on a 'P.O. Box NNNN - NNNNN,")

@@ -167,13 +167,16 @@ def main():
 
     try:
         from utils.deals_warehouse import sectors as _sectors, towns as _towns, \
-            all_prospects, create
+            all_prospects, create, canonical_key
     except Exception as exc:
         print("ABORT: %s  (apply patch_dw1_warehouse.py first)" % exc)
         return 1
 
     sectors, towns = _sectors(), _towns()
-    existing = {str(p.get("name", "")).strip().lower() for p in all_prospects()}
+    # THE CANONICAL KEY, not the raw name. "Mwalimu National Sacco Society Ltd"
+    # and "MWALIMU NATIONAL SACCO SOCIETY LIMITED" are one business, and a
+    # register will spell it both ways across two documents.
+    existing = {canonical_key(p.get("name", "")) for p in all_prospects()}
 
     with open(path, encoding="utf-8-sig", newline="") as fh:
         sample = fh.read(8192)
@@ -216,10 +219,11 @@ def main():
             if not name:
                 skipped_noname += 1
                 continue
-            if name.lower() in existing:
+            key = canonical_key(name)
+            if key in existing:
                 skipped_dupe += 1
                 continue
-            existing.add(name.lower())
+            existing.add(key)
             sector = _sector_for(r.get(cols.get("sector", "")), sectors)
             town = _town_for(
                 " ".join(str(r.get(cols.get(k, "")) or "") for k in ("town", "address")),
@@ -263,11 +267,21 @@ def main():
                 source_event="%s%s" % (source, " (%s)" % licence if licence else ""),
             )
             made += 1
+        except ValueError as exc:
+            # The store checks for duplicates too, inside its lock. Reaching
+            # here means another writer got in first - a skip, not a failure.
+            if "Already on the shelf" in str(exc):
+                skipped_dupe += 1
+            else:
+                failed += 1
+                if failed == 1:
+                    print("  first failure: %s" % str(exc)[:70])
         except Exception as exc:
             failed += 1
             if failed == 1:
                 print("  first failure: %s" % str(exc)[:70])
-    print("\nlisted %d prospects (%d failed)" % (made, failed))
+    print("\nlisted %d prospects (%d duplicates skipped, %d failed)"
+          % (made, skipped_dupe, failed))
     print("Restart uvicorn. Pipeline Intelligence > Deals Warehouse.")
     return 0
 
