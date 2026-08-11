@@ -988,6 +988,56 @@ export interface ChannelOwners {
 export async function fetchChannelOwners(): Promise<ChannelOwners> {
   return getJson<ChannelOwners>('/channels/owners');
 }
+// ── Deals Warehouse ───────────────────────────────────────────────────────
+export interface WarehouseProspect {
+  id: string; name: string; sector: string; town: string; status: string;
+  estimated_value: number; source_event: string; notes: string;
+  created_by_name: string; created_at: string;
+  claimed_by_name: string; claimed_at: string; deal_id: string;
+  mine: boolean; contacts_visible: boolean;
+  contact_name?: string; contact_phone?: string; contact_email?: string;
+}
+export interface WarehouseMine {
+  listed: WarehouseProspect[]; claimed: WarehouseProspect[];
+  stale: WarehouseProspect[];
+  counts: { listed: number; claimed: number; stale: number };
+}
+export async function fetchWarehouseTaxonomy(): Promise<{ sectors: string[]; towns: string[] }> {
+  return getJson<{ sectors: string[]; towns: string[] }>('/warehouse/taxonomy');
+}
+export async function fetchWarehouseShelves(
+  opts: { town?: string; sector?: string; q?: string } = {},
+): Promise<{ shelves: Record<string, WarehouseProspect[]>; total: number }> {
+  const qs = new URLSearchParams();
+  if (opts.town) qs.set('town', opts.town);
+  if (opts.sector) qs.set('sector', opts.sector);
+  if (opts.q) qs.set('q', opts.q);
+  const s = qs.toString();
+  return getJson<{ shelves: Record<string, WarehouseProspect[]>; total: number }>(
+    `/warehouse/shelves${s ? `?${s}` : ''}`);
+}
+export async function fetchWarehouseMine(): Promise<WarehouseMine> {
+  return getJson<WarehouseMine>('/warehouse/mine');
+}
+export async function createProspect(
+  body: Record<string, unknown>,
+): Promise<{ prospect: WarehouseProspect }> {
+  return postJson<{ prospect: WarehouseProspect }, Record<string, unknown>>(
+    '/warehouse/prospects', body);
+}
+export async function claimProspect(
+  id: string,
+): Promise<{ prospect: WarehouseProspect; referrer_code: string; referrer_name: string }> {
+  return postJson<{ prospect: WarehouseProspect; referrer_code: string; referrer_name: string },
+                  Record<string, never>>(
+    `/warehouse/prospects/${encodeURIComponent(id)}/claim`, {} as Record<string, never>);
+}
+export async function archiveProspect(
+  id: string, reason: string,
+): Promise<{ prospect: WarehouseProspect }> {
+  return postJson<{ prospect: WarehouseProspect }, { reason: string }>(
+    `/warehouse/prospects/${encodeURIComponent(id)}/archive`, { reason });
+}
 export async function fetchChannels(): Promise<{ channels: OriginChannel[] }> {
   return getJson<{ channels: OriginChannel[] }>('/channels');
 }

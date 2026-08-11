@@ -77,6 +77,7 @@ import { PipelineDealDetail } from './pages/PipelineDealDetail';
 import { PipelineCreate } from './pages/PipelineCreate';
 import { PipelineManagerQueues } from './pages/PipelineManagerQueues';
 import OriginChannels from './pages/OriginChannels';
+import Warehouse from './pages/Warehouse';
 import { Lms } from './pages/Lms';
 import { LmsApplicationDetail } from './pages/LmsApplicationDetail';
 import { CreditAdmin } from './pages/CreditAdmin';
@@ -158,6 +159,7 @@ function App() {
                         a product starts to feel like two systems. */}
                     <Route path="/pipeline/events"  element={<OriginChannels />} />
                     <Route path="/pipeline/channels" element={<OriginChannels />} />
+                    <Route path="/pipeline/warehouse" element={<Warehouse />} />
                     <Route path="/pipeline/:dealId" element={<PipelineDealDetail />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/credit-analytics" element={<CreditAnalytics />} />
