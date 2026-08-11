@@ -6280,7 +6280,7 @@ def pipeline_deal_create(
         # deal to a roadshow.
         from utils.origin_sources import source_field as _sfield
         _field = _sfield(deal_dict["origin"])
-        for _f in ("event_id", "mou_id"):
+        for _f in ("event_id", "mou_id", "channel_id"):
             if _f != _field:
                 deal_dict.pop(_f, None)
     except Exception:

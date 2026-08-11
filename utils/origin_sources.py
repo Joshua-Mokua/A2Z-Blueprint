@@ -104,6 +104,12 @@ def options(origin_key: str, active_only: bool = True) -> list:
                      str(e.get("start_date") or "")[:10],
                      str(e.get("event_category") or "")) if x)}
                 for e in events(active_only) if e.get("id")]
+    if k == "lead_gen":
+        from utils.origin_channels import listing as _listing
+        return [{"id": r["id"], "label": r["name"],
+                 "sub": " · ".join(x for x in (r.get("category") or "",
+                                               r.get("owner") or "") if x)}
+                for r in _listing("lead_gen", active_only) if r.get("id")]
     if k == "partnership":
         return [{"id": str(p.get("id") or ""),
                  "label": str(p.get("partner_name") or p.get("id") or ""),
@@ -116,8 +122,8 @@ def options(origin_key: str, active_only: bool = True) -> list:
 
 def source_field(origin_key: str) -> str:
     """Which field on the deal holds the chosen source for this origin."""
-    return {"events": "event_id", "partnership": "mou_id"}.get(
-        str(origin_key or "").strip(), "")
+    return {"events": "event_id", "partnership": "mou_id",
+            "lead_gen": "channel_id"}.get(str(origin_key or "").strip(), "")
 
 
 def attribution(event_id: str, deals: list) -> dict:
