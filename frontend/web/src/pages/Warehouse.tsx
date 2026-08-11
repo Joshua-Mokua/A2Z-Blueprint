@@ -10,13 +10,14 @@
 // whether anyone took them will stop listing them within a fortnight.
 
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { PageHeader } from '@/components/PageHeader';
 import { useToast } from '@/components/Toast';
 import {
   fetchWarehouseShelves, fetchWarehouseTaxonomy, fetchWarehouseMine,
-  createProspect, claimProspect, archiveProspect,
+  createProspect, archiveProspect,
   type WarehouseProspect, type WarehouseMine,
 } from '@/lib/api';
 
@@ -28,6 +29,7 @@ function kes(n: number | null | undefined): string {
 
 export default function Warehouse() {
   const { toast } = useToast();
+  const nav = useNavigate();
   const [tab, setTab] = useState<'shelf' | 'mine'>('shelf');
   const [shelves, setShelves] = useState<Record<string, WarehouseProspect[]>>({});
   const [total, setTotal] = useState(0);
@@ -92,24 +94,8 @@ export default function Warehouse() {
     }
   }
 
-  async function take(p: WarehouseProspect) {
-    setBusy(p.id);
-    try {
-      const r = await claimProspect(p.id);
-      toast({
-        tone: 'success',
-        message: `${p.name} is yours. ${r.referrer_name || 'Whoever listed it'} is credited as the referrer.`,
-      });
-      await load();
-    } catch (e) {
-      // 409 means somebody got there first — the message names them.
-      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not claim it.' });
-      await load();
-    } finally {
-      setBusy('');
-    }
-  }
-
+  // Claiming moved to the detail page (IC2): a person should see what
+  // they are taking on before they take it.
   async function drop(p: WarehouseProspect) {
     const reason = window.prompt(`Why is ${p.name} coming off the shelf?`);
     if (!reason || !reason.trim()) return;
@@ -292,15 +278,21 @@ export default function Warehouse() {
                           <span className="text-[10px] text-gray-400">
                             {p.created_by_name} · {String(p.created_at ?? '').slice(0, 10)}
                           </span>
-                          {p.mine ? (
-                            <Button size="sm" variant="ghost" disabled={busy === p.id}
-                                    onClick={() => void drop(p)}>Archive</Button>
-                          ) : (
-                            <Button size="sm" disabled={busy === p.id}
-                                    onClick={() => void take(p)}>
-                              {busy === p.id ? 'Claiming…' : 'Pursue this'}
+                          <div className="flex gap-1">
+                            {/* DETAILS, not Pursue. Ruling 2026-08-11: "it will
+                                be premature to pursue something whose only
+                                detail you have is a name." Pursuing happens on
+                                the detail page, after somebody has seen what
+                                they would be taking on. */}
+                            <Button size="sm" variant="secondary"
+                                    onClick={() => nav(`/pipeline/warehouse/${encodeURIComponent(p.id)}`)}>
+                              Details
                             </Button>
-                          )}
+                            {p.mine && (
+                              <Button size="sm" variant="ghost" disabled={busy === p.id}
+                                      onClick={() => void drop(p)}>Archive</Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}

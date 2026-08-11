@@ -997,6 +997,24 @@ export interface WarehouseProspect {
   mine: boolean; contacts_visible: boolean;
   contact_name?: string; contact_phone?: string; contact_email?: string;
 }
+export interface ProspectFact {
+  id: string; kind: string; title: string; detail: string;
+  source: string; url: string; occurred_on: string;
+  added_by: string; added_at: string;
+}
+export interface ProspectDetail {
+  prospect: WarehouseProspect;
+  card: { items: ProspectFact[]; counts: Record<string, number>; total: number };
+}
+export async function fetchProspect(id: string): Promise<ProspectDetail> {
+  return getJson<ProspectDetail>(`/warehouse/prospects/${encodeURIComponent(id)}`);
+}
+export async function addProspectFact(
+  id: string, body: Record<string, unknown>,
+): Promise<{ item: ProspectFact }> {
+  return postJson<{ item: ProspectFact }, Record<string, unknown>>(
+    `/warehouse/prospects/${encodeURIComponent(id)}/enrichment`, body);
+}
 export interface WarehouseMine {
   listed: WarehouseProspect[]; claimed: WarehouseProspect[];
   stale: WarehouseProspect[];

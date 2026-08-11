@@ -78,6 +78,7 @@ import { PipelineCreate } from './pages/PipelineCreate';
 import { PipelineManagerQueues } from './pages/PipelineManagerQueues';
 import OriginChannels from './pages/OriginChannels';
 import Warehouse from './pages/Warehouse';
+import ProspectDetail from './pages/ProspectDetail';
 import { Lms } from './pages/Lms';
 import { LmsApplicationDetail } from './pages/LmsApplicationDetail';
 import { CreditAdmin } from './pages/CreditAdmin';
@@ -160,6 +161,7 @@ function App() {
                     <Route path="/pipeline/events"  element={<OriginChannels />} />
                     <Route path="/pipeline/channels" element={<OriginChannels />} />
                     <Route path="/pipeline/warehouse" element={<Warehouse />} />
+                    <Route path="/pipeline/warehouse/:prospectId" element={<ProspectDetail />} />
                     <Route path="/pipeline/:dealId" element={<PipelineDealDetail />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/credit-analytics" element={<CreditAnalytics />} />
