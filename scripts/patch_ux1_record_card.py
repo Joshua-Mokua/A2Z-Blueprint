@@ -1,4 +1,398 @@
-// Prospect detail — everything known, before deciding whether to pursue.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+UX1 - one sectioned record card, picked values, and a house style on save.
+
+FIVE RULINGS (2026-08-11).
+
+1. "COLLAPSE THESE 3 INTO ONE DETAIL CARD that will be applicable even when one
+   is creating an entry ... arrange them into sections, pool similar
+   information together."
+
+   Three cards asked the reader to hold one business in their head three times.
+   Four sections do the pooling instead:
+
+       IDENTITY             name · segment · sector · what they do
+       WHERE TO FIND THEM   county · address · branches · phone · email · web
+       OWNERSHIP AND PEOPLE decision maker · ownership · established
+       THE BUSINESS         size · banks with · value chain
+
+   Each section shows its own n/n, so somebody can finish one block in one
+   sitting rather than facing fifteen unrelated rows.
+
+2. "REMOVE THINGS LIKE 'the single thing that turns a cold call into a
+   meeting'." Gone from the form. That copy earned its place when the panel was
+   a list of accusations; inside a form somebody is filling in, being lectured
+   on every row is noise.
+
+3. "I DON'T UNDERSTAND WHAT LEGAL IS - I WOULD INSTEAD LOOK FOR SEGMENT, with a
+   dropdown: Small, Medium, Large Enterprise, Corporate, Institution."
+
+   Legal form was a lawyer's category. Segment is the one the bank organises
+   itself around, and it decides which desk holds the relationship. Eight
+   options, config-driven.
+
+4. "FOR THOSE WE HAVE AUTOPOPULATED WE NEED A DROP DOWN, e.g. Sector, so that
+   for our analysis we don't have mismatches that are a result of mistyping."
+
+   Segment, sector and county are now PICKED. Free text would have produced
+   "SME", "S.M.E", "Sme" and "Small" as four segments in every report built on
+   top of this. The lists come from the server, so every client offers the same
+   options rather than each drifting on its own.
+
+5. "THE INPUT FORMAT SHOULD DEFAULT TO STANDARD - if upper case then Proper
+   while saving, avoid double spacing and no spacing at the end, to protect the
+   larger data sets."
+
+   Normalised ON THE WAY IN, not on the way out. Cleaning at display time
+   leaves the mess in the store, so the next consumer - an export, a match, a
+   dedupe - still meets "MWALIMU  NATIONAL SACCO " and treats it as a different
+   business from "Mwalimu National Sacco".
+
+       MWALIMU NATIONAL SACCO SOCIETY LTD  ->  Mwalimu National Sacco Society Ltd
+       nairobi wdt-sacco society ltd       ->  Nairobi WDT-Sacco Society Ltd
+       p.o box 1234 - 00100,  nairobi      ->  P.O Box 1234 - 00100, Nairobi
+       JANE WANJIKU - CEO                  ->  Jane Wanjiku - CEO
+       PCEA Kayole Regulated Non-WDT       ->  unchanged
+
+   MIXED CASE IS LEFT ALONE - somebody who typed "PCEA Kayole" or "e-Mobility"
+   meant it, and title-casing that is a correction nobody asked for. Acronyms
+   survive inside hyphenated words. Emails lowercase. Prose fields get their
+   spacing fixed but keep their capitals.
+
+   "Sacco" not "SACCO", because the register itself writes it that way and the
+   source document is a better authority than my guess about acronyms.
+
+REQUIRES CM3.
+
+Usage (from project root, .venv active):
+    python scripts\patch_ux1_record_card.py            # dry run
+    python scripts\patch_ux1_record_card.py --apply
+"""
+import os
+import shutil
+import sys
+
+MOD = os.path.join("utils", "deals_warehouse.py")
+API = os.path.join("utils", "api_warehouse.py")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+DETAIL = os.path.join("frontend", "web", "src", "pages", "ProspectDetail.tsx")
+BACKUP_SUFFIX = ".pre_ux1"
+
+MOD_ANCHOR = "# ── EDITING, AND WHAT PROTECTS A VALIDATED RECORD"
+EDITABLE_OLD = '    "branches", "established", "legal_form", "existing_banker",'
+EDITABLE_NEW = '    "branches", "established", "segment", "existing_banker", "ownership",'
+APPLY_OLD = '''            if k not in EDITABLE_FIELDS:
+                continue
+            rec[k] = v'''
+APPLY_NEW = '''            if k not in EDITABLE_FIELDS:
+                continue
+            v = normalise_value(k, v)
+            rec[k] = v'''
+EP_OLD = '''    from utils.deals_warehouse import completeness_fields, completeness_summary
+    return {"fields": completeness_fields(), "summary": completeness_summary()}'''
+TS_OLD_TAIL = '''             validated: number; worst_gaps: { key: string; label: string; missing: number }[] };
+}> {'''
+TS_NEW_TAIL = '''             validated: number; worst_gaps: { key: string; label: string; missing: number }[] };
+  segments: string[]; sectors: string[]; counties: string[];
+}> {'''
+
+HOUSE_STYLE = r'''# ── HOUSE STYLE ─────────────────────────────────────────────────────────────
+# RULING (2026-08-11): "the input format should default to standard - if it is
+# upper case, then Proper while saving. Avoid double spacing and no spacing at
+# the end. This is to protect the larger data sets."
+#
+# NORMALISED ON THE WAY IN, NOT ON THE WAY OUT. Cleaning at display time leaves
+# the mess in the store, so the next consumer - an export, a match, a dedupe -
+# still meets "MWALIMU  NATIONAL SACCO " and treats it as a different business
+# from "Mwalimu National Sacco". Doing it once at the door is the only version
+# that protects the dataset.
+#
+# ALL-CAPS AND all-lower BECOME PROPER CASE. Mixed case is LEFT ALONE, because
+# somebody who typed "PCEA Kayole" or "e-Mobility Ltd" meant it, and
+# title-casing that would be a correction nobody asked for.
+# Acronyms that look wrong in Proper Case. "Ltd" is deliberately NOT here -
+# Kenyan usage is "Ltd", not "LTD", and forcing the shout would be a change
+# nobody asked for.
+_KEEP_UPPER = {"plc", "dt", "hq", "ke", "kcb", "nssf", "kra", "usiu", "cbd",
+               "ict", "ngo", "pcea", "ack", "kag", "sme", "usa", "uk", "eu",
+               # "Sacco" not "SACCO" - the register itself writes it that
+               # way, and the source document is the better authority than my
+               # guess about acronyms.
+               "wdt", "fosa", "bosa", "kebs", "kemri", "helb", "cic",
+               "epza", "gdc", "nrs", "amref", "icea", "kasneb", "p.o", "po",
+               "ceo", "cfo", "coo", "md", "gm", "hr", "it", "mp", "dt-sacco"}
+_LOWER_WORDS = {"and", "of", "the", "for", "in", "on", "at", "to", "a"}
+
+
+def _cap(word: str) -> str:
+    """Capitalise a single word, preserving its internal punctuation.
+
+    Splits on the separators that appear inside real names - hyphens,
+    apostrophes and dots - so "trans-nzoia" becomes "Trans-Nzoia" and "p.o"
+    becomes "P.O" rather than losing the mark entirely, which is what happened
+    when the address separator was treated as a word boundary.
+    """
+    out = word.lower()
+    for sep in ("-", "'", "\u2019", "."):
+        parts = []
+        for p in out.split(sep):
+            if not p:
+                parts.append(p)
+            elif p.strip(".,").lower() in _KEEP_UPPER:
+                # A hyphenated word can contain an acronym: "wdt-sacco" is
+                # "WDT-Sacco", not "Wdt-Sacco".
+                parts.append(p.upper())
+            else:
+                parts.append(p[:1].upper() + p[1:])
+        out = sep.join(parts)
+    return out
+
+
+def _proper(text: str) -> str:
+    out = []
+    for i, w in enumerate(text.split(" ")):
+        if not w:
+            continue
+        low = w.lower().strip(".,")
+        if not any(ch.isalpha() for ch in w):
+            out.append(w)                    # "-", "&", numbers: leave alone
+        elif low in _KEEP_UPPER:
+            out.append(w.upper())
+        elif i and low in _LOWER_WORDS:
+            out.append(low)
+        else:
+            out.append(_cap(w))
+    return " ".join(out)
+
+
+def normalise_value(key: str, value):
+    """House style for one field. Applied on every write."""
+    if not isinstance(value, str):
+        return value
+    v = " ".join(value.split())          # collapses doubles AND trims both ends
+    if not v:
+        return v
+    if key in ("contact_email", "website"):
+        return v.lower()
+    if key == "contact_phone":
+        # Keep the digits and the punctuation people actually use.
+        return "".join(ch for ch in v if ch.isdigit() or ch in "+-() ").strip()
+    if key in ("additional_information", "notes", "business_activity",
+               "value_chain"):
+        return v                          # prose: cleaned of spacing, not recased
+    if v.isupper() or v.islower():
+        return _proper(v)
+    return v
+
+
+'''
+
+FIELDS = r'''DEFAULT_COMPLETENESS = [
+    {"key": "name", "label": "Legal name", "weight": 15,
+     "why": "Who they are, as registered."},
+    # REGISTRATION NUMBER REPLACED (ruling 2026-08-11: "that might be hard to
+    # obtain, we can replace it with another piece"). It is real but it is
+    # locked behind BRS, so it would sit unanswered on almost every record and
+    # drag the score down without anybody being able to fix it. A field nobody
+    # can fill is not a standard, it is a permanent deduction.
+    #
+    # Branches are visible, useful to every purpose, and were on the original
+    # wish list for the card.
+    {"key": "branches", "label": "Branches or footprint", "weight": 10,
+     "why": "Where they actually operate - and how big that makes them."},
+    {"key": "sector", "label": "Sector", "weight": 10,
+     "why": "Decides which products are even relevant."},
+    {"key": "county", "label": "County", "weight": 10,
+     "why": "Decides which branch owns the conversation."},
+    {"key": "physical_address", "label": "Physical address", "weight": 8,
+     "why": "You cannot visit a postal box."},
+    {"key": "phone", "label": "Phone", "weight": 12,
+     "why": "Without it nobody can start."},
+    {"key": "email", "label": "Email", "weight": 8,
+     "why": "For anything that needs a paper trail."},
+    {"key": "decision_maker", "label": "Decision maker and role", "weight": 15,
+     "why": "The single thing that turns a cold call into a meeting."},
+    {"key": "size_indicator", "label": "Size - turnover, members or staff", "weight": 7,
+     "why": "Tells you which desk should hold it."},
+    {"key": "business_activity", "label": "What they actually do", "weight": 5,
+     "why": "A sector is a category; this is the business."},
+    # FIVE MORE (ruling 2026-08-11: "expand the field to at least 15 so that we
+    # stretch our viability and give our models a better accuracy chance").
+    # These are the ones that separate a contactable business from a
+    # QUALIFIABLE one - they are what a viability score will be built on.
+    {"key": "established", "label": "Year established", "weight": 5,
+     "why": "Longevity is the cheapest risk signal there is."},
+    # SEGMENT REPLACES LEGAL FORM (ruling 2026-08-11: "I don't understand what
+    # legal is, but I would instead look for information like Segment"). Legal
+    # form is a lawyer's category; segment is the one the bank actually
+    # organises itself around, and it decides which desk holds the
+    # relationship.
+    {"key": "segment", "label": "Segment", "weight": 3,
+     "why": "Which desk holds the relationship."},
+    {"key": "existing_banker", "label": "Who they bank with now", "weight": 6,
+     "why": "Tells you whether this is a switch, a share, or a first account."},
+    {"key": "online_presence", "label": "Website or verified listing", "weight": 3,
+     "why": "Somewhere to check the story before the meeting."},
+    # "IDENTIFIED NEED" WAS PIPELINE LANGUAGE (ruling 2026-08-11: "that would
+    # mean this is only for pipeline - we are building a warehouse that can be
+    # used across various needs, and pipeline is one of them"). A warehouse
+    # should not bake one consumer's vocabulary into its schema.
+    {"key": "value_chain", "label": "Value chain and potential needs", "weight": 8,
+     "why": "What they buy, sell and depend on - which serves sales, credit "
+            "and sector analysis alike, not just a deal."},
+]
+
+STATUS_VALIDATED = "validated"
+
+# PICKED, NOT TYPED (ruling 2026-08-11: "for those we have autopopulated we
+# need a drop down, e.g. Sector, so that for our analysis we don't have
+# mismatches that are a result of mistyping"). Free text here would produce
+# "SME", "S.M.E", "Sme" and "Small" as four segments in every report.
+DEFAULT_SEGMENTS = [
+    "Micro", "Small Enterprise", "Medium Enterprise", "Large Enterprise",
+    "Corporate", "Institution", "Public Sector", "NGO / Development",
+]
+
+
+def segments() -> list:
+    try:
+        from utils.core import get_pipeline_settings
+        v = (get_pipeline_settings() or {}).get("warehouse_segments")
+        if isinstance(v, list) and v:
+            return [str(x) for x in v if str(x).strip()]
+    except Exception:
+        pass
+    return list(DEFAULT_SEGMENTS)
+
+# RULING (2026-08-11): "a threshold for submitting for validation to begin
+# should be at least 80% and above, then the additional can be completed from
+# validation."
+#
+# 100% was the wrong bar. It meant a record with fourteen of fifteen fields sat
+# unusable beside one with four, and the last field is often the hardest to get
+# - so demanding it would leave good records stranded in the working set
+# forever. Eighty per cent says "enough to act on"; the remainder is finished
+# during validation by the person who is looking anyway.
+DEFAULT_VALIDATION_THRESHOLD = 80
+
+
+def validation_threshold() -> int:
+    try:
+        from utils.core import get_pipeline_settings
+        v = (get_pipeline_settings() or {}).get("warehouse_validation_threshold")
+        if isinstance(v, (int, float)) and 0 < float(v) <= 100:
+            return int(v)
+    except Exception:
+        pass
+    return DEFAULT_VALIDATION_THRESHOLD
+
+# Legal form can usually be read off the name itself - a register that says
+# "Sacco Society Ltd" has already told you what kind of entity this is, and
+# asking somebody to retype it would be busywork.
+_LEGAL_FORM = re.compile(
+    r"\b(ltd|limited|plc|llp|llc|sacco|society|co-?operative|co-?op|trust"
+    r"|foundation|association|union|scheme|bank|ngo)\b", re.IGNORECASE)
+
+
+'''
+
+HAS = r'''def _has(rec: dict, key: str) -> bool:
+    """Is this field answered - anywhere on the record or its card?"""
+    def _t(*names):
+        return any(str(rec.get(n) or "").strip() for n in names)
+
+    items = rec.get("enrichment") or []
+
+    def _card(*kinds):
+        return any(str(i.get("title") or "").strip()
+                   for i in items if i.get("kind") in kinds)
+
+    if key == "name":
+        return _t("name")
+    if key == "branches":
+        return _t("branches", "footprint") or _card("association")
+    if key == "sector":
+        return _t("sector") and str(rec.get("sector")).strip().lower() != "unsorted"
+    if key == "county":
+        return _t("town")
+    if key == "physical_address":
+        return _t("physical_address", "address") or _card("contact")
+    if key == "phone":
+        return _t("contact_phone") or _card("contact")
+    if key == "email":
+        return _t("contact_email") or _card("contact")
+    if key == "decision_maker":
+        return _t("contact_name") or _card("relationship")
+    if key == "size_indicator":
+        return bool(rec.get("estimated_value")) or _card("financial")
+    if key == "business_activity":
+        return _t("notes") or _card("note", "news")
+    if key == "established":
+        return _t("established", "year_established") or _card("filing")
+    if key == "segment":
+        return _t("segment")
+    if key == "existing_banker":
+        return _t("existing_banker") or _card("relationship")
+    if key == "online_presence":
+        return _t("website", "url") or any(
+            str(i.get("url") or "").strip() for i in items)
+    if key == "value_chain":
+        return _t("value_chain", "opportunity") or _card("note")
+    return _t(key)
+
+
+'''
+
+SEGMENTS = r'''# PICKED, NOT TYPED (ruling 2026-08-11: "for those we have autopopulated we
+# need a drop down, e.g. Sector, so that for our analysis we don't have
+# mismatches that are a result of mistyping"). Free text here would produce
+# "SME", "S.M.E", "Sme" and "Small" as four segments in every report.
+DEFAULT_SEGMENTS = [
+    "Micro", "Small Enterprise", "Medium Enterprise", "Large Enterprise",
+    "Corporate", "Institution", "Public Sector", "NGO / Development",
+]
+
+
+def segments() -> list:
+    try:
+        from utils.core import get_pipeline_settings
+        v = (get_pipeline_settings() or {}).get("warehouse_segments")
+        if isinstance(v, list) and v:
+            return [str(x) for x in v if str(x).strip()]
+    except Exception:
+        pass
+    return list(DEFAULT_SEGMENTS)
+
+# RULING (2026-08-11): "a threshold for submitting for validation to begin
+# should be at least 80% and above, then the additional can be completed from
+# validation."
+#
+# 100% was the wrong bar. It meant a record with fourteen of fifteen fields sat
+# unusable beside one with four, and the last field is often the hardest to get
+# - so demanding it would leave good records stranded in the working set
+# forever. Eighty per cent says "enough to act on"; the remainder is finished
+# during validation by the person who is looking anyway.
+DEFAULT_VALIDATION_THRESHOLD = 80
+
+
+'''
+
+ENDPOINT = r'''    from utils.deals_warehouse import (completeness_fields, completeness_summary,
+                                       segments, sectors, towns)
+    # The PICKLISTS travel with the matrix so a form can offer them without a
+    # second round trip - and so every client offers the SAME options, which is
+    # the whole reason they are lists rather than free text.
+    return {"fields": completeness_fields(),
+            "summary": completeness_summary(),
+            "segments": segments(),
+            "sectors": sectors(),
+            "counties": towns()}
+
+
+'''
+
+DETAIL_SRC = r'''// Prospect detail — everything known, before deciding whether to pursue.
 //
 // RULING (2026-08-11): "it will be premature to pursue something whose only
 // detail you have is a name. I would prefer Details, which then open into a
@@ -623,3 +1017,104 @@ export default function ProspectDetail() {
     </>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (MOD, API, APITS, DETAIL):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found - apply patch_cm3_matrix_table.py first." % p)
+            return 1
+
+    mod = open(MOD, encoding="utf-8").read()
+    api = open(API, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+
+    if "def normalise_value(" in mod:
+        print("ABORT: the house style is already present - UX1 looks applied.")
+        return 1
+    for name, blob, needle in (("mod", mod, MOD_ANCHOR), ("mod", mod, EDITABLE_OLD),
+                               ("mod", mod, APPLY_OLD), ("api", api, EP_OLD),
+                               ("ts", ts, TS_OLD_TAIL)):
+        if blob.count(needle) != 1:
+            print("ABORT: an anchor in %s matched %d times." % (name, blob.count(needle)))
+            return 1
+
+    mod = mod.replace(MOD_ANCHOR, HOUSE_STYLE + MOD_ANCHOR, 1)
+    mod = mod.replace(EDITABLE_OLD, EDITABLE_NEW, 1)
+    mod = mod.replace(APPLY_OLD, APPLY_NEW, 1)
+    i = mod.index("DEFAULT_COMPLETENESS = [")
+    j = mod.index("def completeness_fields()")
+    k = mod.index("def _has(rec: dict, key: str) -> bool:")
+    l = mod.index("def completeness(")
+    mod = mod[:i] + FIELDS + mod[j:k] + HAS + mod[l:]
+    m = mod.index("# PICKED, NOT TYPED") if "# PICKED, NOT TYPED" in mod else -1
+    if m < 0:
+        n = mod.index("def validation_threshold()")
+        mod = mod[:n] + SEGMENTS + mod[n:]
+    api = api.replace(EP_OLD, ENDPOINT, 1)
+    ts = ts.replace(TS_OLD_TAIL, TS_NEW_TAIL, 1)
+    ts = ts.replace("export async function validateProspect(",
+                    "", 1) if False else ts
+    print("  ok  house style, segment, picklists, endpoint")
+
+    # Normalisation must happen on WRITE.
+    if "v = normalise_value(k, v)" not in APPLY_NEW:
+        print("ABORT: values are not normalised on save - cleaning at display")
+        print("       time leaves the mess in the store for every other reader.")
+        return 1
+    # Mixed case must be preserved.
+    if "v.isupper() or v.islower()" not in HOUSE_STYLE:
+        print("ABORT: mixed-case input would be recased - 'PCEA Kayole' was")
+        print("       typed that way on purpose.")
+        return 1
+    if "def segments(" not in SEGMENTS:
+        print("ABORT: segments are not config-driven.")
+        return 1
+    if "legal_form" in FIELDS:
+        print("ABORT: legal form survives in the matrix.")
+        return 1
+    # Sections, pickers, and no lecturing.
+    if "SECTIONS" not in DETAIL_SRC or DETAIL_SRC.count("title: '") < 4:
+        print("ABORT: the form is not sectioned.")
+        return 1
+    if "row.kind === 'select'" not in DETAIL_SRC:
+        print("ABORT: segment, sector and county are still free text - four")
+        print("       spellings of one segment ruins every report built on it.")
+        return 1
+    if "The single thing that turns" in DETAIL_SRC:
+        print("ABORT: the 'why this matters' copy survives inside the form.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if DETAIL_SRC.count(op) != DETAIL_SRC.count(cl):
+            print("ABORT: detail unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: normalised on write, picked values, sectioned")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((MOD, mod), (API, api), (APITS, ts), (DETAIL, DETAIL_SRC)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    for path in (MOD, API):
+        try:
+            py_compile.compile(path, doraise=True)
+            print("  ok  %s compiles" % os.path.basename(path))
+        except Exception as exc:
+            print("  FAIL %s: %s" % (path, exc))
+            return 1
+
+    print("")
+    print("Existing records keep their current casing - normalisation applies")
+    print("on the next SAVE, so nothing is rewritten behind anybody's back.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

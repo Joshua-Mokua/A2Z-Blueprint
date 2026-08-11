@@ -412,8 +412,19 @@ def warehouse_completeness(user: dict = Depends(get_current_user)):
     the standard while somebody is typing, rather than telling them afterwards
     what they should have entered.
     """
-    from utils.deals_warehouse import completeness_fields, completeness_summary
-    return {"fields": completeness_fields(), "summary": completeness_summary()}
+    from utils.deals_warehouse import (completeness_fields, completeness_summary,
+                                       segments, sectors, towns)
+    # The PICKLISTS travel with the matrix so a form can offer them without a
+    # second round trip - and so every client offers the SAME options, which is
+    # the whole reason they are lists rather than free text.
+    return {"fields": completeness_fields(),
+            "summary": completeness_summary(),
+            "segments": segments(),
+            "sectors": sectors(),
+            "counties": towns()}
+
+
+
 
 
 @router.post("/prospects/{prospect_id}/validate")

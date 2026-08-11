@@ -1037,6 +1037,7 @@ export async function fetchCompletenessMatrix(): Promise<{
   fields: CompletenessField[];
   summary: { total: number; average_score: number; complete: number;
              validated: number; worst_gaps: { key: string; label: string; missing: number }[] };
+  segments: string[]; sectors: string[]; counties: string[];
 }> {
   return getJson('/warehouse/completeness');
 }

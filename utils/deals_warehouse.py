@@ -422,8 +422,13 @@ DEFAULT_COMPLETENESS = [
     # QUALIFIABLE one - they are what a viability score will be built on.
     {"key": "established", "label": "Year established", "weight": 5,
      "why": "Longevity is the cheapest risk signal there is."},
-    {"key": "legal_form", "label": "Legal form", "weight": 3,
-     "why": "A SACCO, an Ltd and an NGO borrow on different terms."},
+    # SEGMENT REPLACES LEGAL FORM (ruling 2026-08-11: "I don't understand what
+    # legal is, but I would instead look for information like Segment"). Legal
+    # form is a lawyer's category; segment is the one the bank actually
+    # organises itself around, and it decides which desk holds the
+    # relationship.
+    {"key": "segment", "label": "Segment", "weight": 3,
+     "why": "Which desk holds the relationship."},
     {"key": "existing_banker", "label": "Who they bank with now", "weight": 6,
      "why": "Tells you whether this is a switch, a share, or a first account."},
     {"key": "online_presence", "label": "Website or verified listing", "weight": 3,
@@ -438,6 +443,26 @@ DEFAULT_COMPLETENESS = [
 ]
 
 STATUS_VALIDATED = "validated"
+
+# PICKED, NOT TYPED (ruling 2026-08-11: "for those we have autopopulated we
+# need a drop down, e.g. Sector, so that for our analysis we don't have
+# mismatches that are a result of mistyping"). Free text here would produce
+# "SME", "S.M.E", "Sme" and "Small" as four segments in every report.
+DEFAULT_SEGMENTS = [
+    "Micro", "Small Enterprise", "Medium Enterprise", "Large Enterprise",
+    "Corporate", "Institution", "Public Sector", "NGO / Development",
+]
+
+
+def segments() -> list:
+    try:
+        from utils.core import get_pipeline_settings
+        v = (get_pipeline_settings() or {}).get("warehouse_segments")
+        if isinstance(v, list) and v:
+            return [str(x) for x in v if str(x).strip()]
+    except Exception:
+        pass
+    return list(DEFAULT_SEGMENTS)
 
 # RULING (2026-08-11): "a threshold for submitting for validation to begin
 # should be at least 80% and above, then the additional can be completed from
@@ -513,8 +538,8 @@ def _has(rec: dict, key: str) -> bool:
         return _t("notes") or _card("note", "news")
     if key == "established":
         return _t("established", "year_established") or _card("filing")
-    if key == "legal_form":
-        return _t("legal_form") or bool(_LEGAL_FORM.search(str(rec.get("name") or "")))
+    if key == "segment":
+        return _t("segment")
     if key == "existing_banker":
         return _t("existing_banker") or _card("relationship")
     if key == "online_presence":
@@ -571,6 +596,95 @@ def completeness(prospect_id_or_rec) -> dict:
     }
 
 
+# ── HOUSE STYLE ─────────────────────────────────────────────────────────────
+# RULING (2026-08-11): "the input format should default to standard - if it is
+# upper case, then Proper while saving. Avoid double spacing and no spacing at
+# the end. This is to protect the larger data sets."
+#
+# NORMALISED ON THE WAY IN, NOT ON THE WAY OUT. Cleaning at display time leaves
+# the mess in the store, so the next consumer - an export, a match, a dedupe -
+# still meets "MWALIMU  NATIONAL SACCO " and treats it as a different business
+# from "Mwalimu National Sacco". Doing it once at the door is the only version
+# that protects the dataset.
+#
+# ALL-CAPS AND all-lower BECOME PROPER CASE. Mixed case is LEFT ALONE, because
+# somebody who typed "PCEA Kayole" or "e-Mobility Ltd" meant it, and
+# title-casing that would be a correction nobody asked for.
+# Acronyms that look wrong in Proper Case. "Ltd" is deliberately NOT here -
+# Kenyan usage is "Ltd", not "LTD", and forcing the shout would be a change
+# nobody asked for.
+_KEEP_UPPER = {"plc", "dt", "hq", "ke", "kcb", "nssf", "kra", "usiu", "cbd",
+               "ict", "ngo", "pcea", "ack", "kag", "sme", "usa", "uk", "eu",
+               # "Sacco" not "SACCO" - the register itself writes it that
+               # way, and the source document is the better authority than my
+               # guess about acronyms.
+               "wdt", "fosa", "bosa", "kebs", "kemri", "helb", "cic",
+               "epza", "gdc", "nrs", "amref", "icea", "kasneb", "p.o", "po",
+               "ceo", "cfo", "coo", "md", "gm", "hr", "it", "mp", "dt-sacco"}
+_LOWER_WORDS = {"and", "of", "the", "for", "in", "on", "at", "to", "a"}
+
+
+def _cap(word: str) -> str:
+    """Capitalise a single word, preserving its internal punctuation.
+
+    Splits on the separators that appear inside real names - hyphens,
+    apostrophes and dots - so "trans-nzoia" becomes "Trans-Nzoia" and "p.o"
+    becomes "P.O" rather than losing the mark entirely, which is what happened
+    when the address separator was treated as a word boundary.
+    """
+    out = word.lower()
+    for sep in ("-", "'", "\u2019", "."):
+        parts = []
+        for p in out.split(sep):
+            if not p:
+                parts.append(p)
+            elif p.strip(".,").lower() in _KEEP_UPPER:
+                # A hyphenated word can contain an acronym: "wdt-sacco" is
+                # "WDT-Sacco", not "Wdt-Sacco".
+                parts.append(p.upper())
+            else:
+                parts.append(p[:1].upper() + p[1:])
+        out = sep.join(parts)
+    return out
+
+
+def _proper(text: str) -> str:
+    out = []
+    for i, w in enumerate(text.split(" ")):
+        if not w:
+            continue
+        low = w.lower().strip(".,")
+        if not any(ch.isalpha() for ch in w):
+            out.append(w)                    # "-", "&", numbers: leave alone
+        elif low in _KEEP_UPPER:
+            out.append(w.upper())
+        elif i and low in _LOWER_WORDS:
+            out.append(low)
+        else:
+            out.append(_cap(w))
+    return " ".join(out)
+
+
+def normalise_value(key: str, value):
+    """House style for one field. Applied on every write."""
+    if not isinstance(value, str):
+        return value
+    v = " ".join(value.split())          # collapses doubles AND trims both ends
+    if not v:
+        return v
+    if key in ("contact_email", "website"):
+        return v.lower()
+    if key == "contact_phone":
+        # Keep the digits and the punctuation people actually use.
+        return "".join(ch for ch in v if ch.isdigit() or ch in "+-() ").strip()
+    if key in ("additional_information", "notes", "business_activity",
+               "value_chain"):
+        return v                          # prose: cleaned of spacing, not recased
+    if v.isupper() or v.islower():
+        return _proper(v)
+    return v
+
+
 # ── EDITING, AND WHAT PROTECTS A VALIDATED RECORD ───────────────────────────
 # RULING (2026-08-11): "one will only be able to edit items under validation.
 # The edit and delete on the validated, let them be restricted with a delete
@@ -592,7 +706,7 @@ DEFAULT_PROTECTED_PASSWORD = "Pendo"
 EDITABLE_FIELDS = (
     "name", "sector", "town", "physical_address", "contact_name",
     "contact_phone", "contact_email", "notes", "estimated_value",
-    "branches", "established", "legal_form", "existing_banker",
+    "branches", "established", "segment", "existing_banker", "ownership",
     "website", "value_chain", "business_activity", "additional_information",
 )
 
@@ -632,6 +746,7 @@ def update_prospect(prospect_id: str, changes: dict, *, by_name: str = "",
         for k, v in (changes or {}).items():
             if k not in EDITABLE_FIELDS:
                 continue
+            v = normalise_value(k, v)
             rec[k] = v
             applied[k] = v
         if not applied:
