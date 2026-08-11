@@ -10421,6 +10421,76 @@ def channels_records(key: str, active_only: bool = False, mine: bool = False,
             "tagged_deals": sum(len(v) for v in by_rec.values())}
 
 
+@app.get("/api/channels/{key}/deals")
+def channels_deals(key: str, record_id: str = "",
+                   user: dict = Depends(get_current_user)):
+    """The individual deals this channel produced, and where each one is.
+
+    A stage COUNT tells you the shape of the work; it does not let anyone
+    follow a deal. This returns the deals themselves, ordered along the
+    journey, so a head of unit can see that the Toyota partnership has two
+    deals stuck at Credit Analysis and go and ask why.
+
+    Ordered by JOURNEY POSITION, not by date - the useful reading is how far
+    each deal has travelled, and a date sort scatters that.
+    """
+    from utils.origin_channels import channel
+    from utils.pipeline_funnel import buckets_for, gate_of
+    c = channel(key)
+    if not c:
+        raise HTTPException(status_code=404, detail="No such channel.")
+
+    field = {"events": "event_id", "partnership": "mou_id"}.get(key, "channel_id")
+    rid = str(record_id or "").strip()
+    got = []
+    for d in _acquire_scoped_deals(user):
+        v = str(d.get(field) or "").strip()
+        if not v or (rid and v != rid):
+            continue
+        got.append(d)
+
+    # Journey position, built from the configured buckets so it cannot drift
+    # from the funnel. Closed deals sort last - they are outcomes, not steps.
+    order, gates = {}, {}
+    n = 0
+    for flow in ("asset", "liability"):
+        for b in buckets_for(flow):
+            for st in (b.get("steps") or []):
+                if st not in order:
+                    order[st] = n
+                    gates[st] = gate_of(b["key"])
+                    n += 1
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    rows = []
+    for d in got:
+        stage = str(d.get("stage") or "")
+        closed = stage in ("Closed Won", "Closed Lost")
+        rows.append({
+            "id": str(d.get("id") or ""),
+            "client": str(d.get("client_name") or ""),
+            "product": str(d.get("product_type") or ""),
+            "value": _val(d),
+            "stage": stage,
+            "gate": gates.get(stage, "closure" if closed else ""),
+            "position": order.get(stage, 999 if closed else 998),
+            "closed": closed,
+            "won": stage == "Closed Won",
+            "owner": str(d.get("staff_name") or d.get("staff_code") or ""),
+            "branch": str(d.get("branch") or ""),
+            "source_id": str(d.get(field) or ""),
+            "opened": str(d.get("open_date") or d.get("created_at") or "")[:10],
+        })
+    rows.sort(key=lambda r: (r["position"], -r["value"]))
+    return {"channel": key, "record_id": rid, "deals": rows,
+            "total_value": round(sum(r["value"] for r in rows), 2)}
+
+
 @app.get("/api/channels/{key}/analytics")
 def channels_analytics(key: str, user: dict = Depends(get_current_user)):
     """Does this channel pay for itself, and which records carry it?

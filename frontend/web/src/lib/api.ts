@@ -945,6 +945,20 @@ export interface ChannelRecord {
   leads: number; accounts: number; won_value: number;
   roi_pct: number | null; supports_roi: boolean;
 }
+export interface ChannelDeal {
+  id: string; client: string; product: string; value: number;
+  stage: string; gate: string; position: number;
+  closed: boolean; won: boolean;
+  owner: string; branch: string; source_id: string; opened: string;
+}
+export async function fetchChannelDeals(
+  key: string, recordId = '',
+): Promise<{ channel: string; record_id: string; deals: ChannelDeal[]; total_value: number }> {
+  const q = new URLSearchParams(recordId ? { record_id: recordId } : {});
+  const qs = q.toString();
+  return getJson<{ channel: string; record_id: string; deals: ChannelDeal[]; total_value: number }>(
+    `/channels/${encodeURIComponent(key)}/deals${qs ? `?${qs}` : ''}`);
+}
 export interface ChannelAnalytics {
   channel: OriginChannel;
   totals: {

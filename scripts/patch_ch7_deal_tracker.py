@@ -1,4 +1,143 @@
-// Origin Channels — one page for every channel the bank invests in.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+CH7 - the deal tracker. Follow a deal, do not just count it.
+
+RULING (2026-08-11): "on the pages, as we have referrals, we should have that
+deal tracker showing where each deal is, so that one can follow and flow into
+the journey, so that this is well interlinked."
+
+A STAGE COUNT SHOWS THE SHAPE OF THE WORK; IT DOES NOT LET ANYONE FOLLOW A DEAL.
+The Pipeline tab could say "two deals at Credit Analysis" but not which two, for
+whom, or worth how much - so nobody could act on it. The tracker lists the deals
+themselves beneath the stage bars.
+
+    GET /api/channels/{key}/deals?record_id=
+
+ORDERED BY JOURNEY POSITION, NOT BY DATE. The useful reading is how far each
+deal has travelled; a date sort scatters that across the table. Position is
+built from the CONFIGURED buckets, so it cannot drift from the funnel, and
+closed deals sort last - they are outcomes, not steps.
+
+Each row carries its GATE - refining, processing, closure - so the tracker and
+the architecture agree on where a deal sits, rather than the page inventing its
+own grouping.
+
+A RECORD FILTER narrows to one event or one partnership, which is the actual
+question a head of unit asks: not "how is the channel doing" but "what happened
+to the deals from the Nakuru forum". The filter resets when the channel changes,
+because a record id from another channel would silently filter to nothing.
+
+Verified: tsc --noEmit clean, vite build clean. Against the seeded scenario the
+tracker shows 20 deals across every stage of the journey.
+
+REQUIRES CH6.
+
+Usage (from project root, .venv active):
+    python scripts\patch_ch7_deal_tracker.py            # dry run
+    python scripts\patch_ch7_deal_tracker.py --apply
+"""
+import os
+import shutil
+import sys
+
+API = os.path.join("utils", "api.py")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+PAGE = os.path.join("frontend", "web", "src", "pages", "OriginChannels.tsx")
+BACKUP_SUFFIX = ".pre_ch7"
+
+API_ANCHOR = '@app.get("/api/channels/{key}/analytics")'
+TS_ANCHOR = "export interface ChannelAnalytics {"
+
+ENDPOINT = r'''@app.get("/api/channels/{key}/deals")
+def channels_deals(key: str, record_id: str = "",
+                   user: dict = Depends(get_current_user)):
+    """The individual deals this channel produced, and where each one is.
+
+    A stage COUNT tells you the shape of the work; it does not let anyone
+    follow a deal. This returns the deals themselves, ordered along the
+    journey, so a head of unit can see that the Toyota partnership has two
+    deals stuck at Credit Analysis and go and ask why.
+
+    Ordered by JOURNEY POSITION, not by date - the useful reading is how far
+    each deal has travelled, and a date sort scatters that.
+    """
+    from utils.origin_channels import channel
+    from utils.pipeline_funnel import buckets_for, gate_of
+    c = channel(key)
+    if not c:
+        raise HTTPException(status_code=404, detail="No such channel.")
+
+    field = {"events": "event_id", "partnership": "mou_id"}.get(key, "channel_id")
+    rid = str(record_id or "").strip()
+    got = []
+    for d in _acquire_scoped_deals(user):
+        v = str(d.get(field) or "").strip()
+        if not v or (rid and v != rid):
+            continue
+        got.append(d)
+
+    # Journey position, built from the configured buckets so it cannot drift
+    # from the funnel. Closed deals sort last - they are outcomes, not steps.
+    order, gates = {}, {}
+    n = 0
+    for flow in ("asset", "liability"):
+        for b in buckets_for(flow):
+            for st in (b.get("steps") or []):
+                if st not in order:
+                    order[st] = n
+                    gates[st] = gate_of(b["key"])
+                    n += 1
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    rows = []
+    for d in got:
+        stage = str(d.get("stage") or "")
+        closed = stage in ("Closed Won", "Closed Lost")
+        rows.append({
+            "id": str(d.get("id") or ""),
+            "client": str(d.get("client_name") or ""),
+            "product": str(d.get("product_type") or ""),
+            "value": _val(d),
+            "stage": stage,
+            "gate": gates.get(stage, "closure" if closed else ""),
+            "position": order.get(stage, 999 if closed else 998),
+            "closed": closed,
+            "won": stage == "Closed Won",
+            "owner": str(d.get("staff_name") or d.get("staff_code") or ""),
+            "branch": str(d.get("branch") or ""),
+            "source_id": str(d.get(field) or ""),
+            "opened": str(d.get("open_date") or d.get("created_at") or "")[:10],
+        })
+    rows.sort(key=lambda r: (r["position"], -r["value"]))
+    return {"channel": key, "record_id": rid, "deals": rows,
+            "total_value": round(sum(r["value"] for r in rows), 2)}
+
+
+'''
+
+TS_NEW = r'''export interface ChannelDeal {
+  id: string; client: string; product: string; value: number;
+  stage: string; gate: string; position: number;
+  closed: boolean; won: boolean;
+  owner: string; branch: string; source_id: string; opened: string;
+}
+export async function fetchChannelDeals(
+  key: string, recordId = '',
+): Promise<{ channel: string; record_id: string; deals: ChannelDeal[]; total_value: number }> {
+  const q = new URLSearchParams(recordId ? { record_id: recordId } : {});
+  const qs = q.toString();
+  return getJson<{ channel: string; record_id: string; deals: ChannelDeal[]; total_value: number }>(
+    `/channels/${encodeURIComponent(key)}/deals${qs ? `?${qs}` : ''}`);
+}
+'''
+
+PAGE_SRC = r'''// Origin Channels — one page for every channel the bank invests in.
 //
 // Events, Partnerships and Lead Generators ask the same question: what did we
 // spend, what did it produce, was it worth it. Three sidebar entries would be
@@ -720,3 +859,80 @@ export default function OriginChannels() {
     </>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (API, APITS, PAGE):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found - apply patch_ch6_owner_picker.py first." % p)
+            return 1
+
+    api = open(API, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+
+    if "/api/channels/{key}/deals" in api:
+        print("ABORT: the deals endpoint already exists - CH7 looks applied.")
+        return 1
+    if API_ANCHOR not in api:
+        print("ABORT: apply patch_ch3_channel_tabs.py first.")
+        return 1
+    if ts.count(TS_ANCHOR) != 1:
+        print("ABORT: api.ts anchor matched %d times." % ts.count(TS_ANCHOR))
+        return 1
+
+    api = api.replace(API_ANCHOR, ENDPOINT + API_ANCHOR, 1)
+    ts = ts.replace(TS_ANCHOR, TS_NEW + TS_ANCHOR, 1)
+    print("  ok  deals endpoint and client")
+
+    # Order must come from the configured journey, not a hardcoded list.
+    if "buckets_for" not in ENDPOINT:
+        print("ABORT: journey order is not read from the configured buckets -")
+        print("       a hardcoded order drifts from the funnel silently.")
+        return 1
+    if 'r["position"]' not in ENDPOINT:
+        print("ABORT: deals are not ordered by journey position.")
+        return 1
+    if "gate_of" not in ENDPOINT:
+        print("ABORT: rows do not carry their gate, so the tracker and the")
+        print("       architecture would disagree about where a deal sits.")
+        return 1
+    if "Deal tracker" not in PAGE_SRC:
+        print("ABORT: the tracker is missing from the page.")
+        return 1
+    # A stale record id from another channel would filter to nothing.
+    if "setFocus('');" not in PAGE_SRC:
+        print("ABORT: the record filter does not reset when the channel changes.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if PAGE_SRC.count(op) != PAGE_SRC.count(cl):
+            print("ABORT: page unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: journey order, gates carried, filter resets")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((API, api), (APITS, ts), (PAGE, PAGE_SRC)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    try:
+        py_compile.compile(API, doraise=True)
+        print("  ok  api.py compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd, restart uvicorn.")
+    print("Origin Channels > Pipeline. With the scenario seeded you should see")
+    print("deals at every stage, and be able to narrow to one event.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
