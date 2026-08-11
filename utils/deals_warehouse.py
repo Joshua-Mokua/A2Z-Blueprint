@@ -309,6 +309,27 @@ def attach_deal(prospect_id: str, deal_id: str) -> Optional[dict]:
     return rec
 
 
+def delete(prospect_id: str) -> bool:
+    """Remove a prospect entirely. ADMIN ONLY - the endpoint enforces that.
+
+    RULING (2026-08-11): "for the admin I need to be able to delete an entry as
+    a whole so that items like Mombasa that are not saccos I can delete."
+
+    Distinct from archive() on purpose. ARCHIVE says "we looked at this and
+    decided not to pursue it" and is worth keeping. DELETE says "this was never
+    a business" - a county name, a street, a fragment of a table. Keeping those
+    would leave the audit trail full of noise that teaches nobody anything.
+    """
+    pid = str(prospect_id or "").strip()
+    with _lock:
+        data = _read()
+        if pid not in data:
+            return False
+        del data[pid]
+        _write(data)
+    return True
+
+
 def archive(prospect_id: str, by_code: str, reason: str = "") -> dict:
     """Take a prospect off the shelf without pursuing it.
 
@@ -328,6 +349,205 @@ def archive(prospect_id: str, by_code: str, reason: str = "") -> dict:
         data[str(prospect_id)] = rec
         _write(data)
     return rec
+
+
+# ── THE COMPLETENESS MATRIX ─────────────────────────────────────────────────
+# RULING (2026-08-11): "establish 10 must-have fields as a measure for a
+# completeness index, scoring each entry, and once done it is marked complete.
+# This ensures we keep backfilling, and sets the rules of what a complete entry
+# looks like for anyone keying in data. Then a validation check - once an entry
+# is fully complete it can be validated and stored as a record that can be
+# used."
+#
+# THE TEN ARE WHAT SOMEBODY NEEDS TO APPROACH A BUSINESS WITH CONFIDENCE. Not
+# ten arbitrary boxes: each answers a question an RM would otherwise have to
+# ask, and a prospect missing several is one nobody can act on.
+#
+#     WHO      legal name · registration number
+#     WHAT     sector · what they do
+#     WHERE    county · physical address
+#     REACH    phone · email
+#     WHO TO   decision maker and their role
+#     HOW BIG  a size indicator - turnover, members, staff
+#
+# WEIGHTED, because they are not equal. A name with no phone number is further
+# from usable than a phone number with no registration number, and an unweighted
+# score would call those the same.
+#
+# CONFIG-DRIVEN via warehouse_completeness, so the bank can change the standard
+# without a release - the same rule as origins, channels and activity sets.
+#
+# SCORED FROM THE RECORD *AND* ITS CARD. A phone number added as an enrichment
+# item counts exactly as much as one typed into the contact field; requiring it
+# in a particular place would punish people for using the tool as intended.
+DEFAULT_COMPLETENESS = [
+    {"key": "name", "label": "Legal name", "weight": 15,
+     "why": "Who they are, as registered."},
+    {"key": "registration_no", "label": "Registration number", "weight": 10,
+     "why": "Proves the entity exists and is the one you think it is."},
+    {"key": "sector", "label": "Sector", "weight": 10,
+     "why": "Decides which products are even relevant."},
+    {"key": "county", "label": "County", "weight": 10,
+     "why": "Decides which branch owns the conversation."},
+    {"key": "physical_address", "label": "Physical address", "weight": 8,
+     "why": "You cannot visit a postal box."},
+    {"key": "phone", "label": "Phone", "weight": 12,
+     "why": "Without it nobody can start."},
+    {"key": "email", "label": "Email", "weight": 8,
+     "why": "For anything that needs a paper trail."},
+    {"key": "decision_maker", "label": "Decision maker and role", "weight": 15,
+     "why": "The single thing that turns a cold call into a meeting."},
+    {"key": "size_indicator", "label": "Size - turnover, members or staff", "weight": 7,
+     "why": "Tells you which desk should hold it."},
+    {"key": "business_activity", "label": "What they actually do", "weight": 5,
+     "why": "A sector is a category; this is the business."},
+]
+
+STATUS_VALIDATED = "validated"
+
+
+def completeness_fields() -> list:
+    try:
+        from utils.core import get_pipeline_settings
+        v = (get_pipeline_settings() or {}).get("warehouse_completeness")
+        if isinstance(v, list) and v:
+            return [f for f in v if isinstance(f, dict) and f.get("key")]
+    except Exception:
+        pass
+    return [dict(f) for f in DEFAULT_COMPLETENESS]
+
+
+def _has(rec: dict, key: str) -> bool:
+    """Is this field answered - anywhere on the record or its card?"""
+    def _t(*names):
+        return any(str(rec.get(n) or "").strip() for n in names)
+
+    items = rec.get("enrichment") or []
+
+    def _card(*kinds):
+        return any(str(i.get("title") or "").strip()
+                   for i in items if i.get("kind") in kinds)
+
+    if key == "name":
+        return _t("name")
+    if key == "registration_no":
+        return _t("registration_no") or "registered no" in str(rec.get("notes", "")).lower()
+    if key == "sector":
+        return _t("sector") and str(rec.get("sector")).strip().lower() != "unsorted"
+    if key == "county":
+        return _t("town")
+    if key == "physical_address":
+        return _t("physical_address", "address") or _card("contact")
+    if key == "phone":
+        return _t("contact_phone") or _card("contact")
+    if key == "email":
+        return _t("contact_email") or _card("contact")
+    if key == "decision_maker":
+        return _t("contact_name") or _card("relationship")
+    if key == "size_indicator":
+        return bool(rec.get("estimated_value")) or _card("financial")
+    if key == "business_activity":
+        return _t("notes") or _card("note", "news")
+    return _t(key)
+
+
+def completeness(prospect_id_or_rec) -> dict:
+    """Score one prospect against the matrix.
+
+    Returns the score, what is answered, and WHAT IS MISSING with the reason it
+    matters - because a score alone tells somebody they are incomplete without
+    telling them what to do about it.
+    """
+    rec = (prospect_id_or_rec if isinstance(prospect_id_or_rec, dict)
+           else get(prospect_id_or_rec))
+    if not rec:
+        return {}
+    fields = completeness_fields()
+    total = sum(int(f.get("weight") or 0) for f in fields) or 1
+    have, missing, got = [], [], 0
+    for f in fields:
+        if _has(rec, f["key"]):
+            have.append(f["key"])
+            got += int(f.get("weight") or 0)
+        else:
+            missing.append({"key": f["key"], "label": f.get("label") or f["key"],
+                            "why": f.get("why") or "", "weight": f.get("weight")})
+    pct = round(got / total * 100)
+    return {
+        "prospect_id": rec.get("id"),
+        "score": pct,
+        "complete": pct >= 100,
+        "have": have,
+        "missing": missing,
+        "answered": len(have),
+        "of": len(fields),
+        "validated": rec.get("validated") is True,
+        "validated_by": rec.get("validated_by") or "",
+        "validated_at": rec.get("validated_at") or "",
+        # A record edited AFTER validation is no longer the record that was
+        # validated. Saying so is more honest than silently keeping the badge.
+        "stale_validation": bool(
+            rec.get("validated") and rec.get("last_edited_at")
+            and str(rec.get("last_edited_at")) > str(rec.get("validated_at") or "")),
+    }
+
+
+def validate_prospect(prospect_id: str, by_code: str, by_name: str) -> dict:
+    """Promote a COMPLETE entry to a validated record.
+
+    Validation is a HUMAN ACT, not a consequence of the score. 100% means every
+    field has something in it; validation means somebody looked and believed it.
+    A record can be complete and wrong, and the whole point of a usable set is
+    that somebody staked their name on it.
+    """
+    pid = str(prospect_id or "").strip()
+    with _lock:
+        data = _read()
+        rec = data.get(pid)
+        if not rec:
+            raise ValueError("That prospect no longer exists.")
+        c = completeness(rec)
+        if not c.get("complete"):
+            missing = ", ".join(m["label"] for m in c.get("missing", [])[:4])
+            raise ValueError(
+                "Not complete yet - %d%%. Still needed: %s."
+                % (c.get("score", 0), missing or "unknown"))
+        rec["validated"] = True
+        rec["validated_by"] = str(by_name or by_code or "")
+        rec["validated_at"] = datetime.now().isoformat(timespec="seconds")
+        data[pid] = rec
+        _write(data)
+    return completeness(rec)
+
+
+def completeness_summary() -> dict:
+    """How complete is the warehouse as a whole, and which field is holding it
+    back - the question that decides what to backfill next."""
+    recs = all_prospects()
+    fields = completeness_fields()
+    missing_counts = {f["key"]: 0 for f in fields}
+    scores, complete, validated = [], 0, 0
+    for r in recs:
+        c = completeness(r)
+        scores.append(c.get("score", 0))
+        if c.get("complete"):
+            complete += 1
+        if c.get("validated"):
+            validated += 1
+        for m in c.get("missing", []):
+            missing_counts[m["key"]] = missing_counts.get(m["key"], 0) + 1
+    labels = {f["key"]: f.get("label") or f["key"] for f in fields}
+    return {
+        "total": len(recs),
+        "average_score": round(sum(scores) / len(scores)) if scores else 0,
+        "complete": complete,
+        "validated": validated,
+        "usable": validated,
+        "worst_gaps": sorted(
+            [{"key": k, "label": labels.get(k, k), "missing": n}
+             for k, n in missing_counts.items() if n],
+            key=lambda x: -x["missing"])[:5],
+    }
 
 
 # ── THE INFORMATION CARD ────────────────────────────────────────────────────

@@ -95,12 +95,50 @@ def warehouse_shelves(status: str = "available", town: str = "",
                     "source_event", "notes", "created_by_name", "created_at",
                     "claimed_by_name", "claimed_at", "deal_id")}
             row["mine"] = mine
+            # Scored HERE, on the shelf, not only on the detail page - a
+            # completeness standard nobody sees while browsing is a standard
+            # nobody backfills against.
+            try:
+                from utils.deals_warehouse import completeness as _cc
+                _c = _cc(r)
+                row["score"] = _c.get("score", 0)
+                row["validated"] = _c.get("validated", False)
+                row["missing_count"] = len(_c.get("missing", []))
+            except Exception:
+                row["score"] = 0
+    # INSTITUTIONAL CONTACTS ARE SHOWN (ruling 2026-08-11: "why not
+            # just display the contact"). A company switchboard or info@ address
+            # published in a regulator's register is not personal data, and
+            # hiding it made the shelf less useful for no protection.
+            #
+            # A NAMED PERSON still waits for a claim: "Jane Wanjiku, 0722..."
+            # on an open shelf is exactly the case the Data Protection Act
+            # covers, and it is the one field an RM adds by hand.
+            row["contact_phone"] = r.get("contact_phone")
+            row["contact_email"] = r.get("contact_email")
             if mine or admin:
-                row.update({k: r.get(k) for k in
-                            ("contact_name", "contact_phone", "contact_email")})
+                row["contact_name"] = r.get("contact_name")
                 row["contacts_visible"] = True
             else:
                 row["contacts_visible"] = False
+
+
+    # INSTITUTIONAL CONTACTS ARE SHOWN (ruling 2026-08-11: "why not
+            # just display the contact"). A company switchboard or info@ address
+            # published in a regulator's register is not personal data, and
+            # hiding it made the shelf less useful for no protection.
+            #
+            # A NAMED PERSON still waits for a claim: "Jane Wanjiku, 0722..."
+            # on an open shelf is exactly the case the Data Protection Act
+            # covers, and it is the one field an RM adds by hand.
+            row["contact_phone"] = r.get("contact_phone")
+            row["contact_email"] = r.get("contact_email")
+            if mine or admin:
+                row["contact_name"] = r.get("contact_name")
+                row["contacts_visible"] = True
+            else:
+                row["contacts_visible"] = False
+
             keep.append(row)
             total += 1
         if keep:
@@ -246,6 +284,7 @@ def warehouse_detail(prospect_id: str, user: dict = Depends(get_current_user)):
     decorative.
     """
     from utils.deals_warehouse import get, information_card
+    from utils.deals_warehouse import completeness
     rec = get(prospect_id)
     if not rec:
         raise HTTPException(status_code=404, detail="No such prospect.")
@@ -263,7 +302,8 @@ def warehouse_detail(prospect_id: str, user: dict = Depends(get_current_user)):
     if visible:
         out.update({k: rec.get(k) for k in
                     ("contact_name", "contact_phone", "contact_email")})
-    return {"prospect": out, "card": information_card(prospect_id)}
+    return {"prospect": out, "card": information_card(prospect_id),
+            "completeness": completeness(rec)}
 
 
 @router.post("/prospects/{prospect_id}/enrichment")
@@ -296,6 +336,57 @@ def warehouse_add_enrichment(prospect_id: str,
     audit_log("WAREHOUSE_ENRICH", str(user.get("username", "") or ""),
               detail="%s: %s" % (prospect_id, item["title"][:60]))
     return {"item": item}
+
+
+@router.delete("/prospects/{prospect_id}")
+def warehouse_delete(prospect_id: str, user: dict = Depends(get_current_user)):
+    """Delete a prospect outright. ADMIN ONLY.
+
+    Archiving is for a business somebody judged not worth pursuing. Deletion is
+    for a row that was never a business - a county name, a street, a fragment of
+    a table that survived the import. Those do not belong in an audit trail.
+    """
+    from utils.deals_warehouse import delete, get
+    if not _is_admin(user):
+        raise HTTPException(status_code=403,
+                            detail="Only an admin can delete a prospect. "
+                                   "Archiving is available to whoever listed it.")
+    rec = get(prospect_id)
+    if not rec:
+        raise HTTPException(status_code=404, detail="No such prospect.")
+    delete(prospect_id)
+    audit_log("WAREHOUSE_DELETE", str(user.get("username", "") or ""),
+              detail="%s %s" % (prospect_id, str(rec.get("name"))[:60]))
+    return {"deleted": prospect_id}
+
+
+@router.get("/completeness")
+def warehouse_completeness(user: dict = Depends(get_current_user)):
+    """The matrix itself, and how the warehouse scores against it.
+
+    The FIELDS are returned alongside the summary so a capture form can show
+    the standard while somebody is typing, rather than telling them afterwards
+    what they should have entered.
+    """
+    from utils.deals_warehouse import completeness_fields, completeness_summary
+    return {"fields": completeness_fields(), "summary": completeness_summary()}
+
+
+@router.post("/prospects/{prospect_id}/validate")
+def warehouse_validate(prospect_id: str,
+                       user: dict = Depends(get_current_user)):
+    """Promote a complete entry to a validated, usable record.
+
+    Deliberately NOT automatic at 100%. A record can be complete and wrong; the
+    point of a usable set is that somebody looked and staked their name on it.
+    The 400 names what is still missing rather than just refusing.
+    """
+    from utils.deals_warehouse import validate_prospect
+    code, name = _actor(user)
+    try:
+        return {"completeness": validate_prospect(prospect_id, code, name)}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 @router.get("/mine")
