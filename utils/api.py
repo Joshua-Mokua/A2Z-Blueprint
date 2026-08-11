@@ -10304,6 +10304,130 @@ def pipeline_referral_bench(user: dict = Depends(get_current_user)):
     }
 
 
+@app.get("/api/channels")
+def channels_list(user: dict = Depends(get_current_user)):
+    """The configured channels, for the switcher."""
+    from utils.origin_channels import channels
+    return {"channels": channels()}
+
+
+@app.get("/api/channels/{key}/records")
+def channels_records(key: str, active_only: bool = False, mine: bool = False,
+                     user: dict = Depends(get_current_user)):
+    """Records for a channel, each with what the DEALS say it produced.
+
+    Attribution is computed ONCE over the caller's scoped deals and bucketed by
+    record id - not per record. Reading the deal store fifty times to render one
+    page is the per-row cost that produced a 504 on this system before.
+
+    `mine` narrows to the caller's own unit or branch. Everyone can SEE every
+    channel - a sponsorship is bank money and hiding it helps nobody - but
+    "mine" is what a head of unit actually opens the page for.
+    """
+    from utils.origin_channels import channel, listing, CLOSED_WON
+    c = channel(key)
+    if not c:
+        raise HTTPException(status_code=404, detail="No such channel.")
+
+    field = {"events": "event_id", "partnership": "mou_id"}.get(key, "channel_id")
+    deals = _acquire_scoped_deals(user)
+    by_rec = {}
+    for d in deals:
+        rid = str(d.get(field) or "").strip()
+        if rid:
+            by_rec.setdefault(rid, []).append(d)
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    my_unit = my_branch = ""
+    if mine:
+        try:
+            from utils.org_validator import unit_for_role
+            from utils.core import UserManager as _UM
+            rec = (_UM().users or {}).get(str(user.get("username", "") or "")) or {}
+            my_unit = unit_for_role(str(rec.get("role") or "")) or ""
+            my_branch = str(rec.get("branch") or "")
+        except Exception as exc:
+            logger.debug("channel scope: %s", exc)
+
+    rows = []
+    for r in listing(key, bool(active_only)):
+        if mine and my_unit and r["owner_type"] == "unit" and r["owner"] != my_unit:
+            continue
+        if mine and my_branch and r["owner_type"] == "branch" and r["owner"] != my_branch:
+            continue
+        got = by_rec.get(r["id"], [])
+        won = [d for d in got if str(d.get("stage") or "") == CLOSED_WON]
+        spent = r.get("spent_kes") or r.get("budget_kes") or 0
+        won_value = round(sum(_val(d) for d in won), 2)
+        roi = None
+        if c.get("supports_roi") and spent:
+            roi = round((won_value - spent) / spent * 100, 1)
+        rows.append({**r, "leads": len(got), "accounts": len(won),
+                     "won_value": won_value, "roi_pct": roi,
+                     "supports_roi": bool(c.get("supports_roi"))})
+    return {"channel": c, "records": rows,
+            "tagged_deals": sum(len(v) for v in by_rec.values())}
+
+
+@app.post("/api/channels/{key}/records", status_code=201)
+def channels_create(key: str, payload: dict = Body(default_factory=dict),
+                    user: dict = Depends(get_current_user)):
+    """Create a channel record.
+
+    Anyone may create one for THEIR OWN unit or branch; admins for any. The
+    check is deliberately light - a sponsorship recorded against the wrong unit
+    is a correction, not a breach - but it stops a branch quietly booking spend
+    against a department's budget.
+    """
+    from utils.origin_channels import create
+    from utils.core import UserManager as _UM
+    rec = (_UM().users or {}).get(str(user.get("username", "") or "")) or {}
+    code = str(rec.get("staff_code") or user.get("username") or "")
+    ot = str(payload.get("owner_type") or "").strip().lower()
+    owner = str(payload.get("owner") or "").strip()
+
+    if not (user.get("is_admin") or user.get("can_view_all")):
+        try:
+            from utils.org_validator import unit_for_role
+            mine_unit = unit_for_role(str(rec.get("role") or "")) or ""
+            mine_branch = str(rec.get("branch") or "")
+        except Exception:
+            mine_unit = mine_branch = ""
+        if ot == "unit" and mine_unit and owner != mine_unit:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only create this for %s." % mine_unit)
+        if ot == "branch" and mine_branch and owner != mine_branch:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only create this for %s." % mine_branch)
+
+    try:
+        out = create(
+            key, name=str(payload.get("name", "") or ""),
+            owner_type=ot, owner=owner, created_by=code,
+            party=str(payload.get("party", "") or ""),
+            branch=str(payload.get("branch", "") or ""),
+            category=str(payload.get("category", "") or ""),
+            start_date=str(payload.get("start_date", "") or ""),
+            end_date=str(payload.get("end_date", "") or ""),
+            budget_kes=float(payload.get("budget_kes") or 0),
+            target_leads=float(payload.get("target_leads") or 0),
+            target_accounts=float(payload.get("target_accounts") or 0),
+            target_value_kes=float(payload.get("target_value_kes") or 0),
+            notes=str(payload.get("notes", "") or ""),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    _audit("CHANNEL_CREATE", user, "%s %s %s" % (key, out["id"], out["name"]))
+    return {"record": out}
+
+
 @app.get("/api/pipeline/events")
 def pipeline_events(active_only: bool = False,
                     user: dict = Depends(get_current_user)):

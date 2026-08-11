@@ -931,6 +931,36 @@ export interface PipelineOriginSplit {
   origin: string; label?: string; credits_party?: boolean;
   count: number; value: number; won: number;
 }
+export interface OriginChannel {
+  key: string; label: string; origin: string; store: string;
+  supports_roi: boolean; party_label: string; note: string;
+}
+export interface ChannelRecord {
+  id: string; channel: string; name: string; party: string;
+  owner_type: string; owner: string; branch: string; category: string;
+  start_date: string; end_date: string; status: string;
+  budget_kes: number | null; spent_kes: number | null;
+  target_leads: number | null; target_accounts: number | null;
+  target_value_kes: number | null;
+  leads: number; accounts: number; won_value: number;
+  roi_pct: number | null; supports_roi: boolean;
+}
+export async function fetchChannels(): Promise<{ channels: OriginChannel[] }> {
+  return getJson<{ channels: OriginChannel[] }>('/channels');
+}
+export async function fetchChannelRecords(
+  key: string, activeOnly = false, mine = false,
+): Promise<{ channel: OriginChannel; records: ChannelRecord[]; tagged_deals: number }> {
+  const q = new URLSearchParams({ active_only: String(activeOnly), mine: String(mine) });
+  return getJson<{ channel: OriginChannel; records: ChannelRecord[]; tagged_deals: number }>(
+    `/channels/${encodeURIComponent(key)}/records?${q.toString()}`);
+}
+export async function createChannelRecord(
+  key: string, body: Record<string, unknown>,
+): Promise<{ record: ChannelRecord }> {
+  return postJson<{ record: ChannelRecord }, Record<string, unknown>>(
+    `/channels/${encodeURIComponent(key)}/records`, body);
+}
 export interface PipelineEvent {
   id: string; name: string; partner: string; branch: string;
   department: string; category: string;

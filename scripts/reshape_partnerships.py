@@ -48,17 +48,20 @@ sys.path.insert(0, os.getcwd())
 
 # Sector -> the unit that would plausibly own it. Anything unmapped is spread
 # across the commercial units rather than dumped on one.
+# Keys are the sector values ACTUALLY in the file - checked, not assumed. The
+# first draft mapped "Government", "Manufacturing" and "Agriculture", none of
+# which appear; the real values are Govt, Manufacturer, SACCO, NGO, Telco. Five
+# of nine sectors fell through to a round-robin as a result.
 SECTOR_UNIT = {
     "Tech": "Director Operations & Technology",
+    "Telco": "Director Operations & Technology",
     "Insurance": "Head of Consumer",
     "Retail": "Head of Consumer",
-    "Agriculture": "Director, Corporate Banking Kenya & EAC",
-    "Manufacturing": "Director, Corporate Banking Kenya & EAC",
-    "Energy": "Director, Corporate Banking Kenya & EAC",
+    "SACCO": "Head of Consumer",
     "Health": "Director Consumer & Commercial Banking (CCB)",
-    "Education": "Director Consumer & Commercial Banking (CCB)",
-    "Logistics": "Director, Corporate Banking Kenya & EAC",
-    "Government": "Director, Corporate Banking Kenya & EAC",
+    "NGO": "Director Consumer & Commercial Banking (CCB)",
+    "Manufacturer": "Director, Corporate Banking Kenya & EAC",
+    "Govt": "Director, Corporate Banking Kenya & EAC",
 }
 FALLBACK_UNITS = [
     "Director, Corporate Banking Kenya & EAC",
@@ -111,7 +114,8 @@ def main():
     print("  real staff codes   %d available" % len(codes))
     if unmapped:
         print("  sectors with no unit mapping: %s" % ", ".join(x for x in unmapped if x))
-        print("  -> spread across %s" % ", ".join(u.split(",")[0] for u in FALLBACK_UNITS))
+        for u in FALLBACK_UNITS:
+            print("     fallback: %s" % u)
 
     import collections
     plan = collections.Counter()
