@@ -6250,6 +6250,18 @@ def pipeline_deal_create(
 
     # Validate required fields + numeric sanity + stage allowlist
     deal_dict = payload.model_dump(exclude_unset=False)
+
+    # ORIGIN (ruling 2026-08-11). Recorded at creation because it describes how
+    # the deal ENTERED and cannot be reconstructed later. An unrecognised value
+    # falls back to the default rather than being stored: a typo'd origin would
+    # sit outside every configured bucket and appear in analytics as an orphan
+    # nobody can filter for.
+    try:
+        from utils.deal_origin import is_known as _known, DEFAULT_ORIGIN as _DEF
+        _org = str(deal_dict.get("origin") or "").strip()
+        deal_dict["origin"] = _org if _known(_org) else _DEF
+    except Exception:
+        deal_dict.setdefault("origin", "self")
     # SECURITY (stress Phase 3 — privileged-field injection): PipelineDealCreate
     # uses extra="allow", so a caller can smuggle workflow-controlled fields into
     # the create payload (manager_validated, referral_status, is_referral,
@@ -6265,6 +6277,12 @@ def pipeline_deal_create(
         "disbursed", "disbursed_at", "disbursed_under_override",
         "override_approved", "override_approved_by", "application_id",
         "credit_deferred_to", "credit_deferred_to_code",
+        # ORIGIN PARTY is workflow-controlled for the same reason as the
+        # referral fields: it decides whose index moves. The caller may declare
+        # WHERE a deal came from; they may not declare who gets credited for it.
+        # That is set by the workflow that routed the deal - the refer endpoint,
+        # or the warehouse claim.
+        "origin_party_code", "origin_party_name", "origin_backfilled_at",
     )
     _stripped = [k for k in _PRIVILEGED_AT_CREATE if k in deal_dict]
     for _k in _stripped:
@@ -10263,6 +10281,17 @@ def pipeline_referral_bench(user: dict = Depends(get_current_user)):
     }
 
 
+@app.get("/api/pipeline/origins")
+def pipeline_origins(user: dict = Depends(get_current_user)):
+    """The configured deal origins, for filters and the create form.
+
+    Config-driven (ruling 2026-08-11: "in future I should be able to add more"),
+    so an eighth origin appears in every dropdown without a frontend change.
+    """
+    from utils.deal_origin import origins, DEFAULT_ORIGIN
+    return {"origins": origins(), "default": DEFAULT_ORIGIN}
+
+
 @app.get("/api/pipeline/leaderboard")
 def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
                          level: str = "staff", origin: str = "all",
@@ -10308,10 +10337,19 @@ def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
         return bool(d.get("is_referral")) and str(d.get("referral_status") or "") == "accepted"
 
     live = [d for d in deals if not d.get("draft") and lo <= (_when(d) or lo) <= hi]
-    if origin == "referred":
-        live = [d for d in live if _accepted_referral(d)]
-    elif origin == "direct":
-        live = [d for d in live if not _accepted_referral(d)]
+
+    # ORIGIN IS CONFIG, NOT A PAIR (ruling 2026-08-11). This filtered on
+    # referred-versus-direct, which works for two origins and breaks at seven.
+    # "referred" and "direct" are still accepted so an old bookmark or a stale
+    # client does not silently return everything.
+    from utils.deal_origin import origin_of as _origin_of, credits_party as _credits
+    org = str(origin or "all").strip()
+    if org == "referred":
+        org = "referral"
+    elif org == "direct":
+        org = "self"
+    if org and org != "all":
+        live = [d for d in live if _origin_of(d) == org]
 
     # The roster dimensions the daily log already builds - cached, canonical,
     # and the same source the rankings and grids use. Inventing a second reader
@@ -10327,10 +10365,14 @@ def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
     # instead - that is the whole point of the second level.
     rows_by_key: dict = {}
     for d in live:
-        if origin == "referred":
-            code = _canon_p(d.get("referred_by_code")
-                            or (d.get("referral_chain") or [{}])[0].get("referred_by_code")
-                            or "")
+        # When a single CREDITABLE origin is selected, attribute to the party
+        # that origin credits - the referrer, the warehouse lister, the lead
+        # generator, the contact-centre agent. Otherwise attribute to the owner.
+        # Mixing the two in one table is what would double-count.
+        if org and org != "all" and _credits(org):
+            from utils.deal_origin import party_of as _party_of
+            pcode, _pname = _party_of(d)
+            code = _canon_p(pcode or "")
         else:
             code = _canon_p(d.get("staff_code") or "")
         if not code:
@@ -10392,8 +10434,14 @@ def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
     for i, r in enumerate(rows, 1):
         r["rank"] = i
 
+    from utils.deal_origin import origins as _origins
     return {
-        "level": level, "origin": origin, "start": lo, "end": hi,
+        "level": level, "origin": org, "start": lo, "end": hi,
+        # The UI builds its filter from this, so a new origin appears without
+        # a frontend change.
+        "origins": [{"key": "all", "label": "All origins", "credits_party": False}]
+                   + [{"key": o["key"], "label": o["label"],
+                       "credits_party": o["credits_party"]} for o in _origins()],
         "rows": rows,
         "total_deals": len(live),
         "total_value": round(sum(r["value"] for r in rows), 2),
@@ -10455,21 +10503,10 @@ def pipeline_analytics_summary(days: int = 30, start: str = "", end: str = "",
                         "deals": len(mine)})
     journey.sort(key=lambda f: -f["deals"])
 
-    # Referred vs direct. A referral is only counted once it has been ACCEPTED,
-    # matching the daily-log credit rule - a pending referral is an intention.
-    def _is_ref(d):
-        return bool(d.get("is_referral")) and str(d.get("referral_status") or "") == "accepted"
-
-    referred = [d for d in live if _is_ref(d)]
-    direct = [d for d in live if not _is_ref(d)]
-    origin = [
-        {"origin": "Referred", "count": len(referred),
-         "value": round(sum(_val(d) for d in referred), 2),
-         "won": sum(1 for d in referred if str(d.get("stage")) == "Closed Won")},
-        {"origin": "Direct", "count": len(direct),
-         "value": round(sum(_val(d) for d in direct), 2),
-         "won": sum(1 for d in direct if str(d.get("stage")) == "Closed Won")},
-    ]
+    # EVERY CONFIGURED ORIGIN, including the empty ones - an origin producing
+    # no deals is a finding, and hiding it is how a channel dies quietly.
+    from utils.deal_origin import summarise as _summarise
+    origin = _summarise(live)
 
     closed = len(won) + len(lost)
     return {

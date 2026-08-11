@@ -905,6 +905,8 @@ export interface PipelineLeaderboard {
   rows: PipelineLeaderboardRow[];
   total_deals: number; total_value: number; total_weighted: number;
   branches: string[];
+  // Built from config, so a new origin appears without a frontend change.
+  origins?: { key: string; label: string; credits_party: boolean }[];
 }
 export async function fetchPipelineLeaderboard(opts: {
   days?: number; start?: string; end?: string;
@@ -921,8 +923,16 @@ export async function fetchPipelineLeaderboard(opts: {
   return getJson<PipelineLeaderboard>(`/pipeline/leaderboard?${q.toString()}`);
 }
 
+export interface DealOrigin {
+  key: string; label: string; credits_party: boolean;
+  party_label?: string; active?: boolean; note?: string;
+}
 export interface PipelineOriginSplit {
-  origin: string; count: number; value: number; won: number;
+  origin: string; label?: string; credits_party?: boolean;
+  count: number; value: number; won: number;
+}
+export async function fetchDealOrigins(): Promise<{ origins: DealOrigin[]; default: string }> {
+  return getJson<{ origins: DealOrigin[]; default: string }>('/pipeline/origins');
 }
 export interface PipelineJourneyFlow {
   flow: string; deals: number; buckets: DefinedBucket[];
