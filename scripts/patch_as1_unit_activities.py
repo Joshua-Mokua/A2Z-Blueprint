@@ -368,7 +368,24 @@ def main():
 
     i = s.index(ANCHOR)
     j = s.index("class BranchLogManager:")
-    s = s[:i] + SEGMENT + FIELDS_FOR + s[j:]
+
+    # PRESERVE anything else living in this region. The embedded FIELDS_FOR was
+    # extracted from a tree WITHOUT the bounds patcher, so replacing the region
+    # wholesale deleted field_bounds and check_bounds while leaving the call in
+    # submit() - every daily-log entry then raised NameError. Verified: BD and
+    # RF3 leave defs=2; AS1 alone took it to defs=0.
+    region = s[i:j]
+    keep = ""
+    k = region.find("def field_bounds(")
+    if k >= 0:
+        # Everything from the bounds constant onward belongs to BD, not to us.
+        c = region.rfind("_DEFAULT_BOUNDS", 0, k)
+        start = region.rfind("\n", 0, c) + 1 if c >= 0 else k
+        keep = region[start:]
+        print("  ok  preserving %d lines of bounds code that live in this region"
+              % keep.count("\n"))
+
+    s = s[:i] + SEGMENT + FIELDS_FOR + keep + s[j:]
     print("  ok  activity_sets / fields_for_unit / fields_for added")
 
     # The safe default is the whole point: no config must mean no change.
@@ -387,6 +404,14 @@ def main():
         return 1
     if s.count("def fields_for_role(") != 1 or s.count("def fields_for(") != 1:
         print("ABORT: post-check - duplicate definitions.")
+        return 1
+    # A call without a definition is worse than neither: submit() raises on
+    # every entry, and drafts still save, so it is not noticed until someone
+    # actually files.
+    if "check_bounds(metrics)" in s and "def check_bounds(" not in s:
+        print("ABORT: post-check - this would leave submit() calling")
+        print("       check_bounds with no definition. Every daily-log entry")
+        print("       would raise NameError.")
         return 1
     print("  ok  post-checks: safe fallback, referral common, role API intact")
 
