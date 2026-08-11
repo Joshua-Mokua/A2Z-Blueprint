@@ -245,7 +245,10 @@ export default function DailyLogAnalytics() {
                 <ResponsiveContainer width="100%" height={Math.max(180, (byUnit.rows.length || 1) * 26)}>
                   <BarChart
                     data={byUnit.rows.map((r) => ({
-                      name: String(r.name || '').replace(/^Director,? /, '').slice(0, 26),
+                      // Was a local regex stripping "Director," - a symptom of
+                      // the unit key being a job title. The server now sends a
+                      // proper department label, so the hack goes.
+                      name: String(r.label || r.name || '').slice(0, 26),
                       met: r.met_days ?? 0,
                       missed: (r.scored_days ?? 0) - (r.met_days ?? 0),
                       rate: r.met_rate ?? 0,

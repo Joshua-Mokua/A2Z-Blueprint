@@ -10339,6 +10339,11 @@ def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
         role = str(dd.get("role") or "")
         b = str(dd.get("branch") or "")
         u = unit_for_role(role) or ""
+        try:
+            from utils.org_validator import unit_label as _ul
+            ulab = _ul(u) if u else ""
+        except Exception:
+            ulab = u
         if branch and b != branch:
             continue
         if unit and u != unit:
@@ -10354,6 +10359,8 @@ def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
             "branch": b if level == "staff" else "",
             "deals": 0, "value": 0.0, "weighted": 0.0, "won": 0, "lost": 0,
             "referred": 0,
+            # Readable department name; the key still groups and filters.
+            "label": ulab if level == "unit" else "",
         })
         e["deals"] += 1
         e["value"] += _val(d)

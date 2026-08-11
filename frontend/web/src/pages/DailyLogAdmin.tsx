@@ -50,6 +50,7 @@ export function DailyLogAdmin() {
   // Per-unit sets and weights (AS1-AS3). A unit with NO set keeps the branch
   // base, so "not configured" is the normal state, not an error.
   const [units, setUnits] = useState<string[]>([]);
+  const [unitLabels, setUnitLabels] = useState<Record<string, string>>({});
   const [sets, setSets] = useState<Record<string, string[]>>({});
   const [unitW, setUnitW] = useState<Record<string, Record<string, number>>>({});
   const [unit, setUnit] = useState('');
@@ -119,6 +120,7 @@ export function DailyLogAdmin() {
       setWeights(w);
       setTarget(String(cfg.daily_index_target ?? 0));
       setUnits(cfg.units ?? []);
+      setUnitLabels(cfg.unit_labels ?? {});
       setSets(cfg.activity_sets ?? {});
       setUnitW(cfg.unit_activity_weights ?? {});
       setExtras(acts.extra ?? []);
@@ -291,7 +293,7 @@ export function DailyLogAdmin() {
                 <option value="">Select a unit…</option>
                 {units.map((u) => (
                   <option key={u} value={u}>
-                    {u}{sets[u]?.length ? ` (${sets[u].length})` : ''}
+                    {unitLabels[u] ?? u}{sets[u]?.length ? ` (${sets[u].length})` : ''}
                   </option>
                 ))}
               </select>
@@ -366,7 +368,7 @@ export function DailyLogAdmin() {
                   </span>
                   <button type="button" className={btn} disabled={savingUnit}
                           onClick={() => void saveUnit()}>
-                    {savingUnit ? 'Saving…' : `Save ${unit.slice(0, 28)}`}
+                    {savingUnit ? 'Saving…' : `Save ${(unitLabels[unit] ?? unit).slice(0, 28)}`}
                   </button>
                 </div>
               </>

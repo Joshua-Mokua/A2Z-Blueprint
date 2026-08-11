@@ -206,7 +206,11 @@ def branch_log_config_get(user: dict = Depends(get_current_user)):
     # offer a list rather than expecting someone to type a unit name exactly.
     try:
         from utils.org_validator import md_reporting_roles
+        # The KEY stays the role title (it is what every stored config uses);
+        # the panel shows a readable department name alongside it.
+        from utils.org_validator import unit_label
         units = sorted(md_reporting_roles() or [])
+        unit_labels = {u: unit_label(u) for u in units}
     except Exception:
         units = sorted((cfg.get("activity_sets") or {}).keys())
     return {"activity_weights": cfg.get("activity_weights", {}) or {},
@@ -214,7 +218,8 @@ def branch_log_config_get(user: dict = Depends(get_current_user)):
             "fields": fields_schema(),
             "activity_sets": cfg.get("activity_sets", {}) or {},
             "unit_activity_weights": cfg.get("unit_activity_weights", {}) or {},
-            "units": units}
+            "units": units,
+            "unit_labels": unit_labels}
 
 
 @router.post("/config")
@@ -1517,6 +1522,14 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         r = str(dd.get("role") or "")
         b = str(dd.get("branch") or "")
         u = unit_for_role(r) or ""
+        # Rows carry BOTH: the key groups and filters, the label is what a
+        # manager reads. Sending only the label would break every filter that
+        # round-trips the value back to the server.
+        try:
+            from utils.org_validator import unit_label as _ul
+            ulab = _ul(u) if u else ""
+        except Exception:
+            ulab = u
         seg = ""
         try:
             from utils.org_validator import segment_for_role
@@ -1543,7 +1556,7 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
                   if float(x.get("index") or 0) >= float(x.get("target") or 0))
         people.append({
             "staff_code": code, "staff_name": dd.get("full_name", ""),
-            "role": r, "branch": b, "unit": u, "segment": seg,
+            "role": r, "branch": b, "unit": u, "unit_label": ulab, "segment": seg,
             "index": idx, "target": tgt,
             "days_filed": len(mine),
             "validated": sum(1 for x in mine if x.get("validated")),
@@ -1594,6 +1607,13 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         sort_key = "index"
     elif level == "unit":
         rows = agg(people, lambda p: p["unit"], "name")
+        # Aggregating loses the per-person label, so restore it on the group.
+        try:
+            from utils.org_validator import unit_label as _ul2
+            for _r in rows:
+                _r["label"] = _ul2(_r.get("name") or "")
+        except Exception:
+            pass
         sort_key = "index"
     elif level == "segment":
         # Consumer / Commercial / Operations — the split that means something at

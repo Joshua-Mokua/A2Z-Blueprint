@@ -795,6 +795,7 @@ export interface BranchLogConfig {
   activity_sets?: Record<string, string[]>;
   unit_activity_weights?: Record<string, Record<string, number>>;
   units?: string[];
+  unit_labels?: Record<string, string>;
 }
 export async function fetchBranchLogConfig(): Promise<BranchLogConfig> {
   return getJson<BranchLogConfig>('/branch-log/config');
@@ -897,6 +898,7 @@ export interface PipelineLeaderboardRow {
   staff_code: string; role: string; branch: string;
   deals: number; value: number; weighted: number;
   won: number; lost: number; referred: number; win_rate: number;
+  label?: string;
 }
 export interface PipelineLeaderboard {
   level: string; origin: string; start: string; end: string;
@@ -958,6 +960,7 @@ export interface LeaderboardRow {
   days_filed: number; validated: number; cf_variance?: number;
   met_days?: number; scored_days?: number; met_rate?: number;
   segment?: string;
+  label?: string;            // readable department name; `name` stays the key
   avg_index?: number; avg_target?: number;   // per ON-DUTY day
 }
 export interface Leaderboard {
@@ -966,6 +969,7 @@ export interface Leaderboard {
   met_days?: number; scored_days?: number; met_rate?: number;
   filters: { role: string; branch: string; unit: string };
   roles: string[]; branches: string[]; units: string[]; segments?: string[];
+  unit_labels?: Record<string, string>;
   // Segment level only: people held back because they bear the branch.
   bears_branch?: { headcount: number; index: number } | null;
 }

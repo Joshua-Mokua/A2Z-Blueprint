@@ -820,5 +820,16 @@
     "Branch Manager",
     "Assistant Branch Service & Operations Manager",
     "Customer Service Manager"
-  ]
+  ],
+  "unit_display_names": {
+    "Ag. Head Human Resources & Senior HR Business Partner": "Human Resources",
+    "Country Risk Manager, Kenya & EAC": "Risk Management",
+    "Business Manager": "Business Management",
+    "Personal Assistant": "Office of the MD",
+    "Director Compliance- CESA 1": "Compliance",
+    "Director, Credit Risk Management- Kenya & EAC": "Credit Risk Management",
+    "Director, Corporate Banking Kenya & EAC": "Corporate Banking",
+    "Director, Treasury & FICC, EAC": "Treasury & FICC",
+    "Director Consumer & Commercial Banking (CCB)": "Consumer & Commercial Banking"
+  }
 }
