@@ -726,6 +726,10 @@ export interface PipelineAnalyticsResponse {
   by_probability_band?: ProbabilityBandBreakdown[];
   by_product_funnel?: ProductFunnel[];
   by_referral_department?: ReferralDepartmentBreakdown[];
+  /** Every configured deal origin, with its readable label. Replaces the
+   *  referred-vs-originated pair as the way to ask where work came from. */
+  by_origin?: { origin: string; label?: string; credits_party?: boolean;
+                count: number; value: number; won: number }[];
   referral_branch_split?: { in_branch: number; cross_branch: number };
   referral_vs_originated?: {
     open:   { referred: { count: number; value: number }; originated: { count: number; value: number } };

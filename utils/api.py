@@ -4644,6 +4644,16 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
         _by_referral_department.append(e)
     _by_referral_department.sort(key=lambda x: x["count"], reverse=True)
 
+    try:
+        from utils.deal_origin import summarise as _summarise_origin
+        # `active` is this function's live, non-draft list - the same deals
+        # every other breakdown here is computed from, so the origin split
+        # cannot disagree with the product or stage splits beside it.
+        _origin_split = _summarise_origin(active)
+    except Exception as _exc:
+        logger.warning("origin split unavailable: %s", _exc)
+        _origin_split = []
+
     return {
         "totals": {
             "total_value": total_value,
@@ -4675,6 +4685,10 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
         "by_referral_department": _by_referral_department,
         "referral_branch_split": _branch_split,
         "referral_vs_originated": {"open": _rvo_open, "closed": _rvo_closed},
+        # ORIGIN, ALL OF THEM (2026-08-11). Served from deal_origin.summarise -
+        # the same function the channels page uses - so the two cannot disagree
+        # about how much came from where.
+        "by_origin": _origin_split,
     }
 
 

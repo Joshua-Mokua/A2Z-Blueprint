@@ -1,4 +1,82 @@
-// #3b — Analytics page. Consumes /api/pipeline/analytics (KES-equivalent,
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+OR6 - Sales Pro Analytics gets ALL the origins, not referred-versus-own.
+
+RULING (2026-08-11): "wire to the overall Sales Pro analytics page, to add to
+the pie showing lead origin where we only had referral and own - this should now
+have all the origin sources."
+
+referral_vs_originated answers a two-way question the bank has outgrown.
+"Originated" quietly lumps events, partnerships, lead generators and the
+warehouse together as though they were one thing - which is precisely what the
+seven-origin model exists to separate.
+
+    ORIGIN becomes a slicer dimension, listed FIRST: where work came from is
+    the question the model was built to answer.
+
+SERVED FROM deal_origin.summarise - the SAME function the Origin Channels page
+uses. Two implementations of "how much came from where" would drift, and the
+first anyone would know is two pages disagreeing in a meeting.
+
+COMPUTED FROM `active`, this function's own live non-draft list, so the origin
+split cannot disagree with the product, stage or sector splits beside it. The
+first draft passed a variable that does not exist in that scope - it would have
+failed into the except and returned an empty split silently, which is the
+failure mode this codebase keeps having to unlearn.
+
+EVERY CONFIGURED ORIGIN APPEARS, including empty ones - an origin producing no
+deals is a finding, not a row to hide.
+
+referral_vs_originated IS LEFT IN PLACE. Existing callers depend on it, and
+removing it in the same change would turn an addition into a migration.
+
+NOTE FOR RELEASES: Analytics.tsx is on the alex-dev delta list, so this stays on
+our side unless that ruling changes.
+
+Verified: py_compile clean, tsc --noEmit clean, vite build clean.
+
+Usage (from project root, .venv active):
+    python scripts\patch_or6_analytics_origins.py            # dry run
+    python scripts\patch_or6_analytics_origins.py --apply
+"""
+import os
+import shutil
+import sys
+
+API = os.path.join("utils", "api.py")
+PAGE = os.path.join("frontend", "web", "src", "pages", "Analytics.tsx")
+TYPES = os.path.join("frontend", "web", "src", "types", "pipeline.ts")
+BACKUP_SUFFIX = ".pre_or6"
+
+RETURN_ANCHOR = '        "referral_vs_originated": {"open": _rvo_open, "closed": _rvo_closed},\n    }'
+RETURN_NEW = '''        "referral_vs_originated": {"open": _rvo_open, "closed": _rvo_closed},
+        # ORIGIN, ALL OF THEM (2026-08-11). Served from deal_origin.summarise -
+        # the same function the channels page uses - so the two cannot disagree
+        # about how much came from where.
+        "by_origin": _origin_split,
+    }'''
+
+TYPE_OLD = "  by_referral_department?: ReferralDepartmentBreakdown[];"
+TYPE_NEW = '''  by_referral_department?: ReferralDepartmentBreakdown[];
+  /** Every configured deal origin, with its readable label. Replaces the
+   *  referred-vs-originated pair as the way to ask where work came from. */
+  by_origin?: { origin: string; label?: string; credits_party?: boolean;
+                count: number; value: number; won: number }[];'''
+
+SEGMENT = r'''    try:
+        from utils.deal_origin import summarise as _summarise_origin
+        # `active` is this function's live, non-draft list - the same deals
+        # every other breakdown here is computed from, so the origin split
+        # cannot disagree with the product or stage splits beside it.
+        _origin_split = _summarise_origin(active)
+    except Exception as _exc:
+        logger.warning("origin split unavailable: %s", _exc)
+        _origin_split = []
+
+'''
+
+PAGE_SRC = r'''// #3b — Analytics page. Consumes /api/pipeline/analytics (KES-equivalent,
 // dashboard-consistent) and showcases the pipeline across products, sectors,
 // currency book, the conversion funnel, and the four product-class pipelines.
 
@@ -606,3 +684,83 @@ function DrillTable({ head, rows }: {
     </div>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (API, PAGE, TYPES):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found." % p)
+            return 1
+    if not os.path.isfile(os.path.join("utils", "deal_origin.py")):
+        print("ABORT: apply patch_or1_deal_origin.py first.")
+        return 1
+
+    api = open(API, encoding="utf-8").read()
+    tp = open(TYPES, encoding="utf-8").read()
+
+    if '"by_origin"' in api:
+        print("ABORT: by_origin already served - OR6 looks applied.")
+        return 1
+    if api.count(RETURN_ANCHOR) != 1:
+        print("ABORT: the analytics return matched %d times." % api.count(RETURN_ANCHOR))
+        return 1
+    if tp.count(TYPE_OLD) != 1:
+        print("ABORT: the analytics type matched %d times." % tp.count(TYPE_OLD))
+        return 1
+
+    # The split must be computed before the return, from THIS function's list.
+    j = api.index(RETURN_ANCHOR)
+    k = api.rindex("    return {", 0, j)
+    api = api[:k] + SEGMENT + api[k:]
+    api = api.replace(RETURN_ANCHOR, RETURN_NEW, 1)
+    tp = tp.replace(TYPE_OLD, TYPE_NEW, 1)
+    print("  ok  api serves by_origin; types carry it")
+
+    if "_summarise_origin(active)" not in SEGMENT:
+        print("ABORT: the split is not computed from this function's live list -")
+        print("       a name that does not exist here would fail into the")
+        print("       except and return an empty split silently.")
+        return 1
+    if "'Origin'" not in PAGE_SRC:
+        print("ABORT: Origin is not a slicer dimension.")
+        return 1
+    if "data.by_origin" not in PAGE_SRC:
+        print("ABORT: the page does not read by_origin.")
+        return 1
+    if "referral_vs_originated" not in api:
+        print("ABORT: referral_vs_originated was removed - existing callers")
+        print("       depend on it; this is an addition, not a migration.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if PAGE_SRC.count(op) != PAGE_SRC.count(cl):
+            print("ABORT: page unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: right list, dimension present, old field kept")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((API, api), (TYPES, tp), (PAGE, PAGE_SRC)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    try:
+        py_compile.compile(API, doraise=True)
+        print("  ok  api.py compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd, restart uvicorn.")
+    print("Sales Pro Analytics > Origin. Note Analytics.tsx is on the alex-dev")
+    print("delta list, so this stays on our side.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
