@@ -10561,6 +10561,11 @@ def pipeline_funnel_defined(user: dict = Depends(get_current_user)):
 from utils.api_branch_log import router as branch_log_router
 app.include_router(branch_log_router)
 
+# Deals Warehouse - the shared shelf of prospects. NOT released to the pilot
+# until the build is settled (ruling 2026-08-11).
+from utils.api_warehouse import router as warehouse_router
+app.include_router(warehouse_router)
+
 # Pipeline validation - the same tier structure and the same calendar as the
 # Daily Log, sharing utils.branch_day under domain="pipeline" rather than a
 # parallel store.
