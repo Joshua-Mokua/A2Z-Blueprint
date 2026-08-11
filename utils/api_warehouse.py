@@ -233,6 +233,71 @@ def warehouse_archive(prospect_id: str,
     return {"prospect": out}
 
 
+@router.get("/prospects/{prospect_id}")
+def warehouse_detail(prospect_id: str, user: dict = Depends(get_current_user)):
+    """Everything about one prospect, before deciding whether to pursue it.
+
+    Ruling 2026-08-11: "an interested person can click to view more details
+    before they can decide to pick."
+
+    CONTACT DETAILS FOLLOW THE SAME RULE AS THE SHELF - visible to the lister,
+    the claimer and admin only. Opening a detail page is not a claim, and a
+    page that revealed contacts on a click would make the shelf's protection
+    decorative.
+    """
+    from utils.deals_warehouse import get, information_card
+    rec = get(prospect_id)
+    if not rec:
+        raise HTTPException(status_code=404, detail="No such prospect.")
+    code, _n = _actor(user)
+    mine = (str(rec.get("created_by_code") or "") == code
+            or str(rec.get("claimed_by_code") or "") == code)
+    visible = mine or _is_admin(user)
+
+    out = {k: rec.get(k) for k in
+           ("id", "name", "sector", "town", "status", "estimated_value",
+            "source_event", "notes", "created_by_name", "created_at",
+            "claimed_by_name", "claimed_at", "deal_id")}
+    out["mine"] = mine
+    out["contacts_visible"] = visible
+    if visible:
+        out.update({k: rec.get(k) for k in
+                    ("contact_name", "contact_phone", "contact_email")})
+    return {"prospect": out, "card": information_card(prospect_id)}
+
+
+@router.post("/prospects/{prospect_id}/enrichment")
+def warehouse_add_enrichment(prospect_id: str,
+                             payload: dict = Body(default_factory=dict),
+                             user: dict = Depends(get_current_user)):
+    """Add a fact to a prospect's information card.
+
+    ANYONE MAY ADD, deliberately. A note that a prospect just won a county
+    tender is exactly the kind of thing that dies in one person's inbox, and
+    restricting it to the lister would guarantee that. Every item records who
+    added it and where it came from, which is the accountability that matters
+    here.
+    """
+    from utils.deals_warehouse import add_enrichment
+    code, name = _actor(user)
+    try:
+        item = add_enrichment(
+            prospect_id,
+            kind=str(payload.get("kind", "note") or "note"),
+            title=str(payload.get("title", "") or ""),
+            source=str(payload.get("source", "") or ""),
+            url=str(payload.get("url", "") or ""),
+            occurred_on=str(payload.get("occurred_on", "") or ""),
+            detail=str(payload.get("detail", "") or ""),
+            added_by=name or code,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    audit_log("WAREHOUSE_ENRICH", str(user.get("username", "") or ""),
+              detail="%s: %s" % (prospect_id, item["title"][:60]))
+    return {"item": item}
+
+
 @router.get("/mine")
 def warehouse_mine(user: dict = Depends(get_current_user)):
     """What I listed and what I claimed - including what has gone stale.

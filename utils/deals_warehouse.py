@@ -330,6 +330,99 @@ def archive(prospect_id: str, by_code: str, reason: str = "") -> dict:
     return rec
 
 
+# ── THE INFORMATION CARD ────────────────────────────────────────────────────
+# RULING (2026-08-11): "on each we have an information card - all available
+# public information concerning the company including financials, associations
+# etc, arranged in recency with key information and links to detailed
+# information."
+#
+# An enrichment item is a FACT WITH A SOURCE AND A DATE. Never a copied
+# article: we store the headline, the date, where it came from and a LINK.
+# Storing article bodies would be republishing somebody else's work, and a
+# stale copy is worse than a link that stays current.
+#
+# ORDERED BY RECENCY because that is how this is read - "what has happened to
+# this company lately" - and an undated item sorts last rather than first,
+# since something with no date is the least trustworthy thing on the card.
+#
+# HOW IT GETS FILLED, honestly: not by scraping. Either
+#   - a licensed provider's API (the same vendors selling BRS records also sell
+#     financials and group structure), pushed in through add_enrichment, or
+#   - an RM who finds something and records it, which is worth having on its
+#     own - a note that a prospect just won a county tender is exactly the kind
+#     of thing that dies in one person's inbox.
+ENRICHMENT_KINDS = ("financial", "news", "association", "filing", "contact",
+                    "relationship", "note")
+
+
+def add_enrichment(prospect_id: str, *, kind: str, title: str,
+                   source: str, url: str = "", occurred_on: str = "",
+                   detail: str = "", added_by: str = "") -> dict:
+    """Attach one fact to a prospect's information card.
+
+    `title` should be a headline or a figure, not a paragraph - the card is a
+    scan-and-click surface, and anything longer belongs behind the link.
+    """
+    pid = str(prospect_id or "").strip()
+    k = str(kind or "note").strip().lower()
+    if k not in ENRICHMENT_KINDS:
+        k = "note"
+    t = str(title or "").strip()
+    if not t:
+        raise ValueError("An entry needs a title.")
+    if not str(source or "").strip():
+        # Provenance is the whole point: an unsourced claim on a prospect card
+        # is a rumour that looks like research.
+        raise ValueError("Say where this came from.")
+
+    item = {
+        "id": uuid.uuid4().hex[:8],
+        "kind": k,
+        "title": t[:200],
+        "detail": str(detail or "")[:500],
+        "source": str(source).strip()[:120],
+        "url": str(url or "").strip()[:500],
+        "occurred_on": str(occurred_on or "")[:10],
+        "added_by": str(added_by or ""),
+        "added_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    with _lock:
+        data = _read()
+        rec = data.get(pid)
+        if not rec:
+            raise ValueError("That prospect no longer exists.")
+        rec.setdefault("enrichment", []).append(item)
+        data[pid] = rec
+        _write(data)
+    return item
+
+
+def information_card(prospect_id: str) -> dict:
+    """Everything known about a prospect, newest first.
+
+    Undated items sort LAST, not first: something with no date is the least
+    trustworthy entry on the card, and putting it at the top would give it the
+    prominence of breaking news.
+    """
+    rec = get(prospect_id)
+    if not rec:
+        return {}
+    items = list(rec.get("enrichment") or [])
+    items.sort(key=lambda i: (i.get("occurred_on") or "0000-00-00",
+                              i.get("added_at") or ""), reverse=True)
+    by_kind = {}
+    for i in items:
+        by_kind.setdefault(i["kind"], []).append(i)
+    return {
+        "prospect_id": rec.get("id"),
+        "name": rec.get("name"),
+        "items": items,
+        "by_kind": by_kind,
+        "counts": {k: len(v) for k, v in by_kind.items()},
+        "total": len(items),
+    }
+
+
 def shelves(status: str = STATUS_AVAILABLE) -> dict:
     """{sector: [prospect, ...]} for browsing, newest first within a shelf.
 
