@@ -254,9 +254,17 @@ def main():
     bl = open(BL, encoding="utf-8").read()
     api = open(API, encoding="utf-8").read()
 
-    if "check_bounds" in bl:
-        print("ABORT: branch_log already has check_bounds - BD looks applied.")
+    # Check for the DEFINITION, not the name. The bare name also matches the
+    # CALL SITE this patcher adds, so on a replay where a later patcher has
+    # already written the call, this refused - leaving submit() calling a
+    # function that was never defined and raising NameError on every entry.
+    # The same mention-vs-use mistake has now bitten this codebase four times.
+    if "def check_bounds(" in bl:
+        print("ABORT: branch_log already defines check_bounds - BD looks applied.")
         return 1
+    if "check_bounds(" in bl and "def check_bounds(" not in bl:
+        print("NOTE: a call to check_bounds exists without a definition -")
+        print("      applying will repair it.")
     if bl.count(CLASS_ANCHOR) != 1:
         print("ABORT: class anchor matched %d times." % bl.count(CLASS_ANCHOR))
         return 1

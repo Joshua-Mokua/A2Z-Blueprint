@@ -353,6 +353,65 @@ def fields_for(role: str, unit: str = "") -> list:
     return out
 
 
+_DEFAULT_BOUNDS = {
+    "transactions_count": 500,
+    "customer_visits":    400,
+    "digital_txns":       300,
+    "nps_collected":      150,
+    "accounts_opened":     60,
+    "accounts_activated":  60,
+    "cards_issued":       100,
+    "dfs_registrations":  150,
+    "loans_referred":      50,
+    "bancassurance_sold":  50,
+    "complaints_received": 100,
+    "complaints_resolved": 100,
+    "new_leads":          150,
+    "cross_sell_success":  60,
+    "teller_errors":       50,
+    # KES values - generous, but a person booking more than this in one day is
+    # an event worth a conversation, not a silent record.
+    "loans_disbursed":    500000000,
+    "deposits_mobilised": 500000000,
+}
+
+
+def field_bounds() -> dict:
+    """{field_key: max_per_day}, from config, falling back to the defaults."""
+    cfg = load_log_config().get("field_bounds") or {}
+    out = dict(_DEFAULT_BOUNDS)
+    for k, v in cfg.items():
+        try:
+            out[str(k)] = float(v)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def check_bounds(metrics: dict) -> list:
+    """Human-readable breaches; empty when the entry is plausible.
+
+    Reports EVERY breach rather than the first, so someone correcting an entry
+    fixes it once instead of meeting the next problem on resubmit.
+    """
+    bounds = field_bounds()
+    schema = {f["key"]: f for f in fields_schema()}
+    out = []
+    for k, v in (metrics or {}).items():
+        try:
+            val = float(v or 0)
+        except (TypeError, ValueError):
+            continue
+        cap = bounds.get(k)
+        if cap is None or val <= float(cap):
+            continue
+        f = schema.get(k, {})
+        out.append("%s: %s %s exceeds the daily maximum of %s"
+                   % (f.get("label", k), format(int(val), ","),
+                      f.get("unit", ""), format(int(float(cap)), ",")))
+    return out
+
+
 class BranchLogManager:
     def __init__(self):
         self.file = Path(DATA_DIR) / "branch_logs.json"
