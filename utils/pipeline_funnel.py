@@ -127,6 +127,73 @@ for _f in ("liability", "insurance", "other"):
     DEFAULT_BUCKETS[_f] = [dict(b, steps=list(b["steps"])) for b in _ACCOUNT_BUCKETS]
 
 
+# ── THE FOUR GATES (architecture, 2026-08-11) ───────────────────────────────
+# "we now have a clear Origin Gate; a Refining gate where the RM packages the
+#  deal; a Processing/approval gate where it goes through the approvals; and a
+#  closure gate that flows to post-deal closure, where in our backend we have
+#  mapped a customer journey."
+#
+# The gates are the SHAPE of the journey; the buckets are its steps. Naming the
+# gates here rather than in a document means a bucket cannot quietly drift out
+# of the architecture - every bucket declares which gate it serves, and a
+# bucket belonging to no gate is visible rather than assumed.
+#
+#     origin      how the deal entered            utils/deal_origin.py
+#     refining    the owner packages it           Initiation, Documentation
+#     processing  approvals                       Unit Review, Credit Analysis,
+#                                                 Credit Administration
+#     closure     disbursement and hand-off       TROPS, Opening
+#
+# ONE BODY: origin decides who is credited, refining and processing decide
+# where the deal is, closure hands it to the customer journey. Each gate reads
+# the same deal record rather than keeping its own copy - which is why origin is
+# a field on the deal and not a table beside it.
+GATES = [
+    {"key": "origin", "label": "Origin", "buckets": []},
+    {"key": "refining", "label": "Refining",
+     "buckets": ["initiation", "documentation"]},
+    {"key": "processing", "label": "Processing & Approval",
+     "buckets": ["unit_review", "credit_analysis", "credit_admin", "approval"]},
+    {"key": "closure", "label": "Closure",
+     "buckets": ["trops", "opening"]},
+]
+
+
+def gate_of(bucket_key: str) -> str:
+    """Which gate a bucket serves, or "" if it belongs to none.
+
+    Returns empty rather than guessing: a bucket the bank adds later that fits
+    no gate should be VISIBLE as unassigned, not silently filed under the last
+    one.
+    """
+    k = str(bucket_key or "").strip()
+    for g in GATES:
+        if k in g["buckets"]:
+            return g["key"]
+    return ""
+
+
+def gates_for(flow: str) -> list:
+    """The gates this flow actually passes through, in order, with their
+    buckets. Gates with no bucket in this flow are omitted - an account journey
+    has no Processing gate, and showing an empty one would imply a step that
+    does not exist."""
+    chain = buckets_for(flow)
+    by_gate = {}
+    for b in chain:
+        g = gate_of(b["key"])
+        by_gate.setdefault(g or "unassigned", []).append(b["key"])
+    out = []
+    for g in GATES:
+        if by_gate.get(g["key"]):
+            out.append({"gate": g["key"], "label": g["label"],
+                        "buckets": by_gate[g["key"]]})
+    if by_gate.get("unassigned"):
+        out.append({"gate": "unassigned", "label": "Unassigned",
+                    "buckets": by_gate["unassigned"]})
+    return out
+
+
 CLOSED = ("Closed Won", "Closed Lost")
 
 

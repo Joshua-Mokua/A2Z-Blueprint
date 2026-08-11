@@ -5285,6 +5285,14 @@ def pipeline_deal_refer_existing(
         "referral_note":    note,
         "referred_at":      datetime.now().isoformat(),
         "decline_reason":   "",
+        # ORIGIN IS EVIDENCE, NOT A CLAIM (ruling 2026-08-11). A deal that
+        # travelled through the referral engine carries origin=referral at
+        # root, stamped by the engine rather than declared by anyone. Written
+        # in the SAME update as the referral fields, so the two can never
+        # disagree about the same deal.
+        "origin":            "referral",
+        "origin_party_code": actor_code,
+        "origin_party_name": actor_name,
     }, user.get("username", ""))
     _db_sync_pipeline_deal(pm.get_deal(deal_id))
     _audit("DEAL_REFERRED_EXISTING", user, f"{deal_id}->{rcode}")
@@ -6257,9 +6265,15 @@ def pipeline_deal_create(
     # sit outside every configured bucket and appear in analytics as an orphan
     # nobody can filter for.
     try:
-        from utils.deal_origin import is_known as _known, DEFAULT_ORIGIN as _DEF
+        from utils.deal_origin import (is_declarable as _decl,
+                                       DEFAULT_ORIGIN as _DEF)
         _org = str(deal_dict.get("origin") or "").strip()
-        deal_dict["origin"] = _org if _known(_org) else _DEF
+        # SYSTEM-DERIVED ORIGINS CANNOT BE DECLARED (ruling 2026-08-11). A
+        # referral gets its origin from the refer endpoint; a warehouse deal
+        # from the claim. Accepting them here would let someone tick "Referral"
+        # on a deal that never travelled through the engine and never credited
+        # anybody - a claim with no evidence behind it.
+        deal_dict["origin"] = _org if _decl(_org) else _DEF
     except Exception:
         deal_dict.setdefault("origin", "self")
     # SECURITY (stress Phase 3 — privileged-field injection): PipelineDealCreate

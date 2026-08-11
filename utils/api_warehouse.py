@@ -153,9 +153,22 @@ def warehouse_claim(prospect_id: str,
         raise HTTPException(status_code=409, detail=str(exc))
     audit_log("WAREHOUSE_CLAIM", str(user.get("username", "") or ""),
               detail="%s by %s" % (prospect_id, code))
-    return {"prospect": rec,
-            "referrer_code": rec.get("created_by_code"),
-            "referrer_name": rec.get("created_by_name")}
+    # The caller creates the deal next, against the normal pipeline endpoint.
+    # These are the fields it must carry so the deal arrives with the warehouse
+    # origin AT ROOT (ruling 2026-08-11) rather than being declared afterwards.
+    # origin_party_* are privileged-at-create, so the create endpoint strips
+    # them - /prospects/{id}/deal re-applies them once the deal exists, which
+    # is why the claim returns them rather than relying on the caller.
+    return {
+        "prospect": rec,
+        "referrer_code": rec.get("created_by_code"),
+        "referrer_name": rec.get("created_by_name"),
+        "deal_defaults": {
+            "origin": "warehouse",
+            "warehouse_prospect_id": rec.get("id"),
+            "client_name": rec.get("name"),
+        },
+    }
 
 
 @router.post("/prospects/{prospect_id}/deal")
@@ -171,7 +184,28 @@ def warehouse_attach_deal(prospect_id: str,
     if str(rec.get("claimed_by_code") or "") != code and not _is_admin(user):
         raise HTTPException(status_code=403,
                             detail="Only the person who claimed it can attach the deal.")
-    out = attach_deal(prospect_id, str(payload.get("deal_id", "") or ""))
+    deal_id = str(payload.get("deal_id", "") or "")
+    out = attach_deal(prospect_id, deal_id)
+
+    # Stamp the deal itself. This is where the warehouse origin becomes real:
+    # the create endpoint strips origin_party_* (a caller must not name who
+    # gets credited), so it is applied here, by the workflow that actually
+    # routed the deal, once both sides exist.
+    if deal_id:
+        try:
+            from utils.core import PipelineManager
+            from utils.deal_origin import stamp
+            pm = PipelineManager()
+            d = pm.get_deal(deal_id)
+            if d:
+                stamp(d, "warehouse",
+                      str(rec.get("created_by_code") or ""),
+                      str(rec.get("created_by_name") or ""))
+                d["warehouse_prospect_id"] = str(prospect_id)
+                pm.update_deal(deal_id, d, str(user.get("username", "") or ""))
+        except Exception as exc:
+            logger.warning("could not stamp warehouse origin on %s: %s",
+                           deal_id, exc)
     return {"prospect": out}
 
 

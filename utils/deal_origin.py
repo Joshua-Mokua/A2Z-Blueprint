@@ -71,6 +71,60 @@ DEFAULT_ORIGINS = [
 
 DEFAULT_ORIGIN = "self"
 
+# ── SYSTEM-DERIVED vs DECLARED (ruling 2026-08-11) ──────────────────────────
+# "the user will not be selecting the origin, rather the system will pick it,
+#  since a referral will travel from the referral engine and should have that
+#  origin at root; if I pick a deal from the warehouse it should come with the
+#  warehouse origin at root."
+#
+# So origin is EVIDENCE, not a claim. Where the system routed the deal, the
+# system stamps it and the caller cannot override:
+#
+#     referral   the refer endpoint stamps it
+#     warehouse  the claim stamps it
+#
+# The rest cannot be derived - nothing in a deal record proves it came from a
+# roadshow rather than a cold call - so those remain declarable at creation:
+#
+#     events, partnership, lead_gen, contact_centre, self
+#
+# A declarable origin that later routes through a system channel is REPLACED by
+# the derived one: what actually happened outranks what someone typed.
+SYSTEM_DERIVED = ("referral", "warehouse")
+
+
+def is_declarable(key: str) -> bool:
+    """May a user choose this origin at creation?"""
+    k = str(key or "").strip()
+    return bool(k) and k not in SYSTEM_DERIVED and is_known(k)
+
+
+def declarable_origins() -> list:
+    """The origins a capture form should offer - system-routed ones excluded,
+    because offering "Referral" as a tick-box invites someone to claim a
+    referral that never travelled through the engine and never credited
+    anybody."""
+    return [o for o in origins() if o["key"] not in SYSTEM_DERIVED]
+
+
+def stamp(deal: dict, origin_key: str, party_code: str = "",
+          party_name: str = "") -> dict:
+    """Set a SYSTEM-DERIVED origin on a deal, overriding whatever was declared.
+
+    Used by the refer endpoint and the warehouse claim. Mutates and returns the
+    deal so a caller cannot forget to save it separately.
+    """
+    k = str(origin_key or "").strip()
+    if not is_known(k):
+        return deal
+    deal["origin"] = k
+    if credits_party(k):
+        if party_code:
+            deal["origin_party_code"] = str(party_code)
+        if party_name:
+            deal["origin_party_name"] = str(party_name)
+    return deal
+
 
 def origins(include_inactive: bool = False) -> list:
     """The configured origins. Config first, defaults second."""
