@@ -56,14 +56,6 @@
       "cross_sell_success",
       "accounts_opened"
     ],
-    "Head of Consumer": [
-      "new_leads",
-      "accounts_opened",
-      "dfs_registrations",
-      "cards_issued",
-      "bancassurance_sold",
-      "cross_sell_success"
-    ],
     "Director Consumer & Commercial Banking (CCB)": [
       "new_leads",
       "deposits_mobilised",
