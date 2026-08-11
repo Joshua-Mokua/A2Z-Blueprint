@@ -995,6 +995,7 @@ export interface WarehouseProspect {
   created_by_name: string; created_at: string;
   claimed_by_name: string; claimed_at: string; deal_id: string;
   mine: boolean; contacts_visible: boolean;
+  score?: number; validated?: boolean; missing_count?: number;
   contact_name?: string; contact_phone?: string; contact_email?: string;
 }
 export interface ProspectFact {
@@ -1005,6 +1006,7 @@ export interface ProspectFact {
 export interface ProspectDetail {
   prospect: WarehouseProspect;
   card: { items: ProspectFact[]; counts: Record<string, number>; total: number };
+  completeness: Completeness;
 }
 export async function fetchProspect(id: string): Promise<ProspectDetail> {
   return getJson<ProspectDetail>(`/warehouse/prospects/${encodeURIComponent(id)}`);
@@ -1019,6 +1021,35 @@ export interface WarehouseMine {
   listed: WarehouseProspect[]; claimed: WarehouseProspect[];
   stale: WarehouseProspect[];
   counts: { listed: number; claimed: number; stale: number };
+}
+export interface CompletenessField {
+  key: string; label: string; weight: number; why: string;
+}
+export interface Completeness {
+  prospect_id: string; score: number; complete: boolean;
+  have: string[]; missing: CompletenessField[];
+  answered: number; of: number;
+  validated: boolean; validated_by: string; validated_at: string;
+  stale_validation: boolean;
+}
+export async function fetchCompletenessMatrix(): Promise<{
+  fields: CompletenessField[];
+  summary: { total: number; average_score: number; complete: number;
+             validated: number; worst_gaps: { key: string; label: string; missing: number }[] };
+}> {
+  return getJson('/warehouse/completeness');
+}
+export async function updateProspect(
+  id: string, changes: Record<string, unknown>, password = '',
+): Promise<{ prospect: Record<string, unknown> }> {
+  return postJson<{ prospect: Record<string, unknown> }, Record<string, unknown>>(
+    `/warehouse/prospects/${encodeURIComponent(id)}`,
+    password ? { ...changes, password } : changes, 'PATCH');
+}
+export async function validateProspect(id: string): Promise<{ completeness: Completeness }> {
+  return postJson<{ completeness: Completeness }, Record<string, never>>(
+    `/warehouse/prospects/${encodeURIComponent(id)}/validate`,
+    {} as Record<string, never>);
 }
 export async function fetchWarehouseTaxonomy(): Promise<{ sectors: string[]; towns: string[] }> {
   return getJson<{ sectors: string[]; towns: string[] }>('/warehouse/taxonomy');
@@ -1049,6 +1080,16 @@ export async function claimProspect(
   return postJson<{ prospect: WarehouseProspect; referrer_code: string; referrer_name: string },
                   Record<string, never>>(
     `/warehouse/prospects/${encodeURIComponent(id)}/claim`, {} as Record<string, never>);
+}
+export async function deleteProspect(
+  id: string, password = '',
+): Promise<{ deleted: string }> {
+  // Uses the existing postJson-with-method pattern rather than a new helper -
+  // one way of issuing a DELETE is enough.
+  const q = password ? `?password=${encodeURIComponent(password)}` : '';
+  return postJson<{ deleted: string }, Record<string, never>>(
+    `/warehouse/prospects/${encodeURIComponent(id)}${q}`,
+    {} as Record<string, never>, 'DELETE');
 }
 export async function archiveProspect(
   id: string, reason: string,

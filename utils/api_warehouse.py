@@ -339,7 +339,8 @@ def warehouse_add_enrichment(prospect_id: str,
 
 
 @router.delete("/prospects/{prospect_id}")
-def warehouse_delete(prospect_id: str, user: dict = Depends(get_current_user)):
+def warehouse_delete(prospect_id: str, password: str = "",
+                     user: dict = Depends(get_current_user)):
     """Delete a prospect outright. ADMIN ONLY.
 
     Archiving is for a business somebody judged not worth pursuing. Deletion is
@@ -354,10 +355,47 @@ def warehouse_delete(prospect_id: str, user: dict = Depends(get_current_user)):
     rec = get(prospect_id)
     if not rec:
         raise HTTPException(status_code=404, detail="No such prospect.")
-    delete(prospect_id)
+    try:
+        # Admin rights say who MAY delete; the password says they meant to.
+        delete(prospect_id, password=str(password or ""))
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc))
     audit_log("WAREHOUSE_DELETE", str(user.get("username", "") or ""),
               detail="%s %s" % (prospect_id, str(rec.get("name"))[:60]))
     return {"deleted": prospect_id}
+
+
+@router.patch("/prospects/{prospect_id}")
+def warehouse_update(prospect_id: str,
+                     payload: dict = Body(default_factory=dict),
+                     user: dict = Depends(get_current_user)):
+    """Edit a prospect.
+
+    OPEN while the record is under validation - that set exists to be filled
+    in, and a password in front of backfilling would guarantee the backfilling
+    never happens.
+
+    PASSWORD-PROTECTED once validated. Somebody staked their name on those
+    details and people are being told to prefer them, so changing one should be
+    a deliberate act rather than a stray click.
+    """
+    from utils.deals_warehouse import update_prospect
+    _code, name = _actor(user)
+    changes = dict(payload or {})
+    password = str(changes.pop("password", "") or "")
+    try:
+        rec = update_prospect(prospect_id, changes, by_name=name,
+                              password=password)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    audit_log("WAREHOUSE_EDIT", str(user.get("username", "") or ""),
+              detail="%s: %s" % (prospect_id, ", ".join(sorted(changes))[:60]))
+    return {"prospect": {k: rec.get(k) for k in
+                         ("id", "name", "sector", "town", "contact_name",
+                          "contact_phone", "contact_email", "notes",
+                          "validated", "last_edited_at", "last_edited_by")}}
 
 
 @router.get("/completeness")

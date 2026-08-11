@@ -21,7 +21,7 @@ import { Card } from '@/components/Card';
 import { PageHeader } from '@/components/PageHeader';
 import { useToast } from '@/components/Toast';
 import {
-  fetchProspect, addProspectFact, claimProspect,
+  fetchProspect, addProspectFact, claimProspect, validateProspect, updateProspect,
   type ProspectDetail, type ProspectFact,
 } from '@/lib/api';
 
@@ -84,6 +84,46 @@ export default function ProspectDetail() {
     }
   }
 
+  const [editing, setEditing] = useState(false);
+  const [edit, setEdit] = useState<Record<string, string>>({});
+
+  async function saveEdit() {
+    // The password is asked for ONLY on a validated record - the working set
+    // exists to be filled in, and friction there stops the backfilling.
+    let pw = '';
+    if (c?.validated) {
+      pw = window.prompt(
+        'This is a VALIDATED record. Enter the warehouse password to change it.') || '';
+      if (!pw) return;
+    }
+    setBusy(true);
+    try {
+      await updateProspect(prospectId, edit, pw);
+      toast({ tone: 'success', message: 'Saved.' });
+      setEditing(false);
+      setEdit({});
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not save.' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function validate() {
+    setBusy(true);
+    try {
+      await validateProspect(prospectId);
+      toast({ tone: 'success', message: 'Validated — this is now a usable record.' });
+      await load();
+    } catch (e) {
+      // The 400 names the specific gaps, which is more use than "incomplete".
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not validate.' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function pursue() {
     setBusy(true);
     try {
@@ -103,6 +143,7 @@ export default function ProspectDetail() {
 
   const p = data?.prospect;
   const facts: ProspectFact[] = data?.card?.items ?? [];
+  const c = data?.completeness;
   const inp = 'mt-1 w-full h-9 px-2 rounded border border-gray-300 text-sm';
 
   return (
@@ -190,6 +231,41 @@ export default function ProspectDetail() {
                   )}
 
                   <button type="button"
+                          className="mt-3 w-full rounded-md border border-gray-200 py-1.5 text-center text-xs text-gray-600 hover:bg-gray-50"
+                          onClick={() => { setEditing((v) => !v); setEdit({}); }}>
+                    {editing ? 'Cancel edit' : (c?.validated ? 'Edit (password)' : 'Edit details')}
+                  </button>
+
+                  {editing && (
+                    <div className="mt-3 space-y-2 rounded-lg border border-gray-200 bg-gray-50/60 p-3">
+                      {([
+                        ['name', 'Name'],
+                        ['registration_no', 'Registration no.'],
+                        ['contact_name', 'Decision maker and role'],
+                        ['contact_phone', 'Phone'],
+                        ['contact_email', 'Email'],
+                        ['physical_address', 'Physical address'],
+                        ['established', 'Year established'],
+                        ['existing_banker', 'Banks with'],
+                        ['website', 'Website'],
+                        ['opportunity', 'Identified need'],
+                      ] as const).map(([k, label]) => (
+                        <label key={k} className="block text-[11px] text-gray-600">
+                          {label}
+                          <input
+                            className="mt-0.5 h-8 w-full rounded border border-gray-300 px-2 text-xs"
+                            value={edit[k] ?? String((p as unknown as Record<string, unknown>)[k] ?? '')}
+                            onChange={(e) => setEdit({ ...edit, [k]: e.target.value })} />
+                        </label>
+                      ))}
+                      <Button size="sm" className="w-full" disabled={busy}
+                              onClick={() => void saveEdit()}>
+                        {busy ? 'Saving…' : 'Save'}
+                      </Button>
+                    </div>
+                  )}
+
+                  <button type="button"
                           className="mt-3 w-full text-center text-xs text-gray-500 hover:text-gray-700"
                           onClick={() => nav('/pipeline/warehouse')}>
                     Back to the shelf
@@ -199,6 +275,78 @@ export default function ProspectDetail() {
             </div>
 
             <div className="lg:col-span-2 space-y-4">
+              {/* WHAT IS STILL MISSING, and why each one matters. A score on
+                  its own tells somebody they are incomplete without telling
+                  them what to do about it. */}
+              <Card>
+                <Card.Header>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="text-base font-semibold text-gray-900">
+                      Completeness
+                    </h2>
+                    <div className="flex items-center gap-3">
+                      <span className={'text-sm font-semibold tabular-nums ' + (
+                        c?.validated ? 'text-[#3B6D11]' : 'text-gray-700')}>
+                        {c?.score ?? 0}%
+                      </span>
+                      {c?.validated ? (
+                        <span className="rounded-full bg-[#EAF3DE] px-2.5 py-1 text-[11px] text-[#3B6D11]">
+                          validated by {c.validated_by}
+                        </span>
+                      ) : (
+                        <Button size="sm" disabled={busy || !c?.complete}
+                                onClick={() => void validate()}>
+                          {c?.complete ? 'Validate' : 'Validate'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </Card.Header>
+                <Card.Body>
+                  <div className="mb-3 h-2 overflow-hidden rounded-full bg-gray-100">
+                    <div className={'h-full rounded-full ' + (
+                      c?.validated ? 'bg-[#3B6D11]'
+                        : (c?.score ?? 0) >= 70 ? 'bg-[#BED600]'
+                          : (c?.score ?? 0) >= 40 ? 'bg-[#E0A02B]' : 'bg-gray-300')}
+                         style={{ width: `${Math.max(3, c?.score ?? 0)}%` }} />
+                  </div>
+
+                  {c?.stale_validation && (
+                    <p className="mb-3 rounded-lg border border-[#FAEEDA] bg-[#FEFAF3] px-3 py-2 text-xs text-[#854F0B]">
+                      This record has changed since it was validated, so it is no
+                      longer the record that was checked. Worth validating again.
+                    </p>
+                  )}
+
+                  {c && c.missing.length === 0 && !c.validated && (
+                    <p className="text-xs text-gray-600">
+                      Every field is answered. Validating means you have looked
+                      and you believe it — a record can be complete and wrong,
+                      which is why this is not automatic.
+                    </p>
+                  )}
+
+                  {c && c.missing.length > 0 && (
+                    <>
+                      <p className="mb-2 text-xs text-gray-500">
+                        {c.answered} of {c.of} answered. Still needed:
+                      </p>
+                      <ul className="space-y-1.5">
+                        {c.missing.map((m) => (
+                          <li key={m.key} className="flex gap-2 text-xs">
+                            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#E0A02B]" />
+                            <span>
+                              <span className="font-medium text-gray-800">{m.label}</span>
+                              <span className="text-gray-500"> — {m.why}</span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </Card.Body>
+              </Card>
+
               <Card>
                 <Card.Header>
                   <div className="flex flex-wrap items-center justify-between gap-2">

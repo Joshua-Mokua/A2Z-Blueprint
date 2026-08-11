@@ -36,6 +36,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import tempfile
 import threading
 import uuid
@@ -309,7 +310,7 @@ def attach_deal(prospect_id: str, deal_id: str) -> Optional[dict]:
     return rec
 
 
-def delete(prospect_id: str) -> bool:
+def delete(prospect_id: str, password: str = "") -> bool:
     """Remove a prospect entirely. ADMIN ONLY - the endpoint enforces that.
 
     RULING (2026-08-11): "for the admin I need to be able to delete an entry as
@@ -325,6 +326,12 @@ def delete(prospect_id: str) -> bool:
         data = _read()
         if pid not in data:
             return False
+        # A VALIDATED record needs the password even for an admin. Admin rights
+        # say who MAY delete; the password says they meant to.
+        if data[pid].get("validated") and password != protected_password():
+            raise PermissionError(
+                "This is a validated record. Deleting it needs the warehouse "
+                "password.")
         del data[pid]
         _write(data)
     return True
@@ -401,9 +408,30 @@ DEFAULT_COMPLETENESS = [
      "why": "Tells you which desk should hold it."},
     {"key": "business_activity", "label": "What they actually do", "weight": 5,
      "why": "A sector is a category; this is the business."},
+    # FIVE MORE (ruling 2026-08-11: "expand the field to at least 15 so that we
+    # stretch our viability and give our models a better accuracy chance").
+    # These are the ones that separate a contactable business from a
+    # QUALIFIABLE one - they are what a viability score will be built on.
+    {"key": "established", "label": "Year established", "weight": 5,
+     "why": "Longevity is the cheapest risk signal there is."},
+    {"key": "legal_form", "label": "Legal form", "weight": 3,
+     "why": "A SACCO, an Ltd and an NGO borrow on different terms."},
+    {"key": "existing_banker", "label": "Who they bank with now", "weight": 6,
+     "why": "Tells you whether this is a switch, a share, or a first account."},
+    {"key": "online_presence", "label": "Website or verified listing", "weight": 3,
+     "why": "Somewhere to check the story before the meeting."},
+    {"key": "opportunity", "label": "Identified need", "weight": 8,
+     "why": "Without it there is a business but no deal."},
 ]
 
 STATUS_VALIDATED = "validated"
+
+# Legal form can usually be read off the name itself - a register that says
+# "Sacco Society Ltd" has already told you what kind of entity this is, and
+# asking somebody to retype it would be busywork.
+_LEGAL_FORM = re.compile(
+    r"\b(ltd|limited|plc|llp|llc|sacco|society|co-?operative|co-?op|trust"
+    r"|foundation|association|union|scheme|bank|ngo)\b", re.IGNORECASE)
 
 
 def completeness_fields() -> list:
@@ -448,6 +476,17 @@ def _has(rec: dict, key: str) -> bool:
         return bool(rec.get("estimated_value")) or _card("financial")
     if key == "business_activity":
         return _t("notes") or _card("note", "news")
+    if key == "established":
+        return _t("established", "year_established") or _card("filing")
+    if key == "legal_form":
+        return _t("legal_form") or bool(_LEGAL_FORM.search(str(rec.get("name") or "")))
+    if key == "existing_banker":
+        return _t("existing_banker") or _card("relationship")
+    if key == "online_presence":
+        return _t("website", "url") or any(
+            str(i.get("url") or "").strip() for i in items)
+    if key == "opportunity":
+        return _t("opportunity") or _card("note")
     return _t(key)
 
 
@@ -490,6 +529,80 @@ def completeness(prospect_id_or_rec) -> dict:
             rec.get("validated") and rec.get("last_edited_at")
             and str(rec.get("last_edited_at")) > str(rec.get("validated_at") or "")),
     }
+
+
+# ── EDITING, AND WHAT PROTECTS A VALIDATED RECORD ───────────────────────────
+# RULING (2026-08-11): "one will only be able to edit items under validation.
+# The edit and delete on the validated, let them be restricted with a delete
+# password - for now set it as Pendo, but I will control that from admin."
+#
+# A VALIDATED RECORD IS THE USABLE SET. Somebody staked their name on it, and
+# people are being told to prefer it - so changing one should take a deliberate
+# act, not a stray click on a page somebody was browsing.
+#
+# UNDER VALIDATION, editing is open. That is the point of the working set: it
+# exists to be filled in, and putting a password in front of backfilling would
+# guarantee the backfilling never happens.
+#
+# THE PASSWORD IS CONFIG, not code. Defaulting to "Pendo" as instructed, and
+# admin can change it without a release. It is a SPEED BUMP, not security: it
+# stops an accident, and it is not pretending to stop anybody determined.
+DEFAULT_PROTECTED_PASSWORD = "Pendo"
+
+EDITABLE_FIELDS = (
+    "name", "sector", "town", "physical_address", "contact_name",
+    "contact_phone", "contact_email", "notes", "estimated_value",
+    "registration_no", "established", "legal_form", "existing_banker",
+    "website", "opportunity", "business_activity",
+)
+
+
+def protected_password() -> str:
+    try:
+        from utils.core import get_pipeline_settings
+        v = (get_pipeline_settings() or {}).get("warehouse_protected_password")
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    except Exception:
+        pass
+    return DEFAULT_PROTECTED_PASSWORD
+
+
+def update_prospect(prospect_id: str, changes: dict, *, by_name: str = "",
+                    password: str = "") -> dict:
+    """Edit a prospect. A VALIDATED one needs the password.
+
+    Editing a validated record does NOT silently un-validate it - completeness()
+    already flags it stale, which tells the reader the truth (this changed after
+    it was checked) without throwing away the fact that somebody once checked
+    it. Quietly dropping the badge would lose that history.
+    """
+    pid = str(prospect_id or "").strip()
+    with _lock:
+        data = _read()
+        rec = data.get(pid)
+        if not rec:
+            raise ValueError("That prospect no longer exists.")
+        if rec.get("validated") and password != protected_password():
+            raise PermissionError(
+                "This is a validated record. Editing it needs the warehouse "
+                "password - somebody vouched for these details.")
+
+        applied = {}
+        for k, v in (changes or {}).items():
+            if k not in EDITABLE_FIELDS:
+                continue
+            rec[k] = v
+            applied[k] = v
+        if not applied:
+            raise ValueError("Nothing to change.")
+        if "name" in applied:
+            rec["canonical_key"] = canonical_key(str(applied["name"]))
+        rec["last_edited_at"] = datetime.now().isoformat(timespec="seconds")
+        rec["last_edited_by"] = str(by_name or "")
+        data[pid] = rec
+        _write(data)
+    return rec
 
 
 def validate_prospect(prospect_id: str, by_code: str, by_name: str) -> dict:

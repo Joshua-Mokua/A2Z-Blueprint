@@ -15,9 +15,10 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { PageHeader } from '@/components/PageHeader';
 import { useToast } from '@/components/Toast';
+import { useRole } from '@/hooks/useRole';
 import {
   fetchWarehouseShelves, fetchWarehouseTaxonomy, fetchWarehouseMine,
-  createProspect, archiveProspect,
+  createProspect, archiveProspect, deleteProspect,
   type WarehouseProspect, type WarehouseMine,
 } from '@/lib/api';
 
@@ -30,9 +31,15 @@ function kes(n: number | null | undefined): string {
 export default function Warehouse() {
   const { toast } = useToast();
   const nav = useNavigate();
-  const [tab, setTab] = useState<'shelf' | 'mine'>('shelf');
+  // FOUR TABS. "Validated" first, deliberately (ruling 2026-08-11: "so that
+  // people can mostly choose from validated data instead of throwing people
+  // into using data that would be misleading"). The default landing is the
+  // set somebody has vouched for; incomplete records are still reachable, but
+  // you have to choose them.
+  const [tab, setTab] = useState<'validated' | 'working' | 'shelf' | 'mine'>('validated');
   const [shelves, setShelves] = useState<Record<string, WarehouseProspect[]>>({});
   const [total, setTotal] = useState(0);
+  const [counts, setCounts] = useState({ validated: 0 });
   const [mine, setMine] = useState<WarehouseMine | null>(null);
   const [sectors, setSectors] = useState<string[]>([]);
   const [towns, setTowns] = useState<string[]>([]);
@@ -41,6 +48,9 @@ export default function Warehouse() {
   const [q, setQ] = useState('');
   const [town, setTown] = useState('');
   const [creating, setCreating] = useState(false);
+  // Admin-only. A row that was never a business - a county name, a street -
+  // should leave no trace; archiving it would fill the audit trail with noise.
+  const { isAdmin } = useRole();
   const [form, setForm] = useState({
     name: '', sector: '', town: '', contact_name: '', contact_phone: '',
     contact_email: '', notes: '', source_event: '', estimated_value: '',
@@ -59,10 +69,27 @@ export default function Warehouse() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      if (tab === 'shelf') {
+      if (tab !== 'mine') {
         const r = await fetchWarehouseShelves({ town, q });
-        setShelves(r.shelves ?? {});
-        setTotal(r.total ?? 0);
+        const all = r.shelves ?? {};
+        // Filtered client-side: the shelf endpoint already returns every
+        // prospect with its score, and a second round trip to re-ask the same
+        // question would be a per-row cost for nothing.
+        const keep = (p: WarehouseProspect) => (
+          tab === 'validated' ? p.validated === true
+            : tab === 'working' ? p.validated !== true
+              : true);
+        const out: Record<string, WarehouseProspect[]> = {};
+        let n = 0;
+        let v = 0;
+        Object.entries(all).forEach(([sector, items]) => {
+          items.forEach((it) => { if (it.validated) v += 1; });
+          const kept = items.filter(keep);
+          if (kept.length) { out[sector] = kept; n += kept.length; }
+        });
+        setShelves(out);
+        setTotal(n);
+        setCounts({ validated: v });
       } else {
         setMine(await fetchWarehouseMine());
       }
@@ -96,6 +123,34 @@ export default function Warehouse() {
 
   // Claiming moved to the detail page (IC2): a person should see what
   // they are taking on before they take it.
+  async function remove(p: WarehouseProspect) {
+    if (!window.confirm(
+      `Delete "${p.name}" entirely? Use this only for rows that were never a `
+      + `business — a county name, a street, a fragment of a table. `
+      + `Archive instead if it is a real business you have decided not to pursue.`)) {
+      return;
+    }
+    // A VALIDATED record needs the password. Asking only when it is validated
+    // keeps the working set frictionless, which is where the work happens.
+    let pw = '';
+    if (p.validated) {
+      pw = window.prompt(
+        `"${p.name}" is a VALIDATED record — somebody vouched for it and people `
+        + `are being told to prefer it. Enter the warehouse password to delete it.`) || '';
+      if (!pw) return;
+    }
+    setBusy(p.id);
+    try {
+      await deleteProspect(p.id, pw);
+      toast({ tone: 'success', message: `${p.name} deleted.` });
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not delete.' });
+    } finally {
+      setBusy('');
+    }
+  }
+
   async function drop(p: WarehouseProspect) {
     const reason = window.prompt(`Why is ${p.name} coming off the shelf?`);
     if (!reason || !reason.trim()) return;
@@ -122,7 +177,12 @@ export default function Warehouse() {
       />
       <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
         <div className="mb-4 flex gap-4 border-b border-gray-200">
-          {(['shelf', 'mine'] as const).map((t) => (
+          {([
+            ['validated', 'Validated'],
+            ['working', 'Under validation'],
+            ['shelf', 'All'],
+            ['mine', 'Mine'],
+          ] as const).map(([t, label]) => (
             <button
               key={t} type="button" onClick={() => setTab(t)}
               className={'px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ' + (
@@ -130,7 +190,13 @@ export default function Warehouse() {
                   ? 'border-brand-primary text-brand-primary'
                   : 'border-transparent text-gray-600 hover:text-gray-900')}
             >
-              {t === 'shelf' ? 'The shelf' : 'Mine'}
+              {label}
+              {t === 'validated' && counts.validated > 0 && (
+                <span className={'ml-1 rounded-full px-2 py-0.5 text-[11px] ' + (
+                  t === tab ? 'bg-brand-primary text-white' : 'bg-gray-200 text-gray-700')}>
+                  {counts.validated}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -148,7 +214,7 @@ export default function Warehouse() {
                          className="rounded border border-gray-200 px-2 py-1 text-xs" />
                   <select value={town} onChange={(e) => setTown(e.target.value)}
                           className="rounded border border-gray-200 px-2 py-1 text-xs">
-                    <option value="">Anywhere</option>
+                    <option value="">Countrywide</option>
                     {towns.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                   <span className="rounded-full bg-[#E6F1FB] px-2.5 py-1 text-[#0C447C]">
@@ -243,15 +309,33 @@ export default function Warehouse() {
                   </h3>
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {items.map((p) => (
-                      <div key={p.id} className="rounded-lg border border-gray-200 p-3">
+                      <div key={p.id}
+                           className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow hover:border-[#BED600] hover:shadow-md">
+                        {/* LABELLED, bold label and normal value (ruling
+                            2026-08-11) - a card of bare strings makes the
+                            reader work out which is which. */}
                         <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-medium text-gray-900"
-                                 title={p.name}>{p.name}</div>
-                            <div className="mt-0.5 text-[11px] text-gray-500">
-                              {p.town || 'Anywhere'}
-                              {p.estimated_value ? ` · KES ${kes(p.estimated_value)}` : ''}
+                          <div className="min-w-0 space-y-0.5 text-xs">
+                            <div className="truncate" title={p.name}>
+                              <span className="font-semibold text-gray-500">Name: </span>
+                              <span className="text-sm font-medium text-gray-900">{p.name}</span>
                             </div>
+                            <div>
+                              <span className="font-semibold text-gray-500">Location: </span>
+                              <span className="text-gray-700">{p.town || 'Countrywide'}</span>
+                            </div>
+                            <div className="truncate">
+                              <span className="font-semibold text-gray-500">Contact: </span>
+                              <span className="text-gray-700">
+                                {p.contact_phone || p.contact_email || 'not recorded yet'}
+                              </span>
+                            </div>
+                            {p.estimated_value ? (
+                              <div>
+                                <span className="font-semibold text-gray-500">Value: </span>
+                                <span className="text-gray-700">KES {kes(p.estimated_value)}</span>
+                              </div>
+                            ) : null}
                           </div>
                           {p.mine && (
                             <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500">
@@ -260,17 +344,36 @@ export default function Warehouse() {
                           )}
                         </div>
 
+                        {/* THE SCORE, on the card. A completeness standard
+                            nobody sees while browsing is a standard nobody
+                            backfills against. */}
+                        <div className="mt-2">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className={p.validated ? 'font-semibold text-[#3B6D11]' : 'text-gray-500'}>
+                              {p.validated ? '✓ validated' : `${p.score ?? 0}% complete`}
+                            </span>
+                            {!p.validated && (p.missing_count ?? 0) > 0 && (
+                              <span className="text-gray-400">
+                                {p.missing_count} field{p.missing_count === 1 ? '' : 's'} missing
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                            <div className={'h-full rounded-full ' + (
+                              p.validated ? 'bg-[#3B6D11]'
+                                : (p.score ?? 0) >= 70 ? 'bg-[#BED600]'
+                                  : (p.score ?? 0) >= 40 ? 'bg-[#E0A02B]' : 'bg-gray-300')}
+                                 style={{ width: `${Math.max(3, p.score ?? 0)}%` }} />
+                          </div>
+                        </div>
+
                         {p.notes && (
                           <p className="mt-2 text-xs text-gray-600">{p.notes}</p>
                         )}
 
-                        {p.contacts_visible ? (
+                        {p.contacts_visible && p.contact_name && (
                           <p className="mt-2 text-[11px] text-gray-500">
-                            {p.contact_name}{p.contact_phone ? ` · ${p.contact_phone}` : ''}
-                          </p>
-                        ) : (
-                          <p className="mt-2 text-[11px] text-gray-400">
-                            Contact shown once you claim it
+                            {p.contact_name}
                           </p>
                         )}
 
@@ -284,13 +387,24 @@ export default function Warehouse() {
                                 detail you have is a name." Pursuing happens on
                                 the detail page, after somebody has seen what
                                 they would be taking on. */}
-                            <Button size="sm" variant="secondary"
-                                    onClick={() => nav(`/pipeline/warehouse/${encodeURIComponent(p.id)}`)}>
+                            {/* Warm, and clearly the primary action - it is
+                                what a person should do before deciding. */}
+                            <button type="button"
+                                    onClick={() => nav(`/pipeline/warehouse/${encodeURIComponent(p.id)}`)}
+                                    className="rounded-md bg-[#E0A02B] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#C98A1E]">
                               Details
-                            </Button>
+                            </button>
                             {p.mine && (
                               <Button size="sm" variant="ghost" disabled={busy === p.id}
                                       onClick={() => void drop(p)}>Archive</Button>
+                            )}
+                            {isAdmin && (
+                              <button type="button" disabled={busy === p.id}
+                                      onClick={() => void remove(p)}
+                                      title="Delete entirely - for rows that were never a business"
+                                      className="rounded-md px-2 py-1.5 text-xs text-rose-600 hover:bg-rose-50">
+                                Delete
+                              </button>
                             )}
                           </div>
                         </div>
