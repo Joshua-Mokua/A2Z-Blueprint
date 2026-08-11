@@ -1033,6 +1033,21 @@ export interface Completeness {
   validated: boolean; validated_by: string; validated_at: string;
   stale_validation: boolean;
 }
+export interface WarehouseCut {
+  label: string; total: number; validated: number; ready: number; average_score: number;
+}
+export interface WarehouseAnalytics {
+  totals: { prospects: number; validated: number; ready_to_validate: number;
+            under_validation: number; average_score: number; claimed: number;
+            converted: number };
+  by_sector: WarehouseCut[]; by_segment: WarehouseCut[];
+  by_county: WarehouseCut[]; by_source: WarehouseCut[];
+  bands: { band: string; count: number }[];
+  gaps: { key: string; label: string; missing: number }[];
+}
+export async function fetchWarehouseAnalytics(): Promise<WarehouseAnalytics> {
+  return getJson<WarehouseAnalytics>('/warehouse/analytics');
+}
 export async function fetchCompletenessMatrix(): Promise<{
   fields: CompletenessField[];
   summary: { total: number; average_score: number; complete: number;

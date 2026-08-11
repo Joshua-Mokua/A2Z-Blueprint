@@ -444,6 +444,15 @@ def warehouse_validate(prospect_id: str,
         raise HTTPException(status_code=400, detail=str(exc))
 
 
+@router.get("/analytics")
+def warehouse_analytics_ep(user: dict = Depends(get_current_user)):
+    """What the warehouse holds, cut by sector, segment, county and source -
+    every cut reporting VALIDATED against TOTAL, because the total alone makes
+    a warehouse look bigger than it is."""
+    from utils.deals_warehouse import warehouse_analytics
+    return warehouse_analytics()
+
+
 @router.get("/mine")
 def warehouse_mine(user: dict = Depends(get_current_user)):
     """What I listed and what I claimed - including what has gone stale.

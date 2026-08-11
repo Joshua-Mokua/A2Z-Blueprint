@@ -788,6 +788,68 @@ def validate_prospect(prospect_id: str, by_code: str, by_name: str) -> dict:
     return completeness(rec)
 
 
+def warehouse_analytics() -> dict:
+    """What we hold, and how much of it anybody should trust.
+
+    RULING (2026-08-11): "we are also to have proper analytics showing what we
+    have validated, unvalidated, sectors, segments, towns and a lot more."
+
+    EVERY CUT REPORTS BOTH NUMBERS. "Nairobi: 58" is not the useful figure -
+    "Nairobi: 58, of which 4 validated" is, because the second one tells you
+    whether the coverage is real or just imported. A dashboard that shows only
+    totals is how a warehouse comes to look bigger than it is.
+    """
+    recs = all_prospects()
+    live = [r for r in recs if r.get("status") != STATUS_ARCHIVED]
+
+    def _cut(key, fallback="Unassigned"):
+        out = {}
+        for r in live:
+            k = str(r.get(key) or "").strip() or fallback
+            e = out.setdefault(k, {"label": k, "total": 0, "validated": 0,
+                                   "ready": 0, "score_sum": 0})
+            c = completeness(r)
+            e["total"] += 1
+            e["score_sum"] += c.get("score", 0)
+            if c.get("validated"):
+                e["validated"] += 1
+            elif c.get("complete"):
+                e["ready"] += 1
+        for e in out.values():
+            e["average_score"] = round(e["score_sum"] / e["total"]) if e["total"] else 0
+            e.pop("score_sum", None)
+        return sorted(out.values(), key=lambda x: -x["total"])
+
+    scores = [completeness(r).get("score", 0) for r in live]
+    validated = sum(1 for r in live if r.get("validated"))
+    ready = sum(1 for r in live
+                if not r.get("validated") and completeness(r).get("complete"))
+    # Bands, so "how far off are we" has an answer that is not one average.
+    bands = {"0-24": 0, "25-49": 0, "50-79": 0, "80-99": 0, "100": 0}
+    for sc in scores:
+        key = ("100" if sc >= 100 else "80-99" if sc >= 80
+               else "50-79" if sc >= 50 else "25-49" if sc >= 25 else "0-24")
+        bands[key] += 1
+
+    return {
+        "totals": {
+            "prospects": len(live),
+            "validated": validated,
+            "ready_to_validate": ready,
+            "under_validation": len(live) - validated,
+            "average_score": round(sum(scores) / len(scores)) if scores else 0,
+            "claimed": sum(1 for r in live if r.get("claimed_by_code")),
+            "converted": sum(1 for r in live if r.get("deal_id")),
+        },
+        "by_sector": _cut("sector", "Unsorted"),
+        "by_segment": _cut("segment", "Not set"),
+        "by_county": _cut("town", "Countrywide"),
+        "by_source": _cut("source_event", "Entered by hand"),
+        "bands": [{"band": k, "count": v} for k, v in bands.items()],
+        "gaps": completeness_summary().get("worst_gaps", []),
+    }
+
+
 def completeness_summary() -> dict:
     """How complete is the warehouse as a whole, and which field is holding it
     back - the question that decides what to backfill next."""

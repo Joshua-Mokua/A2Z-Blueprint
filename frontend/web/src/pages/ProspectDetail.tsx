@@ -1,93 +1,71 @@
-// Prospect detail — everything known, before deciding whether to pursue.
+// The prospect record — ONE card.
 //
-// RULING (2026-08-11): "it will be premature to pursue something whose only
-// detail you have is a name. I would prefer Details, which then open into a
-// page containing the card with contacts, known directors, location, branches
-// etc, then for sanity checking we can have an edit and additional
-// information."
+// RULING (2026-08-11): "collapse these into one detail card that will be
+// applicable even when one is creating an entry ... the one they work on and
+// save becomes the detail page, that becomes our one table that is saved and
+// when validated submitted to the validated side."
 //
-// So the shelf card offers DETAILS, not Pursue. Pursue lives here, after
-// somebody has seen what they would be taking on.
+// Three cards asked a reader to hold the same business in their head three
+// times. What the other two carried that mattered — status, provenance, the
+// actions, and what anybody has found out — lives here: a header strip, four
+// sections, and sources at the foot.
 //
-// ADDING A FACT IS THE FASTEST THING ON THE PAGE. At 134 prospects the register
-// gives names and addresses and nothing else, so the card fills up by hand or
-// not at all — and if recording something takes four clicks, nobody does it
-// twice.
+// EVERY ENTRY PASSES THE VALIDATION GATE. Nothing is born validated, however
+// complete it arrives, because validation is somebody looking — not a score
+// crossing a line.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
 import { PageHeader } from '@/components/PageHeader';
 import { useToast } from '@/components/Toast';
 import {
-  fetchProspect, addProspectFact, claimProspect, validateProspect, updateProspect,
-  fetchCompletenessMatrix,
-  type ProspectDetail, type ProspectFact,
+  fetchProspect, addProspectFact, claimProspect, validateProspect,
+  updateProspect, fetchCompletenessMatrix,
+  type ProspectDetail as Detail, type ProspectFact,
 } from '@/lib/api';
 
-// The completeness matrix, as an EDITABLE TABLE (ruling 2026-08-11: "build
-// these fields into one table that one can be adding and saving"). A list that
-// only tells you what is missing makes somebody go and find the Edit form; a
-// table you can type into is the difference between a standard people meet and
-// a standard people resent.
-// ONE RECORD CARD, SECTIONED (ruling 2026-08-11: "collapse these 3 into one
-// detail card that will be applicable even when one is creating an entry ...
-// arrange them into sections ... pool similar information together").
-//
-// Three cards asked the reader to hold the same business in their head three
-// times. Sections do the pooling instead - and because the shape is data, the
-// SAME form serves creating a record and completing one.
-//
-// The "why this field matters" microcopy is GONE from the form. It earned its
-// place when the panel was a list of accusations; inside a form somebody is
-// filling in, being lectured on every row is noise.
 type Row = {
   key: string; field: string; label: string;
-  kind?: 'text' | 'select' | 'number' | 'date' | 'area';
+  kind?: 'text' | 'select' | 'number' | 'area';
   options?: 'segments' | 'sectors' | 'counties';
   placeholder?: string;
 };
 
+// Sections pool related questions, so a block can be finished in one sitting
+// rather than facing fifteen rows that each demand a different kind of digging.
 const SECTIONS: { title: string; hint: string; rows: Row[] }[] = [
   {
     title: 'Identity',
     hint: 'Who this is, in the terms the bank organises itself around.',
     rows: [
       { key: 'name', field: 'name', label: 'Legal name' },
-      { key: 'segment', field: 'segment', label: 'Segment',
-        kind: 'select', options: 'segments' },
-      { key: 'sector', field: 'sector', label: 'Sector',
-        kind: 'select', options: 'sectors' },
-      { key: 'business_activity', field: 'business_activity',
-        label: 'What they actually do', kind: 'area',
-        placeholder: 'Grain milling and animal feeds; supplies three counties' },
+      { key: 'segment', field: 'segment', label: 'Segment', kind: 'select', options: 'segments' },
+      { key: 'sector', field: 'sector', label: 'Sector', kind: 'select', options: 'sectors' },
+      { key: 'business_activity', field: 'business_activity', label: 'What they actually do',
+        kind: 'area', placeholder: 'Grain milling and animal feeds; supplies three counties' },
     ],
   },
   {
     title: 'Where to find them',
     hint: 'Enough for somebody to turn up, or to call.',
     rows: [
-      { key: 'county', field: 'town', label: 'County',
-        kind: 'select', options: 'counties' },
-      { key: 'physical_address', field: 'physical_address',
-        label: 'Physical address', placeholder: 'Ngano House, Industrial Area' },
+      { key: 'county', field: 'town', label: 'County', kind: 'select', options: 'counties' },
+      { key: 'physical_address', field: 'physical_address', label: 'Physical address',
+        placeholder: 'Ngano House, Industrial Area' },
       { key: 'branches', field: 'branches', label: 'Branches or footprint',
         placeholder: '12 branches across 6 counties' },
-      { key: 'phone', field: 'contact_phone', label: 'Phone',
-        placeholder: '0722 000 000' },
-      { key: 'email', field: 'contact_email', label: 'Email',
-        placeholder: 'info@example.co.ke' },
-      { key: 'online_presence', field: 'website', label: 'Website',
-        placeholder: 'example.co.ke' },
+      { key: 'phone', field: 'contact_phone', label: 'Phone', placeholder: '0722 000 000' },
+      { key: 'email', field: 'contact_email', label: 'Email', placeholder: 'info@example.co.ke' },
+      { key: 'online_presence', field: 'website', label: 'Website', placeholder: 'example.co.ke' },
     ],
   },
   {
     title: 'Ownership and people',
     hint: 'Who decides, and who they answer to.',
     rows: [
-      { key: 'decision_maker', field: 'contact_name',
-        label: 'Decision maker and role', placeholder: 'Jane Wanjiku — CEO' },
+      { key: 'decision_maker', field: 'contact_name', label: 'Decision maker and role',
+        placeholder: 'Jane Wanjiku — CEO' },
       { key: '', field: 'ownership', label: 'Ownership or affiliation',
         placeholder: 'Member-owned; affiliated to KUSCCO' },
       { key: 'established', field: 'established', label: 'Year established',
@@ -102,15 +80,15 @@ const SECTIONS: { title: string; hint: string; rows: Row[] }[] = [
         label: 'Size (turnover, assets or members)', kind: 'number' },
       { key: 'existing_banker', field: 'existing_banker', label: 'Banks with now',
         placeholder: 'KCB, Co-operative Bank' },
-      { key: 'value_chain', field: 'value_chain',
-        label: 'Value chain and potential needs', kind: 'area',
-        placeholder: 'Buys maize from farmer groups; sells to schools and '
-          + 'retailers. Likely needs: working capital, collection accounts.' },
+      { key: 'value_chain', field: 'value_chain', label: 'Value chain and potential needs',
+        kind: 'area',
+        placeholder: 'Buys maize from farmer groups; sells to schools and retailers. '
+          + 'Likely needs: working capital, collection accounts.' },
     ],
   },
 ];
 
-const KINDS: { key: string; label: string }[] = [
+const KINDS = [
   { key: 'contact', label: 'Contact' },
   { key: 'relationship', label: 'Director / officer' },
   { key: 'financial', label: 'Financial' },
@@ -120,21 +98,19 @@ const KINDS: { key: string; label: string }[] = [
   { key: 'note', label: 'Note' },
 ];
 
-function kes(n: number | null | undefined): string {
-  const v = Number(n ?? 0);
-  if (!v) return '—';
-  return Math.round(v).toLocaleString();
-}
-
 export default function ProspectDetail() {
   const { prospectId = '' } = useParams();
   const nav = useNavigate();
   const { toast } = useToast();
-  const [data, setData] = useState<ProspectDetail | null>(null);
+
+  const [data, setData] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({
-    kind: 'contact', title: '', source: '', url: '', occurred_on: '', detail: '',
+  const [edit, setEdit] = useState<Record<string, string>>({});
+  const [lists, setLists] = useState<{ segments: string[]; sectors: string[]; counties: string[] }>(
+    { segments: [], sectors: [], counties: [] });
+  const [fact, setFact] = useState({
+    kind: 'contact', title: '', source: '', url: '', occurred_on: '',
   });
 
   const load = useCallback(async () => {
@@ -151,47 +127,25 @@ export default function ProspectDetail() {
 
   useEffect(() => { void load(); }, [load]);
 
-  async function add() {
-    if (!form.title.trim() || !form.source.trim()) {
-      toast({ tone: 'danger', message: 'A fact needs what it says and where it came from.' });
-      return;
-    }
-    setBusy(true);
-    try {
-      await addProspectFact(prospectId, form);
-      toast({ tone: 'success', message: 'Added to the card.' });
-      setForm({ ...form, title: '', url: '', detail: '' });
-      await load();
-    } catch (e) {
-      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not add.' });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const [edit, setEdit] = useState<Record<string, string>>({});
-  // Picklists come from the server so every client offers the SAME options -
-  // which is the entire reason they are lists rather than free text.
-  const [lists, setLists] = useState<{ segments: string[]; sectors: string[]; counties: string[] }>(
-    { segments: [], sectors: [], counties: [] });
-
   useEffect(() => {
     void (async () => {
       try {
         const m = await fetchCompletenessMatrix();
-        setLists({ segments: m.segments ?? [], sectors: m.sectors ?? [],
-                   counties: m.counties ?? [] });
+        setLists({ segments: m.segments ?? [], sectors: m.sectors ?? [], counties: m.counties ?? [] });
       } catch { /* the form still works, just without the pickers */ }
     })();
   }, []);
 
-  async function saveEdit() {
-    // The password is asked for ONLY on a validated record - the working set
+  const p = data?.prospect;
+  const c = data?.completeness;
+  const facts: ProspectFact[] = data?.card?.items ?? [];
+
+  async function save() {
+    // The password is asked for ONLY on a validated record. The working set
     // exists to be filled in, and friction there stops the backfilling.
     let pw = '';
     if (c?.validated) {
-      pw = window.prompt(
-        'This is a VALIDATED record. Enter the warehouse password to change it.') || '';
+      pw = window.prompt('This is a validated record. Enter the warehouse password to change it.') || '';
       if (!pw) return;
     }
     setBusy(true);
@@ -214,7 +168,6 @@ export default function ProspectDetail() {
       toast({ tone: 'success', message: 'Validated — this is now a usable record.' });
       await load();
     } catch (e) {
-      // The 400 names the specific gaps, which is more use than "incomplete".
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not validate.' });
     } finally {
       setBusy(false);
@@ -238,10 +191,25 @@ export default function ProspectDetail() {
     }
   }
 
-  const p = data?.prospect;
-  const facts: ProspectFact[] = data?.card?.items ?? [];
-  const c = data?.completeness;
-  const inp = 'mt-1 w-full h-9 px-2 rounded border border-gray-300 text-sm';
+  async function addFact() {
+    if (!fact.title.trim() || !fact.source.trim()) {
+      toast({ tone: 'danger', message: 'A source needs what it says and where it came from.' });
+      return;
+    }
+    setBusy(true);
+    try {
+      await addProspectFact(prospectId, fact);
+      setFact({ ...fact, title: '', url: '' });
+      await load();
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not add.' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const box = 'mt-1 w-full rounded-lg border px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#0082BB] ';
+  const small = 'h-8 w-full rounded-lg border border-gray-200 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#0082BB]';
 
   return (
     <>
@@ -258,364 +226,211 @@ export default function ProspectDetail() {
         )}
 
         {p && (
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-1 space-y-4">
-              <Card>
-                <Card.Header>
-                  <div className="flex items-center justify-between gap-2">
-                    <h2 className="text-base font-semibold text-gray-900">The business</h2>
-                    <span className={'rounded-full px-2.5 py-1 text-[11px] ' + (
-                      p.status === 'available'
-                        ? 'bg-[#E6F1FB] text-[#0C447C]'
-                        : 'bg-[#EAF3DE] text-[#3B6D11]')}>
-                      {p.status === 'available' ? 'unclaimed'
-                        : p.claimed_by_name ? `with ${p.claimed_by_name}` : p.status}
-                    </span>
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-base font-semibold text-gray-900">{p.name}</h2>
+                  <span className={'rounded-full px-2.5 py-0.5 text-[11px] ' + (
+                    c?.validated ? 'bg-[#EAF3DE] text-[#3B6D11]' : 'bg-[#FEF6E7] text-[#854F0B]')}>
+                    {c?.validated ? `validated by ${c.validated_by}` : 'under validation'}
+                  </span>
+                  <span className={'rounded-full px-2.5 py-0.5 text-[11px] ' + (
+                    p.status === 'available' ? 'bg-[#E6F1FB] text-[#0C447C]' : 'bg-gray-100 text-gray-600')}>
+                    {p.status === 'available' ? 'unclaimed'
+                      : p.claimed_by_name ? `with ${p.claimed_by_name}` : p.status}
+                  </span>
+                </div>
+                <div className="mt-1 text-[11px] text-gray-500">
+                  {p.source_event || 'Entered by hand'}
+                  {p.created_at ? ` · ${String(p.created_at).slice(0, 10)}` : ''}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className={'text-lg font-semibold tabular-nums ' + (
+                    c?.validated ? 'text-[#3B6D11]' : 'text-gray-800')}>{c?.score ?? 0}%</div>
+                  <div className="text-[10px] text-gray-400">
+                    {c?.answered ?? 0}/{c?.of ?? 15} answered
                   </div>
-                </Card.Header>
-                <Card.Body>
-                  <dl className="space-y-2 text-sm">
-                    {[
-                      ['Sector', p.sector || '—'],
-                      ['Location', p.town || '—'],
-                      ['Rough value', p.estimated_value ? `KES ${kes(p.estimated_value)}` : '—'],
-                      ['Listed by', p.created_by_name || '—'],
-                      ['Source', p.source_event || '—'],
-                    ].map(([k, v]) => (
-                      <div key={k} className="flex gap-3">
-                        <dt className="w-28 shrink-0 text-xs text-gray-500">{k}</dt>
-                        <dd className="text-gray-800">{v}</dd>
-                      </div>
-                    ))}
-                  </dl>
-
-                  {p.notes && (
-                    <p className="mt-3 border-t border-gray-100 pt-3 text-xs text-gray-600">
-                      {p.notes}
-                    </p>
-                  )}
-
-                  <div className="mt-3 border-t border-gray-100 pt-3">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Contact
-                    </div>
-                    {p.contacts_visible ? (
-                      <div className="mt-1 space-y-0.5 text-sm text-gray-800">
-                        <div>{p.contact_name || '—'}</div>
-                        <div>{p.contact_phone || '—'}</div>
-                        <div>{p.contact_email || '—'}</div>
-                      </div>
-                    ) : (
-                      // Opening a page is not a claim. Contacts stay hidden
-                      // until somebody takes the prospect on.
-                      <p className="mt-1 text-xs text-gray-400">
-                        Shown once you pursue this — the shelf shows the
-                        opportunity, not the person.
-                      </p>
-                    )}
-                  </div>
-
-                  {p.status === 'available' && (
-                    <Button className="mt-4 w-full" disabled={busy}
-                            onClick={() => void pursue()}>
-                      {busy ? 'Claiming…' : 'Pursue this'}
-                    </Button>
-                  )}
-                  {p.status !== 'available' && !p.mine && (
-                    <p className="mt-4 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500">
-                      Already being pursued by {p.claimed_by_name || 'someone'}.
-                    </p>
-                  )}
-
-                  {/* The Edit panel is gone: the completeness table IS the
-                      edit surface now, so having two was two ways to do one
-                      thing and the weaker one was closer to hand. */}
-                  <button type="button"
-                          className="mt-3 w-full text-center text-xs text-gray-500 hover:text-gray-700"
-                          onClick={() => nav('/pipeline/warehouse')}>
-                    Back to the shelf
-                  </button>
-                </Card.Body>
-              </Card>
+                </div>
+                {p.status === 'available' && (
+                  <Button size="sm" variant="secondary" disabled={busy}
+                          onClick={() => void pursue()}>Pursue</Button>
+                )}
+                {!c?.validated && (
+                  <Button size="sm" disabled={busy || !c?.complete}
+                          title={c?.complete ? '' : `${c?.threshold ?? 80}% needed first`}
+                          onClick={() => void validate()}>Validate</Button>
+                )}
+              </div>
             </div>
 
-            <div className="lg:col-span-2 space-y-4">
-              {/* WHAT IS STILL MISSING, and why each one matters. A score on
-                  its own tells somebody they are incomplete without telling
-                  them what to do about it. */}
-              <Card>
-                <Card.Header>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h2 className="text-base font-semibold text-gray-900">
-                      Completeness
-                    </h2>
-                    <div className="flex items-center gap-3">
-                      <span className={'text-sm font-semibold tabular-nums ' + (
-                        c?.validated ? 'text-[#3B6D11]' : 'text-gray-700')}>
-                        {c?.score ?? 0}%
-                      </span>
-                      {c?.validated ? (
-                        <span className="rounded-full bg-[#EAF3DE] px-2.5 py-1 text-[11px] text-[#3B6D11]">
-                          validated by {c.validated_by}
+            <div className="h-1.5 bg-gray-100">
+              <div className={'h-full ' + (
+                c?.validated ? 'bg-[#3B6D11]'
+                  : (c?.score ?? 0) >= 80 ? 'bg-[#BED600]'
+                    : (c?.score ?? 0) >= 40 ? 'bg-[#E0A02B]' : 'bg-gray-300')}
+                   style={{ width: `${Math.max(2, c?.score ?? 0)}%` }} />
+            </div>
+
+            <div className="space-y-4 p-4">
+              {c?.stale_validation && (
+                <p className="rounded-lg border border-[#FAEEDA] bg-[#FEFAF3] px-3 py-2 text-xs text-[#854F0B]">
+                  This record changed after it was validated, so it is no longer
+                  the record that was checked. Worth validating again.
+                </p>
+              )}
+
+              {SECTIONS.map((sec) => {
+                const done = sec.rows.filter((r) => r.key && c?.have.includes(r.key)).length;
+                const scored = sec.rows.filter((r) => r.key).length;
+                return (
+                  <div key={sec.title} className="overflow-hidden rounded-xl border border-gray-200">
+                    <div className="flex items-center justify-between gap-2 border-b border-gray-100 bg-gray-50/70 px-3 py-2">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-[#003D57]">
+                          {sec.title}
+                        </div>
+                        <div className="text-[10px] text-gray-500">{sec.hint}</div>
+                      </div>
+                      {scored > 0 && (
+                        <span className={'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ' + (
+                          done === scored ? 'bg-[#EAF3DE] text-[#3B6D11]' : 'bg-[#FEF6E7] text-[#854F0B]')}>
+                          {done}/{scored}
                         </span>
-                      ) : (
-                        <Button size="sm" disabled={busy || !c?.complete}
-                                onClick={() => void validate()}>
-                          {c?.complete ? 'Validate' : 'Validate'}
-                        </Button>
                       )}
                     </div>
+
+                    <div className="grid gap-3 p-3 sm:grid-cols-2">
+                      {sec.rows.map((row) => {
+                        const answered = row.key ? Boolean(c?.have.includes(row.key)) : true;
+                        const cur = edit[row.field]
+                          ?? String((p as unknown as Record<string, unknown>)[row.field] ?? '');
+                        const set = (v: string) => setEdit({ ...edit, [row.field]: v });
+                        const cls = box + (answered ? 'border-gray-200' : 'border-[#F0D9A8] bg-[#FFFDF8]');
+                        const opts = row.options === 'segments' ? lists.segments
+                          : row.options === 'sectors' ? lists.sectors
+                            : row.options === 'counties' ? lists.counties : [];
+                        return (
+                          <label key={row.field}
+                                 className={'block text-[11px] text-gray-600 '
+                                   + (row.kind === 'area' ? 'sm:col-span-2' : '')}>
+                            <span className="flex items-center gap-1.5">
+                              <span className={'h-1.5 w-1.5 rounded-full ' + (
+                                answered ? 'bg-[#3B6D11]' : 'bg-[#E0A02B]')} />
+                              {row.label}
+                            </span>
+                            {row.kind === 'select' ? (
+                              <select className={cls} value={cur} onChange={(e) => set(e.target.value)}>
+                                <option value="">Select…</option>
+                                {opts.map((o) => <option key={o} value={o}>{o}</option>)}
+                              </select>
+                            ) : row.kind === 'area' ? (
+                              <textarea rows={2} className={cls} value={cur}
+                                        placeholder={row.placeholder}
+                                        onChange={(e) => set(e.target.value)} />
+                            ) : (
+                              <input className={cls} value={cur} placeholder={row.placeholder}
+                                     inputMode={row.kind === 'number' ? 'numeric' : undefined}
+                                     onChange={(e) => set(e.target.value)} />
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
-                </Card.Header>
-                <Card.Body>
-                  <div className="mb-3 h-2 overflow-hidden rounded-full bg-gray-100">
-                    <div className={'h-full rounded-full ' + (
-                      c?.validated ? 'bg-[#3B6D11]'
-                        : (c?.score ?? 0) >= 70 ? 'bg-[#BED600]'
-                          : (c?.score ?? 0) >= 40 ? 'bg-[#E0A02B]' : 'bg-gray-300')}
-                         style={{ width: `${Math.max(3, c?.score ?? 0)}%` }} />
-                  </div>
+                );
+              })}
 
-                  {c?.stale_validation && (
-                    <p className="mb-3 rounded-lg border border-[#FAEEDA] bg-[#FEFAF3] px-3 py-2 text-xs text-[#854F0B]">
-                      This record has changed since it was validated, so it is no
-                      longer the record that was checked. Worth validating again.
-                    </p>
-                  )}
-
-                  {c && c.missing.length === 0 && !c.validated && (
-                    <p className="text-xs text-gray-600">
-                      Every field is answered. Validating means you have looked
-                      and you believe it — a record can be complete and wrong,
-                      which is why this is not automatic.
-                    </p>
-                  )}
-
-                  {c && (
-                    <>
-                      <p className="mb-2 text-xs text-gray-500">
-                        {c.answered} of {c.of} answered
-                        {c.complete ? ' — ready to validate.'
-                          : ` — ${c.threshold}% needed before validation can begin.`}
-                      </p>
-
-                      {/* SECTIONED. Each block is a question somebody can
-                          answer in one sitting, rather than fifteen unrelated
-                          rows demanding fifteen different kinds of knowledge. */}
-                      <div className="space-y-4">
-                        {SECTIONS.map((sec) => {
-                          const done = sec.rows.filter(
-                            (r) => r.key && c.have.includes(r.key)).length;
-                          const scored = sec.rows.filter((r) => r.key).length;
-                          return (
-                            <div key={sec.title}
-                                 className="overflow-hidden rounded-xl border border-gray-200">
-                              <div className="flex items-center justify-between gap-2 border-b border-gray-100 bg-gray-50/70 px-3 py-2">
-                                <div>
-                                  <div className="text-xs font-semibold uppercase tracking-wide text-[#003D57]">
-                                    {sec.title}
-                                  </div>
-                                  <div className="text-[10px] text-gray-500">{sec.hint}</div>
-                                </div>
-                                {scored > 0 && (
-                                  <span className={'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ' + (
-                                    done === scored
-                                      ? 'bg-[#EAF3DE] text-[#3B6D11]'
-                                      : 'bg-[#FEF6E7] text-[#854F0B]')}>
-                                    {done}/{scored}
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="grid gap-3 p-3 sm:grid-cols-2">
-                                {sec.rows.map((row) => {
-                                  const answered = row.key ? c.have.includes(row.key) : true;
-                                  const cur = edit[row.field]
-                                    ?? String((p as unknown as Record<string, unknown>)[row.field] ?? '');
-                                  const set = (val: string) =>
-                                    setEdit({ ...edit, [row.field]: val });
-                                  const box = 'mt-1 w-full rounded-lg border px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#0082BB] '
-                                    + (answered ? 'border-gray-200' : 'border-[#F0D9A8] bg-[#FFFDF8]');
-                                  const opts = row.options === 'segments' ? lists.segments
-                                    : row.options === 'sectors' ? lists.sectors
-                                      : row.options === 'counties' ? lists.counties : [];
-                                  return (
-                                    <label key={row.field}
-                                           className={'block text-[11px] text-gray-600 '
-                                             + (row.kind === 'area' ? 'sm:col-span-2' : '')}>
-                                      <span className="flex items-center gap-1.5">
-                                        <span className={'h-1.5 w-1.5 rounded-full ' + (
-                                          answered ? 'bg-[#3B6D11]' : 'bg-[#E0A02B]')} />
-                                        {row.label}
-                                      </span>
-                                      {row.kind === 'select' ? (
-                                        // PICKED, NOT TYPED - four spellings of
-                                        // one segment ruins every report built
-                                        // on top of this.
-                                        <select className={box} value={cur}
-                                                onChange={(e) => set(e.target.value)}>
-                                          <option value="">Select…</option>
-                                          {opts.map((o) => <option key={o} value={o}>{o}</option>)}
-                                        </select>
-                                      ) : row.kind === 'area' ? (
-                                        <textarea rows={2} className={box} value={cur}
-                                                  placeholder={row.placeholder}
-                                                  onChange={(e) => set(e.target.value)} />
-                                      ) : (
-                                        <input className={box} value={cur}
-                                               inputMode={row.kind === 'number' ? 'numeric' : undefined}
-                                               placeholder={row.placeholder}
-                                               onChange={(e) => set(e.target.value)} />
-                                      )}
-                                    </label>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Anything the fifteen do not cover. Every warehouse
-                          eventually meets a business whose important fact has
-                          no column, and a record with nowhere to put it loses
-                          the fact. */}
-                      <label className="mt-3 block text-xs text-gray-600">
-                        Anything else worth knowing
-                        <textarea
-                          rows={3}
-                          className="mt-1 w-full rounded border border-gray-200 p-2 text-xs focus:border-brand-primary focus:outline-none"
-                          placeholder="Ownership, group affiliation, seasonality, known issues, anything the fields above do not cover…"
+              {/* Every warehouse eventually meets a business whose important
+                  fact has no column, and a record with nowhere to put it loses
+                  the fact. */}
+              <label className="block text-[11px] text-gray-600">
+                Anything else worth knowing
+                <textarea rows={3}
+                          className={box + 'border-gray-200'}
+                          placeholder="Seasonality, known issues, group structure, anything the fields above do not cover…"
                           value={edit.additional_information
                             ?? String((p as unknown as Record<string, unknown>).additional_information ?? '')}
                           onChange={(e) => setEdit({ ...edit, additional_information: e.target.value })} />
-                      </label>
+              </label>
 
-                      <div className="mt-3 flex items-center justify-between gap-2">
-                        <span className="text-[11px] text-gray-400">
-                          {c.validated
-                            ? 'Validated — saving needs the warehouse password.'
-                            : 'Fill in what you know; save as often as you like.'}
-                        </span>
-                        <Button size="sm" disabled={busy || Object.keys(edit).length === 0}
-                                onClick={() => void saveEdit()}>
-                          {busy ? 'Saving…' : 'Save'}
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </Card.Body>
-              </Card>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-gray-400">
+                  {c?.validated
+                    ? 'Validated — saving needs the warehouse password.'
+                    : `Fill in what you know. ${c?.threshold ?? 80}% opens validation.`}
+                </span>
+                <Button size="sm" disabled={busy || Object.keys(edit).length === 0}
+                        onClick={() => void save()}>
+                  {busy ? 'Saving…' : 'Save'}
+                </Button>
+              </div>
 
-              <Card>
-                <Card.Header>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h2 className="text-base font-semibold text-gray-900">
-                      What we know
-                    </h2>
-                    <span className="text-xs text-gray-500">
-                      {facts.length} {facts.length === 1 ? 'entry' : 'entries'}, newest first
-                    </span>
+              {/* SOURCES, folded in rather than sitting in a card of their own.
+                  Each is a fact with a date and a place it came from - never a
+                  copied article. */}
+              <div className="overflow-hidden rounded-xl border border-gray-200">
+                <div className="flex items-center justify-between gap-2 border-b border-gray-100 bg-gray-50/70 px-3 py-2">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-[#003D57]">
+                    Sources and findings
                   </div>
-                </Card.Header>
-                <Card.Body>
-                  {/* Adding is at the TOP and always open. The register gives a
-                      name and an address and nothing else, so this card fills
-                      up by hand or not at all - and a form hidden behind a
-                      button gets used once. */}
-                  <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50/60 p-3">
-                    <div className="grid gap-2 sm:grid-cols-4">
-                      <label className="text-xs text-gray-600">
-                        Kind
-                        <select className={inp} value={form.kind}
-                                onChange={(e) => setForm({ ...form, kind: e.target.value })}>
-                          {KINDS.map((k) => (
-                            <option key={k.key} value={k.key}>{k.label}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="text-xs text-gray-600 sm:col-span-2">
-                        What it says
-                        <input className={inp} value={form.title}
-                               placeholder="e.g. CEO: Jane Wanjiku · 0722 000 000"
-                               onChange={(e) => setForm({ ...form, title: e.target.value })} />
-                      </label>
-                      <label className="text-xs text-gray-600">
-                        Dated
-                        <input type="date" className={inp} value={form.occurred_on}
-                               onChange={(e) => setForm({ ...form, occurred_on: e.target.value })} />
-                      </label>
-                      <label className="text-xs text-gray-600 sm:col-span-2">
-                        Where it came from
-                        <input className={inp} value={form.source}
-                               placeholder="their website · a call · Business Daily"
-                               onChange={(e) => setForm({ ...form, source: e.target.value })} />
-                      </label>
-                      <label className="text-xs text-gray-600 sm:col-span-2">
-                        Link (optional)
-                        <input className={inp} value={form.url}
-                               onChange={(e) => setForm({ ...form, url: e.target.value })} />
-                      </label>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <span className="text-[11px] text-gray-500">
-                        Anyone can add. Every entry records who added it and where
-                        it came from.
-                      </span>
-                      <Button size="sm" disabled={busy} onClick={() => void add()}>
-                        {busy ? 'Adding…' : 'Add to card'}
-                      </Button>
-                    </div>
+                  <span className="text-[10px] text-gray-500">
+                    {facts.length} {facts.length === 1 ? 'entry' : 'entries'}
+                  </span>
+                </div>
+
+                <div className="space-y-2 p-3">
+                  <div className="grid gap-2 sm:grid-cols-6">
+                    <select className={small} value={fact.kind}
+                            onChange={(e) => setFact({ ...fact, kind: e.target.value })}>
+                      {KINDS.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}
+                    </select>
+                    <input className={`${small} sm:col-span-2`} value={fact.title}
+                           placeholder="What it says"
+                           onChange={(e) => setFact({ ...fact, title: e.target.value })} />
+                    <input className={small} value={fact.source}
+                           placeholder="Where from"
+                           onChange={(e) => setFact({ ...fact, source: e.target.value })} />
+                    <input type="date" className={small} value={fact.occurred_on}
+                           onChange={(e) => setFact({ ...fact, occurred_on: e.target.value })} />
+                    <Button size="sm" disabled={busy} onClick={() => void addFact()}>Add</Button>
                   </div>
 
-                  {facts.length === 0 && (
-                    <div className="py-8 text-center">
-                      <p className="text-sm text-gray-500">Nothing recorded yet.</p>
-                      <p className="mx-auto mt-2 max-w-md text-xs text-gray-400">
-                        The register gives a name, a location and a postal
-                        address. Everything else — who runs it, what it is worth,
-                        who it banks with — gets added by whoever finds out.
-                      </p>
-                    </div>
-                  )}
-
-                  {facts.length > 0 && (
-                    <div className="space-y-2">
+                  {facts.length === 0 ? (
+                    <p className="py-3 text-center text-[11px] text-gray-400">
+                      Nothing recorded yet. Whoever finds something out records it here.
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-gray-100">
                       {facts.map((f) => (
-                        <div key={f.id}
-                             className="rounded-lg border border-gray-200 p-3">
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <span className="mr-2 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gray-600">
-                                {KINDS.find((k) => k.key === f.kind)?.label ?? f.kind}
-                              </span>
-                              <span className="text-sm font-medium text-gray-900">
-                                {f.title}
-                              </span>
-                              {f.detail && (
-                                <p className="mt-1 text-xs text-gray-600">{f.detail}</p>
-                              )}
-                            </div>
-                            <span className="shrink-0 text-[11px] tabular-nums text-gray-400">
-                              {f.occurred_on || 'undated'}
-                            </span>
-                          </div>
-                          <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-gray-500">
-                            <span>{f.source}</span>
-                            {f.url && (
-                              <a href={f.url} target="_blank" rel="noreferrer"
-                                 className="text-brand-primary hover:underline">
-                                open source
-                              </a>
-                            )}
-                            <span className="text-gray-400">added by {f.added_by || '—'}</span>
-                          </div>
-                        </div>
+                        <li key={f.id} className="flex flex-wrap items-baseline gap-2 py-1.5 text-xs">
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gray-600">
+                            {KINDS.find((k) => k.key === f.kind)?.label ?? f.kind}
+                          </span>
+                          <span className="font-medium text-gray-900">{f.title}</span>
+                          <span className="text-[10px] text-gray-400">
+                            {f.source}{f.occurred_on ? ` · ${f.occurred_on}` : ''}
+                            {f.added_by ? ` · ${f.added_by}` : ''}
+                          </span>
+                          {f.url && (
+                            <a href={f.url} target="_blank" rel="noreferrer"
+                               className="text-[10px] text-brand-primary hover:underline">open</a>
+                          )}
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   )}
-                </Card.Body>
-              </Card>
+                </div>
+              </div>
+
+              <button type="button"
+                      className="w-full text-center text-xs text-gray-500 hover:text-gray-700"
+                      onClick={() => nav('/pipeline/warehouse')}>
+                Back to the shelf
+              </button>
             </div>
           </div>
         )}
