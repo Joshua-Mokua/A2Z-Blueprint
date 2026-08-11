@@ -99,6 +99,19 @@ NOT_FOR_RELEASE = {
     # warehouse is not to be released to Alex until I am certain it is well
     # built."
     "patch_dw1_warehouse",
+    "patch_dq1_clean_warehouse",
+    "patch_ic1_information_card",
+    "patch_ic2_prospect_detail",
+    "patch_cm1_completeness",
+    "patch_cm2_matrix_ui",
+    "patch_pw1_protected_records",
+    "patch_cm3_matrix_table",
+    "patch_ux1_record_card",
+    "patch_wa1_one_card_analytics",
+    "patch_rb1_second_register",
+    "patch_lib1_library_order",
+    "patch_land1_first_landing",
+    "patch_pick1_shelf_pickers",
     "patch_dw2_warehouse_ui",
     # Analytics.tsx is on the deployment delta list, so OR6 stays on our side
     # until that ruling changes.
