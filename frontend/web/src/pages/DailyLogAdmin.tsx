@@ -20,6 +20,7 @@ import {
   fetchBranchLogFields,
   fetchBranchLogConfig,
   saveBranchLogConfig,
+  saveBranchLogUnitConfig,
   fetchBranchLogActivities,
   saveBranchLogActivities,
   type BranchLogField,
@@ -46,6 +47,58 @@ export function DailyLogAdmin() {
   const [fields, setFields] = useState<BranchLogField[]>([]);
   const [weights, setWeights] = useState<Record<string, string>>({});
   const [target, setTarget] = useState('');
+  // Per-unit sets and weights (AS1-AS3). A unit with NO set keeps the branch
+  // base, so "not configured" is the normal state, not an error.
+  const [units, setUnits] = useState<string[]>([]);
+  const [unitLabels, setUnitLabels] = useState<Record<string, string>>({});
+  const [sets, setSets] = useState<Record<string, string[]>>({});
+  const [unitW, setUnitW] = useState<Record<string, Record<string, number>>>({});
+  const [unit, setUnit] = useState('');
+  const [savingUnit, setSavingUnit] = useState(false);
+
+  const unitKeys = unit ? (sets[unit] ?? []) : [];
+  const unitConfigured = unit ? Boolean(sets[unit]?.length) : false;
+
+  function toggleKey(k: string) {
+    if (!unit) return;
+    const cur = sets[unit] ?? [];
+    const next = cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k];
+    setSets({ ...sets, [unit]: next });
+  }
+
+  function setUnitWeight(k: string, v: string) {
+    if (!unit) return;
+    const cur = { ...(unitW[unit] ?? {}) };
+    if (v.trim() === '') delete cur[k];
+    else cur[k] = Number(v) || 0;
+    setUnitW({ ...unitW, [unit]: cur });
+  }
+
+  async function saveUnit() {
+    if (!unit) return;
+    setSavingUnit(true);
+    try {
+      // Sent as its own payload. An empty set REMOVES the unit server-side,
+      // returning its people to the branch base rather than leaving them with
+      // no activities at all.
+      await saveBranchLogUnitConfig({
+        activity_sets: { [unit]: sets[unit] ?? [] },
+        unit_activity_weights: { [unit]: unitW[unit] ?? {} },
+      });
+      // This page reports through setMsg, not a toast - matching the two save
+      // handlers already here rather than introducing a second convention.
+      setMsg({
+        tone: 'ok',
+        text: (sets[unit] ?? []).length
+          ? `${unit} saved.`
+          : `${unit} returned to the branch activity set.`,
+      });
+    } catch (e) {
+      setMsg({ tone: 'err', text: e instanceof Error ? e.message : 'Could not save.' });
+    } finally {
+      setSavingUnit(false);
+    }
+  }
   const [extras, setExtras] = useState<ExtraActivity[]>([]);
   const [newAct, setNewAct] = useState({ key: '', label: '', unit: '', weight: '', roles: '' });
   const [busy, setBusy] = useState(false);
@@ -66,6 +119,10 @@ export function DailyLogAdmin() {
       }
       setWeights(w);
       setTarget(String(cfg.daily_index_target ?? 0));
+      setUnits(cfg.units ?? []);
+      setUnitLabels(cfg.unit_labels ?? {});
+      setSets(cfg.activity_sets ?? {});
+      setUnitW(cfg.unit_activity_weights ?? {});
       setExtras(acts.extra ?? []);
     } catch (e) {
       setMsg({ tone: 'err', text: e instanceof Error ? e.message : 'Could not load config' });
@@ -224,6 +281,98 @@ export function DailyLogAdmin() {
                 {busy ? 'Saving…' : 'Save activities'}
               </button>
             </div>
+          </Card.Body>
+        </Card>
+
+        <Card className="mt-4">
+          <Card.Header>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-base font-semibold text-gray-900">Activities by unit</h2>
+              <select value={unit} onChange={(e) => setUnit(e.target.value)}
+                      className="rounded border border-gray-200 px-2 py-1 text-xs">
+                <option value="">Select a unit…</option>
+                {units.map((u) => (
+                  <option key={u} value={u}>
+                    {unitLabels[u] ?? u}{sets[u]?.length ? ` (${sets[u].length})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </Card.Header>
+          <Card.Body>
+            {!unit && (
+              <p className="py-6 text-center text-sm text-gray-400">
+                Pick a unit to give it its own activities.
+              </p>
+            )}
+
+            {unit && (
+              <>
+                <p className="mb-3 text-xs text-gray-500">
+                  {unitConfigured
+                    ? `${unitKeys.length} selected. Clear them all to return this unit to the branch set.`
+                    : 'Not configured — this unit currently uses the branch activity set.'}
+                </p>
+
+                <div className="overflow-auto rounded-lg border border-gray-200">
+                  <table className="w-full border-separate" style={{ borderSpacing: 0 }}>
+                    <thead>
+                      <tr>
+                        <th className="w-10 bg-gray-100 px-2 py-2"></th>
+                        <th className="bg-gray-100 px-2 py-2 text-left text-[11px] font-semibold uppercase text-gray-600">Activity</th>
+                        <th className="bg-gray-100 px-2 py-2 text-right text-[11px] font-semibold uppercase text-gray-600">Bank weight</th>
+                        <th className="bg-gray-100 px-2 py-2 text-right text-[11px] font-semibold uppercase text-gray-600">This unit</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {fields.filter((f) => f.key !== 'remarks').map((f, i) => {
+                        const on = unitKeys.includes(f.key);
+                        const bg = i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white';
+                        const ov = unitW[unit]?.[f.key];
+                        return (
+                          <tr key={f.key}>
+                            <td className={`${bg} px-2 py-1.5`}>
+                              <input type="checkbox" checked={on}
+                                     onChange={() => toggleKey(f.key)} />
+                            </td>
+                            <td className={`${bg} px-2 py-1.5 text-xs ${on ? 'text-gray-900' : 'text-gray-400'}`}>
+                              {f.label}
+                              {f.key === 'loans_referred' && (
+                                <span className="ml-2 rounded bg-[#E6F1FB] px-1.5 py-0.5 text-[10px] text-[#0C447C]">
+                                  always included
+                                </span>
+                              )}
+                            </td>
+                            <td className={`${bg} px-2 py-1.5 text-right text-xs tabular-nums text-gray-500`}>
+                              {weights[f.key] ?? 0}
+                            </td>
+                            <td className={`${bg} px-2 py-1.5 text-right`}>
+                              <input
+                                type="number" step="0.1"
+                                value={ov === undefined ? '' : String(ov)}
+                                placeholder="inherit"
+                                onChange={(e) => setUnitWeight(f.key, e.target.value)}
+                                className="w-20 rounded border border-gray-200 px-2 py-1 text-right text-xs"
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-gray-500">
+                    Blank weight inherits the bank figure. Target stays {target} for everyone.
+                  </span>
+                  <button type="button" className={btn} disabled={savingUnit}
+                          onClick={() => void saveUnit()}>
+                    {savingUnit ? 'Saving…' : `Save ${(unitLabels[unit] ?? unit).slice(0, 28)}`}
+                  </button>
+                </div>
+              </>
+            )}
           </Card.Body>
         </Card>
       </div>

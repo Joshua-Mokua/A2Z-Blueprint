@@ -119,9 +119,11 @@ def _effective_index(log: dict) -> float:
         try:
             base = float(idx or 0)
         except (TypeError, ValueError):
-            base = compute_index({k: log.get(k, 0) for k in metric_keys()})
+            base = compute_index({k: log.get(k, 0) for k in metric_keys()},
+                             str(log.get("unit", "") or ""))
     else:
-        base = compute_index({k: log.get(k, 0) for k in metric_keys()})
+        base = compute_index({k: log.get(k, 0) for k in metric_keys()},
+                             str(log.get("unit", "") or ""))
 
     # REFERRAL CREDIT, derived not stored (ruling 2026-08-09). Referrals credit
     # on ACCEPTANCE and never expire, so a decision can land after the day has

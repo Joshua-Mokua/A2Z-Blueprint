@@ -61,6 +61,48 @@ def activity_weights() -> dict:
     return load_log_config().get("activity_weights", {}) or {}
 
 
+def unit_activity_weights() -> dict:
+    """{unit: {activity key: weight}} — per-unit OVERRIDES, from config."""
+    try:
+        v = (load_log_config() or {}).get("unit_activity_weights")
+        if isinstance(v, dict):
+            out = {}
+            for u, m in v.items():
+                if not isinstance(m, dict):
+                    continue
+                got = {}
+                for k, w in m.items():
+                    try:
+                        got[str(k)] = float(w)
+                    except (TypeError, ValueError):
+                        continue
+                if got:
+                    out[str(u)] = got
+            return out
+    except Exception:
+        pass
+    return {}
+
+
+def weights_for_unit(unit: str = "") -> dict:
+    """The weights that apply to a person in this unit.
+
+    RULING 2026-08-10: "the target will be the same, maybe the weights is what
+    shall vary on the various activities." So the TARGET is global and the
+    weights are per unit.
+
+    An OVERLAY, not a replacement: a unit sets only the activities whose value
+    differs for it, and everything else keeps the bank-wide weight. A unit that
+    had to restate every weight would drift out of step the moment a global one
+    changed, and nobody would notice.
+    """
+    base = dict(activity_weights())
+    over = unit_activity_weights().get(str(unit or "").strip())
+    if over:
+        base.update(over)
+    return base
+
+
 def daily_index_target() -> float:
     try:
         return float(load_log_config().get("daily_index_target", 0) or 0)
@@ -68,9 +110,21 @@ def daily_index_target() -> float:
         return 0.0
 
 
-def compute_index(metrics: dict) -> float:
-    """Productivity index for a log = sum(activity count x admin weight)."""
-    w = activity_weights()
+def compute_index(metrics: dict, unit: str = "") -> float:
+    """Productivity index for a log = sum(activity count x admin weight).
+
+    `unit` selects that unit's weights where it has overridden them. It defaults
+    to "" so every existing caller keeps the bank-wide weights and nothing
+    changes until a unit is actually configured.
+    """
+    w = weights_for_unit(unit) if unit else activity_weights()
+    total = 0.0
+    for k, v in (metrics or {}).items():
+        try:
+            total += float(v or 0) * float(w.get(k, 0) or 0)
+        except (TypeError, ValueError):
+            continue
+    return round(total, 2)
     total = 0.0
     for k, v in (metrics or {}).items():
         try:
@@ -163,19 +217,123 @@ def sanitize_hourly(hourly: dict) -> dict:
     return out
 
 
+def auto_fields() -> set:
+    """Fields the SYSTEM derives; a person must not type them.
+
+    Ruling 2026-08-09: the referral field becomes uneditable once referral
+    credit is automatic (RF1), because otherwise the same referral is counted
+    twice - once by hand and once by machine.
+
+    Config-driven, so the next derived metric needs no code change.
+    """
+    try:
+        cfg = load_log_config() or {}
+        v = cfg.get("auto_fields")
+        if isinstance(v, list):
+            return {str(x) for x in v if str(x).strip()}
+    except Exception:
+        pass
+    try:
+        from utils.referral_credit import credit_field
+        return {credit_field()}
+    except Exception:
+        return {"loans_referred"}
+
+
 def fields_schema() -> list:
     w = activity_weights()
+    auto = auto_fields()
     return [{"key": k, "label": lbl, "type": t, "unit": u, "bsc_kpi": kpi,
-             "weight": float(w.get(k, 0) or 0)}
+             "weight": float(w.get(k, 0) or 0), "auto": k in auto}
             for k, lbl, t, u, kpi in LOG_FIELDS]
+
+
+def fields_schema() -> list:
+    w = activity_weights()
+    auto = auto_fields()
+    return [{"key": k, "label": lbl, "type": t, "unit": u, "bsc_kpi": kpi,
+             "weight": float(w.get(k, 0) or 0), "auto": k in auto}
+            for k, lbl, t, u, kpi in LOG_FIELDS]
+
+
+# ── PER-UNIT ACTIVITY SETS (pilot request, 2026-08-10) ──────────────────────
+# "each department has unique set of activities, and the one that will cut
+#  across currently is the referral ... enable the admin to select from a list
+#  of all units and create the unique listing."
+#
+# RULINGS: the daily target stays the SAME for everyone - only the WEIGHTS vary
+# per activity. Head Office units keep NOTHING from the branch base except the
+# referral.
+#
+# Until a unit has a set defined, it keeps the branch base. That is deliberate:
+# switching a unit to an empty set would drop every activity its people log and
+# their index would read zero - not because they did nothing, but because
+# nothing is configured. Absence of config must not look like absence of work.
+COMMON_KEYS = ("loans_referred",)
+
+
+def activity_sets() -> dict:
+    """{unit: [field key, ...]} from branch_log_config.activity_sets."""
+    try:
+        cfg = load_log_config() or {}
+        v = cfg.get("activity_sets")
+        if isinstance(v, dict):
+            return {str(k): [str(x) for x in (vv or [])] for k, vv in v.items()}
+    except Exception:
+        pass
+    return {}
+
+
+def _reweight(fields: list, unit: str) -> list:
+    """Restate each field's weight as the UNIT sees it.
+
+    Without this the admin panel would show the bank-wide number while the
+    index used the unit's - the kind of quiet disagreement that makes people
+    stop trusting the figure rather than report it.
+    """
+    if not unit:
+        return fields
+    w = weights_for_unit(unit)
+    out = []
+    for f in fields:
+        g = dict(f)
+        g["weight"] = float(w.get(f.get("key"), f.get("weight", 0)) or 0)
+        out.append(g)
+    return out
+
+
+def fields_for_unit(unit: str) -> list:
+    """The base activity set for a unit.
+
+    A unit with no configured set falls back to the FULL branch base - see the
+    note above on why an empty set is the wrong default.
+    """
+    sets = activity_sets()
+    u = str(unit or "").strip()
+    keys = sets.get(u)
+    base = _reweight(fields_schema(), u)
+    if not keys:
+        return base
+    # COMMON_KEYS always travel, whatever the unit configured. The referral is
+    # the one activity that genuinely cuts across every desk in the bank.
+    want = list(dict.fromkeys(list(keys) + list(COMMON_KEYS)))
+    by_key = {f["key"]: f for f in base}
+    return [by_key[k] for k in want if k in by_key]
 
 
 def fields_for_role(role: str) -> list:
     """Activity fields for a role: the common base + admin extras whose 'roles'
     is empty (common) or includes this role."""
-    out = fields_schema()
+    return fields_for(role, "")
+
+
+def fields_for(role: str, unit: str = "") -> list:
+    """Activity fields for a person: their UNIT's set, plus admin extras scoped
+    to their role or unit (or scoped to neither, meaning common)."""
+    out = fields_for_unit(unit) if unit else fields_schema()
     w = activity_weights()
     rl = str(role or "").strip().lower()
+    un = str(unit or "").strip().lower()
     for a in _extra_activities():
         k = str(a.get("key") or "").strip()
         if not k:
@@ -183,24 +341,18 @@ def fields_for_role(role: str) -> list:
         roles = [str(x).strip().lower() for x in (a.get("roles") or [])]
         if roles and rl and rl not in roles:
             continue
+        # Unit scoping, alongside the role scoping that already existed.
+        units = [str(x).strip().lower() for x in (a.get("units") or [])]
+        if units and un and un not in units:
+            continue
         out.append({"key": k, "label": a.get("label", k), "type": a.get("type", "int"),
                     "unit": a.get("unit", ""), "bsc_kpi": None,
                     "weight": float(w.get(k, a.get("weight", 0)) or 0),
-                    "roles": a.get("roles") or []})
+                    "roles": a.get("roles") or [],
+                    "units": a.get("units") or []})
     return out
 
 
-# ── Plausibility bounds ──────────────────────────────────────────────────────
-# A count field accepted 708,309,885 in live data, and a KES figure typed into a
-# count box (500,000 DFS registrations in one day) produced a carried-forward
-# balance of 1.5 million that then propagated into every ranking and analytic.
-# The reconciliation gate only catches over-reporting against a branch control
-# total, and only where one exists - nothing stopped the number entering.
-#
-# Bounds are per field and live in data/branch_log_config.json under
-# `field_bounds`, so a branch that genuinely does more can be raised without a
-# deploy. Type matters: a COUNT and a KES VALUE need very different ceilings,
-# which is why the defaults below are split by type.
 _DEFAULT_BOUNDS = {
     "transactions_count": 500,
     "customer_visits":    400,
@@ -310,6 +462,16 @@ class BranchLogManager:
             metrics = {k: _num(derived.get(k, 0)) for k in metric_keys()}
         else:
             metrics = {k: _num(values.get(k, 0)) for k in metric_keys()}
+        # AUTO FIELDS ARE IGNORED, not trusted. A read-only input is a UI
+        # courtesy; a crafted request would still write. Whatever arrives for an
+        # auto field is discarded, and the value is derived at read time instead
+        # (utils.referral_credit), so a machine count and a typed count can
+        # never disagree. Drafts are NOT touched - same reasoning that exempts
+        # them from bounds checking.
+        for _k in auto_fields():
+            if _k in metrics:
+                metrics[_k] = 0
+
         remarks = str(values.get("remarks", "") or "")
 
         # Reject, never clamp: a clamped number looks like a real one, and the
@@ -331,7 +493,7 @@ class BranchLogManager:
             existing["remarks"] = remarks
             if hourly:
                 existing["hourly"] = hourly
-            existing["index"] = compute_index(metrics)
+            existing["index"] = compute_index(metrics, unit)
             existing["updated_at"] = datetime.now().isoformat()
             existing["validated"] = False
             existing["rejected"] = False
@@ -355,7 +517,7 @@ class BranchLogManager:
             "status": "submitted",
             "hourly": hourly,
             **metrics,
-            "index": compute_index(metrics),
+            "index": compute_index(metrics, unit),
             "remarks": remarks,
         }
         self.logs.append(rec)
@@ -423,7 +585,7 @@ class BranchLogManager:
             existing["remarks"] = remarks
             if hourly:
                 existing["hourly"] = hourly
-            existing["index"] = compute_index(metrics)
+            existing["index"] = compute_index(metrics, unit)
             existing["updated_at"] = datetime.now().isoformat()
             existing["status"] = "draft"
             existing["validated"] = False
@@ -448,7 +610,7 @@ class BranchLogManager:
             "status": "draft",
             "hourly": hourly,
             **metrics,
-            "index": compute_index(metrics),
+            "index": compute_index(metrics, unit),
             "remarks": remarks,
         }
         self.logs.append(rec)

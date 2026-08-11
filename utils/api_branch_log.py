@@ -202,9 +202,24 @@ def branch_log_config_get(user: dict = Depends(get_current_user)):
     """Per-activity weights + daily index target (admin-configured), with fields."""
     from utils.branch_log import load_log_config
     cfg = load_log_config()
+    # UNITS the admin can configure: every MD-reporting unit, so the panel can
+    # offer a list rather than expecting someone to type a unit name exactly.
+    try:
+        from utils.org_validator import md_reporting_roles
+        # The KEY stays the role title (it is what every stored config uses);
+        # the panel shows a readable department name alongside it.
+        from utils.org_validator import unit_label
+        units = sorted(md_reporting_roles() or [])
+        unit_labels = {u: unit_label(u) for u in units}
+    except Exception:
+        units = sorted((cfg.get("activity_sets") or {}).keys())
     return {"activity_weights": cfg.get("activity_weights", {}) or {},
             "daily_index_target": cfg.get("daily_index_target", 0) or 0,
-            "fields": fields_schema()}
+            "fields": fields_schema(),
+            "activity_sets": cfg.get("activity_sets", {}) or {},
+            "unit_activity_weights": cfg.get("unit_activity_weights", {}) or {},
+            "units": units,
+            "unit_labels": unit_labels}
 
 
 @router.post("/config")
@@ -228,11 +243,53 @@ def branch_log_config_set(payload: dict = Body(default_factory=dict),
             cfg["daily_index_target"] = float(payload.get("daily_index_target") or 0)
         except (TypeError, ValueError):
             cfg["daily_index_target"] = 0.0
+
+    # PER-UNIT ACTIVITY SETS (AS1). {unit: [field key, ...]}
+    # A unit sent with an EMPTY list is REMOVED rather than stored empty: an
+    # empty set would leave that unit with no activities at all and its people
+    # would read zero. Removing it returns them to the branch base, which is
+    # what "no set" is supposed to mean.
+    if isinstance(payload.get("activity_sets"), dict):
+        from utils.branch_log import fields_schema
+        known = {f["key"] for f in fields_schema()}
+        sets = dict(cfg.get("activity_sets") or {})
+        for unit, keys in payload["activity_sets"].items():
+            u = str(unit).strip()
+            if not u:
+                continue
+            good = [str(k) for k in (keys or []) if str(k) in known]
+            if good:
+                sets[u] = good
+            else:
+                sets.pop(u, None)
+        cfg["activity_sets"] = sets
+
+    # PER-UNIT WEIGHT OVERRIDES (AS2). {unit: {key: weight}}
+    if isinstance(payload.get("unit_activity_weights"), dict):
+        uw = dict(cfg.get("unit_activity_weights") or {})
+        for unit, m in payload["unit_activity_weights"].items():
+            u = str(unit).strip()
+            if not u or not isinstance(m, dict):
+                continue
+            got = {}
+            for k, v in m.items():
+                try:
+                    got[str(k)] = float(v)
+                except (TypeError, ValueError):
+                    continue
+            if got:
+                uw[u] = got
+            else:
+                uw.pop(u, None)      # cleared = inherit the bank-wide weights
+        cfg["unit_activity_weights"] = uw
+
     save_log_config(cfg)
     audit_log("BRANCH_LOG_CONFIG", str(user.get("username", "") or ""), "weights/target updated")
     return {"status": "saved",
             "activity_weights": cfg.get("activity_weights", {}),
-            "daily_index_target": cfg.get("daily_index_target", 0)}
+            "daily_index_target": cfg.get("daily_index_target", 0),
+            "activity_sets": cfg.get("activity_sets", {}),
+            "unit_activity_weights": cfg.get("unit_activity_weights", {})}
 
 
 @router.get("/ranking")
@@ -256,7 +313,8 @@ def branch_log_ranking(days: int = 30, user: dict = Depends(get_current_user)):
             continue
         idx = l.get("index")
         if idx is None:
-            idx = compute_index({k: l.get(k, 0) for k in metric_keys()})
+            idx = compute_index({k: l.get(k, 0) for k in metric_keys()},
+                                str(l.get("unit", "") or ""))
         r = agg.setdefault(sc, {"staff_code": sc, "staff_name": l.get("staff_name"),
                                 "unit": l.get("unit"), "index": 0.0, "days": 0})
         r["index"] += float(idx or 0)
@@ -1464,6 +1522,14 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         r = str(dd.get("role") or "")
         b = str(dd.get("branch") or "")
         u = unit_for_role(r) or ""
+        # Rows carry BOTH: the key groups and filters, the label is what a
+        # manager reads. Sending only the label would break every filter that
+        # round-trips the value back to the server.
+        try:
+            from utils.org_validator import unit_label as _ul
+            ulab = _ul(u) if u else ""
+        except Exception:
+            ulab = u
         seg = ""
         try:
             from utils.org_validator import segment_for_role
@@ -1478,6 +1544,17 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
             continue
         if segment and seg != segment:
             continue
+        # THE EXECUTIVE OFFICE IS NOT RANKED (ruling 2026-08-11). They still
+        # file, are still validated, and still appear in roll-ups and follow-up
+        # lists - they are simply not placed in a league table against branch
+        # and business units. Applied here, at the ranking, so nothing else is
+        # affected.
+        try:
+            from utils.org_validator import is_ranked
+            if not is_ranked(u):
+                continue
+        except Exception:
+            pass
         mine = by_staff.get(_canon_l(code), [])
         rows = carried_forward(mine) if mine else []
         idx = round(sum(float(x.get("index") or 0) for x in rows), 2)
@@ -1490,7 +1567,7 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
                   if float(x.get("index") or 0) >= float(x.get("target") or 0))
         people.append({
             "staff_code": code, "staff_name": dd.get("full_name", ""),
-            "role": r, "branch": b, "unit": u, "segment": seg,
+            "role": r, "branch": b, "unit": u, "unit_label": ulab, "segment": seg,
             "index": idx, "target": tgt,
             "days_filed": len(mine),
             "validated": sum(1 for x in mine if x.get("validated")),
@@ -1541,6 +1618,13 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         sort_key = "index"
     elif level == "unit":
         rows = agg(people, lambda p: p["unit"], "name")
+        # Aggregating loses the per-person label, so restore it on the group.
+        try:
+            from utils.org_validator import unit_label as _ul2
+            for _r in rows:
+                _r["label"] = _ul2(_r.get("name") or "")
+        except Exception:
+            pass
         sort_key = "index"
     elif level == "segment":
         # Consumer / Commercial / Operations — the split that means something at
@@ -1589,6 +1673,8 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         "filters": {"role": role, "branch": branch, "unit": unit, "segment": segment},
         "roles": sorted({p["role"] for p in people if p["role"]}),
         "branches": sorted({p["branch"] for p in people if p["branch"]}),
+        # Filter list mirrors what is actually rankable, or the dropdown would
+        # offer a unit that always returns nothing.
         "units": sorted({p["unit"] for p in people if p["unit"]}),
         "segments": sorted({p["segment"] for p in people if p["segment"]}),
         "bears_branch": bears_branch,
