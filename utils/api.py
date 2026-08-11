@@ -10374,6 +10374,102 @@ def channels_records(key: str, active_only: bool = False, mine: bool = False,
             "tagged_deals": sum(len(v) for v in by_rec.values())}
 
 
+@app.get("/api/channels/{key}/analytics")
+def channels_analytics(key: str, user: dict = Depends(get_current_user)):
+    """Does this channel pay for itself, and which records carry it?
+
+    Deals are read ONCE and bucketed. Every figure is derived from deals; the
+    stored actual_* fields are not used, because they are generated numbers and
+    mixing generated with derived in one total is how a report stops meaning
+    anything.
+    """
+    from utils.origin_channels import channel, listing, CLOSED_WON
+    c = channel(key)
+    if not c:
+        raise HTTPException(status_code=404, detail="No such channel.")
+
+    field = {"events": "event_id", "partnership": "mou_id"}.get(key, "channel_id")
+    deals = _acquire_scoped_deals(user)
+    by_rec = {}
+    for d in deals:
+        rid = str(d.get(field) or "").strip()
+        if rid:
+            by_rec.setdefault(rid, []).append(d)
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    records = listing(key)
+    total_spent = total_leads = total_accounts = 0.0
+    total_value = 0.0
+    by_owner = {}
+    by_stage = {}
+    rows = []
+    for r in records:
+        got = by_rec.get(r["id"], [])
+        won = [d for d in got if str(d.get("stage") or "") == CLOSED_WON]
+        spent = float(r.get("spent_kes") or r.get("budget_kes") or 0)
+        val = round(sum(_val(d) for d in won), 2)
+        total_spent += spent
+        total_leads += len(got)
+        total_accounts += len(won)
+        total_value += val
+        owner = r.get("owner") or "Unassigned"
+        o = by_owner.setdefault(owner, {"owner": owner, "records": 0,
+                                        "spent": 0.0, "leads": 0,
+                                        "accounts": 0, "value": 0.0})
+        o["records"] += 1
+        o["spent"] += spent
+        o["leads"] += len(got)
+        o["accounts"] += len(won)
+        o["value"] += val
+        for d in got:
+            st = str(d.get("stage") or "Unknown")
+            by_stage[st] = by_stage.get(st, 0) + 1
+        rows.append({"id": r["id"], "name": r["name"], "owner": owner,
+                     "spent": spent, "leads": len(got), "accounts": len(won),
+                     "value": val,
+                     "cost_per_account": round(spent / len(won), 2) if won else None})
+
+    for o in by_owner.values():
+        o["spent"] = round(o["spent"], 2)
+        o["value"] = round(o["value"], 2)
+
+    # Ranked by cost per account, cheapest first - the question a head of unit
+    # actually asks. Records with no accounts are EXCLUDED from the ranking
+    # rather than sorted last at infinity: "no conversions yet" and "expensive"
+    # are different findings and should not share a row position.
+    ranked = sorted([r for r in rows if r["cost_per_account"] is not None],
+                    key=lambda r: r["cost_per_account"])
+    return {
+        "channel": c,
+        "totals": {
+            "records": len(records),
+            "spent": round(total_spent, 2),
+            "leads": int(total_leads),
+            "accounts": int(total_accounts),
+            "value": round(total_value, 2),
+            "conversion_pct": (round(total_accounts / total_leads * 100, 1)
+                               if total_leads else None),
+            "cost_per_account": (round(total_spent / total_accounts, 2)
+                                 if total_accounts else None),
+            "roi_pct": (round((total_value - total_spent) / total_spent * 100, 1)
+                        if (c.get("supports_roi") and total_spent) else None),
+            "supports_roi": bool(c.get("supports_roi")),
+        },
+        "by_owner": sorted(by_owner.values(), key=lambda o: -o["value"]),
+        "by_stage": [{"stage": k, "count": v} for k, v in
+                     sorted(by_stage.items(), key=lambda kv: -kv[1])],
+        "best": ranked[:5],
+        "no_conversions": [r for r in rows if r["cost_per_account"] is None
+                           and r["leads"] > 0],
+        "untagged": [r for r in rows if r["leads"] == 0],
+    }
+
+
 @app.post("/api/channels/{key}/records", status_code=201)
 def channels_create(key: str, payload: dict = Body(default_factory=dict),
                     user: dict = Depends(get_current_user)):

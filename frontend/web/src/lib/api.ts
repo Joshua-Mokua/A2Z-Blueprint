@@ -945,6 +945,26 @@ export interface ChannelRecord {
   leads: number; accounts: number; won_value: number;
   roi_pct: number | null; supports_roi: boolean;
 }
+export interface ChannelAnalytics {
+  channel: OriginChannel;
+  totals: {
+    records: number; spent: number; leads: number; accounts: number;
+    value: number; conversion_pct: number | null;
+    cost_per_account: number | null; roi_pct: number | null;
+    supports_roi: boolean;
+  };
+  by_owner: { owner: string; records: number; spent: number; leads: number;
+              accounts: number; value: number }[];
+  by_stage: { stage: string; count: number }[];
+  best: { id: string; name: string; owner: string; spent: number;
+          leads: number; accounts: number; value: number;
+          cost_per_account: number | null }[];
+  no_conversions: { id: string; name: string; leads: number }[];
+  untagged: { id: string; name: string }[];
+}
+export async function fetchChannelAnalytics(key: string): Promise<ChannelAnalytics> {
+  return getJson<ChannelAnalytics>(`/channels/${encodeURIComponent(key)}/analytics`);
+}
 export async function fetchChannels(): Promise<{ channels: OriginChannel[] }> {
   return getJson<{ channels: OriginChannel[] }>('/channels');
 }

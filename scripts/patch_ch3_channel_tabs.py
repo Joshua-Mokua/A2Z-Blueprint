@@ -1,4 +1,182 @@
-// Origin Channels — one page for every channel the bank invests in.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+CH3 - the Pipeline and Analytics tabs. Completes the channels page.
+
+RULING (2026-08-11): "we can have events listing now, then Events Pipeline,
+Events Analytics where we can do analysis proper."
+
+CH2 shipped Listing and Create. CH3 adds the other two, for EVERY channel rather
+than only events - which is the point of having built one model.
+
+    LISTING     what exists, who owns it, what it produced
+    PIPELINE    where the tagged deals actually are, by stage
+    ANALYTICS   does this channel pay for itself
+
+ANALYTICS IS FETCHED ONLY WHEN ITS TAB IS OPENED. It reads every deal, and
+paying that cost on a page most people open for the listing would be rude - the
+same per-row discipline that the 504 taught this system.
+
+EVERY FIGURE IS DERIVED FROM DEALS. The stored actual_* fields are deliberately
+NOT mixed in: they are generated numbers, and a total combining generated with
+derived is a number nobody can defend in a meeting.
+
+TWO DISTINCTIONS THE ANALYTICS REFUSES TO BLUR:
+
+  "NO CONVERSIONS YET" is not "EXPENSIVE". Records with leads but no closed
+  accounts are excluded from the cost-per-account ranking rather than sorted
+  last at infinity, and reported separately. Sharing a row position would imply
+  a comparison that has not been earned.
+
+  "NOTHING TAGGED" is not "FAILED". Records with no deals at all are listed
+  under their own heading with the reason stated - it is usually a tagging gap,
+  and it is worth asking before drawing conclusions.
+
+Cost per account and return appear only where the channel supports ROI, so
+partnerships - which carry expected volume and no budget - are never shown a
+percentage computed against a budget nobody set.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+REQUIRES CH2.
+
+Usage (from project root, .venv active):
+    python scripts\patch_ch3_channel_tabs.py            # dry run
+    python scripts\patch_ch3_channel_tabs.py --apply
+"""
+import os
+import shutil
+import sys
+
+API = os.path.join("utils", "api.py")
+PAGE = os.path.join("frontend", "web", "src", "pages", "OriginChannels.tsx")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+BACKUP_SUFFIX = ".pre_ch3"
+
+API_ANCHOR = '@app.post("/api/channels/{key}/records", status_code=201)'
+TS_ANCHOR = "export async function fetchChannels()"
+
+ENDPOINT = r'''@app.get("/api/channels/{key}/analytics")
+def channels_analytics(key: str, user: dict = Depends(get_current_user)):
+    """Does this channel pay for itself, and which records carry it?
+
+    Deals are read ONCE and bucketed. Every figure is derived from deals; the
+    stored actual_* fields are not used, because they are generated numbers and
+    mixing generated with derived in one total is how a report stops meaning
+    anything.
+    """
+    from utils.origin_channels import channel, listing, CLOSED_WON
+    c = channel(key)
+    if not c:
+        raise HTTPException(status_code=404, detail="No such channel.")
+
+    field = {"events": "event_id", "partnership": "mou_id"}.get(key, "channel_id")
+    deals = _acquire_scoped_deals(user)
+    by_rec = {}
+    for d in deals:
+        rid = str(d.get(field) or "").strip()
+        if rid:
+            by_rec.setdefault(rid, []).append(d)
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    records = listing(key)
+    total_spent = total_leads = total_accounts = 0.0
+    total_value = 0.0
+    by_owner = {}
+    by_stage = {}
+    rows = []
+    for r in records:
+        got = by_rec.get(r["id"], [])
+        won = [d for d in got if str(d.get("stage") or "") == CLOSED_WON]
+        spent = float(r.get("spent_kes") or r.get("budget_kes") or 0)
+        val = round(sum(_val(d) for d in won), 2)
+        total_spent += spent
+        total_leads += len(got)
+        total_accounts += len(won)
+        total_value += val
+        owner = r.get("owner") or "Unassigned"
+        o = by_owner.setdefault(owner, {"owner": owner, "records": 0,
+                                        "spent": 0.0, "leads": 0,
+                                        "accounts": 0, "value": 0.0})
+        o["records"] += 1
+        o["spent"] += spent
+        o["leads"] += len(got)
+        o["accounts"] += len(won)
+        o["value"] += val
+        for d in got:
+            st = str(d.get("stage") or "Unknown")
+            by_stage[st] = by_stage.get(st, 0) + 1
+        rows.append({"id": r["id"], "name": r["name"], "owner": owner,
+                     "spent": spent, "leads": len(got), "accounts": len(won),
+                     "value": val,
+                     "cost_per_account": round(spent / len(won), 2) if won else None})
+
+    for o in by_owner.values():
+        o["spent"] = round(o["spent"], 2)
+        o["value"] = round(o["value"], 2)
+
+    # Ranked by cost per account, cheapest first - the question a head of unit
+    # actually asks. Records with no accounts are EXCLUDED from the ranking
+    # rather than sorted last at infinity: "no conversions yet" and "expensive"
+    # are different findings and should not share a row position.
+    ranked = sorted([r for r in rows if r["cost_per_account"] is not None],
+                    key=lambda r: r["cost_per_account"])
+    return {
+        "channel": c,
+        "totals": {
+            "records": len(records),
+            "spent": round(total_spent, 2),
+            "leads": int(total_leads),
+            "accounts": int(total_accounts),
+            "value": round(total_value, 2),
+            "conversion_pct": (round(total_accounts / total_leads * 100, 1)
+                               if total_leads else None),
+            "cost_per_account": (round(total_spent / total_accounts, 2)
+                                 if total_accounts else None),
+            "roi_pct": (round((total_value - total_spent) / total_spent * 100, 1)
+                        if (c.get("supports_roi") and total_spent) else None),
+            "supports_roi": bool(c.get("supports_roi")),
+        },
+        "by_owner": sorted(by_owner.values(), key=lambda o: -o["value"]),
+        "by_stage": [{"stage": k, "count": v} for k, v in
+                     sorted(by_stage.items(), key=lambda kv: -kv[1])],
+        "best": ranked[:5],
+        "no_conversions": [r for r in rows if r["cost_per_account"] is None
+                           and r["leads"] > 0],
+        "untagged": [r for r in rows if r["leads"] == 0],
+    }
+
+
+'''
+
+TS_NEW = r'''export interface ChannelAnalytics {
+  channel: OriginChannel;
+  totals: {
+    records: number; spent: number; leads: number; accounts: number;
+    value: number; conversion_pct: number | null;
+    cost_per_account: number | null; roi_pct: number | null;
+    supports_roi: boolean;
+  };
+  by_owner: { owner: string; records: number; spent: number; leads: number;
+              accounts: number; value: number }[];
+  by_stage: { stage: string; count: number }[];
+  best: { id: string; name: string; owner: string; spent: number;
+          leads: number; accounts: number; value: number;
+          cost_per_account: number | null }[];
+  no_conversions: { id: string; name: string; leads: number }[];
+  untagged: { id: string; name: string }[];
+}
+export async function fetchChannelAnalytics(key: string): Promise<ChannelAnalytics> {
+  return getJson<ChannelAnalytics>(`/channels/${encodeURIComponent(key)}/analytics`);
+}
+'''
+
+PAGE_SRC = r'''// Origin Channels — one page for every channel the bank invests in.
 //
 // Events, Partnerships and Lead Generators ask the same question: what did we
 // spend, what did it produce, was it worth it. Three sidebar entries would be
@@ -537,3 +715,86 @@ export default function OriginChannels() {
     </>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (API, APITS, PAGE):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found - apply patch_ch2_channels_page.py first." % p)
+            return 1
+
+    api = open(API, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+
+    if "/api/channels/{key}/analytics" in api:
+        print("ABORT: the analytics endpoint already exists - CH3 looks applied.")
+        return 1
+    if API_ANCHOR not in api:
+        print("ABORT: apply patch_ch2_channels_page.py first.")
+        return 1
+    if ts.count(TS_ANCHOR) != 1:
+        print("ABORT: api.ts anchor matched %d times." % ts.count(TS_ANCHOR))
+        return 1
+
+    api = api.replace(API_ANCHOR, ENDPOINT + API_ANCHOR, 1)
+    ts = ts.replace(TS_ANCHOR, TS_NEW + TS_ANCHOR, 1)
+    print("  ok  analytics endpoint and client")
+
+    # Deals must be read once.
+    if ENDPOINT.count("_acquire_scoped_deals") != 1:
+        print("ABORT: deals are read %d times in analytics."
+              % ENDPOINT.count("_acquire_scoped_deals"))
+        return 1
+    # "No conversions" must not be ranked as if it were expensive.
+    if 'r["cost_per_account"] is not None' not in ENDPOINT:
+        print("ABORT: records with no accounts are being ranked - 'no")
+        print("       conversions yet' and 'expensive' are different findings.")
+        return 1
+    if '"no_conversions"' not in ENDPOINT or '"untagged"' not in ENDPOINT:
+        print("ABORT: the endpoint does not separate untagged from unconverted.")
+        return 1
+    # ROI stays honest.
+    if 'c.get("supports_roi") and total_spent' not in ENDPOINT:
+        print("ABORT: a channel with no budget would be shown a return.")
+        return 1
+    # Analytics must not load on the listing tab.
+    if "if (tab === 'listing') return;" not in PAGE_SRC:
+        print("ABORT: analytics would load on the listing tab, reading every")
+        print("       deal for a page most people open for the listing.")
+        return 1
+    for t in ("'listing'", "'pipeline'", "'analytics'"):
+        if t not in PAGE_SRC:
+            print("ABORT: the page is missing the %s tab." % t)
+            return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if PAGE_SRC.count(op) != PAGE_SRC.count(cl):
+            print("ABORT: page unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: one read, honest ranking, lazy analytics")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((API, api), (APITS, ts), (PAGE, PAGE_SRC)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    try:
+        py_compile.compile(API, doraise=True)
+        print("  ok  api.py compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd, restart uvicorn.")
+    print("Origin Channels now has Listing / Pipeline / Analytics for all three.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
