@@ -1,4 +1,44 @@
-// Deals Warehouse — the shared shelf.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+PICK1 - choose a shelf instead of scrolling to it.
+
+RULING (2026-08-11): "still it is a long list. Supposing I want Financial
+Services, subsector SACCO, I need to be able to select instead of being
+subjected to an entire listing."
+
+Two pickers beside the county filter: SECTOR, then SUBSECTOR. Choosing a sector
+narrows the subsector list to what actually exists inside it, and clears any
+subsector that no longer applies - offering "SACCO" under "Manufacturing" would
+be offering a shelf that is not there.
+
+BOTH LISTS COME FROM THE DATA. Shelf keys already read "Sector › Subsector", so
+the options are derived from them rather than from a second config that could
+drift out of step with what is on the shelves. A picker that offers a category
+holding nothing is worse than no picker.
+
+THE COUNT FOLLOWS THE FILTER - "33 of 165" rather than a total that ignores what
+you just selected and leaves you wondering whether the filter worked.
+
+At 165 records this is convenience. At the 1,800 being aimed for it is the
+difference between a warehouse and a filing cabinet with the drawers taken out.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+REQUIRES LAND1.
+
+Usage (from project root, .venv active):
+    python scripts\patch_pick1_shelf_pickers.py            # dry run
+    python scripts\patch_pick1_shelf_pickers.py --apply
+"""
+import os
+import shutil
+import sys
+
+SHELF = os.path.join("frontend", "web", "src", "pages", "Warehouse.tsx")
+BACKUP_SUFFIX = ".pre_pick1"
+
+SHELF_SRC = r'''// Deals Warehouse — the shared shelf.
 //
 // Not a channel. Events, partnerships and lead generators are things the bank
 // INVESTS IN and measures a return on; the warehouse is a shelf of prospects
@@ -699,3 +739,55 @@ export default function Warehouse() {
     </>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    if not os.path.isfile(SHELF):
+        print("ABORT: %s not found - apply patch_land1_first_landing.py first." % SHELF)
+        return 1
+
+    cur = open(SHELF, encoding="utf-8").read()
+    if "sectorsOnShelf" in cur:
+        print("ABORT: PICK1 looks applied.")
+        return 1
+    if "const [landed, setLanded]" not in cur:
+        print("ABORT: apply patch_land1_first_landing.py first.")
+        return 1
+
+    if "All subsectors" not in SHELF_SRC or "All sectors" not in SHELF_SRC:
+        print("ABORT: the pickers are missing.")
+        return 1
+    # Options must come from the shelves, not a fixed list.
+    if "Object.keys(shelves)" not in SHELF_SRC:
+        print("ABORT: the options are not derived from the shelves - a picker")
+        print("       could offer a category holding nothing.")
+        return 1
+    # Choosing a sector must clear a stale subsector.
+    if "setSector(e.target.value); setSubsector('')" not in SHELF_SRC:
+        print("ABORT: changing sector leaves a subsector that may not exist")
+        print("       inside it, which shows an empty shelf and looks broken.")
+        return 1
+    if "${shown} of ${total}" not in SHELF_SRC:
+        print("ABORT: the count ignores the filter.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if SHELF_SRC.count(op) != SHELF_SRC.count(cl):
+            print("ABORT: unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: derived options, stale subsector cleared, count follows")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    shutil.copy2(SHELF, SHELF + BACKUP_SUFFIX)
+    open(SHELF, "w", encoding="utf-8", newline="").write(SHELF_SRC)
+    print("APPLIED %s" % SHELF)
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
