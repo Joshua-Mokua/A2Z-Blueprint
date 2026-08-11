@@ -499,6 +499,19 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "portfolio_owner_name": deal.get("portfolio_owner_name"),
                 "lms_application_id":   deal.get("lms_application_id"),
                 "mou_id":               deal.get("mou_id"),
+                # ORIGIN AND ITS SOURCE (2026-08-11). Without these three the
+                # database round-trip DROPS them: a deal tagged to an event
+                # syncs, comes back with no event_id, and the Events page shows
+                # "0 deals tagged" while the deals plainly exist. mou_id was
+                # here already, which is exactly why partnerships worked and
+                # events did not - the same bug, visible in only two of three
+                # channels.
+                "origin":               deal.get("origin"),
+                "origin_party_code":    deal.get("origin_party_code"),
+                "origin_party_name":    deal.get("origin_party_name"),
+                "event_id":             deal.get("event_id"),
+                "channel_id":           deal.get("channel_id"),
+                "warehouse_prospect_id": deal.get("warehouse_prospect_id"),
                 "mou_title":            deal.get("mou_title"),
                 "sector":               deal.get("sector"),
                 "segment":              deal.get("segment"),
@@ -611,6 +624,14 @@ def _normalize_db_deal_row(row):
         r["pipeline_category"] = md.get("pipeline_category")
     if isinstance(md, dict) and not r.get("lms_application_id"):
         r["lms_application_id"] = md.get("lms_application_id")
+    # ORIGIN AND ITS SOURCE. Lifted for the same reason as the FX set: a
+    # DB-first reader that cannot see event_id reports every event as having
+    # produced nothing, and the page looks broken rather than empty.
+    if isinstance(md, dict):
+        for _k in ("origin", "origin_party_code", "origin_party_name",
+                   "event_id", "mou_id", "channel_id", "warehouse_prospect_id"):
+            if not r.get(_k) and md.get(_k):
+                r[_k] = md.get(_k)
     # Lift the FX money set + client-type fields out of metadata so DB-first
     # readers (analytics, dashboard canonical path) see KES-equivalent values
     # and the currency book — matching the JSON read path. Without this,

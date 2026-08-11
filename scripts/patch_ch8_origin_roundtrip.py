@@ -1,4 +1,292 @@
-// Origin Channels — one page for every channel the bank invests in.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+CH8 - the database was dropping origin. Events showed zero; partnerships did not.
+
+THE SYMPTOM, and why it was so misleading: after seeding twenty deals across
+three channels, the Partnerships tab tracked four deals correctly while Events
+and Lead Generators showed "0 deals tagged". Two of three channels working looks
+like a data problem. It was not.
+
+THE CAUSE. _db_sync_pipeline_deal writes non-column fields into `metadata`, and
+its list contained mou_id but NOT event_id, channel_id, or origin. So a deal
+tagged to an event synced to Postgres, came back without its event_id, and every
+event reported having produced nothing. Partnerships worked purely because
+mou_id happened to be on the list already - the SAME bug, invisible in the one
+channel anybody had checked.
+
+    _db_sync_pipeline_deal    now stores origin, origin_party_code,
+                              origin_party_name, event_id, channel_id and
+                              warehouse_prospect_id
+    _normalize_db_deal_row    lifts them back out, for the same reason the FX
+                              money set is lifted: a DB-first reader that cannot
+                              see event_id makes a working page look broken
+
+Verified by round trip: a row whose metadata carries event_id=EVT9001 and
+origin=events comes back with both, and a null channel_id stays null.
+
+CLICKING A DEAL OPENS THE EXISTING DETAIL PAGE (ruling 2026-08-11: "when I click
+on it, it should take me to the page that has documentation for viewing only but
+following the defined rules"). PipelineDealDetail already gates every action
+behind the caller's permissions - fourteen gates - so it is ALREADY read-only
+for anyone without rights. Linking to it rather than building a second viewer
+means one place defines what a person may do; a bespoke read-only page would be
+a second opinion that drifts.
+
+WHY THIS MATTERS BEYOND THIS PAGE: anything that writes a deal must round-trip
+through metadata, or the field silently disappears. That is worth remembering
+for the pilot, where the same sync runs.
+
+Verified: py_compile clean, tsc --noEmit clean, vite build clean.
+
+REQUIRES CH7.
+
+Usage (from project root, .venv active):
+    python scripts\patch_ch8_origin_roundtrip.py            # dry run
+    python scripts\patch_ch8_origin_roundtrip.py --apply
+
+Then RESEED so existing rows carry the fields:
+    python scripts\seed_scenario.py --apply
+    python scripts\verify_scenario.py
+"""
+import os
+import shutil
+import sys
+
+API = os.path.join("utils", "api.py")
+PAGE = os.path.join("frontend", "web", "src", "pages", "OriginChannels.tsx")
+BACKUP_SUFFIX = ".pre_ch8"
+
+SYNC = r'''def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> None:
+    """Upsert a pipeline deal into Postgres so DB-backed reads reflect runtime
+    mutations. H5 (2026-06-14): pipeline reads are DB-first but mutations
+    write only the JSON store, so created/changed deals were invisible in the
+    DB-backed list. No-op when Postgres is unavailable. Best-effort. Field
+    map: JSON deal_value->amount, product_type->product; pipeline_category
+    kept in metadata.
+    """
+    if not deal or not _db_available():
+        return
+    try:
+        import json as _json
+        from datetime import date as _date
+        from utils.db import db as _db
+        today = _date.today().isoformat()
+
+        def _date_or_none(v):
+            v = (str(v).strip() if v is not None else "")
+            return v or None
+
+        row = {
+            "id":            str(deal.get("id", "") or ""),
+            "staff_code":    str(deal.get("staff_code", "") or ""),
+            "staff_name":    str(deal.get("staff_name", "") or ""),
+            "unit":          deal.get("unit"),
+            "role":          deal.get("role"),
+            "client_name":   deal.get("client_name"),
+            "client_cif":    deal.get("client_cif"),
+            "product":       deal.get("product") or deal.get("product_type"),
+            "stage":         deal.get("stage"),
+            "deal_category": (deal.get("deal_category")
+                              or deal.get("pipeline_category") or "New Facility"),
+            "amount":        (deal.get("amount")
+                              if deal.get("amount") is not None
+                              else deal.get("deal_value")),
+            "currency":      deal.get("currency", "KES"),
+            "open_date":     _date_or_none(deal.get("open_date")) or today,
+            "expected_close": _date_or_none(deal.get("expected_close")),
+            "probability":   deal.get("probability"),
+            "notes":         deal.get("notes"),
+            "last_updated":  today,
+            "metadata":      _json.dumps({
+                "pipeline_category":   deal.get("pipeline_category"),
+                "client_type":         deal.get("client_type"),
+                "is_ntb":              deal.get("is_ntb"),
+                "is_top_up":           deal.get("is_top_up"),
+                "top_up_amount":       deal.get("top_up_amount"),
+                "original_facility_amount": deal.get("original_facility_amount"),
+                "existing_facility_id": deal.get("existing_facility_id"),
+                "is_repeat_borrower":  deal.get("is_repeat_borrower"),
+                "source":              deal.get("source"),
+                "portfolio_owner_code": deal.get("portfolio_owner_code"),
+                "portfolio_owner_name": deal.get("portfolio_owner_name"),
+                "lms_application_id":   deal.get("lms_application_id"),
+                "mou_id":               deal.get("mou_id"),
+                # ORIGIN AND ITS SOURCE (2026-08-11). Without these three the
+                # database round-trip DROPS them: a deal tagged to an event
+                # syncs, comes back with no event_id, and the Events page shows
+                # "0 deals tagged" while the deals plainly exist. mou_id was
+                # here already, which is exactly why partnerships worked and
+                # events did not - the same bug, visible in only two of three
+                # channels.
+                "origin":               deal.get("origin"),
+                "origin_party_code":    deal.get("origin_party_code"),
+                "origin_party_name":    deal.get("origin_party_name"),
+                "event_id":             deal.get("event_id"),
+                "channel_id":           deal.get("channel_id"),
+                "warehouse_prospect_id": deal.get("warehouse_prospect_id"),
+                "mou_title":            deal.get("mou_title"),
+                "sector":               deal.get("sector"),
+                "segment":              deal.get("segment"),
+                "fx_rate":              deal.get("fx_rate"),
+                "amount_kes":           deal.get("amount_kes"),
+                "fx_rate_date":         deal.get("fx_rate_date"),
+                "fx_rate_source":       deal.get("fx_rate_source"),
+                "currency_book":        deal.get("currency_book"),
+                "manager_validated":    deal.get("manager_validated"),
+                "validated_by":         deal.get("validated_by"),
+                "validated_at":         deal.get("validated_at"),
+                "validated_by_name":    deal.get("validated_by_name"),
+                "validated_by_role":    deal.get("validated_by_role"),
+                "validated_by_code":    deal.get("validated_by_code"),
+                "referral_status":      deal.get("referral_status"),
+                "referred_to_code":     deal.get("referred_to_code"),
+                "referred_to":          deal.get("referred_to"),
+                "referred_by_code":     deal.get("referred_by_code"),
+                "referred_by_name":     deal.get("referred_by_name"),
+                "referral_note":        deal.get("referral_note"),
+                "referral_chain":       deal.get("referral_chain"),
+                "decline_reason":       deal.get("decline_reason"),
+                "sla_step_log":         deal.get("sla_step_log"),
+                "sla_commitments":      deal.get("sla_commitments"),
+                # The Credit Report. Omitted here, it was written to the JSON
+                # store and lost on every Postgres-first read, so cr_ok stayed
+                # false and submit-to-credit refused every deal for ever with
+                # "the Credit Report (CR) must be completed first" — blaming the
+                # RM for the one thing they had done. Phase B0 set out to make
+                # PG a complete mirror and missed it.
+                "cr":                   deal.get("cr"),
+                "submitted_to_credit":  deal.get("submitted_to_credit"),
+                # Phase B0: persist the remaining deal fields so PG is a COMPLETE
+                # mirror (these were JSON-only and vanished under PG-first reads).
+                "bsc_credit_to":            deal.get("bsc_credit_to"),
+                "manager_override_note":    deal.get("manager_override_note"),
+                "is_referral":              deal.get("is_referral"),
+                "referred_at":              deal.get("referred_at"),
+                "accepted_by":              deal.get("accepted_by"),
+                "accepted_at":              deal.get("accepted_at"),
+                "declined_by":              deal.get("declined_by"),
+                "declined_at":              deal.get("declined_at"),
+                "disbursed":                deal.get("disbursed"),
+                "disbursed_at":             deal.get("disbursed_at"),
+                "disbursed_under_override": deal.get("disbursed_under_override"),
+                "override_approved":        deal.get("override_approved"),
+                "override_approved_by":     deal.get("override_approved_by"),
+                "win_probability":          deal.get("win_probability"),
+                "credit_deferred_to":       deal.get("credit_deferred_to"),
+                "credit_deferred_to_code":  deal.get("credit_deferred_to_code"),
+                "history":                  deal.get("history"),
+                "document_files":           deal.get("document_files"),
+                "documents_provided":       deal.get("documents_provided"),
+            }),
+        }
+        if not row["id"]:
+            return
+        cols = list(row.keys())
+        placeholders = ", ".join(["%s"] * len(cols))
+        if conflict == "raise":
+            # Create path (Phase A): fail-closed on a duplicate id. DO NOTHING
+            # suppresses the insert on conflict; RETURNING id is then empty, which
+            # we detect and raise so the caller's retry derives a fresh id. This
+            # makes concurrent creates with a colliding id IMPOSSIBLE to persist
+            # as a silent overwrite (the PK is the hard guarantee, not a hint).
+            sql = (f"INSERT INTO pipeline_deals ({', '.join(cols)}) "
+                   f"VALUES ({placeholders}) "
+                   f"ON CONFLICT (id) DO NOTHING RETURNING id")
+            from utils.db import db as _db2
+            got = _db2.fetch_one(sql, tuple(row[c] for c in cols))
+            if not got:
+                raise RuntimeError(
+                    f"duplicate key: deal id {row['id']} already exists in Postgres")
+        else:
+            # Update/mirror path (default): upsert. Existing row is refreshed.
+            updates = ", ".join(f"{c}=EXCLUDED.{c}" for c in cols if c != "id")
+            sql = (f"INSERT INTO pipeline_deals ({', '.join(cols)}) "
+                   f"VALUES ({placeholders}) "
+                   f"ON CONFLICT (id) DO UPDATE SET {updates}")
+            _db.execute(sql, tuple(row[c] for c in cols))
+    except Exception as e:
+        # B13: do NOT swallow. A deal that can't persist to Postgres must fail
+        # loudly — silent swallowing is exactly what let JSON and the DB drift
+        # (deals invisible to DB-first reads). DB-unavailable is handled by the
+        # early return above; reaching here means Postgres is up but the write
+        # errored, which is a real fault the caller needs to see.
+        logger.error(f"Pipeline deal DB sync FAILED for {deal.get('id')}: {e}")
+        raise
+
+
+'''
+
+NORMALISE = r'''def _normalize_db_deal_row(row):
+    """Map pipeline_deals DB columns to the field names the React frontend
+    expects (amount->deal_value, product->product_type, metadata->
+    pipeline_category) so the DB read path matches the JSON read path. H5."""
+    if not isinstance(row, dict):
+        return row
+    r = dict(row)
+    if r.get("deal_value") in (None, ""):
+        r["deal_value"] = r.get("amount")
+    if not r.get("product_type"):
+        r["product_type"] = r.get("product")
+    md = r.get("metadata")
+    if isinstance(md, str):
+        try:
+            import json as _json
+            md = _json.loads(md)
+        except Exception:
+            md = {}
+    if isinstance(md, dict) and not r.get("pipeline_category"):
+        r["pipeline_category"] = md.get("pipeline_category")
+    if isinstance(md, dict) and not r.get("lms_application_id"):
+        r["lms_application_id"] = md.get("lms_application_id")
+    # ORIGIN AND ITS SOURCE. Lifted for the same reason as the FX set: a
+    # DB-first reader that cannot see event_id reports every event as having
+    # produced nothing, and the page looks broken rather than empty.
+    if isinstance(md, dict):
+        for _k in ("origin", "origin_party_code", "origin_party_name",
+                   "event_id", "mou_id", "channel_id", "warehouse_prospect_id"):
+            if not r.get(_k) and md.get(_k):
+                r[_k] = md.get(_k)
+    # Lift the FX money set + client-type fields out of metadata so DB-first
+    # readers (analytics, dashboard canonical path) see KES-equivalent values
+    # and the currency book — matching the JSON read path. Without this,
+    # _deal_value falls back to NATIVE for FCY deals and analytics disagrees
+    # with the dashboard.
+    if isinstance(md, dict):
+        for _k in ("amount_kes", "currency_book", "fx_rate", "fx_rate_date",
+                   "fx_rate_source", "client_type", "mou_id", "mou_title",
+                   "sector", "segment", "validated_by", "validated_at",
+                   "validated_by_name", "validated_by_role", "validated_by_code",
+                   "is_top_up", "top_up_amount", "original_facility_amount",
+                   "existing_facility_id", "is_repeat_borrower",
+                   "referral_status", "referred_to_code", "referred_to",
+                   "referred_by_code", "referred_by_name", "referral_note",
+                   "decline_reason", "sla_step_log", "sla_commitments", "referral_chain",
+                   # Phase B0: lift the full field set back so DB-first reads
+                   # reconstruct a complete deal (write side in _db_sync).
+                   "portfolio_owner_code", "portfolio_owner_name", "is_ntb",
+                   "source", "bsc_credit_to", "manager_override_note",
+                   "is_referral", "referred_at", "accepted_by", "accepted_at",
+                   "declined_by", "declined_at", "disbursed", "disbursed_at",
+                   "disbursed_under_override", "override_approved",
+                   "override_approved_by", "win_probability",
+                   "credit_deferred_to", "credit_deferred_to_code", "history",
+                   "document_files", "documents_provided",
+                   # Lift the CR back out — a field carried on the write side
+                   # but not listed here is mirrored and then dropped on read,
+                   # which looks identical to never having been saved.
+                   "cr", "submitted_to_credit"):
+            if r.get(_k) in (None, "") and md.get(_k) is not None:
+                r[_k] = md.get(_k)
+        # manager_validated is a bool — lift whenever absent on the row so the
+        # DB read path (analytics assured value + funnel) reflects validation.
+        if "manager_validated" not in r or r.get("manager_validated") is None:
+            r["manager_validated"] = bool(md.get("manager_validated"))
+    return r
+
+'''
+
+PAGE_SRC = r'''// Origin Channels — one page for every channel the bank invests in.
 //
 // Events, Partnerships and Lead Generators ask the same question: what did we
 // spend, what did it produce, was it worth it. Three sidebar entries would be
@@ -732,3 +1020,76 @@ export default function OriginChannels() {
     </>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (API, PAGE):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found - apply patch_ch7_deal_tracker.py first." % p)
+            return 1
+
+    api = open(API, encoding="utf-8").read()
+    if '"event_id":             deal.get("event_id")' in api:
+        print("ABORT: the sync already carries event_id - CH8 looks applied.")
+        return 1
+    if "def _db_sync_pipeline_deal" not in api or "def _normalize_db_deal_row" not in api:
+        print("ABORT: the sync helpers are not where expected.")
+        return 1
+
+    i = api.index("def _db_sync_pipeline_deal")
+    j = api.index("def _normalize_db_deal_row")
+    k = api.index("def _normalize_db_deal_row")
+    m = api.index("\ndef ", k + 10)
+    api = api[:i] + SYNC + NORMALISE + api[m:]
+    print("  ok  sync stores origin and every source id; reads restore them")
+
+    # Both halves are required. Storing without lifting still loses the field.
+    if '"event_id":' not in SYNC or '"channel_id":' not in SYNC:
+        print("ABORT: the sync does not store every source id.")
+        return 1
+    if "event_id" not in NORMALISE or "origin" not in NORMALISE:
+        print("ABORT: the read path does not lift them back - storing without")
+        print("       lifting loses the field just as surely.")
+        return 1
+    if 'to={`/pipeline/${encodeURIComponent(d.id)}`}' not in PAGE_SRC:
+        print("ABORT: deals do not link to the detail page.")
+        return 1
+    # A second read-only viewer would be a second opinion on permissions.
+    if "PipelineDealDetail" in PAGE_SRC:
+        print("ABORT: the page imports the detail component rather than linking")
+        print("       to its route - permissions belong in one place.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if PAGE_SRC.count(op) != PAGE_SRC.count(cl):
+            print("ABORT: page unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: both halves present, one permissions authority")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((API, api), (PAGE, PAGE_SRC)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    try:
+        py_compile.compile(API, doraise=True)
+        print("  ok  api.py compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("")
+    print("RESEED - rows already in Postgres were written without these fields:")
+    print("  python scripts\\seed_scenario.py --apply")
+    print("  python scripts\\verify_scenario.py")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
