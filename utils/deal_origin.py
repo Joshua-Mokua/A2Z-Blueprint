@@ -107,6 +107,33 @@ def declarable_origins() -> list:
     return [o for o in origins() if o["key"] not in SYSTEM_DERIVED]
 
 
+def should_stamp(deal: dict, origin_key: str) -> bool:
+    """Would stamping this origin DESTROY a better answer already on the deal?
+
+    RULING (2026-08-11): "a deal can originate from an event as own, or it can
+    be referred - same as the rest."
+
+    So the channel and the route are different questions. A deal captured at a
+    roadshow and then handed to another RM is STILL an event deal; the referral
+    is the branch, not a new origin. Overwriting it would make "what did that
+    roadshow produce" unanswerable, which is the whole reason origin exists.
+
+    A system origin is therefore stamped only when the deal carries nothing
+    better - it is still on the default. The referral itself is never lost: it
+    lives in referral_chain, which records every hop, and the referrer is still
+    credited through the referral engine's own rules.
+
+    WAREHOUSE IS DIFFERENT and is always stamped: a prospect claimed off the
+    shelf did not come from anywhere else. There was no earlier channel to
+    protect, because the deal did not exist until the claim.
+    """
+    k = str(origin_key or "").strip()
+    if k == "warehouse":
+        return True
+    current = str(deal.get("origin") or "").strip()
+    return current in ("", DEFAULT_ORIGIN)
+
+
 def stamp(deal: dict, origin_key: str, party_code: str = "",
           party_name: str = "") -> dict:
     """Set a SYSTEM-DERIVED origin on a deal, overriding whatever was declared.
@@ -116,6 +143,10 @@ def stamp(deal: dict, origin_key: str, party_code: str = "",
     """
     k = str(origin_key or "").strip()
     if not is_known(k):
+        return deal
+    if not should_stamp(deal, k):
+        # Keep the channel; the referral is recorded in referral_chain and the
+        # referrer is credited by the referral engine regardless.
         return deal
     deal["origin"] = k
     if credits_party(k):
