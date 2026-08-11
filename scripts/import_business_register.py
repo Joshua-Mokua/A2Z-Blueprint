@@ -224,12 +224,18 @@ def main():
                 skipped_dupe += 1
                 continue
             existing.add(key)
-            sector = _sector_for(r.get(cols.get("sector", "")), sectors)
+            raw_sector = str(r.get(cols.get("sector", "")) or "")
+            sector = _sector_for(raw_sector, sectors)
+            # "SACCO - Financial Services" carries both: the top-level sector
+            # for browsing and the SUBSECTOR that says what kind of thing this
+            # actually is. Keeping only the first would put a SACCO and a
+            # pension scheme on the same undifferentiated shelf.
+            subsector = raw_sector.split("-")[0].strip() if "-" in raw_sector else ""
             town = _town_for(
                 " ".join(str(r.get(cols.get(k, "")) or "") for k in ("town", "address")),
                 towns)
             rows.append({
-                "name": name, "sector": sector, "town": town,
+                "name": name, "sector": sector, "subsector": subsector, "town": town,
                 "phone": str(r.get(cols.get("phone", "")) or "").strip(),
                 "email": str(r.get(cols.get("email", "")) or "").strip(),
                 "reg_no": str(r.get(cols.get("reg_no", "")) or "").strip(),
@@ -259,7 +265,7 @@ def main():
                 name=r["name"],
                 created_by_code="import",
                 created_by_name=source[:60],
-                sector=r["sector"], town=r["town"],
+                sector=r["sector"], subsector=r.get("subsector", ""), town=r["town"],
                 contact_phone=r["phone"], contact_email=r["email"],
                 notes=("Registered no. %s" % r["reg_no"]) if r["reg_no"] else "",
                 # Provenance on every record: a year from now anybody can ask

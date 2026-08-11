@@ -210,7 +210,7 @@ def create(*, name: str, created_by_code: str, created_by_name: str,
            sector: str = "", town: str = "", contact_name: str = "",
            contact_phone: str = "", contact_email: str = "",
            notes: str = "", source_event: str = "",
-           estimated_value: float = 0.0) -> dict:
+           estimated_value: float = 0.0, subsector: str = "") -> dict:
     """List a prospect on the shelf.
 
     Only the NAME is required. A prospect jotted down at an event with a name
@@ -232,6 +232,10 @@ def create(*, name: str, created_by_code: str, created_by_name: str,
         "name": nm,
         "canonical_key": key,
         "sector": str(sector or "").strip(),
+        # SUBSECTOR, so a shelf of 1,800 does not become one heap. "SACCO" and
+        # "Pension scheme" are both Financial Services, and a library that
+        # stops at the top-level category is a library nobody can walk.
+        "subsector": str(subsector or "").strip(),
         "town": str(town or "").strip(),
         "contact_name": str(contact_name or "").strip(),
         "contact_phone": str(contact_phone or "").strip(),
@@ -984,11 +988,19 @@ def shelves(status: str = STATUS_AVAILABLE) -> dict:
     for rec in all_prospects():
         if status and rec.get("status") != status:
             continue
-        key = str(rec.get("sector") or "").strip() or "Unsorted"
+        # SECTOR › SUBSECTOR, so a shelf reads like a library rather than a
+        # heap. At 1,800 records "Financial Services" alone tells nobody
+        # whether they are looking at a SACCO, a pension scheme or an insurer.
+        sector = str(rec.get("sector") or "").strip() or "Unsorted"
+        sub = str(rec.get("subsector") or "").strip()
+        key = "%s \u203a %s" % (sector, sub) if sub else sector
         out.setdefault(key, []).append(rec)
+    # ALPHABETICAL, always. Newest-first made sense when a shelf held a dozen
+    # things somebody had just listed; at this size a person is looking for a
+    # NAME, and a list they cannot scan alphabetically is one they cannot use.
     for k in out:
-        out[k].sort(key=lambda r: str(r.get("created_at") or ""), reverse=True)
-    return out
+        out[k].sort(key=lambda r: str(r.get("name") or "").lower())
+    return dict(sorted(out.items()))
 
 
 def stale(days: int = 30, status: str = STATUS_AVAILABLE) -> list:
