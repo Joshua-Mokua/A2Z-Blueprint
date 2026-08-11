@@ -138,8 +138,37 @@ def _counties():
         return []
 
 
+def _read_tables(path):
+    """Rows from the PDF's TABLES, which is what a gazette register actually is.
+
+    THIS IS THE ONLY RELIABLE WAY TO READ THESE DOCUMENTS. Reading the same
+    page as flat text flows the five columns together, so a "name" comes out as
+    the previous row's tail plus a header fragment plus part of the real name:
+
+        "Sacco Society Location 145 Shelloyees Regulated Non-WDT"
+        "co Nairobi WDT-Sacco robi 65 Hyperflora Regulated Non-WDT"
+
+    Those pass any name rule you care to write - they contain "Sacco" and
+    "Society" and look plausible. The rule was never the problem; the
+    extraction was.
+    """
+    try:
+        import pdfplumber
+    except ImportError:
+        return None
+    out = []
+    with pdfplumber.open(path) as pdf:
+        for page in pdf.pages:
+            for table in (page.extract_tables() or []):
+                for row in table:
+                    cells = [(c or "").replace("\n", " ").strip() for c in row]
+                    if any(cells):
+                        out.append(cells)
+    return out
+
+
 def _read_pdf(path):
-    """Text per page. Tries pdfplumber, then PyPDF2 - whichever is installed."""
+    """Text per page - the fallback when tables cannot be detected."""
     try:
         import pdfplumber
         with pdfplumber.open(path) as pdf:
@@ -184,8 +213,12 @@ def main():
     out = out or os.path.splitext(path)[0] + ".csv"
     sector = sector or "Financial Services"
 
-    pages = _read_pdf(path)
-    if pages is None:
+    # TABLES FIRST. Only fall back to text when the document has none.
+    tables = _read_tables(path)
+    pages = None
+    if not tables:
+        pages = _read_pdf(path)
+    if tables is None and pages is None:
         print("ABORT: no PDF reader available. Install one:")
         print("   pip install pdfplumber --break-system-packages")
         print("pdfplumber handles gazette tables noticeably better than PyPDF2,")
@@ -196,14 +229,72 @@ def main():
     print("REGISTER EXTRACT")
     print("=" * 76)
     print("  file    %s" % path)
-    print("  pages   %d" % len(pages))
+    print("  pages   %d" % len(pages or []))
 
     counties = _counties()
     if not counties:
         print("  (county list unavailable - towns will be blank)")
     rows, unparsed, rejected = [], [], []
     seen = set()
-    for text in pages:
+
+    if tables:
+        print("  mode    TABLE (%d rows found)" % len(tables))
+        for cells in tables:
+            # Find the NAME column: the first cell that is neither an index
+            # number nor an address. Column order varies between registers, so
+            # the shape is inferred per row rather than fixed.
+            name = ""
+            for c in cells:
+                if not c or c.isdigit() or len(c) < 4:
+                    continue
+                if BOX.search(c):
+                    continue
+                name = c
+                break
+            if not name:
+                continue
+            name = re.sub(r"^\d+[\.\)]?\s+", "", name).strip(" .,-–—")
+            # The header row repeats on every page of a gazette and reads like
+            # an entity ("Names of the Deposit Taking SACCO Society" contains
+            # both "sacco" and "society"), so it must be dropped explicitly.
+            if NOISE.search(name):
+                continue
+            ok, why = looks_like_entity(name)
+            if not ok:
+                rejected.append((name[:56], why))
+                continue
+            # The county is usually the LAST populated cell; fall back to
+            # matching a known county anywhere in the row.
+            town = ""
+            tail = [c for c in cells if c]
+            if tail:
+                cand = tail[-1].strip()
+                if cand.lower() in {c.lower() for c in counties}:
+                    town = next(c for c in counties if c.lower() == cand.lower())
+            if not town:
+                joined = " ".join(cells).lower()
+                best = -1
+                for c in counties:
+                    i = joined.rfind(c.lower())
+                    if i > best:
+                        best, town = i, c
+                if best < 0:
+                    town = ""
+            addr = next((c for c in cells if BOX.search(c)), "")
+            key = name.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            rows.append({
+                "company_name": name,
+                "industry_description": ("%s - %s" % (label, sector)) if label else sector,
+                "physical_address": addr,
+                "town": town,
+                "registration_number": "", "company_phone": "", "company_email": "",
+            })
+        pages = []
+    seen = set()
+    for text in (pages or []):
         lines = [ln.strip() for ln in (text or "").split("\n") if ln.strip()]
         carry = ""
         for ln in lines:
