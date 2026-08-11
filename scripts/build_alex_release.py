@@ -71,10 +71,18 @@ CHAIN = [
     "patch_rf2a_referral_clock", "patch_pl2_pipeline_drill",
     "patch_rf2b_referral_bench_ui", "patch_rf3_auto_referral_field",
     "patch_p3_branch_pipeline_day",
-    "patch_perf1_roster_cache",
+    "patch_perf1_roster_cache", "patch_mail1_smtp_negotiation",
     "patch_as1_unit_activities", "patch_as2_unit_weights",
     "patch_as3_admin_unit_config", "patch_as4_unit_admin_ui",
     "patch_ul1_unit_labels", "patch_ex1_exclude_md_office",
+    "patch_or1_deal_origin", "patch_or2_origin_wiring",
+    "patch_or3_origin_evidence", "patch_or4_origin_capture",
+    "patch_or5_preserve_channel",
+    "patch_ev1_origin_sources", "patch_ev2_events_page",
+    "patch_ch1_origin_channels", "patch_ch2_channels_page",
+    "patch_ch3_channel_tabs", "patch_ch4_lead_generators",
+    "patch_ch5_channels_ui", "patch_ch6_owner_picker",
+    "patch_ch7_deal_tracker", "patch_ch8_origin_roundtrip",
 ]
 
 # Patchers that deliberately do NOT ship to the pilot. Anything in scripts/ that
@@ -87,15 +95,17 @@ CHAIN = [
 # datetime.parseTs). Re-running them would only abort as "already applied", but
 # listing them keeps the guard meaningful instead of crying wolf every build.
 NOT_FOR_RELEASE = {
+    # THE WAREHOUSE IS HELD BACK (ruling 2026-08-11): "anything on the
+    # warehouse is not to be released to Alex until I am certain it is well
+    # built."
+    "patch_dw1_warehouse",
+    # Analytics.tsx is on the deployment delta list, so OR6 stays on our side
+    # until that ruling changes.
+    "patch_or6_analytics_origins",
     # Local-only repair. Alex's branch_log.py already DEFINES
     # field_bounds and check_bounds - verified defs=2 on
     # origin/alex-dev. This would abort on his tree anyway.
     "hotfix_bounds_defs",
-    # Alex fixed this independently and better: his core.py has ONE send site
-    # that already reads smtp_encryption and sender_username and makes STARTTLS
-    # conditional. Ours had FOUR that did none of that. MAIL1 is for our
-    # divergent core.py only - shipping it would rewrite his working code.
-    "patch_mail1_smtp_negotiation",
     "patch_a8_branch_segment_and_ui",
     "patch_phase2c_dayplanner",
     "patch_phase2cb_layout",
@@ -121,7 +131,12 @@ DELTA = [
     "frontend/web/src/pages/ChangePassword.tsx",
     "frontend/web/src/types/auth.ts",
     "frontend/web/src/components/AppShell.tsx",
-    "frontend/web/src/components/Sidebar.tsx",
+    # Sidebar.tsx is NO LONGER byte-frozen (2026-08-11). Diffed against
+    # alex-dev, the only difference was TWO BRANDING STRINGS - "EKE Sales Pro"
+    # and the "EKE Blueprint" fallback. Freezing the whole file to protect two
+    # strings meant Alex could never receive a new menu entry, so Origin
+    # Channels would have been unreachable on the pilot. His strings are
+    # RESTORED after the replay instead - see BRANDING_STRINGS.
     "frontend/web/src/components/TopBar.tsx",
     # Ruling 2026-08-10: PipelineDealDetail must NOT travel. The formatting
     # patcher removes three K/M abbreviations from it; harmless in itself, but
@@ -131,6 +146,13 @@ DELTA = [
 
 # Reverted to alex-dev's version after the replay, before staging. A patcher
 # may legitimately touch these; the release must not carry them.
+# Alex's branding, restored after the replay so a menu change can travel
+# without renaming his product back to ours.
+BRANDING_STRINGS = [
+    ("label: 'A2Z Sales Pro'", "label: 'EKE Sales Pro'"),
+    ("branding?.app_name ?? 'A2Z Blueprint'", "branding?.app_name ?? 'EKE Blueprint'"),
+]
+
 REVERT_AFTER_REPLAY = [
     "frontend/web/src/pages/PipelineDealDetail.tsx",
 ]
@@ -303,6 +325,20 @@ def main():
           % (len(applied), len(skipped), len(failed)))
     for p, why in failed[:10]:
         print("   %s -> %s" % (p, why))
+
+    # Restore Alex's branding in the sidebar. Doing this BEFORE the safety
+    # check means the file is compared in the state it will actually ship in.
+    _sb = os.path.join("frontend", "web", "src", "components", "Sidebar.tsx")
+    if os.path.isfile(_sb):
+        _txt = open(_sb, encoding="utf-8").read()
+        _n = 0
+        for ours, theirs in BRANDING_STRINGS:
+            if ours in _txt:
+                _txt = _txt.replace(ours, theirs)
+                _n += 1
+        if _n:
+            open(_sb, "w", encoding="utf-8", newline="").write(_txt)
+            print("  restored %d branding string(s) in Sidebar.tsx" % _n)
 
     # Put back anything that must stay on Alex's side, before the check reads it.
     for f in REVERT_AFTER_REPLAY:
