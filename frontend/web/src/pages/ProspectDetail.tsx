@@ -140,6 +140,31 @@ export default function ProspectDetail() {
   const c = data?.completeness;
   const facts: ProspectFact[] = data?.card?.items ?? [];
 
+  // AUTOSAVE ON BLUR, but only while the record is under validation. That set
+  // exists to be filled in, and making somebody hunt for a Save button after
+  // every field is how half-typed records get abandoned.
+  //
+  // A VALIDATED record is never autosaved - it needs the password, and
+  // prompting for it the moment somebody tabs out of a field would be
+  // maddening. There, Save stays explicit.
+  async function autosave(field: string) {
+    if (c?.validated) return;
+    if (!(field in edit)) return;
+    const value = edit[field];
+    try {
+      await updateProspect(prospectId, { [field]: value });
+      setEdit((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+      await load();
+    } catch (e) {
+      // Left in `edit` so the typing is not lost and Save can retry it.
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not save.' });
+    }
+  }
+
   async function save() {
     // The password is asked for ONLY on a validated record. The working set
     // exists to be filled in, and friction there stops the backfilling.
@@ -255,9 +280,19 @@ export default function ProspectDetail() {
                     {c?.answered ?? 0}/{c?.of ?? 15} answered
                   </div>
                 </div>
-                {p.status === 'available' && (
+                {/* PURSUE ONLY ON A VALIDATED RECORD (ruling 2026-08-11).
+                    Sending somebody to call a business whose details nobody has
+                    checked is how the warehouse loses trust on the first bad
+                    call - and one bad call costs more than the prospect was
+                    worth. */}
+                {p.status === 'available' && c?.validated && (
                   <Button size="sm" variant="secondary" disabled={busy}
                           onClick={() => void pursue()}>Pursue</Button>
+                )}
+                {p.status === 'available' && !c?.validated && (
+                  <span className="text-[10px] text-gray-400">
+                    validate before pursuing
+                  </span>
                 )}
                 {!c?.validated && (
                   <Button size="sm" disabled={busy || !c?.complete}
@@ -323,17 +358,25 @@ export default function ProspectDetail() {
                               {row.label}
                             </span>
                             {row.kind === 'select' ? (
-                              <select className={cls} value={cur} onChange={(e) => set(e.target.value)}>
+                              // A picker saves on CHANGE - there is no
+                              // half-typed state to protect.
+                              <select className={cls} value={cur}
+                                      onChange={(e) => {
+                                        set(e.target.value);
+                                        setTimeout(() => void autosave(row.field), 0);
+                                      }}>
                                 <option value="">Select…</option>
                                 {opts.map((o) => <option key={o} value={o}>{o}</option>)}
                               </select>
                             ) : row.kind === 'area' ? (
                               <textarea rows={2} className={cls} value={cur}
                                         placeholder={row.placeholder}
+                                        onBlur={() => void autosave(row.field)}
                                         onChange={(e) => set(e.target.value)} />
                             ) : (
                               <input className={cls} value={cur} placeholder={row.placeholder}
                                      inputMode={row.kind === 'number' ? 'numeric' : undefined}
+                                     onBlur={() => void autosave(row.field)}
                                      onChange={(e) => set(e.target.value)} />
                             )}
                           </label>
@@ -354,6 +397,7 @@ export default function ProspectDetail() {
                           placeholder="Seasonality, known issues, group structure, anything the fields above do not cover…"
                           value={edit.additional_information
                             ?? String((p as unknown as Record<string, unknown>).additional_information ?? '')}
+                          onBlur={() => void autosave('additional_information')}
                           onChange={(e) => setEdit({ ...edit, additional_information: e.target.value })} />
               </label>
 
@@ -361,7 +405,7 @@ export default function ProspectDetail() {
                 <span className="text-[11px] text-gray-400">
                   {c?.validated
                     ? 'Validated — saving needs the warehouse password.'
-                    : `Fill in what you know. ${c?.threshold ?? 80}% opens validation.`}
+                    : `Saves as you go. ${c?.threshold ?? 80}% opens validation.`}
                 </span>
                 <Button size="sm" disabled={busy || Object.keys(edit).length === 0}
                         onClick={() => void save()}>
