@@ -1,4 +1,46 @@
-// Deals Warehouse — the shared shelf.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+LAND1 - do not open a fresh warehouse on an empty page.
+
+RULING (2026-08-11): "I also see no shelve."
+
+Correct, and it was my own doing. VALIDATED is the right default once there is
+a validated set - people should land on data somebody vouched for, which was
+the whole point of the tab. But on a warehouse where nothing has been validated
+yet, defaulting there shows an empty page and looks broken.
+
+    FIRST LOAD ONLY, and only when the validated count is zero, the page moves
+    to "Under validation" - where all 165 records actually are.
+
+    ONCE SOMETHING IS VALIDATED the default stands. The correction is for an
+    empty set, not a permanent retreat from the rule.
+
+    IT DOES NOT FIGHT THE USER. The switch happens once, guarded by `landed`,
+    so somebody who deliberately clicks Validated to check it is empty is not
+    bounced away again.
+
+AND THE EMPTY VALIDATED SHELF NOW EXPLAINS ITSELF - that everything lands under
+Under validation whatever its score, that validation is somebody looking rather
+than a number crossing a line, and a button to go there. "The shelf is empty"
+states a fact; it does not tell anybody what to do about it.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+REQUIRES LIB1.
+
+Usage (from project root, .venv active):
+    python scripts\patch_land1_first_landing.py            # dry run
+    python scripts\patch_land1_first_landing.py --apply
+"""
+import os
+import shutil
+import sys
+
+SHELF = os.path.join("frontend", "web", "src", "pages", "Warehouse.tsx")
+BACKUP_SUFFIX = ".pre_land1"
+
+SHELF_SRC = r'''// Deals Warehouse — the shared shelf.
 //
 // Not a channel. Events, partnerships and lead generators are things the bank
 // INVESTS IN and measures a return on; the warehouse is a shelf of prospects
@@ -663,3 +705,49 @@ export default function Warehouse() {
     </>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    if not os.path.isfile(SHELF):
+        print("ABORT: %s not found - apply patch_lib1_library_order.py first." % SHELF)
+        return 1
+
+    cur = open(SHELF, encoding="utf-8").read()
+    if "const [landed, setLanded]" in cur:
+        print("ABORT: LAND1 looks applied.")
+        return 1
+    if "'validated' | 'working'" not in cur:
+        print("ABORT: apply patch_cm2_matrix_ui.py first.")
+        return 1
+
+    if "if (v === 0 && tab === 'validated') setTab('working');" not in SHELF_SRC:
+        print("ABORT: an empty validated set would still land on an empty page.")
+        return 1
+    if "if (!landed)" not in SHELF_SRC:
+        print("ABORT: the switch is not guarded - somebody who deliberately")
+        print("       opens Validated would be bounced away every load.")
+        return 1
+    if "Nothing validated yet" not in SHELF_SRC:
+        print("ABORT: the empty validated shelf does not explain itself.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if SHELF_SRC.count(op) != SHELF_SRC.count(cl):
+            print("ABORT: unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: first-load only, guarded, explained")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    shutil.copy2(SHELF, SHELF + BACKUP_SUFFIX)
+    open(SHELF, "w", encoding="utf-8", newline="").write(SHELF_SRC)
+    print("APPLIED %s" % SHELF)
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
