@@ -8,6 +8,7 @@ import { displayName } from "../lib/names";
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
+import ReferralBench from '@/components/ReferralBench';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Badge, type BadgeTone } from '@/components/Badge';
@@ -374,6 +375,11 @@ export default function Referrals() {
           </Button>
         }
       />
+
+      <div className="px-6 pt-4 max-w-7xl mx-auto">
+        <ReferralBench />
+      </div>
+
       <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
         <div className="mb-4 inline-flex rounded-lg border border-gray-200 bg-white p-1">
           {tabs.map((t) => (

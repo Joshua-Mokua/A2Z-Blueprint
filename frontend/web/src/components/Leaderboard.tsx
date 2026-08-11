@@ -117,8 +117,12 @@ export default function Leaderboard() {
     () => Math.max(1, ...rows.map((r) => Number(r.index) || 0)), [rows]);
 
   const isStaff = level === 'staff';
+  // A unit's KEY is the MD-reporting role title, because that is what every
+  // stored config uses; `label` is the department name a person should read.
+  // Falls back to the key so a row is never blank.
   const nameOf = (r: LeaderboardRow) =>
-    isStaff ? String(r.staff_name || r.staff_code || '') : String(r.name || '');
+    isStaff ? String(r.staff_name || r.staff_code || '')
+            : String(r.label || r.name || '');
 
   return (
     <Card>
@@ -150,7 +154,9 @@ export default function Leaderboard() {
           <select value={unit} onChange={(e) => { setUnit(e.target.value); setBranch(''); setRole(''); }}
                   className="max-w-[240px] rounded border border-gray-200 px-2 py-1 text-xs">
             <option value="">All units</option>
-            {(data?.units ?? []).map((u) => <option key={u} value={u}>{u}</option>)}
+            {(data?.units ?? []).map((u) => (
+              <option key={u} value={u}>{data?.unit_labels?.[u] ?? u}</option>
+            ))}
           </select>
           <select value={branch} onChange={(e) => { setBranch(e.target.value); setRole(''); }}
                   className="max-w-[180px] rounded border border-gray-200 px-2 py-1 text-xs">

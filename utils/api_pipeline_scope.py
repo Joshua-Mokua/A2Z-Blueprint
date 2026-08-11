@@ -66,7 +66,21 @@ from typing import Optional, Set
 _ROSTER_CACHE: Optional["pd.DataFrame"] = None  # type: ignore[name-defined]
 _ROSTER_CACHE_LOADED_AT: float = 0.0
 _ROSTER_CACHE_LOCK = threading.Lock()
-_ROSTER_CACHE_TTL_SECONDS = 60.0
+# CACHE LIFETIME (2026-08-10). Was 60 seconds, which meant the cache expired
+# every minute and the next request paid the full cold cost - roster read plus
+# cascade walk - WHILE HOLDING THE LOCK, with every concurrent request queued
+# behind it. A branch manager opening the validation queue at the wrong moment
+# got a 504.
+#
+# The TTL was doing no useful work: invalidate_staff_roster_cache() is already
+# called on both paths that change the roster - the staff upload (api.py) and
+# the register rebuild (staff_projection.py). So the cache is refreshed the
+# moment the data actually changes, and a timer on top of that only guaranteed
+# a slow request every minute.
+#
+# One hour, not infinity: a long backstop still recovers from an invalidation
+# that was missed because a new write path forgot to call it.
+_ROSTER_CACHE_TTL_SECONDS = 3600.0
 
 
 def _get_staff_roster_path() -> Path:

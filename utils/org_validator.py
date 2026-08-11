@@ -588,6 +588,101 @@ def segment_for_role(role: str) -> str:
     return ""
 
 
+# ── UNIT DISPLAY NAMES (2026-08-11) ─────────────────────────────────────────
+# A unit's KEY is the MD-reporting ROLE TITLE - that is how the hierarchy
+# identifies it, and it is already stored that way in activity_sets,
+# unit_activity_weights and every saved config. Changing the key would mean
+# migrating live pilot config, so the key stays.
+#
+# But a title is not a department. "Director, Internal Audit" is a person's
+# designation; the unit is "Internal Audit". Showing the title made the admin
+# picker, the ranking and the analytics all read as though you were selecting a
+# person rather than a department.
+#
+# So: KEY unchanged, LABEL derived. Config-driven via org_config.unit_display_names
+# so the bank can correct any of the sixteen without a deploy.
+_TITLE_PREFIXES = (
+    "ag. head of ", "ag. head ", "acting head of ", "acting head ",
+    "chief ", "director of ", "director, ", "director ",
+    "head of ", "head ", "country ", "general manager, ", "general manager ",
+)
+_TITLE_SUFFIXES = (
+    " officer", " manager", " & company secretary",
+)
+
+
+def unit_display_names() -> dict:
+    """Explicit overrides from org_config. Anything absent is derived."""
+    try:
+        from utils.config import load_org_config
+        v = (load_org_config() or {}).get("unit_display_names")
+        if isinstance(v, dict):
+            return {str(k): str(x) for k, x in v.items() if str(x).strip()}
+    except Exception:
+        pass
+    return {}
+
+
+def excluded_units() -> set:
+    """Units that are NOT ranked (ruling 2026-08-11).
+
+    "Business Manager and Personal Assistant are in the MD's Office, and for now
+    I wish to exclude the MD's Office from all the ranking, being the executive
+    office."
+
+    EXCLUDED FROM RANKING, NOT FROM THE SYSTEM. These people still file daily
+    logs, still get validated, still appear in roll-ups and follow-up lists.
+    They are simply not placed in a league table against branch and business
+    units, because the executive office does not do comparable work and ranking
+    it would be meaningless in both directions.
+
+    Config-driven via org_config.excluded_from_ranking so the bank can add or
+    remove a unit without a deploy.
+    """
+    try:
+        from utils.config import load_org_config
+        v = (load_org_config() or {}).get("excluded_from_ranking")
+        if isinstance(v, list):
+            return {_s(x) for x in v if _s(x)}
+    except Exception:
+        pass
+    return {"Business Manager", "Personal Assistant"}
+
+
+def is_ranked(unit: str) -> bool:
+    """False for the executive office; True for everything else."""
+    return _s(unit) not in excluded_units()
+
+
+def unit_label(unit: str) -> str:
+    """What a human should read for this unit.
+
+    Never returns empty: if stripping leaves nothing - "Business Manager",
+    "Personal Assistant" - the original stands. A blank unit label would be
+    worse than a slightly odd one, because a row with no name is unreadable.
+    """
+    raw = _s(unit)
+    if not raw:
+        return ""
+    over = unit_display_names()
+    if raw in over:
+        return over[raw]
+
+    low = raw.lower()
+    out = raw
+    for pre in _TITLE_PREFIXES:
+        if low.startswith(pre):
+            out = raw[len(pre):]
+            break
+    low2 = out.lower()
+    for suf in _TITLE_SUFFIXES:
+        if low2.endswith(suf) and len(out) > len(suf) + 2:
+            out = out[: -len(suf)]
+            break
+    out = out.strip(" ,-")
+    return out or raw
+
+
 def unit_for_role(role: str) -> str:
     """The MD-reporting unit a role rolls into, or '' when it reaches nothing."""
     m = _role_to_unit_map()

@@ -194,12 +194,12 @@ export default function PipelineLeaderboard() {
                         </span>
                       </td>
                       <td className={`${bg} truncate px-2 py-1.5 text-xs font-medium text-gray-900`}
-                          title={r.name}>
+                          title={r.label || r.name}>
                         {isStaff ? r.name : (
                           <button type="button" onClick={() => void expand(r.key)}
                                   className="flex items-center gap-1.5 text-left hover:text-brand-primary">
                             <span className="text-gray-400">{openRow === r.key ? '▾' : '▸'}</span>
-                            {r.name}
+                            {r.label || r.name}
                           </button>
                         )}
                       </td>
