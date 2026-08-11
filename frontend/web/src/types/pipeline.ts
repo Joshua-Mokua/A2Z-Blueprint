@@ -453,6 +453,9 @@ export interface CreateDealRequest {
    *  validates it and replaces any system-routed value (referral, warehouse),
    *  which are stamped by the workflow that actually routed the deal. */
   origin?:               string;
+  /** The chosen source for that origin - a sponsored event. Cleared server-side
+   *  if it does not belong to the origin. */
+  event_id?:             string;
   mou_title?:            string;     // MOU title or free-text partner ("Other")
   client_cif?:           string;     // δ2: CBS CIF when client matched in CBS lookup
   is_ntb?:               boolean;

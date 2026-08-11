@@ -931,6 +931,14 @@ export interface PipelineOriginSplit {
   origin: string; label?: string; credits_party?: boolean;
   count: number; value: number; won: number;
 }
+export interface OriginSourceOption { id: string; label: string; sub: string }
+export async function fetchOriginSources(
+  origin: string, activeOnly = true,
+): Promise<{ origin: string; field: string; options: OriginSourceOption[] }> {
+  const q = new URLSearchParams({ origin, active_only: String(activeOnly) });
+  return getJson<{ origin: string; field: string; options: OriginSourceOption[] }>(
+    `/pipeline/origin-sources?${q.toString()}`);
+}
 export async function fetchDealOrigins(): Promise<{ origins: DealOrigin[]; default: string }> {
   return getJson<{ origins: DealOrigin[]; default: string }>('/pipeline/origins');
 }

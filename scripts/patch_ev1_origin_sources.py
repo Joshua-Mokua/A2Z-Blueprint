@@ -1,4 +1,716 @@
-// v10.512 Phase 4 Batch β3 — PipelineCreate page.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+EV1 - events and partnerships become pickable, and deals point at them.
+
+RULING (2026-08-11): "one creates an event first, then from the event one can
+directly create a deal or refer a deal ... the actuals are of course
+quantifiable after the closure."
+
+WHAT WE FOUND BEFORE BUILDING, and why this is smaller than expected. The event
+object ALREADY EXISTS and is richer than the one described:
+data/sponsored_events.json holds 12 events with name, partner, branch,
+department, dates, budget, spend, targets for leads / accounts / deposits /
+media value, and ROI. data/partnerships.json holds 50.
+
+They had NO API, NO frontend, and no way for a deal to reference one. The object
+was never the gap - REACHABILITY was. So this exposes what exists rather than
+building a second event table beside it.
+
+ADDS
+  utils/origin_sources.py       events, partnerships, options(), attribution()
+  GET /api/pipeline/origin-sources?origin=   what to pick for this origin
+  GET /api/pipeline/events/{id}/attribution  what the DEALS say it produced
+
+  The capture form gains a second dropdown - "Which one?" - that appears ONLY
+  for origins with something to pick. Changing the origin clears the previous
+  choice, and the SERVER clears a source id that does not belong to the chosen
+  origin, so a stale event_id left on a form cannot silently attribute a
+  walk-in deal to a roadshow.
+
+DERIVED ACTUALS COUNT ONLY CLOSED-WON DEALS (ruling: "quantifiable after the
+closure"). A lead that never converted did not produce an account, and counting
+it would flatter every event's return:
+
+    derived.leads      every deal pointing at the event
+    derived.accounts   those that closed won
+    derived.value      the value of those that closed won
+
+BOTH figures are returned - `derived` and `stored`. The stored actuals are
+generated test data (confirmed), but replacing them silently would leave nobody
+able to tell which number they were reading, and the two disagreeing is itself
+information.
+
+MEASURED against the real files: 12 events (3 active), 50 partnerships (49
+active); an event with 3 attributed deals of which 1 closed won reports 3 leads
+and 1 account.
+
+NEXT: an events page showing derived against target, and the same treatment for
+Lead Generators - which has no object yet and will need one.
+
+Usage (from project root, .venv active):
+    python scripts\patch_ev1_origin_sources.py            # dry run
+    python scripts\patch_ev1_origin_sources.py --apply
+"""
+import os
+import re
+import shutil
+import sys
+
+MOD = os.path.join("utils", "origin_sources.py")
+API = os.path.join("utils", "api.py")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+PAGE = os.path.join("frontend", "web", "src", "pages", "PipelineCreate.tsx")
+TYPES = os.path.join("frontend", "web", "src", "types", "pipeline.ts")
+BACKUP_SUFFIX = ".pre_ev1"
+
+MODULE = r'''"""
+utils/origin_sources — the events and partnerships a deal can point at.
+
+RULING (2026-08-11): "for events, partnerships and lead generators we will build
+it so one creates an event first, then from the event one can directly create a
+deal or refer a deal ... the actuals are of course quantifiable after the
+closure."
+
+WHAT WAS ALREADY HERE, and why this module is small. data/sponsored_events.json
+already holds 12 events carrying name, partner, branch, department, start and
+end dates, budget, spend, targets for leads / accounts / deposits / media value,
+and ROI. data/partnerships.json holds 50 with partner type, sector, RM owner and
+expected volume.
+
+They had NO API, NO frontend, and no way for a deal to reference one. The object
+was never the gap - reachability was. So this exposes what exists rather than
+building a second event table beside it.
+
+DERIVED ACTUALS, AFTER CLOSURE. The actual_* fields on an event are generated
+test figures (confirmed 2026-08-11). Once deals carry an event_id, the honest
+figures come from the deals themselves - and only from deals that CLOSED WON,
+because a lead that never converted did not produce an account and counting it
+would flatter every event's return.
+
+Both are reported: `stored` (what the file says) and `derived` (what the deals
+say). Replacing the stored figure silently would leave nobody able to tell which
+number they were looking at, and the two disagreeing is itself information.
+"""
+from __future__ import annotations
+
+import json
+import logging
+import os
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+_EVENTS = os.path.join("data", "sponsored_events.json")
+_PARTNERSHIPS = os.path.join("data", "partnerships.json")
+
+CLOSED_WON = "Closed Won"
+
+
+def _load(path: str) -> list:
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError) as exc:
+        # Read-only source: an unreadable file means no options to offer, which
+        # is visible in the UI. It must not raise into a deal-capture request.
+        logger.warning("origin source %s unreadable: %s", path, exc)
+        return []
+    if isinstance(data, dict):
+        data = list(data.values())
+    return [d for d in data if isinstance(d, dict)]
+
+
+def events(active_only: bool = False) -> list:
+    """Sponsored events, newest first.
+
+    `active_only` filters to events still running - useful for a capture form,
+    where offering an event that ended eight months ago invites a mis-tag.
+    """
+    out = _load(_EVENTS)
+    if active_only:
+        out = [e for e in out
+               if str(e.get("status") or "").strip().lower() in ("active", "planned")]
+    return sorted(out, key=lambda e: str(e.get("start_date") or ""), reverse=True)
+
+
+def partnerships(active_only: bool = False) -> list:
+    out = _load(_PARTNERSHIPS)
+    if active_only:
+        out = [p for p in out if p.get("activated")
+               or str(p.get("status") or "").strip().lower() == "active"]
+    return sorted(out, key=lambda p: str(p.get("partner_name") or ""))
+
+
+def get_event(event_id: str) -> Optional[dict]:
+    eid = str(event_id or "").strip()
+    return next((e for e in _load(_EVENTS) if str(e.get("id") or "") == eid), None)
+
+
+def get_partnership(partner_id: str) -> Optional[dict]:
+    pid = str(partner_id or "").strip()
+    return next((p for p in _load(_PARTNERSHIPS) if str(p.get("id") or "") == pid), None)
+
+
+def options(origin_key: str, active_only: bool = True) -> list:
+    """The pickable sources for an origin: [{id, label, sub}].
+
+    Returns [] for origins with nothing to pick - self, referral, warehouse -
+    so a capture form can simply not render a second dropdown rather than
+    special-casing each origin.
+    """
+    k = str(origin_key or "").strip()
+    if k == "events":
+        return [{"id": str(e.get("id") or ""),
+                 "label": str(e.get("name") or e.get("id") or ""),
+                 "sub": " · ".join(x for x in (
+                     str(e.get("branch") or ""),
+                     str(e.get("start_date") or "")[:10],
+                     str(e.get("event_category") or "")) if x)}
+                for e in events(active_only) if e.get("id")]
+    if k == "partnership":
+        return [{"id": str(p.get("id") or ""),
+                 "label": str(p.get("partner_name") or p.get("id") or ""),
+                 "sub": " · ".join(x for x in (
+                     str(p.get("partner_type") or ""),
+                     str(p.get("sector") or "")) if x)}
+                for p in partnerships(active_only) if p.get("id")]
+    return []
+
+
+def source_field(origin_key: str) -> str:
+    """Which field on the deal holds the chosen source for this origin."""
+    return {"events": "event_id", "partnership": "mou_id"}.get(
+        str(origin_key or "").strip(), "")
+
+
+def attribution(event_id: str, deals: list) -> dict:
+    """What the DEALS say this event produced, against what the file says.
+
+    Only CLOSED WON deals count toward accounts and value (ruling 2026-08-11:
+    "the actuals are of course quantifiable after the closure"). A lead that
+    never converted did not produce an account, and counting it would flatter
+    every event's return.
+
+    Both figures are returned. Silently replacing the stored number would leave
+    nobody able to tell which they were looking at - and the two disagreeing is
+    itself worth seeing.
+    """
+    eid = str(event_id or "").strip()
+    mine = [d for d in (deals or [])
+            if str(d.get("event_id") or "").strip() == eid]
+    won = [d for d in mine if str(d.get("stage") or "") == CLOSED_WON]
+
+    def _val(d):
+        try:
+            return float(d.get("amount_kes") or d.get("deal_value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    ev = get_event(eid) or {}
+    spent = float(ev.get("spent_kes") or ev.get("budget_kes") or 0)
+    won_value = round(sum(_val(d) for d in won), 2)
+    return {
+        "event_id": eid,
+        "derived": {
+            "leads": len(mine),
+            "accounts": len(won),
+            "value": won_value,
+            "cost_per_lead": round(spent / len(mine), 2) if mine else 0.0,
+            "cost_per_account": round(spent / len(won), 2) if won else 0.0,
+        },
+        "stored": {
+            "leads": ev.get("actual_leads"),
+            "accounts": ev.get("actual_accounts"),
+            "cost_per_lead": ev.get("cost_per_lead_kes"),
+            "cost_per_account": ev.get("cost_per_account_kes"),
+        },
+        "target": {
+            "leads": ev.get("target_leads"),
+            "accounts": ev.get("target_accounts"),
+        },
+        "spent_kes": spent,
+    }
+'''
+
+ENDPOINTS = r'''@app.get("/api/pipeline/origin-sources")
+def pipeline_origin_sources(origin: str = "", active_only: bool = True,
+                            user: dict = Depends(get_current_user)):
+    """What a deal can point at for this origin.
+
+    Ruling 2026-08-11: "one creates an event first, then from the event one can
+    directly create a deal or refer a deal." So events and partnerships are
+    PICKED, not typed - which is what makes "what did that roadshow produce"
+    answerable later.
+
+    Returns [] for origins with nothing to pick, so the capture form can simply
+    not render a second dropdown rather than special-casing each origin.
+    """
+    from utils.origin_sources import options, source_field
+    o = str(origin or "").strip()
+    return {"origin": o, "field": source_field(o),
+            "options": options(o, bool(active_only))}
+
+
+@app.get("/api/pipeline/events/{event_id}/attribution")
+def pipeline_event_attribution(event_id: str,
+                               user: dict = Depends(get_current_user)):
+    """What the DEALS say this event produced, against what the file says.
+
+    Only closed-won deals count toward accounts and value (ruling 2026-08-11:
+    "the actuals are quantifiable after the closure"). Both figures are
+    returned - replacing the stored one silently would leave nobody able to
+    tell which number they were reading.
+    """
+    from utils.origin_sources import attribution, get_event
+    if not get_event(event_id):
+        raise HTTPException(status_code=404, detail="No such event.")
+    return attribution(event_id, _acquire_scoped_deals(user))
+
+
+'''
+
+CREATE = r'''def pipeline_deal_create(
+    payload: "PipelineDealCreate",  # noqa: F821 — forward ref to keep import lazy
+    user: dict = Depends(get_current_user),
+):
+    """Create a new pipeline deal.
+
+    Required fields: client_name, staff_code, staff_name, deal_value,
+    product_type, stage. Returns the created deal with its
+    PipelineManager-assigned id.
+
+    Authorization: any authenticated user may create. The staff_code
+    on the payload identifies who owns the deal — typically the
+    caller's own code, but managers/admins may create on behalf of
+    subordinates. (Server-side enforcement of "create on behalf"
+    rules is α5 / GAP-005 scope — conflict resolution.)
+    """
+    _audit("API_PIPELINE_CREATE_ATTEMPT", user,
+           f"client={payload.client_name} value={payload.deal_value}")
+
+    # Lazy imports to avoid circular dependencies at module load
+    from utils.api_pipeline_models import (
+        PipelineDeal,
+        PipelineDealMutationResponse,
+    )
+    from utils.api_pipeline_mutations import (
+        validate_create_payload,
+        emit_bsc_trigger,
+        invalidate_pipeline_caches,
+    )
+
+    # Validate required fields + numeric sanity + stage allowlist
+    deal_dict = payload.model_dump(exclude_unset=False)
+
+    # ORIGIN (ruling 2026-08-11). Recorded at creation because it describes how
+    # the deal ENTERED and cannot be reconstructed later. An unrecognised value
+    # falls back to the default rather than being stored: a typo'd origin would
+    # sit outside every configured bucket and appear in analytics as an orphan
+    # nobody can filter for.
+    try:
+        from utils.deal_origin import (is_declarable as _decl,
+                                       DEFAULT_ORIGIN as _DEF)
+        _org = str(deal_dict.get("origin") or "").strip()
+        # SYSTEM-DERIVED ORIGINS CANNOT BE DECLARED (ruling 2026-08-11). A
+        # referral gets its origin from the refer endpoint; a warehouse deal
+        # from the claim. Accepting them here would let someone tick "Referral"
+        # on a deal that never travelled through the engine and never credited
+        # anybody - a claim with no evidence behind it.
+        deal_dict["origin"] = _org if _decl(_org) else _DEF
+        # The chosen SOURCE for that origin - which event, which partnership.
+        # A source id that does not belong to the chosen origin is CLEARED, so
+        # a stale event_id left on a form cannot silently attribute a walk-in
+        # deal to a roadshow.
+        from utils.origin_sources import source_field as _sfield
+        _field = _sfield(deal_dict["origin"])
+        for _f in ("event_id", "mou_id"):
+            if _f != _field:
+                deal_dict.pop(_f, None)
+    except Exception:
+        deal_dict.setdefault("origin", "self")
+    # SECURITY (stress Phase 3 — privileged-field injection): PipelineDealCreate
+    # uses extra="allow", so a caller can smuggle workflow-controlled fields into
+    # the create payload (manager_validated, referral_status, is_referral,
+    # disbursed_under_override, etc.). A freshly created deal MUST be born clean —
+    # these fields are set only by their respective workflow endpoints (validate /
+    # refer / accept / disburse), never at create. Strip them so an RM can't, e.g.,
+    # create a deal born pre-validated and inflate the assured pipeline.
+    _PRIVILEGED_AT_CREATE = (
+        "manager_validated", "validated_by", "validated_at", "validated_by_code",
+        "referral_status", "is_referral", "referred_to", "referred_to_code",
+        "referred_to_name", "referred_by_code", "referred_by_name", "referred_at",
+        "accepted_by", "accepted_at", "declined_by", "declined_at", "decline_reason",
+        "disbursed", "disbursed_at", "disbursed_under_override",
+        "override_approved", "override_approved_by", "application_id",
+        "credit_deferred_to", "credit_deferred_to_code",
+        # ORIGIN PARTY is workflow-controlled for the same reason as the
+        # referral fields: it decides whose index moves. The caller may declare
+        # WHERE a deal came from; they may not declare who gets credited for it.
+        # That is set by the workflow that routed the deal - the refer endpoint,
+        # or the warehouse claim.
+        "origin_party_code", "origin_party_name", "origin_backfilled_at",
+    )
+    _stripped = [k for k in _PRIVILEGED_AT_CREATE if k in deal_dict]
+    for _k in _stripped:
+        deal_dict.pop(_k, None)
+    if _stripped:
+        _audit("API_PIPELINE_CREATE_STRIPPED_PRIVILEGED", user,
+                f"ignored injected fields: {','.join(_stripped)}")
+    # portfolio_owner_code is a legitimate create-time input for the existing-
+    # customer resolution path (P4.5) — validated downstream against the CBS-
+    # mapped owner. BUT a bare create supplying it WITHOUT any resolution marker
+    # (bsc_credit_to / manager_override_note / client_cif) is an injection — an
+    # RM stamping a foreign owner on a deal with no conflict. Default to creator.
+    _has_resolution_marker = any(
+        str(deal_dict.get(_m) or "").strip()
+        for _m in ("bsc_credit_to", "manager_override_note", "client_cif")
+    )
+    if not _has_resolution_marker and str(deal_dict.get("portfolio_owner_code") or "").strip():
+        _injected_po = str(deal_dict.get("portfolio_owner_code") or "").strip()
+        _self_code = str(deal_dict.get("staff_code") or "").strip()
+        if _injected_po != _self_code:
+            _audit("API_PIPELINE_CREATE_PORTFOLIO_OWNER_RESET", user,
+                    f"ignored injected portfolio_owner_code={_injected_po} "
+                    f"(no resolution marker); defaulted to creator {_self_code}")
+            deal_dict["portfolio_owner_code"] = _self_code
+            deal_dict.pop("portfolio_owner_name", None)
+    # H1 (2026-06-14): the server is authoritative for caller identity.
+    # get_current_user carries only JWT claims (username/role) — NOT
+    # staff_code/full_name (whoami_detailed re-fetches those from
+    # users.json: "never trust JWT for these"). If the client omitted them
+    # (thin identity), derive from the caller's record so creation can't be
+    # rejected for "Missing required field: staff_code" and the client
+    # cannot assert an arbitrary owner. Managers/admins may still create on
+    # behalf by explicitly supplying a different staff_code (a5/GAP-005).
+    if (not str(deal_dict.get("staff_code") or "").strip()
+            or not str(deal_dict.get("staff_name") or "").strip()):
+        from utils.core import UserManager as _UM_id
+        _full = _UM_id().users.get(str(user.get("username", "") or "")) or {}
+        if not str(deal_dict.get("staff_code") or "").strip():
+            deal_dict["staff_code"] = str(_full.get("staff_code", "") or "")
+        if not str(deal_dict.get("staff_name") or "").strip():
+            deal_dict["staff_name"] = str(
+                _full.get("full_name", "") or user.get("username", "") or "")
+    ok, reason = validate_create_payload(deal_dict)
+    if not ok:
+        _audit("API_PIPELINE_CREATE_REJECTED", user, reason)
+        raise HTTPException(status_code=400, detail=reason)
+
+    # Product gate (single-source-of-truth rule): a deal's product must be a
+    # real catalogued product that admin has FULLY set up — catalogue entry +
+    # process flow + SLA promise. No free-text products at deal creation; a new
+    # product is born in admin (catalogue → flow → SLA) before it can be used.
+    _prod = str(deal_dict.get("product_type") or deal_dict.get("product") or "").strip()
+    _readiness = _product_readiness(_prod)
+    if not _readiness["ready"]:
+        _missing = ", ".join(_readiness["missing"]) or "setup"
+        _detail = (
+            f"Product '{_prod}' cannot be used yet — missing: {_missing}. "
+            "Products must be created in Admin with a process flow and SLA "
+            "defined before they can be selected on a deal."
+            if _readiness["catalogued"] else
+            f"Product '{_prod}' is not in the product catalogue. Pick a listed "
+            "product, or have an admin add it (with a process flow and SLA) first."
+        )
+        _audit("API_PIPELINE_CREATE_REJECTED", user, f"product_not_ready|{_prod}|missing={_readiness['missing']}")
+        raise HTTPException(status_code=400, detail=_detail)
+
+    # P4.5: mandatory portfolio resolution for EXISTING customers. If the deal
+    # carries a client_cif that CBS maps to a DIFFERENT relationship owner than
+    # the creating RM, the payload MUST acknowledge it (portfolio_owner_code set)
+    # — the server-side mirror of the create-form guard, so a direct API call
+    # can't silently book a deal against another RM's portfolio. Self-owned and
+    # unknown/unmapped CIFs pass through. Fails OPEN on a CBS outage (logged) so
+    # deal creation never hard-depends on CBS availability.
+    _cif = str(deal_dict.get("client_cif") or "").strip()
+    if _cif:
+        try:
+            from utils.cbs_manager import get_customer_by_cif as _gcbc
+            _cust = _gcbc(_cif)
+        except Exception as _exc:  # surfaced, not silent (CGR1)
+            logger.warning("portfolio guard: CBS lookup failed for cif=%s: %s", _cif, _exc)
+            _cust = None
+        if _cust:
+            _po = str(_cust.get("relationship_manager_code") or "").strip()
+            _creator = str(deal_dict.get("staff_code") or "").strip()
+            _po_mapped = bool(_po) and _po.upper() != "UNASSIGNED"
+            _resolved = bool(str(deal_dict.get("portfolio_owner_code") or "").strip())
+            # Compare with the canonical staff-code helper, NOT a raw string !=.
+            # CBS/FLEXCUBE stores zero-padded codes (KE0439) while the roster/login
+            # uses KE439; a raw compare told an RM their OWN customer belonged to
+            # someone else. same_staff() treats KE0439 == KE439 == 439.
+            try:
+                from utils.staff_code import same_staff as _same_staff
+                _is_same = _same_staff(_po, _creator)
+            except Exception:
+                _is_same = (_po == _creator)
+            if _po_mapped and not _is_same and not _resolved:
+                msg = (f"Customer {_cif} is in another RM's portfolio (owner {_po}). "
+                       f"Set portfolio_owner_code and choose a resolution path "
+                       f"(refer, seek permission, or override).")
+                _audit("API_PIPELINE_CREATE_REJECTED", user, msg)
+                raise HTTPException(status_code=400, detail=msg)
+
+    # Route through canonical manager (G394 alignment)
+    from utils.core import PipelineManager as _PM_for_api
+    pm = _PM_for_api()
+    # P4-1b: stamp the normalized money set (fx_rate, amount_kes, currency_book,
+    # Top-up (P4-credit): the pipeline value of a top-up is the INCREMENT only —
+    # the new money the bank commits — not the whole facility. Set deal_value to
+    # top_up_amount BEFORE FX stamping so amount_kes (and every downstream value
+    # consumer) reflects the increment. The original facility is preserved
+    # separately for context (metadata + column) but never enters pipeline value.
+    if deal_dict.get("bundle_lines"):
+        _lines = [l for l in (deal_dict.get("bundle_lines") or [])
+                  if float((l or {}).get("amount") or 0) > 0]
+        if not _lines:
+            raise HTTPException(status_code=400,
+                detail="A bundled loan needs at least one product line with an amount.")
+        deal_dict["bundle_lines"] = _lines
+        deal_dict["deal_value"]   = round(sum(float(l["amount"]) for l in _lines), 2)
+        deal_dict["product_type"] = "Bundled Loan Product"
+    if deal_dict.get("is_top_up"):
+        try:
+            _inc = float(deal_dict.get("top_up_amount") or 0)
+        except (TypeError, ValueError):
+            _inc = 0.0
+        if _inc > 0:
+            deal_dict["deal_value"] = _inc
+        deal_dict["is_repeat_borrower"] = True  # a top-up implies an existing relationship
+
+    # rate date/source) at booking. Additive + resilient — never blocks create
+    # if a currency rate is unconfigured (currency_book is always computed).
+    try:
+        from utils.fx_engine import stamp_money_fields
+        stamp_money_fields(deal_dict, amount_key="deal_value")
+    except Exception:
+        pass
+    # Phase A (PG persistence migration): assign a race-free id from Postgres
+    # BEFORE the JSON add, and retry on a primary-key collision so two concurrent
+    # creates can never persist a duplicate id or clobber each other. The create
+    # uses an INSERT ... ON CONFLICT (id) DO NOTHING RETURNING id (conflict=
+    # "raise"): if the id was taken in the race window, no row returns and we
+    # raise -> roll back the JSON add -> derive a fresh id -> retry. The PK is the
+    # hard guarantee; _next_deal_id_from_pg just keeps collisions rare. Falls
+    # back to the JSON len()+1 scheme only when PG is unavailable (dev / no-PG).
+    new_id = None
+    _last_err = None
+    for _attempt in range(5):
+        _pg_id = _next_deal_id_from_pg()
+        if _pg_id:
+            deal_dict["id"] = _pg_id
+        else:
+            deal_dict.pop("id", None)  # let add_deal fall back to len()+1
+        candidate = pm.add_deal(deal_dict)
+        try:
+            # conflict="raise": fail-closed insert — raises on a duplicate id
+            # rather than silently UPDATE-ing (overwriting) the existing deal.
+            _db_sync_pipeline_deal(pm.get_deal(candidate), conflict="raise")
+            new_id = candidate
+            break
+        except Exception as e:
+            _last_err = e
+            # Roll back the JSON add so the stores never diverge (both or neither).
+            try:
+                pm.delete_deal(candidate, str(user.get("username", "")))
+            except Exception:
+                logger.error(f"Rollback delete failed for {candidate}")
+            _msg = str(e).lower()
+            is_collision = ("duplicate key" in _msg or "unique" in _msg
+                            or "already exists" in _msg
+                            or "primary key" in _msg)
+            if is_collision and _db_available():
+                _audit("API_PIPELINE_CREATE_ID_COLLISION", user,
+                        f"id={candidate} attempt={_attempt+1}; retrying")
+                continue
+            break
+    if not new_id:
+        _audit("API_PIPELINE_CREATE_DB_FAILED", user, f"err={_last_err}")
+        raise HTTPException(
+            status_code=500,
+            detail="Could not persist the deal to PostgreSQL — no deal was created.")
+
+    # Mirror Streamlit's emission convention (DEAL_ADDED, line 965)
+    _audit("DEAL_ADDED", user,
+           f"{new_id}|{payload.client_name}|{payload.deal_value}")
+
+    # BSC trigger (matches Streamlit's _bsc_trigger pattern)
+    bsc_ok = emit_bsc_trigger(user.get("username", ""))
+
+    # Bust the summary cache so GET reflects the new deal
+    invalidate_pipeline_caches()
+
+    # Fetch the created record (PipelineManager.add_deal returns the
+    # id; we re-fetch to return the full record including
+    # auto-populated fields like created_at)
+    created = pm.get_deal(new_id) or deal_dict
+    # SLA S2b: seed the initial step stamp from the create stage.
+    _stamp_sla_step(pm, new_id, created, user.get("username", ""))
+    created = pm.get_deal(new_id) or created
+    return PipelineDealMutationResponse(
+        deal=PipelineDeal.model_validate(created),
+        status="created",
+        bsc_triggered=bsc_ok,
+    ).model_dump()
+
+
+@app.put("/api/pipeline/deals/{deal_id}")
+def pipeline_deal_update(
+    deal_id: str,
+    payload: "PipelineDealUpdate",  # noqa: F821
+    user: dict = Depends(get_current_user),
+):
+    """Update fields on an existing pipeline deal.
+
+    Partial update — only keys present in the request body are
+    applied. Stage TRANSITIONS should use the dedicated /advance
+    endpoint (which logs the change to the activity stream); PUT
+    accepts a stage field but does NOT log a stage-change activity.
+
+    Authorization: caller must have the deal in their cascade scope
+    (α2 / G395 alignment). 403 if not.
+    """
+    _audit("API_PIPELINE_UPDATE_ATTEMPT", user, f"deal_id={deal_id}")
+
+    from utils.api_pipeline_models import (
+        PipelineDeal,
+        PipelineDealMutationResponse,
+    )
+    from utils.api_pipeline_mutations import (
+        emit_bsc_trigger,
+        invalidate_pipeline_caches,
+    )
+    from utils.api_pipeline_scope import get_visible_staff_codes
+
+    from utils.core import PipelineManager as _PM_for_api
+    pm = _PM_for_api()
+    deal = _get_or_hydrate_deal(pm, deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    # Cascade scope check
+    visible_codes = get_visible_staff_codes(user)
+    sc = str(deal.get("staff_code", "") or "")
+    po = str(deal.get("portfolio_owner_code", "") or "")
+    if sc not in visible_codes and (not po or po not in visible_codes):
+        _audit("API_PIPELINE_UPDATE_FORBIDDEN", user,
+               f"deal_id={deal_id} out of scope")
+        raise HTTPException(
+            status_code=403,
+            detail="Deal is outside your cascade scope",
+        )
+
+    updates = payload.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(
+            status_code=400,
+            detail="No fields supplied for update",
+        )
+
+    # Phase L: locked once submitted to credit (unless returned/info-requested).
+    _enforce_deal_lock(deal, user, "update")
+
+    # State-machine integrity (stress-pass Phase 1): PUT is a field editor, NOT
+    # a stage-transition path. Allowing `stage` here bypassed the /advance
+    # guards (terminal freeze, backward-sanction, flow validation, SLA stamping,
+    # LMS handoff). Stage changes MUST go through /advance so every transition
+    # is guarded and logged. Reject a stage field that would actually change the
+    # stage (a no-op same-stage value is tolerated and dropped).
+    if "stage" in updates:
+        if str(updates.get("stage")) != str(deal.get("stage", "")):
+            _audit("API_PIPELINE_UPDATE_STAGE_BLOCKED", user,
+                   f"deal_id={deal_id} stage={updates.get('stage')}")
+            raise HTTPException(
+                status_code=400,
+                detail=("Stage changes must use the /advance endpoint so the "
+                        "transition is validated and logged. Remove 'stage' from "
+                        "this update."))
+        updates.pop("stage", None)
+        if not updates:
+            raise HTTPException(
+                status_code=400,
+                detail="No fields supplied for update (stage changes use /advance).")
+
+    pm.update_deal(deal_id, updates, user.get("username", ""))
+    _db_sync_pipeline_deal(pm.get_deal(deal_id))  # H5: mirror to DB-backed reads
+    _audit("DEAL_UPDATED", user,
+           f"{deal_id}|fields={sorted(updates.keys())}")
+
+    bsc_ok = emit_bsc_trigger(user.get("username", ""))
+    invalidate_pipeline_caches()
+
+    updated = pm.get_deal(deal_id) or deal
+    return PipelineDealMutationResponse(
+        deal=PipelineDeal.model_validate(updated),
+        status="updated",
+        bsc_triggered=bsc_ok,
+    ).model_dump()
+
+
+'''
+
+TS_NEW = r'''export interface OriginSourceOption { id: string; label: string; sub: string }
+export async function fetchOriginSources(
+  origin: string, activeOnly = true,
+): Promise<{ origin: string; field: string; options: OriginSourceOption[] }> {
+  const q = new URLSearchParams({ origin, active_only: String(activeOnly) });
+  return getJson<{ origin: string; field: string; options: OriginSourceOption[] }>(
+    `/pipeline/origin-sources?${q.toString()}`);
+}
+'''
+
+IFACE = r'''export interface CreateDealRequest {
+  // Required
+  client_name:           string;
+  staff_code:            string;
+  staff_name:            string;
+  deal_value:            number;
+  product_type:          string;
+  stage:                 string;
+
+  // Optional but commonly supplied
+  client_type?:          string;     // 'Individual' or 'Business'
+  currency?:             string;     // ISO code; defaults KES (admin FX table)
+  segment?:              string;     // segment within client type (cascade)
+  sector?:               string;     // CBK economic sector (Business clients)
+  mou_id?:               string;     // partnership/MOU id (Individual clients)
+  /** How the deal entered - one of the DECLARABLE origins. The server
+   *  validates it and replaces any system-routed value (referral, warehouse),
+   *  which are stamped by the workflow that actually routed the deal. */
+  origin?:               string;
+  /** The chosen source for that origin - a sponsored event. Cleared server-side
+   *  if it does not belong to the origin. */
+  event_id?:             string;
+  mou_title?:            string;     // MOU title or free-text partner ("Other")
+  client_cif?:           string;     // δ2: CBS CIF when client matched in CBS lookup
+  is_ntb?:               boolean;
+  pipeline_category?:    string;
+  is_top_up?:            boolean;   // true if topping up an existing facility
+  top_up_amount?:        number;    // the increment (becomes pipeline value)
+  bundle_lines?:         { product_type: string; amount: number }[]; // Bundled Loan Product lines
+  original_facility_amount?: number; // existing facility size (context only)
+  probability?:          number;     // 0..1 (NOT 0..100)
+  next_action?:          string;
+  next_action_date?:     string;     // YYYY-MM-DD
+  expected_close?:       string;     // YYYY-MM-DD
+  notes?:                string;
+  source?:               string;
+  unit?:                 string;
+  account_number?:       string;
+  phone?:                string;
+  email?:                string;
+
+  // Conflict resolution fields (β3)
+  portfolio_owner_code?:    string;
+  portfolio_owner_name?:    string;
+  bsc_credit_to?:           string;
+  manager_override_note?:   string;
+}'''
+
+PAGE_NEW = r'''// v10.512 Phase 4 Batch β3 — PipelineCreate page.
 //
 // Form at /pipeline/new for creating a new pipeline deal. Covers the
 // happy path AND the α5 portfolio-conflict resolution (Refer / Seek
@@ -1945,3 +2657,98 @@ function PathRadio({ active, onClick, disabled, label, sub }: PathRadioProps) {
     </button>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (API, APITS, PAGE, TYPES):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found." % p)
+            return 1
+    if os.path.exists(MOD):
+        print("ABORT: %s already exists - EV1 looks applied." % MOD)
+        return 1
+    if not os.path.isfile(os.path.join("data", "sponsored_events.json")):
+        print("ABORT: data/sponsored_events.json not found - nothing to expose.")
+        return 1
+
+    api = open(API, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+    tp = open(TYPES, encoding="utf-8").read()
+
+    if "/api/pipeline/origin-sources" in api:
+        print("ABORT: the origin-sources endpoint already exists.")
+        return 1
+    if '@app.get("/api/pipeline/origins")' not in api:
+        print("ABORT: apply patch_or2_origin_wiring.py first.")
+        return 1
+    if "_decl(_org)" not in api:
+        print("ABORT: apply patch_or3_origin_evidence.py first.")
+        return 1
+
+    api = api.replace('@app.get("/api/pipeline/origins")',
+                      ENDPOINTS + '@app.get("/api/pipeline/origins")', 1)
+    c = api.index("def pipeline_deal_create(")
+    m = re.search(r'\n@app\.(get|post)\("/api/', api[c + 40:])
+    api = api[:c] + CREATE + api[c + 40 + m.start() + 1:]
+    print("  ok  api.py - source endpoints and create clearing")
+
+    anchor = "export async function fetchDealOrigins()"
+    if ts.count(anchor) != 1:
+        print("ABORT: api.ts anchor matched %d times." % ts.count(anchor))
+        return 1
+    ts = ts.replace(anchor, TS_NEW + anchor, 1)
+    i = tp.index("export interface CreateDealRequest {")
+    j = tp.index("\n}", i) + 2
+    tp = tp[:i] + IFACE + tp[j:]
+    print("  ok  api.ts and types")
+
+    # A source id belonging to another origin must be cleared, or a walk-in
+    # deal silently credits a roadshow.
+    if 'deal_dict.pop(_f, None)' not in CREATE:
+        print("ABORT: create does not clear a mismatched source id.")
+        return 1
+    if "CLOSED_WON" not in MODULE or "== CLOSED_WON" not in MODULE:
+        print("ABORT: attribution does not restrict accounts to closed-won.")
+        return 1
+    if '"stored"' not in MODULE or '"derived"' not in MODULE:
+        print("ABORT: attribution must report BOTH figures - replacing the")
+        print("       stored one silently would hide which is being read.")
+        return 1
+    if "event_id?:" not in IFACE:
+        print("ABORT: CreateDealRequest does not carry event_id.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if PAGE_NEW.count(op) != PAGE_NEW.count(cl):
+            print("ABORT: page unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: closure-only actuals, both figures, id cleared")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    open(MOD, "w", encoding="utf-8", newline="").write(MODULE)
+    print("CREATED %s" % MOD)
+    for path, content in ((API, api), (APITS, ts), (TYPES, tp), (PAGE, PAGE_NEW)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    for path in (MOD, API):
+        try:
+            py_compile.compile(path, doraise=True)
+            print("  ok  %s compiles" % os.path.basename(path))
+        except Exception as exc:
+            print("  FAIL %s: %s" % (path, exc))
+            return 1
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd, restart uvicorn.")
+    print("Choosing Events on the create form should now offer 3 active events.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

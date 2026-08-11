@@ -6274,6 +6274,15 @@ def pipeline_deal_create(
         # on a deal that never travelled through the engine and never credited
         # anybody - a claim with no evidence behind it.
         deal_dict["origin"] = _org if _decl(_org) else _DEF
+        # The chosen SOURCE for that origin - which event, which partnership.
+        # A source id that does not belong to the chosen origin is CLEARED, so
+        # a stale event_id left on a form cannot silently attribute a walk-in
+        # deal to a roadshow.
+        from utils.origin_sources import source_field as _sfield
+        _field = _sfield(deal_dict["origin"])
+        for _f in ("event_id", "mou_id"):
+            if _f != _field:
+                deal_dict.pop(_f, None)
     except Exception:
         deal_dict.setdefault("origin", "self")
     # SECURITY (stress Phase 3 — privileged-field injection): PipelineDealCreate
@@ -10293,6 +10302,41 @@ def pipeline_referral_bench(user: dict = Depends(get_current_user)):
         "incoming_overdue": sum(1 for r in incoming if r["clock"]["status"] == "overdue"),
         "outgoing_overdue": sum(1 for r in outgoing if r["clock"]["status"] == "overdue"),
     }
+
+
+@app.get("/api/pipeline/origin-sources")
+def pipeline_origin_sources(origin: str = "", active_only: bool = True,
+                            user: dict = Depends(get_current_user)):
+    """What a deal can point at for this origin.
+
+    Ruling 2026-08-11: "one creates an event first, then from the event one can
+    directly create a deal or refer a deal." So events and partnerships are
+    PICKED, not typed - which is what makes "what did that roadshow produce"
+    answerable later.
+
+    Returns [] for origins with nothing to pick, so the capture form can simply
+    not render a second dropdown rather than special-casing each origin.
+    """
+    from utils.origin_sources import options, source_field
+    o = str(origin or "").strip()
+    return {"origin": o, "field": source_field(o),
+            "options": options(o, bool(active_only))}
+
+
+@app.get("/api/pipeline/events/{event_id}/attribution")
+def pipeline_event_attribution(event_id: str,
+                               user: dict = Depends(get_current_user)):
+    """What the DEALS say this event produced, against what the file says.
+
+    Only closed-won deals count toward accounts and value (ruling 2026-08-11:
+    "the actuals are quantifiable after the closure"). Both figures are
+    returned - replacing the stored one silently would leave nobody able to
+    tell which number they were reading.
+    """
+    from utils.origin_sources import attribution, get_event
+    if not get_event(event_id):
+        raise HTTPException(status_code=404, detail="No such event.")
+    return attribution(event_id, _acquire_scoped_deals(user))
 
 
 @app.get("/api/pipeline/origins")
