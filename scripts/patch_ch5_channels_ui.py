@@ -1,4 +1,57 @@
-// Origin Channels — one page for every channel the bank invests in.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+CH5 - Origin Channels made to look like the rest of the system.
+
+RULING (2026-08-11): "may be what we need to do is the UI clean up like we did
+for the manager queues, at least to bring colour and life to this page, and
+analytics as well; let the contents cover the whole page not just the mid
+section. I would like it to be uniform so that it does not seem like they are
+two separate systems."
+
+MATCHED TO MANAGER QUEUES, not invented afresh - which is the point:
+
+    max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6    the exact shell
+    px-4 py-2 border-b-2 border-brand-primary          the exact tab style
+    brand-primary rather than a raw #0082BB            the switcher
+
+Using brand tokens instead of hex matters beyond tidiness: a hard-coded colour
+does not follow the BrandingProvider, so the page would stay Ecobank blue if the
+palette ever changed and quietly become the odd one out.
+
+A SUMMARY BAND above the tabs, so the page says something even before a single
+deal is tagged - records, deals tagged, accounts won, and either committed spend
+or expected volume depending on whether the channel has a budget. A page whose
+only content is three variations of "nothing here" gives a reader no reason to
+believe it will ever do anything.
+
+THE EMPTY PIPELINE TAB NOW EXPLAINS ITSELF: it names the channel and says which
+choice on the capture form will populate it. "No deals are tagged" states a
+fact; it does not tell anyone what to do about it.
+
+THE OLD EVENTS PAGE IS RETIRED. Its route still resolves - bookmarks keep
+working - but renders Origin Channels. Two pages showing the same events with
+different layouts is exactly how a product starts to feel like two systems,
+which is what this ruling was about.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+REQUIRES CH4.
+
+Usage (from project root, .venv active):
+    python scripts\patch_ch5_channels_ui.py            # dry run
+    python scripts\patch_ch5_channels_ui.py --apply
+"""
+import os
+import shutil
+import sys
+
+PAGE = os.path.join("frontend", "web", "src", "pages", "OriginChannels.tsx")
+APP = os.path.join("frontend", "web", "src", "App.tsx")
+EVENTS = os.path.join("frontend", "web", "src", "pages", "Events.tsx")
+BACKUP_SUFFIX = ".pre_ch5"
+
+PAGE_SRC = r'''// Origin Channels — one page for every channel the bank invests in.
 //
 // Events, Partnerships and Lead Generators ask the same question: what did we
 // spend, what did it produce, was it worth it. Three sidebar entries would be
@@ -581,3 +634,275 @@ export default function OriginChannels() {
     </>
   );
 }
+'''
+
+APP_SRC = r'''// a2z/web/src/App.tsx
+//
+// Standard #37 — React SPA Architecture.
+// v10.495 amendment: BrandingProvider added between QueryClient and Auth.
+// v10.496 amendment: ToastProvider added between Branding and Auth.
+//                    /components route added (Showcase page).
+// v10.500 Phase 1 Batch 3a:
+//   - /login route added (public, no ProtectedRoute wrapper).
+//   - /perform and /profitability now wrapped in ProtectedRoute.
+//   - /components remains public per Batch 3a doctrine — design-system
+//     showcase, must be reachable for frontend governance inspection.
+//   - AuthProvider is now the real provider (no longer a stub).
+// v10.500 Phase 1 Batch 3b:
+//   - /change-password route added, wrapped in ProtectedRoute. The
+//     route is reachable for both 'must_rotate' (forced rotation) and
+//     'authenticated' (future voluntary rotation) auth states.
+//     ProtectedRoute's path-aware must_rotate gate confines users with
+//     must_rotate tokens to this route specifically.
+// v10.510 Phase 4 Batch β1:
+//   - /pipeline route added (protected, requireAuth).
+//   - Pipeline route element is wrapped in PipelineProvider so the
+//     deal list state lives only where it's consumed — not hoisted to
+//     app-level. Keeps the G381-protected provider chain unchanged.
+// v10.511 Phase 4 Batch β2:
+//   - /pipeline/:dealId route added (protected, requireAuth).
+//   - Detail page is page-local — no PipelineProvider wrap.
+// v10.512 Phase 4 Batch β3:
+//   - /pipeline/new route added BEFORE /pipeline/:dealId. RR6 ranks
+//     static routes above dynamic ones automatically, but explicit
+//     ordering documents intent for future maintainers.
+// v10.513 Phase 4 Batch β4:
+//   - /pipeline/queues route added (manager-only via page guard).
+//   - AppShell layout route introduced wrapping all protected routes
+//     EXCEPT /change-password. The shell renders the persistent
+//     Sidebar; pages render via React Router 6's <Outlet />.
+//   - /change-password deliberately stays OUTSIDE AppShell — user
+//     in must_rotate status would see a mocking sidebar of nav
+//     links they can't use otherwise.
+//   - /login and /components stay outside AppShell as before
+//     (public, no auth needed).
+//   - G381 byte-for-byte chain still unchanged:
+//     QueryClient → Branding → Toast → Auth → Role → WebSocket → BrowserRouter
+//
+// CONTRACT NOTES (G381 - replaces phantom G46, G382 enforced from v10.496):
+//
+// Preserved byte-for-byte (G381 enforced):
+//   - `import { QueryClient, QueryClientProvider } from '@tanstack/react-query'`
+//   - `const queryClient = new QueryClient()`
+//   - `<QueryClientProvider client={queryClient}>`
+//   - `<AuthProvider><WebSocketProvider><BrowserRouter>` — chain order
+//   - Existing route paths `/`, `/perform`, `/profitability`, `/components`,
+//     `/login`, `/change-password`, `/pipeline`, `/pipeline/new`,
+//     `/pipeline/:dealId`
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+
+import { BrandingProvider } from './providers/BrandingProvider';
+import { AuthProvider } from './providers/AuthProvider';
+import { RoleProvider } from './providers/RoleProvider';
+import { WebSocketProvider } from './providers/WebSocketProvider';
+import { PipelineProvider } from './providers/PipelineProvider';
+import { ToastProvider } from './components/Toast';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { AppShell } from './components/AppShell';
+import About from './pages/About';
+import { Dashboard } from './pages/Dashboard';
+import { Perform } from './pages/Perform';
+import { Profitability } from './pages/Profitability';
+import { Showcase } from './pages/Showcase';
+import { Login } from './pages/Login';
+import { ChangePassword } from './pages/ChangePassword';
+import { Pipeline } from './pages/Pipeline';
+import { Analytics } from './pages/Analytics';
+import { CreditAnalytics } from './pages/CreditAnalytics';
+import { PipelineDealDetail } from './pages/PipelineDealDetail';
+import { PipelineCreate } from './pages/PipelineCreate';
+import { PipelineManagerQueues } from './pages/PipelineManagerQueues';
+import OriginChannels from './pages/OriginChannels';
+import { Lms } from './pages/Lms';
+import { LmsApplicationDetail } from './pages/LmsApplicationDetail';
+import { CreditAdmin } from './pages/CreditAdmin';
+import { CreditAdminCaseDetail } from './pages/CreditAdminCaseDetail';
+import { Troops } from './pages/Troops';
+import { Cbs } from './pages/Cbs';
+import { CbsCustomerDetail } from './pages/CbsCustomerDetail';
+import { Cascade } from './pages/Cascade';
+import { Initiatives } from './pages/Initiatives';
+import { FxRates } from './pages/FxRates';
+import AdminConfig from './pages/AdminConfig';
+import DailyLogAdmin from './pages/DailyLogAdmin';
+import RolesAdmin from './pages/RolesAdmin';
+import HierarchyAdmin from './pages/HierarchyAdmin';
+import BranchLog from './pages/BranchLog';
+import Portfolio from './pages/Portfolio';
+import CommitteeAdmin from './pages/CommitteeAdmin';
+import { CommitteeConvening } from './pages/CommitteeConvening';
+import StaffAdmin from './pages/StaffAdmin';
+import CbsDebug from './pages/CbsDebug';
+import Referrals from './pages/Referrals';
+import Sla from './pages/Sla';
+import { InitiativeDetail } from './pages/InitiativeDetail';
+
+const queryClient = new QueryClient();
+
+function App() {
+    return <QueryClientProvider client={queryClient}>
+        <BrandingProvider>
+        <ToastProvider>
+        <AuthProvider><RoleProvider><WebSocketProvider><BrowserRouter>
+            <Routes>
+                {/* Public — login surface */}
+                <Route path="/login" element={<Login />} />
+
+                {/* Public — design-system showcase (Batch 3a) */}
+                <Route path="/components" element={<Showcase />} />
+
+                {/* Protected (no shell) — password rotation must be
+                    standalone so must_rotate users don't see a sidebar
+                    of nav links they can't use until rotation completes. */}
+                <Route path="/change-password" element={
+                    <ProtectedRoute requireAuth><ChangePassword /></ProtectedRoute>
+                } />
+
+                {/* Protected (with shell) — all operational surfaces
+                    share the AppShell layout with persistent Sidebar.
+                    Pages render via <Outlet /> inside AppShell. */}
+                <Route element={
+                    <ProtectedRoute requireAuth>
+                        <AppShell />
+                    </ProtectedRoute>
+                }>
+                    {/* Dashboard at root */}
+                    <Route path="/" element={<Dashboard />} />
+
+                    {/* BSC + Profitability */}
+                    <Route path="/perform" element={<Perform />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/profitability" element={<Profitability />} />
+
+                    {/* Pipeline list — wrapped in PipelineProvider for the
+                        cascade-scoped deal list state. */}
+                    <Route path="/pipeline" element={
+                        <PipelineProvider>
+                            <Pipeline />
+                        </PipelineProvider>
+                    } />
+
+                    {/* Pipeline subroutes — order: static before dynamic.
+                        RR6 ranks these automatically but explicit ordering
+                        documents intent. */}
+                    <Route path="/pipeline/new"     element={<PipelineCreate />} />
+                    <Route path="/pipeline/queues"  element={<PipelineManagerQueues />} />
+                    {/* The old Events page is superseded by Origin Channels -
+                        one page for all three. The route is kept so bookmarks
+                        still work, but it renders the new page: two pages
+                        showing the same events, with different layouts, is how
+                        a product starts to feel like two systems. */}
+                    <Route path="/pipeline/events"  element={<OriginChannels />} />
+                    <Route path="/pipeline/channels" element={<OriginChannels />} />
+                    <Route path="/pipeline/:dealId" element={<PipelineDealDetail />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/credit-analytics" element={<CreditAnalytics />} />
+
+                    {/* LMS subroutes — β5. Same static-before-dynamic ordering. */}
+                    <Route path="/lms"         element={<Lms />} />
+                    <Route path="/lms/:appId"  element={<LmsApplicationDetail />} />
+                    <Route path="/committee/convening" element={<CommitteeConvening />} />
+
+                    {/* Credit Admin subroutes — β6. */}
+                    <Route path="/credit-admin"          element={<CreditAdmin />} />
+                    <Route path="/credit-admin/:caseId"  element={<CreditAdminCaseDetail />} />
+                    <Route path="/troops"                element={<Troops />} />
+
+                    {/* CBS Customer Lookup — γ2. */}
+                    <Route path="/cbs"         element={<Cbs />} />
+                    <Route path="/cbs/:cif"    element={<CbsCustomerDetail />} />
+
+                    {/* Target Cascade — γ3 (read-only). */}
+                    <Route path="/cascade"     element={<Cascade />} />
+
+                    {/* FX rates admin — P4-1c. Table visible to all; editor admin-gated (server enforces). */}
+                    <Route path="/fx-rates"    element={<FxRates />} />
+
+                    {/* Admin → Configuration — P4 Batch 1b. CEO/MD/Director; server enforces. */}
+                    <Route path="/admin/config" element={<AdminConfig />} />
+                    <Route path="/admin/daily-log" element={<DailyLogAdmin />} />
+                    <Route path="/admin/roles" element={<RolesAdmin />} />
+                    <Route path="/admin/hierarchy" element={<HierarchyAdmin />} />
+                    <Route path="/branch-log" element={<BranchLog />} />
+                    <Route path="/portfolio" element={<Portfolio />} />
+                    <Route path="/admin/committees" element={<CommitteeAdmin />} />
+                    <Route path="/admin/staff"      element={<StaffAdmin />} />
+                    <Route path="/admin/cbs-debug" element={<CbsDebug />} />
+                    <Route path="/referrals" element={<Referrals />} />
+                    <Route path="/sla" element={<Sla />} />
+
+                    {/* Strategic Initiatives — γ4 (read-only). */}
+                    <Route path="/initiatives"                  element={<Initiatives />} />
+                    <Route path="/initiatives/:initiativeId"    element={<InitiativeDetail />} />
+                </Route>
+            </Routes>
+        </BrowserRouter></WebSocketProvider></RoleProvider></AuthProvider>
+        </ToastProvider>
+        </BrandingProvider>
+    </QueryClientProvider>;
+}
+
+export default App;
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (PAGE, APP):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found - apply patch_ch3_channel_tabs.py first." % p)
+            return 1
+
+    cur = open(PAGE, encoding="utf-8").read()
+    if "2xl:max-w-[1680px]" in cur:
+        print("ABORT: the page is already widened - CH5 looks applied.")
+        return 1
+
+    # Must match the rest of the system, not invent a third style.
+    if "max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6" not in PAGE_SRC:
+        print("ABORT: the page shell does not match Manager Queues.")
+        return 1
+    if "border-brand-primary" not in PAGE_SRC or "bg-brand-primary" not in PAGE_SRC:
+        print("ABORT: the page uses raw hex instead of brand tokens - it would")
+        print("       not follow the BrandingProvider and would become the odd")
+        print("       page out the moment the palette changed.")
+        return 1
+    if "Committed spend" not in PAGE_SRC or "Expected volume" not in PAGE_SRC:
+        print("ABORT: the summary band does not adapt to whether the channel")
+        print("       has a budget.")
+        return 1
+    if "import Events from" in APP_SRC:
+        print("ABORT: App still imports the retired Events page.")
+        return 1
+    if "/pipeline/events" not in APP_SRC:
+        print("ABORT: the old events route was dropped - bookmarks would 404.")
+        return 1
+    for name, blob in (("page", PAGE_SRC), ("app", APP_SRC)):
+        for op, cl in (("{", "}"), ("(", ")")):
+            if blob.count(op) != blob.count(cl):
+                print("ABORT: %s unbalanced %s%s." % (name, op, cl))
+                return 1
+    print("  ok  shell, tokens, adaptive band, route preserved")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((PAGE, PAGE_SRC), (APP, APP_SRC)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+    if os.path.exists(EVENTS):
+        shutil.copy2(EVENTS, EVENTS + BACKUP_SUFFIX)
+        os.remove(EVENTS)
+        print("REMOVED %s  (superseded; its route now renders Origin Channels)"
+              % EVENTS)
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
