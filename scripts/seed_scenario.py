@@ -343,6 +343,33 @@ def main():
     print("wrote %d scenario deals alongside %d existing -> %s"
           % (len(new), len(existing), DEALS))
 
+    # THE API READS POSTGRES, NOT THIS FILE (_PIPELINE_READ_DB_FIRST = True).
+    # Writing JSON alone produced a seeded world the pages could not see: the
+    # Events tab reported "0 deals tagged" while twenty sat on disk. Sync each
+    # deal through the same function the create endpoint uses, so the scenario
+    # exists in the store the system actually serves from.
+    synced = failed = 0
+    try:
+        from utils.api import _db_sync_pipeline_deal, _db_available
+        if not _db_available():
+            print("\n  postgres not reachable - the JSON store is written, but")
+            print("  the API reads the database, so the pages will show nothing.")
+            print("  Start postgres and re-run, or the scenario is invisible.")
+        else:
+            for rec in new:
+                try:
+                    _db_sync_pipeline_deal(rec)
+                    synced += 1
+                except Exception as exc:
+                    failed += 1
+                    if failed == 1:
+                        print("  first sync failure: %s" % str(exc)[:70])
+            print("synced %d scenario deals to postgres (%d failed)"
+                  % (synced, failed))
+    except Exception as exc:
+        print("  could not sync to postgres: %s" % str(exc)[:70])
+        print("  The pages read the database, so the scenario will not appear.")
+
     print("\nRestart uvicorn, then check it holds together:")
     print("  python scripts\\verify_scenario.py")
     return 0

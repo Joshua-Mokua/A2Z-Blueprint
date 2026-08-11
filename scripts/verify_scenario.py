@@ -60,13 +60,45 @@ def main():
         print("ABORT: %s" % exc)
         return 1
 
+    # READ THE STORE THE API READS. The first version read PipelineManager
+    # (the JSON file) and stayed fully green while every page showed "0 deals
+    # tagged" - because _PIPELINE_READ_DB_FIRST is True and the API serves from
+    # Postgres. A verifier that checks a different store than the one users see
+    # is worse than no verifier: it certifies a system nobody can use.
     deals = list(getattr(PipelineManager(), "deals", []) or [])
+    json_scen = [d for d in deals if str(d.get("id", "")).startswith("SCN")]
+    db_scen = []
+    db_live = False
+    try:
+        from utils.api import _db_available
+        from utils.db import db as _db
+        if _db_available():
+            db_live = True
+            rows = _db.fetch_all(
+                "SELECT id FROM pipeline_deals WHERE id LIKE 'SCN%%'") or []
+            db_scen = [dict(r) for r in rows]
+    except Exception:
+        pass
+    if db_live:
+        try:
+            from utils.api import _acquire_scoped_deals
+            deals = _acquire_scoped_deals({"is_admin": True, "can_view_all": True})
+        except Exception:
+            pass
     scen = [d for d in deals if str(d.get("id", "")).startswith("SCN")]
 
     rule("1. IS THERE A WORLD TO TEST?")
     check("scenario deals exist",
           lambda: (bool(scen), "%d found" % len(scen)),
           "run scripts\\seed_scenario.py --apply first")
+    if db_live:
+        check("the API's store has them too",
+              lambda: (len(db_scen) == len(json_scen),
+                       "%d in postgres, %d in json" % (len(db_scen), len(json_scen))),
+              "the API reads Postgres; deals only in the JSON file are "
+              "invisible on every page, which is what '0 deals tagged' meant")
+    else:
+        print("%spostgres not reachable - checking the JSON store only" % SKIP)
     if not scen:
         print("\nNothing to verify. Seed the scenario first.")
         return 1
