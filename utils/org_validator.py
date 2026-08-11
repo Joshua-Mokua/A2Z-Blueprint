@@ -623,6 +623,37 @@ def unit_display_names() -> dict:
     return {}
 
 
+def excluded_units() -> set:
+    """Units that are NOT ranked (ruling 2026-08-11).
+
+    "Business Manager and Personal Assistant are in the MD's Office, and for now
+    I wish to exclude the MD's Office from all the ranking, being the executive
+    office."
+
+    EXCLUDED FROM RANKING, NOT FROM THE SYSTEM. These people still file daily
+    logs, still get validated, still appear in roll-ups and follow-up lists.
+    They are simply not placed in a league table against branch and business
+    units, because the executive office does not do comparable work and ranking
+    it would be meaningless in both directions.
+
+    Config-driven via org_config.excluded_from_ranking so the bank can add or
+    remove a unit without a deploy.
+    """
+    try:
+        from utils.config import load_org_config
+        v = (load_org_config() or {}).get("excluded_from_ranking")
+        if isinstance(v, list):
+            return {_s(x) for x in v if _s(x)}
+    except Exception:
+        pass
+    return {"Business Manager", "Personal Assistant"}
+
+
+def is_ranked(unit: str) -> bool:
+    """False for the executive office; True for everything else."""
+    return _s(unit) not in excluded_units()
+
+
 def unit_label(unit: str) -> str:
     """What a human should read for this unit.
 

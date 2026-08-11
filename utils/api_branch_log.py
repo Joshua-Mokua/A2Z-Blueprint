@@ -1544,6 +1544,17 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
             continue
         if segment and seg != segment:
             continue
+        # THE EXECUTIVE OFFICE IS NOT RANKED (ruling 2026-08-11). They still
+        # file, are still validated, and still appear in roll-ups and follow-up
+        # lists - they are simply not placed in a league table against branch
+        # and business units. Applied here, at the ranking, so nothing else is
+        # affected.
+        try:
+            from utils.org_validator import is_ranked
+            if not is_ranked(u):
+                continue
+        except Exception:
+            pass
         mine = by_staff.get(_canon_l(code), [])
         rows = carried_forward(mine) if mine else []
         idx = round(sum(float(x.get("index") or 0) for x in rows), 2)
@@ -1662,6 +1673,8 @@ def branch_log_leaderboard(days: int = 30, level: str = "staff", role: str = "",
         "filters": {"role": role, "branch": branch, "unit": unit, "segment": segment},
         "roles": sorted({p["role"] for p in people if p["role"]}),
         "branches": sorted({p["branch"] for p in people if p["branch"]}),
+        # Filter list mirrors what is actually rankable, or the dropdown would
+        # offer a unit that always returns nothing.
         "units": sorted({p["unit"] for p in people if p["unit"]}),
         "segments": sorted({p["segment"] for p in people if p["segment"]}),
         "bears_branch": bears_branch,

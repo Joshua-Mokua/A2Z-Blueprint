@@ -10348,6 +10348,14 @@ def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
             continue
         if unit and u != unit:
             continue
+        # The executive office is not ranked (ruling 2026-08-11) - same rule as
+        # the index ranking, so the two cannot disagree about who is in a table.
+        try:
+            from utils.org_validator import is_ranked as _ranked
+            if not _ranked(u):
+                continue
+        except Exception:
+            pass
         key = {"staff": code, "role": role, "branch": b, "unit": u}.get(level, code)
         if not key:
             key = "(unassigned)"
