@@ -1,4 +1,130 @@
-// #3b — Analytics page. Consumes /api/pipeline/analytics (KES-equivalent,
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+PIE1 - origin as a pie with percentages, not bars.
+
+RULING (2026-08-11): "the origin analytics, instead of bars I would like a pie
+chart that indicates even % from each."
+
+THREE CHANGES, and the first one improves every donut in the system rather than
+only this page:
+
+    DonutChart now LABELS EACH SLICE WITH ITS SHARE. It had none - the legend
+    gave names without proportions, so a reader had to judge share by eye from
+    the arc, which is the fair criticism of pie charts. Slices under 4% are
+    left unlabelled: at that size the text collides with its neighbours and the
+    chart becomes less readable, not more.
+
+    ORIGIN JOINS THE DONUT DIMENSIONS on Sales Pro Analytics. Origin asks what
+    PROPORTION of the book came from each channel - a share question, which is
+    what a donut is for - rather than a ranking, which is what the bars are
+    for.
+
+    THE CHANNEL ANALYTICS CARDS carry a share percentage too. "Events produced
+    13 deals" means nothing without the whole; a reader should not have to add
+    up the other cards to work out whether that is most of the book or a
+    rounding error.
+
+The donut renderer, its palette and its tooltip already existed - Origin simply
+was not in the list of dimensions that used them. This is four lines of
+behaviour and one component improvement, not a new chart.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+REQUIRES OR6.
+
+Usage (from project root, .venv active):
+    python scripts\patch_pie1_origin_donut.py            # dry run
+    python scripts\patch_pie1_origin_donut.py --apply
+"""
+import os
+import shutil
+import sys
+
+DONUT = os.path.join("frontend", "web", "src", "components", "charts", "DonutChart.tsx")
+ANALYTICS = os.path.join("frontend", "web", "src", "pages", "Analytics.tsx")
+PA = os.path.join("frontend", "web", "src", "components", "PipelineAnalytics.tsx")
+BACKUP_SUFFIX = ".pre_pie1"
+
+DONUT_SRC = r'''// v10.548 Phase P Batch P3b — DonutChart.
+//
+// Composition: portfolio by product, deposits by tier, RAG distribution.
+// Optional center label (e.g. total). Colors default to the brand palette;
+// per-slice color override via datum.color.
+
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useChartPalette } from '@/hooks/useChartPalette';
+import { ChartTooltip } from '@/components/charts/ChartTooltip';
+
+export interface DonutDatum {
+  name: string;
+  value: number;
+  color?: string;
+}
+
+export interface DonutChartProps {
+  data: DonutDatum[];
+  height?: number;
+  palette?: string[];
+  centerLabel?: string;
+  centerValue?: string;
+}
+
+export function DonutChart({
+  data, height = 260, palette, centerLabel, centerValue,
+}: DonutChartProps) {
+  const { palette: defaultPalette } = useChartPalette();
+  const colors = palette ?? defaultPalette;
+
+  return (
+    <div className="relative" style={{ height }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie data={data} dataKey="value" nameKey="name"
+               cx="50%" cy="50%" innerRadius="58%" outerRadius="80%"
+               paddingAngle={2} cornerRadius={4} stroke="#fff" strokeWidth={2}
+               // SHARE IS THE QUESTION a donut is asked. Without a percentage
+               // the reader has to judge it by eye from the arc, which is what
+               // pie charts are criticised for - and the legend gives names
+               // without proportions.
+               //
+               // Slices under 4% are left unlabelled: at that size the text
+               // collides with its neighbours and the chart becomes less
+               // readable than it was, not more.
+               label={(e: { percent?: number }) => (
+                 (e.percent ?? 0) >= 0.04
+                   ? `${Math.round((e.percent ?? 0) * 100)}%` : '')}
+               labelLine={false}>
+            {data.map((d, i) => (
+              <Cell key={d.name} fill={d.color ?? colors[i % colors.length]} />
+            ))}
+          </Pie>
+          <Tooltip content={<ChartTooltip />} />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+        </PieChart>
+      </ResponsiveContainer>
+      {(centerLabel || centerValue) && (
+        <div className="pointer-events-none absolute inset-0 flex flex-col
+                        items-center justify-center"
+             style={{ paddingBottom: 24 }}>
+          {centerValue && (
+            <div className="text-2xl font-bold text-brand-secondary tabular-nums">
+              {centerValue}
+            </div>
+          )}
+          {centerLabel && (
+            <div className="text-[11px] uppercase tracking-wider text-gray-400">
+              {centerLabel}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+'''
+
+ANALYTICS_SRC = r'''// #3b — Analytics page. Consumes /api/pipeline/analytics (KES-equivalent,
 // dashboard-consistent) and showcases the pipeline across products, sectors,
 // currency book, the conversion funnel, and the four product-class pipelines.
 
@@ -608,3 +734,250 @@ function DrillTable({ head, rows }: {
     </div>
   );
 }
+'''
+
+PA_SRC = r'''// PipelineAnalytics — the pipeline counterpart to the index analytics.
+//
+// Same period model, same scope read, so the two pages cannot disagree about
+// the same population. Three questions, in the order management asks them:
+//
+//   Where is the money        open / weighted / won, and the win rate
+//   Where does it stall       conversion through the journey, RAG per bucket
+//   Where does it come from   referred versus direct
+
+import { useCallback, useEffect, useState } from 'react';
+import { Card } from '@/components/Card';
+import { useToast } from '@/components/Toast';
+import {
+  fetchPipelineAnalyticsSummary, type PipelineAnalyticsSummary,
+} from '@/lib/api';
+import { periods, findPeriod, periodArgs, DEFAULT_PERIOD_KEY } from '@/lib/period';
+
+function kes(n: number): string {
+  if (!n) return '—';
+  return Math.round(n).toLocaleString();
+}
+
+// One colour per origin, in configured order - seven now, more later.
+const ORIGIN_COLOURS = ['#0082BB', '#669438', '#E0A02B', '#9455B0',
+                        '#C4536F', '#005B82', '#979797', '#3F6FC4'];
+
+const RAG: Record<string, string> = {
+  green: '#669438', amber: '#E0A02B', red: '#C4536F', idle: '#D8DBDF',
+};
+
+export default function PipelineAnalytics() {
+  const { toast } = useToast();
+  const [periodKey, setPeriodKey] = useState(DEFAULT_PERIOD_KEY);
+  const [data, setData] = useState<PipelineAnalyticsSummary | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const a = periodArgs(findPeriod(periodKey));
+      setData(await fetchPipelineAnalyticsSummary(a.days ?? 0, a.start ?? '', a.end ?? ''));
+    } catch (e) {
+      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not load pipeline analytics.' });
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [periodKey, toast]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const t = data?.totals;
+  const originTotal = (data?.origin ?? []).reduce((a, o) => a + o.count, 0);
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <Card.Header>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-gray-900">Pipeline analytics</h2>
+            <select value={periodKey} onChange={(e) => setPeriodKey(e.target.value)}
+                    className="rounded border border-gray-200 px-2 py-1 text-xs">
+              {periods().map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+            </select>
+          </div>
+        </Card.Header>
+        <Card.Body>
+          {loading && <p className="py-8 text-center text-sm text-gray-400">Loading…</p>}
+
+          {!loading && !t && (
+            <p className="py-8 text-center text-sm text-gray-400">No pipeline data for this period.</p>
+          )}
+
+          {!loading && t && (
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {[
+                { label: 'Open deals', value: t.open.toLocaleString(), tone: 'text-gray-900' },
+                { label: 'Open value (KES)', value: kes(t.open_value), tone: 'text-[#0082BB]' },
+                { label: 'Weighted (KES)', value: kes(t.weighted), tone: 'text-[#005B82]' },
+                { label: 'Won (KES)', value: kes(t.won_value), tone: 'text-[#3B6D11]' },
+                { label: 'Won', value: t.won.toLocaleString(), tone: 'text-[#3B6D11]' },
+                { label: 'Lost', value: t.lost.toLocaleString(), tone: 'text-rose-600' },
+                { label: 'Win rate', value: `${t.win_rate}%`, tone: 'text-gray-900' },
+                { label: 'Deals in period', value: t.deals.toLocaleString(), tone: 'text-gray-900' },
+              ].map((s) => (
+                <div key={s.label} className="rounded-lg border border-gray-200 p-3">
+                  <div className={`text-xl font-semibold tabular-nums ${s.tone}`}>{s.value}</div>
+                  <div className="mt-0.5 text-[11px] text-gray-500">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      {!loading && (data?.journey ?? []).length > 0 && (
+        <Card>
+          <Card.Header>
+            <h2 className="text-base font-semibold text-gray-900">Conversion through the journey</h2>
+          </Card.Header>
+          <Card.Body>
+            <div className="space-y-5">
+              {(data?.journey ?? []).map((f) => {
+                const max = Math.max(1, ...f.buckets.map((b) => b.count));
+                return (
+                  <div key={f.flow}>
+                    <div className="mb-1.5 flex items-baseline gap-2">
+                      <span className="text-xs font-semibold capitalize text-gray-800">{f.flow}</span>
+                      <span className="text-[11px] text-gray-400">{f.deals} open</span>
+                    </div>
+                    <div className="space-y-1">
+                      {f.buckets.map((b) => (
+                        <div key={b.key} className="flex items-center gap-2">
+                          <span className="w-44 shrink-0 truncate text-[11px] text-gray-600"
+                                title={b.label}>{b.label}</span>
+                          <div className="h-4 flex-1 overflow-hidden rounded bg-gray-100">
+                            <div className="h-full rounded"
+                                 style={{ width: `${(b.count / max) * 100}%`,
+                                          background: RAG[b.health.status] || RAG.idle }} />
+                          </div>
+                          <span className="w-10 shrink-0 text-right text-[11px] tabular-nums text-gray-700">
+                            {b.count || '—'}
+                          </span>
+                          <span className="w-28 shrink-0 text-right text-[11px] tabular-nums text-gray-500">
+                            {kes(b.value)}
+                          </span>
+                          <span className="w-24 shrink-0 text-right text-[10px] tabular-nums"
+                                style={{ color: RAG[b.health.status] || RAG.idle }}>
+                            {b.health.status === 'idle'
+                              ? '—'
+                              : `${b.health.avg_days}d / ${b.health.target_days}d`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+
+      {!loading && (data?.origin ?? []).length > 0 && (
+        <Card>
+          <Card.Header>
+            <h2 className="text-base font-semibold text-gray-900">Where deals came from</h2>
+          </Card.Header>
+          <Card.Body>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {(data?.origin ?? []).map((o, i) => (
+                <div key={o.origin} className="rounded-lg border border-gray-200 p-3">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm font-semibold text-gray-800">
+                      {o.label || o.origin}
+                    </span>
+                    {/* SHARE, not just a count. "Events produced 13 deals" is
+                        only meaningful against the whole book, and a reader
+                        should not have to add up the other cards to find out. */}
+                    <span className="ml-auto text-[11px] tabular-nums text-gray-500">
+                      {originTotal > 0
+                        ? `${Math.round((o.count / originTotal) * 100)}%` : '—'}
+                    </span>
+                    <span className="text-xs tabular-nums text-gray-500">
+                      {originTotal ? Math.round((o.count / originTotal) * 100) : 0}%
+                    </span>
+                  </div>
+                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-gray-100">
+                    <div className="h-full rounded-full"
+                         style={{ width: `${originTotal ? (o.count / originTotal) * 100 : 0}%`,
+                                  background: ORIGIN_COLOURS[i % ORIGIN_COLOURS.length] }} />
+                  </div>
+                  <div className="mt-2 flex gap-4 text-[11px] tabular-nums text-gray-600">
+                    <span>{o.count} deals</span>
+                    <span>KES {kes(o.value)}</span>
+                    <span className="text-[#3B6D11]">{o.won} won</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+    </div>
+  );
+}
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (DONUT, ANALYTICS, PA):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found." % p)
+            return 1
+
+    cur = open(ANALYTICS, encoding="utf-8").read()
+    if "dim === 'Origin' ||" in cur:
+        print("ABORT: Origin already renders as a donut - PIE1 looks applied.")
+        return 1
+    if "'Origin'" not in cur:
+        print("ABORT: apply patch_or6_analytics_origins.py first - there is no")
+        print("       Origin dimension to render.")
+        return 1
+
+    # The share label is the whole point of the request.
+    if "e.percent" not in DONUT_SRC:
+        print("ABORT: the donut does not label slices with their share.")
+        return 1
+    # Tiny slices must not be labelled, or the chart gets worse not better.
+    if ">= 0.04" not in DONUT_SRC:
+        print("ABORT: every slice would be labelled, including 1% ones - the")
+        print("       text collides and the chart becomes less readable.")
+        return 1
+    if "dim === 'Origin' ||" not in ANALYTICS_SRC:
+        print("ABORT: Origin is not in the donut dimensions.")
+        return 1
+    if "originTotal > 0" not in PA_SRC:
+        print("ABORT: the channel cards do not show share.")
+        return 1
+    for name, blob in (("donut", DONUT_SRC), ("analytics", ANALYTICS_SRC),
+                       ("channel analytics", PA_SRC)):
+        for op, cl in (("{", "}"), ("(", ")")):
+            if blob.count(op) != blob.count(cl):
+                print("ABORT: %s unbalanced %s%s." % (name, op, cl))
+                return 1
+    print("  ok  share labels, tiny slices skipped, Origin is a donut")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((DONUT, DONUT_SRC), (ANALYTICS, ANALYTICS_SRC), (PA, PA_SRC)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd")
+    print("Sales Pro Analytics > Origin now draws a donut with a share on each")
+    print("slice. Every other donut in the system gains the same labels.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
