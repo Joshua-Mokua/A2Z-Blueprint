@@ -998,15 +998,22 @@ export default function AdminConfig() {
                     dropdown beside all sixty catalogue entries would be noise. */}
                 {((flowDraft.required_documents ?? []) as DocReq[]).length > 0 && (
                   <div className="mb-3 overflow-hidden rounded border">
-                    <div className="grid grid-cols-[1fr_180px_110px] gap-2 border-b bg-gray-50 px-2 py-1 text-[11px] font-medium text-gray-600">
+                    {/* The name column was 1fr against two fixed columns, so a
+                        long document title was cut off mid-word - and these are
+                        the names somebody has to recognise to set the attacher
+                        correctly. Narrower controls, and the name wraps rather
+                        than truncating. */}
+                    <div className="grid grid-cols-[1fr_150px_92px] gap-2 border-b bg-gray-50 px-2 py-1 text-[11px] font-medium text-gray-600">
                       <span>Document</span>
                       <span>Attached by</span>
                       <span>Blocks submission</span>
                     </div>
                     {((flowDraft.required_documents ?? []) as DocReq[]).map((d) => (
                       <div key={docName(d)}
-                           className="grid grid-cols-[1fr_180px_110px] items-center gap-2 border-b px-2 py-1.5 text-sm last:border-b-0">
-                        <span className="truncate text-gray-800">{docName(d)}</span>
+                           className="grid grid-cols-[1fr_150px_92px] items-start gap-2 border-b px-2 py-1.5 text-sm last:border-b-0">
+                        <span className="break-words text-gray-800" title={docName(d)}>
+                          {docName(d)}
+                        </span>
                         <select
                           className="h-8 rounded border border-gray-300 px-1 text-xs"
                           value={docBy(d)}
@@ -1100,6 +1107,14 @@ export default function AdminConfig() {
                     <option value="">+ Add committee gate…</option>
                     {committeePalette
                       .filter((c) => !(flowDraft.committee_journey ?? []).includes(c.code))
+                      // THE SIXTEEN BRANCH COMMITTEES ARE NOT CHOICES HERE.
+                      // A product routes through ONE branch gate and the system
+                      // substitutes the deal's own branch at runtime - so
+                      // listing all sixteen asks the admin to pick a branch for
+                      // a product that serves every branch. Only the
+                      // placeholder is offered; the specific ones remain
+                      // editable on the committees page.
+                      .filter((c) => (c as { kind?: string }).kind !== 'branch')
                       .map((c) => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
                   </select>
                 </div>

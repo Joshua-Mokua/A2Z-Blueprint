@@ -240,10 +240,23 @@ def _enrich_identity_from_store(user: dict) -> None:
         rec = UserManager().users.get(str(user.get("username", "") or "")) or {}
         if not rec:
             return
+        # ── ROLE IS ENRICHED TOO, AND "Staff" COUNTS AS UNSET ──────────────
+        # A token without a role claim gets "Staff" from _claims(), and role
+        # was NOT in this list - so that placeholder stuck for the session and
+        # every role gate refused the person. An AD login that does not carry a
+        # role turned a bank administrator into Staff, which is why saving a
+        # committee returned 403 for somebody who is genuinely an admin.
+        #
+        # "Staff" is a DEFAULT, not an assertion. Treating it as unset lets the
+        # store answer, while a token that really does carry a role still wins
+        # - a claim is still authoritative over the store.
         for key in ("staff_code", "full_name", "can_view_all", "is_admin",
                     "managed_staff_codes", "managed_roles", "managed_units",
-                    "department"):
-            if key in rec and (key not in user or user.get(key) in (None, "")):
+                    "department", "role"):
+            _blank = (None, "")
+            if key == "role":
+                _blank = (None, "", "Staff", "staff")
+            if key in rec and (key not in user or user.get(key) in _blank):
                 user[key] = rec[key]
         # Derived display/analytics names (first-name for UI, first+last for analytics,
         # a preferred name from metadata winning over both). One helper so every surface

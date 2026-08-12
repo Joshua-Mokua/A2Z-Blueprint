@@ -449,6 +449,13 @@ export interface CreateDealRequest {
   segment?:              string;     // segment within client type (cascade)
   sector?:               string;     // CBK economic sector (Business clients)
   mou_id?:               string;     // partnership/MOU id (Individual clients)
+  /** How the deal entered - one of the DECLARABLE origins. The server
+   *  validates it and replaces any system-routed value (referral, warehouse),
+   *  which are stamped by the workflow that actually routed the deal. */
+  origin?:               string;
+  /** The chosen source for that origin - a sponsored event. Cleared server-side
+   *  if it does not belong to the origin. */
+  event_id?:             string;
   mou_title?:            string;     // MOU title or free-text partner ("Other")
   client_cif?:           string;     // δ2: CBS CIF when client matched in CBS lookup
   is_ntb?:               boolean;
@@ -712,6 +719,10 @@ export interface PipelineAnalyticsResponse {
   by_product?:        ProductBreakdown[];
   by_sector?:         SectorBreakdown[];
   by_segment?:        SegmentBreakdown[];
+  /** Roll-up above the units: Premier, Advantage and Direct all report as
+   *  Consumer, so the MD can compare business lines before drilling in.
+   *  Derived by walking the org chart, not a second list to maintain. */
+  by_business_line?:  { business_line: string; value: number; count: number }[];
   by_segment_funnel?: SegmentFunnel[];
   by_currency_book?:  { LCY: CurrencyBookSplit; FCY: CurrencyBookSplit };
   by_unit?:           UnitBreakdown[];
@@ -719,6 +730,10 @@ export interface PipelineAnalyticsResponse {
   by_probability_band?: ProbabilityBandBreakdown[];
   by_product_funnel?: ProductFunnel[];
   by_referral_department?: ReferralDepartmentBreakdown[];
+  /** Every configured deal origin, with its readable label. Replaces the
+   *  referred-vs-originated pair as the way to ask where work came from. */
+  by_origin?: { origin: string; label?: string; credits_party?: boolean;
+                count: number; value: number; won: number }[];
   referral_branch_split?: { in_branch: number; cross_branch: number };
   referral_vs_originated?: {
     open:   { referred: { count: number; value: number }; originated: { count: number; value: number } };

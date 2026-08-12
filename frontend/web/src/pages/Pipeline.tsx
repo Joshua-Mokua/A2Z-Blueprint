@@ -158,8 +158,15 @@ export function Pipeline() {
     () => deals.filter((d) =>
       (!slaFilter || d.sla?.state === slaFilter)
       && (!winprobFilter || winprobBand(d.win_probability) === winprobFilter)
-      && (!segmentFilter || (d.segment || 'Unclassified') === segmentFilter)),
-    [deals, slaFilter, winprobFilter, segmentFilter],
+      // A filter of `unit:Consumer` matches every sub-segment configured under
+      // Consumer, so the line can be read as one. Anything else is the exact
+      // sub-segment, as before.
+      && (!segmentFilter
+          || (segmentFilter.startsWith('unit:')
+              ? (segmentGroups.find((g) => `unit:${g.unit}` === segmentFilter)?.subs ?? [])
+                  .some((sg) => sg.key === (d.segment || 'Unclassified'))
+              : (d.segment || 'Unclassified') === segmentFilter))),
+    [deals, slaFilter, winprobFilter, segmentFilter, segmentGroups],
   );
   const clearSlaFilter = () => {
     const next = new URLSearchParams(searchParams);
@@ -621,7 +628,29 @@ export function Pipeline() {
                   {segmentGroups.map((g) => (
                     <div key={g.unit} className="flex items-center gap-1 rounded-lg bg-gray-100 p-1">
                       {!singleUnit && (
-                        <span className="px-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">{g.unit}</span>
+                        // THE UNIT NAME IS A BUTTON, not a label. It was inert,
+                        // so somebody wanting "Consumer as a whole" had to
+                        // click Premier, read it, click Advantage, read it, and
+                        // add up - when the whole line is the level they were
+                        // asking about. Clicking it selects every sub-segment
+                        // beneath it; clicking again clears back to All.
+                        <button
+                          type="button"
+                          onClick={() => setSegmentFilter(
+                            segmentFilter === `unit:${g.unit}` ? '' : `unit:${g.unit}`)}
+                          title={`All ${g.unit} deals`}
+                          className={[
+                            'rounded-md px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide transition-colors',
+                            segmentFilter === `unit:${g.unit}`
+                              ? 'bg-white text-[var(--brand-secondary)] shadow-sm'
+                              : 'text-gray-400 hover:text-gray-700',
+                          ].join(' ')}
+                        >
+                          {g.unit}
+                          <span className="ml-1.5 text-gray-400">
+                            {g.subs.reduce((a, x) => a + x.count, 0)}
+                          </span>
+                        </button>
                       )}
                       {g.subs.map((sg) => {
                         const on = segmentFilter === sg.key;
