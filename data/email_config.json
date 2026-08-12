@@ -2,7 +2,11 @@
   "smtp_host": "192.168.48.27",
   "smtp_port": 25,
   "smtp_encryption": "tls",
+  "smtp_timeout_seconds": 15,
   "sender_email": "noreply@ecobank.com",
+  "sender_name": "Ecobank Pipeline Alerts",
   "sender_username": "",
-  "sender_password": ""
+  "sender_password": "",
+  "relay_fallback_url": "http://10.8.32.3:400/api/relay-email",
+  "relay_fallback_token": ""
 }

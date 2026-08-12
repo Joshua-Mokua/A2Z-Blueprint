@@ -198,19 +198,15 @@ def send_email(to: str, subject: str, body: str = "",
         _v471_logger.info(f"send_email no-op (email not configured): to={to} subj={subject!r}")
         return False
     try:
-        import smtplib
         from email.mime.text import MIMEText
         from email.mime.multipart import MIMEMultipart
+        from utils.core import _smtp_deliver, _from_header
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"]    = cfg["sender_email"]
+        msg["From"]    = _from_header(cfg)
         msg["To"]      = to
         msg.attach(MIMEText(body or subject, "html"))
-        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port", 587))) as srv:
-            srv.starttls()
-            if cfg.get("sender_password"):
-                srv.login(cfg["sender_email"], cfg["sender_password"])
-            srv.sendmail(cfg["sender_email"], [to], msg.as_string())
+        _smtp_deliver(cfg, msg, [to])
         _v471_logger.info(f"send_email sent: to={to} subj={subject!r}")
         return True
     except Exception as exc:

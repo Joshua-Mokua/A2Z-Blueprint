@@ -81,23 +81,89 @@ def load_email_config():
 def save_email_config(cfg):
     (DATA_DIR/"email_config.json").write_text(json.dumps(cfg, indent=2), encoding="utf-8")
 
+def _from_header(cfg) -> str:
+    """'Display Name <address>' From header — falls back to a bare address
+    if sender_name isn't configured."""
+    from email.utils import formataddr
+    name = cfg.get("sender_name") or ""
+    return formataddr((name, cfg["sender_email"])) if name else cfg["sender_email"]
+
+_RELAY_FALLBACK_TIMEOUT = 20  # seconds — the Laravel HTTP relay on 10.8.32.3
+
+
+def _relay_email_fallback(cfg, to, subject, html_body, cc=None) -> None:
+    """POST to the bank's Laravel email-relay endpoint (EmailRelayController)
+    when direct SMTP is unreachable/times out. Raises on failure so the
+    caller's existing except-and-report logic is unchanged either way —
+    this is a second attempt, not a silent swallow.
+
+    `to` may be a single address or a list; the relay's validator requires
+    an array. Auth is optional: only sent if relay_fallback_token is set —
+    the live endpoint may be gated by auth:sanctum or a shared secret, or
+    nothing at all, depending on how the bank deployed it.
+    """
+    url = cfg.get("relay_fallback_url")
+    if not url:
+        raise RuntimeError("no relay_fallback_url configured — nothing left to try")
+    import requests
+    to_list = to if isinstance(to, list) else [to]
+    headers = {}
+    token = cfg.get("relay_fallback_token")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    resp = requests.post(
+        url,
+        json={"to": to_list, "cc": cc or [], "subject": subject,
+              "body": html_body, "is_html": True},
+        headers=headers,
+        timeout=_RELAY_FALLBACK_TIMEOUT,
+    )
+    resp.raise_for_status()
+
+
 def _smtp_deliver(cfg, msg, to):
-    """Shared send path for both email functions below.
+    """Shared send path for every email function in this module (and
+    utils/notifications.py's send_email, which calls this too — one SMTP
+    path, not two, per this repo's own recurring "one truth two places"
+    lesson).
 
     Handles an unauthenticated internal relay (MAIL_USERNAME/PASSWORD blank
     — common for a bank's internal Postfix/Exchange relay bound to trusted
     IPs) as well as an authenticated one: STARTTLS is attempted only when
     encryption is configured as tls/starttls, and login() is skipped
     entirely when no credentials are configured, since calling it with
-    blank credentials would fail against a real server."""
+    blank credentials would fail against a real server.
+
+    Falls back to the Laravel HTTP relay (10.8.32.3/api/relay-email) if
+    direct SMTP raises for ANY reason (timeout, connection refused, auth
+    failure) and a relay_fallback_url is configured — the SMTP relay
+    (192.168.48.27:25) and the bank's own network path don't always agree,
+    so a second delivery route matters more here than most places.
+    """
     import smtplib
-    with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port", 587))) as s:
-        if str(cfg.get("smtp_encryption", "tls")).lower() in ("tls", "starttls"):
-            s.starttls()
-        user, pwd = cfg.get("sender_username") or "", cfg.get("sender_password") or ""
-        if user and pwd:
-            s.login(user, pwd)
-        s.sendmail(cfg["sender_email"], to, msg.as_string())
+    try:
+        with smtplib.SMTP(cfg["smtp_host"], int(cfg.get("smtp_port", 587)),
+                           timeout=cfg.get("smtp_timeout_seconds", 15)) as s:
+            if str(cfg.get("smtp_encryption", "tls")).lower() in ("tls", "starttls"):
+                s.starttls()
+            user, pwd = cfg.get("sender_username") or "", cfg.get("sender_password") or ""
+            if user and pwd:
+                s.login(user, pwd)
+            s.sendmail(cfg["sender_email"], to, msg.as_string())
+    except Exception as smtp_exc:
+        if not cfg.get("relay_fallback_url"):
+            raise
+        html_body = None
+        for part in (msg.get_payload() if msg.is_multipart() else [msg]):
+            if part.get_content_type() == "text/html":
+                html_body = part.get_payload(decode=True).decode("utf-8", "replace")
+                break
+        try:
+            _relay_email_fallback(cfg, to, msg["Subject"], html_body or "")
+        except Exception as relay_exc:
+            raise RuntimeError(
+                f"SMTP failed ({smtp_exc}) AND relay fallback failed ({relay_exc})"
+            ) from relay_exc
 
 
 def send_milestone_alert_email(to_email, recipient_name, ms_name, init_name,
@@ -141,7 +207,7 @@ def send_milestone_alert_email(to_email, recipient_name, ms_name, init_name,
         import smtplib
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"]    = cfg["sender_email"]
+        msg["From"]    = _from_header(cfg)
         msg["To"]      = to_email
         msg.attach(MIMEText(body, "html"))
         _smtp_deliver(cfg, msg, to_email)
@@ -182,7 +248,7 @@ def send_structural_delay_email(to_emails, ms_name, init_name, workstream,
         import smtplib
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"]    = cfg["sender_email"]
+        msg["From"]    = _from_header(cfg)
         msg["To"]      = ", ".join(to_emails)
         msg.attach(MIMEText(body, "html"))
         _smtp_deliver(cfg, msg, to_emails)
@@ -220,7 +286,7 @@ def send_start_alert_email(to_email, recipient_name, ms_name, init_name, start_d
         import smtplib
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"]    = cfg["sender_email"]
+        msg["From"]    = _from_header(cfg)
         msg["To"]      = to_email
         msg.attach(MIMEText(body, "html"))
         _smtp_deliver(cfg, msg, to_email)
@@ -317,7 +383,7 @@ def send_welcome_email(to_email, full_name, username, temp_password):
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = "A2Z Perform — Your account has been created"
-        msg["From"]    = cfg["sender_email"]
+        msg["From"]    = _from_header(cfg)
         msg["To"]      = to_email
         body = f"""
 <html><body style="font-family:Arial,sans-serif;max-width:500px;margin:auto">
