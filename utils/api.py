@@ -2206,6 +2206,73 @@ def admin_upsert_mou(
 # back to the per-class stage_flows then the core category flow. This endpoint
 # authors one product's flow at a time (add or replace), validated.
 # ─────────────────────────────────────────────────────────────────────
+# ── THE MANDATORY CREDIT SPINE ──────────────────────────────────────────────
+# RULING (2026-08-12): "whose originator is from the branch must pass through
+# the Branch Credit Committee after documentation, then to the department
+# analysts, then the Department Credit Committee, then Credit Analysis, then
+# Credit Administration, then Trops ... then in between admin can add the
+# mini-stages which vary from product to product. I need uniformity across the
+# product lines."
+#
+# ENFORCED ON SAVE, not defaulted. A default is a suggestion; a product flow
+# that breaks the spine is now refused with a reason rather than saved and
+# discovered by a case that cannot move.
+#
+# THESE NAMES ARE NOT INVENTED. Seven of the twelve Asset products already
+# carry exactly this sequence - Mortgage, Invoice Discounting, Trade Finance
+# LC, Structured Finance, Term Loan, Trade Finance, Working Capital. The spine
+# is the existing standard being finished, not a new one imposed.
+#
+# EXTRA STAGES ARE FREE. Admin may put anything between the fixed points, in
+# any number - that is the per-product variation. What cannot happen is a spine
+# stage being removed, or two of them ending up in the wrong order.
+CREDIT_SPINE = [
+    "Documentation",
+    "Branch Credit Committee Review",
+    "Department Credit Analysis",
+    "Department Credit Committee Review",
+    "Credit Analysis",
+    "Credit Administration",
+    "Trops",
+]
+
+# ONLY LENDING PRODUCTS. product_catalogue is already classed, and "Assets"
+# holds the twelve credit products. Forcing a savings account through a credit
+# committee would be worse than having no rule at all.
+CREDIT_CLASS = "Assets"
+
+
+def _is_credit_product(product: str) -> bool:
+    try:
+        cat = (_load_json("pipeline_settings.json") or {}).get("product_catalogue") or {}
+        names = cat.get(CREDIT_CLASS) or []
+        return str(product or "").strip().lower() in {
+            str(n).strip().lower() for n in names}
+    except Exception:
+        return False
+
+
+def _spine_violation(stage_names: list, product: str = "") -> str:
+    """'' if the flow honours the spine, else why not.
+
+    Checks PRESENCE and ORDER only. Anything may sit between spine stages.
+    """
+    if product and not _is_credit_product(product):
+        return ""
+    missing = [x for x in CREDIT_SPINE if x not in stage_names]
+    if missing:
+        return ("a lending product must include %s. Extra stages may go "
+                "anywhere between them, but the spine itself is fixed."
+                % ", ".join("'%s'" % m for m in missing))
+    pos = [stage_names.index(x) for x in CREDIT_SPINE]
+    if pos != sorted(pos):
+        out_of_order = [CREDIT_SPINE[i] for i in range(1, len(pos))
+                        if pos[i] < pos[i - 1]]
+        return ("the spine is out of order at %s - a case must reach these in "
+                "sequence" % ", ".join("'%s'" % o for o in out_of_order))
+    return ""
+
+
 def _validate_product_flow(entry: dict, catalogue_names=None) -> tuple:
     """(ok, reason) for a single product-flow entry. stages must be a non-empty
     list of {stage, target_days(>0 int)}; client_types a list of strings.
@@ -2279,6 +2346,21 @@ def _validate_product_flow(entry: dict, catalogue_names=None) -> tuple:
         stage_names = {str(s.get("stage", "")).strip() for s in stages}
         if str(dstage).strip() not in stage_names:
             return False, f"documents_required_at_stage '{dstage}' is not one of this product's stages"
+    # ── EVERY FLOW MUST BE ABLE TO END ──────────────────────────────────────
+    # Thirteen flows had no closing stage, so their deals could never be closed
+    # by anybody - the fixed deposit the pilot reported, and twelve more in the
+    # same state that nobody had hit yet.
+    _names = [str(s.get("stage", "") or "").strip() for s in stages]
+    if not any("closed" in n.lower() for n in _names):
+        return False, ("every flow needs a closing stage - add 'Closed Won' "
+                       "and 'Closed Lost', or a deal on this product can "
+                       "never be finished")
+
+    _prod = str(entry.get("product", "") or "")
+    _v = _spine_violation(_names, _prod)
+    if _v:
+        return False, _v
+
     journey = entry.get("committee_journey")
     if journey is not None:
         if not isinstance(journey, list) or any(not isinstance(x, str) for x in journey):
@@ -6918,6 +7000,32 @@ def pipeline_deal_advance(
     # can't advance to a loan-only stage. Skips gracefully if no flow is
     # configured for the class (fallback to the prior global allowlist).
     _flow = _stage_flow_for(deal.get("product_type") or deal.get("product", ""))
+    # ── A NON-BRANCH DEAL SKIPS THE BRANCH COMMITTEE ────────────────────────
+    # RULING (2026-08-12): "for any RM who is not at the branch, especially CIB
+    # RMs and a few in commercial, they start theirs from the Department Credit
+    # Analyst after documentation."
+    #
+    # The spine belongs to a PRODUCT; whether the branch committee applies
+    # belongs to the DEAL. One flow serves both, so the branch stage is skipped
+    # at advance time rather than maintained as a second flow per product -
+    # which would double the admin surface and the ways two flows drift apart.
+    #
+    # This is how committees already behave: _effective_committee_journey drops
+    # branch-only committees for a deal with no branch. The stage side simply
+    # had not caught up.
+    #
+    # ONLY SKIPS FORWARD, and only over the branch committee. It does not let a
+    # deal jump anywhere else, and a BRANCH deal is untouched.
+    if (_flow and payload.new_stage == "Branch Credit Committee Review"
+            and not _deal_is_branch_originated(deal)):
+        _i = _flow.index(payload.new_stage)
+        if _i + 1 < len(_flow):
+            _skipped = payload.new_stage
+            payload.new_stage = _flow[_i + 1]
+            _audit("API_PIPELINE_SKIP_BRANCH_CTTEE", user,
+                   f"deal_id={deal_id} skipped={_skipped} to={payload.new_stage} "
+                   f"reason=not_branch_originated")
+
     if _flow and payload.new_stage not in _flow:
         _cls = _classify_product(deal.get("product_type") or deal.get("product", ""))
         _audit("API_PIPELINE_ADVANCE_OFF_FLOW", user,
