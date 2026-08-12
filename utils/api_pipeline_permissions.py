@@ -66,23 +66,40 @@ TERMINAL_STAGES: Set[str] = {
 # This list mirrors what PipelineManager.get_pending_validations
 # considers "post-validation-threshold" — see utils/core.py:4045-4053.
 VALIDATION_STAGES: Set[str] = {
-    "Lead",          # validate at creation (first defense against ghost deals)
-    "Contacted",
-    "Qualified",
-    "Proposal",
-    "Negotiation",
-    "Compliance",
-    "Credit Review",
-    "Approval",
-    "Bank Approval",
-    "Credit Committee",
-    "Documentation",
-    "Vetting",
+    # KEPT for the global flows that still use these names. It is NOT the whole
+    # answer any more - see _needs_validation below.
+    "Lead", "Contacted", "Qualified", "Proposal", "Negotiation", "Negotiating",
+    "Documentation", "Documentation Complete", "Credit Review",
+    "Credit Committee", "Bank Approval", "Approval", "Vetting", "Compliance",
     "Disbursed",
-    # Account + Deposit also need validation past first stage
-    "Documentation Complete",
-    "Negotiating",
 }
+
+# TERMINAL stages: a closed deal is never awaiting validation.
+_TERMINAL_HINTS = ("closed", "disbursement", "trops")
+
+
+def _needs_validation(stage: str) -> bool:
+    """Is a deal at this stage still awaiting its manager's validation?
+
+    THE FIXED LIST ABOVE IS NOT THE WHOLE TRUTH, and this is the second half of
+    a fix that was only half made. PipelineManager._stage_needs_validation was
+    widened so per-product stages appear in a manager's QUEUE - but this module
+    still tested membership of the global list, so the PERMISSION stayed false.
+    A Mortgage deal at 'Initiation', or at any of the six credit stages, showed
+    in the queue with can_validate False: the manager saw it and the button did
+    nothing.
+
+    Same rule as the queue now: everything that is not terminal is validatable.
+    A per-product stage cannot be ranked against a global list, but it is live
+    and somebody must validate it.
+    """
+    st = str(stage or "").strip()
+    if not st:
+        return False
+    low = st.lower()
+    if any(h in low for h in _TERMINAL_HINTS):
+        return False
+    return True
 
 
 # The full set of permissions α7 ships. Adding a new permission means
@@ -250,7 +267,7 @@ def resolve_deal_permissions(
 
     # Stage gates
     in_terminal_stage = stage in TERMINAL_STAGES
-    in_validation_stage = stage in VALIDATION_STAGES
+    in_validation_stage = _needs_validation(stage)
 
     # ── Permission computation ─────────────────────────────────────
     can_view = (is_owner or is_backup or is_manager_in_scope

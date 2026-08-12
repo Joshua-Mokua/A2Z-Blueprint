@@ -2432,6 +2432,73 @@ def admin_upsert_mou(
 # back to the per-class stage_flows then the core category flow. This endpoint
 # authors one product's flow at a time (add or replace), validated.
 # ─────────────────────────────────────────────────────────────────────
+# ── THE MANDATORY CREDIT SPINE ──────────────────────────────────────────────
+# RULING (2026-08-12): "whose originator is from the branch must pass through
+# the Branch Credit Committee after documentation, then to the department
+# analysts, then the Department Credit Committee, then Credit Analysis, then
+# Credit Administration, then Trops ... then in between admin can add the
+# mini-stages which vary from product to product. I need uniformity across the
+# product lines."
+#
+# ENFORCED ON SAVE, not defaulted. A default is a suggestion; a product flow
+# that breaks the spine is now refused with a reason rather than saved and
+# discovered by a case that cannot move.
+#
+# THESE NAMES ARE NOT INVENTED. Seven of the twelve Asset products already
+# carry exactly this sequence - Mortgage, Invoice Discounting, Trade Finance
+# LC, Structured Finance, Term Loan, Trade Finance, Working Capital. The spine
+# is the existing standard being finished, not a new one imposed.
+#
+# EXTRA STAGES ARE FREE. Admin may put anything between the fixed points, in
+# any number - that is the per-product variation. What cannot happen is a spine
+# stage being removed, or two of them ending up in the wrong order.
+CREDIT_SPINE = [
+    "Documentation",
+    "Branch Credit Committee Review",
+    "Department Credit Analysis",
+    "Department Credit Committee Review",
+    "Credit Analysis",
+    "Credit Administration",
+    "Trops",
+]
+
+# ONLY LENDING PRODUCTS. product_catalogue is already classed, and "Assets"
+# holds the twelve credit products. Forcing a savings account through a credit
+# committee would be worse than having no rule at all.
+CREDIT_CLASS = "Assets"
+
+
+def _is_credit_product(product: str) -> bool:
+    try:
+        cat = (_load_json("pipeline_settings.json") or {}).get("product_catalogue") or {}
+        names = cat.get(CREDIT_CLASS) or []
+        return str(product or "").strip().lower() in {
+            str(n).strip().lower() for n in names}
+    except Exception:
+        return False
+
+
+def _spine_violation(stage_names: list, product: str = "") -> str:
+    """'' if the flow honours the spine, else why not.
+
+    Checks PRESENCE and ORDER only. Anything may sit between spine stages.
+    """
+    if product and not _is_credit_product(product):
+        return ""
+    missing = [x for x in CREDIT_SPINE if x not in stage_names]
+    if missing:
+        return ("a lending product must include %s. Extra stages may go "
+                "anywhere between them, but the spine itself is fixed."
+                % ", ".join("'%s'" % m for m in missing))
+    pos = [stage_names.index(x) for x in CREDIT_SPINE]
+    if pos != sorted(pos):
+        out_of_order = [CREDIT_SPINE[i] for i in range(1, len(pos))
+                        if pos[i] < pos[i - 1]]
+        return ("the spine is out of order at %s - a case must reach these in "
+                "sequence" % ", ".join("'%s'" % o for o in out_of_order))
+    return ""
+
+
 def _validate_product_flow(entry: dict, catalogue_names=None) -> tuple:
     """(ok, reason) for a single product-flow entry. stages must be a non-empty
     list of {stage, target_days(>0 int)}; client_types a list of strings.
@@ -2505,6 +2572,21 @@ def _validate_product_flow(entry: dict, catalogue_names=None) -> tuple:
         stage_names = {str(s.get("stage", "")).strip() for s in stages}
         if str(dstage).strip() not in stage_names:
             return False, f"documents_required_at_stage '{dstage}' is not one of this product's stages"
+    # ── EVERY FLOW MUST BE ABLE TO END ──────────────────────────────────────
+    # Thirteen flows had no closing stage, so their deals could never be closed
+    # by anybody - the fixed deposit the pilot reported, and twelve more in the
+    # same state that nobody had hit yet.
+    _names = [str(s.get("stage", "") or "").strip() for s in stages]
+    if not any("closed" in n.lower() for n in _names):
+        return False, ("every flow needs a closing stage - add 'Closed Won' "
+                       "and 'Closed Lost', or a deal on this product can "
+                       "never be finished")
+
+    _prod = str(entry.get("product", "") or "")
+    _v = _spine_violation(_names, _prod)
+    if _v:
+        return False, _v
+
     journey = entry.get("committee_journey")
     if journey is not None:
         if not isinstance(journey, list) or any(not isinstance(x, str) for x in journey):
@@ -4301,6 +4383,79 @@ def _derive_segment(d: dict) -> str:
     return ct
 
 
+def _business_line_of(deal: dict) -> str:
+    """The business line a deal belongs to - Consumer, Commercial, CIB.
+
+    CLIENT TYPE FIRST, and this is a correction. The first version walked the
+    org chart up from the OWNER'S ROLE, which answers "who owns this deal"
+    rather than "what kind of deal is it" - and anyone missing from the chart
+    fell through to Unassigned, which is why the pilot saw so many.
+
+    client_type is COMPULSORY AT DEAL CREATION and already carries exactly the
+    three values wanted. It is the deal's own answer, given at the point
+    somebody knew it, and no derivation can beat that.
+
+    The org walk stays as a FALLBACK for older deals captured before the field
+    was compulsory, so nothing existing vanishes from the roll-up.
+    """
+    ct = str(deal.get("client_type") or deal.get("segment") or "").strip()
+    if ct:
+        # Normalise the spellings that reach the field, so one line does not
+        # appear twice in a report.
+        low = ct.lower()
+        if low.startswith("consumer") or low in ("individual", "personal", "retail"):
+            return "Consumer"
+        if low.startswith("commercial") or low in ("sme", "business"):
+            return "Commercial"
+        if low.startswith("cib") or low.startswith("corporate") or low == "institution":
+            return "CIB"
+        return ct
+
+    # ── FALLBACK: walk the org chart ────────────────────────────────────────
+    # Only for a deal with no client_type - captured before the field was
+    # compulsory. Both charts are consulted: functional_hierarchy carries the
+    # RM-to-unit-head links, hierarchy the head-to-head ones.
+    try:
+        from utils.core import get_org_config
+        _org = get_org_config() or {}
+        fh = dict(_org.get("hierarchy", {}) or {})
+        fh.update(_org.get("functional_hierarchy", {}) or {})
+    except Exception:
+        fh = {}
+    role = str(deal.get("staff_role") or deal.get("role") or "").strip()
+    if not role:
+        try:
+            from utils.api_pipeline_scope import get_staff_roster
+            df = get_staff_roster()
+            code = str(deal.get("staff_code") or "")
+            for _i, r in df.iterrows():
+                if str(r.get("Staff Code") or "") == code:
+                    role = str(r.get("Role") or "")
+                    break
+        except Exception:
+            pass
+
+    _EXEC = ("director", "chief", "managing", "ceo")
+    seen, cur, last_head = set(), role, ""
+    for _ in range(8):
+        if not cur or cur in seen:
+            break
+        seen.add(cur)
+        low = cur.lower()
+        if any(x in low for x in _EXEC):
+            break
+        if low.startswith("head"):
+            last_head = cur
+        nxt = fh.get(cur)
+        cur = (nxt[0] if isinstance(nxt, list) and nxt else
+               nxt if isinstance(nxt, str) else "")
+    if last_head:
+        out = last_head.split(",", 1)[-1] if "," in last_head else last_head
+        for tok in ("Head of", "Head"):
+            out = out.replace(tok, "")
+        return out.strip() or last_head
+    return ""
+
 def _segment_of(d: dict) -> str:
     """Customer segment for a deal, with the admin display-name map applied.
     Shared by the analytics by_segment dimension and the funnel stage-drill so
@@ -4755,6 +4910,33 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
         e["count"] += 1
     _by_segment = sorted(_seg.values(), key=lambda x: x["value"], reverse=True)
 
+    # ── BY BUSINESS LINE (pilot, 2026-08-12) ────────────────────────────────
+    # "On Sales Pro Analytics they are not able to see e.g. Consumer as a whole
+    # before they go into Premier, Advantage, Direct. It will be important when
+    # the MD or anybody is narrowing down to first see Consumer in general and
+    # then progress."
+    #
+    # The units were the only level available, so the MD saw three Consumer
+    # sub-lines and had to add them up mentally before comparing Consumer with
+    # Commercial. A roll-up is the level people actually think in.
+    #
+    # DERIVED BY WALKING THE ORG CHART, not by a second list to maintain.
+    # functional_hierarchy already says "Relationship Manager, Premier Banking"
+    # -> "Head Premier Banking" -> "Head of Consumer", so the business line is
+    # the top of that walk. A new sub-unit inherits its line the day it is added
+    # to the chart, with nothing else to update.
+    _by_business_line: list = []
+    try:
+        _bl: dict = {}
+        for d in live:
+            key = _business_line_of(d) or "Unassigned"
+            e = _bl.setdefault(key, {"business_line": key, "value": 0.0, "count": 0})
+            e["value"] += _deal_value(d)
+            e["count"] += 1
+        _by_business_line = sorted(_bl.values(), key=lambda x: x["value"], reverse=True)
+    except Exception as _exc:
+        logger.warning("business-line rollup unavailable: %s", _exc)
+
     # by_probability_band: ACTIVE deals grouped into 6 win-probability bands. Win
     # probability is DERIVED per-product-stage from the admin matrix
     # (_flow_stage_win_probability), the same source the deal read uses — so the
@@ -5074,6 +5256,7 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
         "by_product": _by_product,
         "by_sector": _by_sector,
         "by_segment": _by_segment,
+        "by_business_line": _by_business_line,
         "by_probability_band": _by_probability_band,
         "by_segment_funnel": by_segment_funnel,
         "by_product_funnel": by_product_funnel,
@@ -7111,6 +7294,32 @@ def pipeline_deal_advance(
     # can't advance to a loan-only stage. Skips gracefully if no flow is
     # configured for the class (fallback to the prior global allowlist).
     _flow = _stage_flow_for(deal.get("product_type") or deal.get("product", ""))
+    # ── A NON-BRANCH DEAL SKIPS THE BRANCH COMMITTEE ────────────────────────
+    # RULING (2026-08-12): "for any RM who is not at the branch, especially CIB
+    # RMs and a few in commercial, they start theirs from the Department Credit
+    # Analyst after documentation."
+    #
+    # The spine belongs to a PRODUCT; whether the branch committee applies
+    # belongs to the DEAL. One flow serves both, so the branch stage is skipped
+    # at advance time rather than maintained as a second flow per product -
+    # which would double the admin surface and the ways two flows drift apart.
+    #
+    # This is how committees already behave: _effective_committee_journey drops
+    # branch-only committees for a deal with no branch. The stage side simply
+    # had not caught up.
+    #
+    # ONLY SKIPS FORWARD, and only over the branch committee. It does not let a
+    # deal jump anywhere else, and a BRANCH deal is untouched.
+    if (_flow and payload.new_stage == "Branch Credit Committee Review"
+            and not _deal_is_branch_originated(deal)):
+        _i = _flow.index(payload.new_stage)
+        if _i + 1 < len(_flow):
+            _skipped = payload.new_stage
+            payload.new_stage = _flow[_i + 1]
+            _audit("API_PIPELINE_SKIP_BRANCH_CTTEE", user,
+                   f"deal_id={deal_id} skipped={_skipped} to={payload.new_stage} "
+                   f"reason=not_branch_originated")
+
     if _flow and payload.new_stage not in _flow:
         _cls = _classify_product(deal.get("product_type") or deal.get("product", ""))
         _audit("API_PIPELINE_ADVANCE_OFF_FLOW", user,
@@ -7398,6 +7607,47 @@ def pipeline_deal_validate(
         }, user.get("username", ""))
     except Exception:
         pass
+
+    # ── ADVANCE ON VALIDATION (pilot, 2026-08-12) ───────────────────────────
+    # "The stage was to move automatically once the manager validates, but now
+    # the owner has to go and move it from Actions to the next stage."
+    #
+    # Validation was unlocking the move and leaving the owner to make it. That
+    # is a second action for a decision already taken - and worse, the deal
+    # sits at the old stage in every queue and report in between, so the branch
+    # looks stalled when it is not.
+    #
+    # ONE STAGE, FROM THE CONFIGURED FLOW. Not a jump to credit: the same
+    # single step the owner would have made, so nothing skips a gate.
+    #
+    # ONLY ON APPROVAL, never on a query - a queried deal goes back to the
+    # owner and must not move forward.
+    #
+    # NEVER OUT OF A TERMINAL STAGE, and never past one. A closed deal stays
+    # closed, and validation must not be a way to reopen it.
+    #
+    # BEST EFFORT: a failure here leaves the deal validated and unmoved, which
+    # is exactly where it used to be. Validation must not fail because an
+    # advance did.
+    if payload.approved:
+        try:
+            _d = pm.get_deal(deal_id) or {}
+            _cur = str(_d.get("stage") or "")
+            _flow = _stage_flow_for(_d.get("product_type") or _d.get("product", "")) or []
+            if _cur in _flow:
+                _i = _flow.index(_cur)
+                if _i + 1 < len(_flow):
+                    _next = _flow[_i + 1]
+                    _terminal = ("closed" in _cur.lower(), "closed" in _next.lower())
+                    if not any(_terminal):
+                        pm.update_stage(deal_id, _next,
+                                        "Advanced on manager validation by %s."
+                                        % (user.get("full_name") or user.get("username") or ""),
+                                        str(user.get("username", "") or ""))
+                        _audit("DEAL_AUTO_ADVANCED", user,
+                               "%s: %s -> %s on validation" % (deal_id, _cur, _next))
+        except Exception as _exc:
+            logger.warning("could not advance %s on validation: %s", deal_id, _exc)
 
     # Persist the validation to the DB read path. The analytics assured value
     # and funnel read deals via _acquire_scoped_deals (DB-first); without this
@@ -12200,12 +12450,61 @@ def save_deal_cr(deal_id: str, payload: dict = Body(default_factory=dict),
 _COMMITTEE_OUTCOMES = ("APPROVED", "REJECTED", "DEFERRED")
 
 
-def _derive_outcome_from_votes(votes: list, voting_rule: str) -> str:
+def _committee_quorum(committee: dict = None) -> int:
+    """How many members must vote for a decision to stand.
+
+    PER COMMITTEE FIRST, then a bank-wide default, then 2.
+
+    WHY 2 AS THE FLOOR. The audit found a single YES approving a credit
+    facility: the arithmetic was right, but nothing checked how many people
+    had voted. One person is not a committee, and that is the finding - so the
+    floor is the smallest number that cannot be one.
+
+    NOT 3, which is what the older (inert) MCC model uses. Three would be the
+    right answer for a management committee and the wrong one for a small
+    branch, where it would strand cases nobody can decide. The bank should set
+    this deliberately per committee; 2 is what stops the indefensible case
+    without inventing a policy.
+    """
+    if isinstance(committee, dict) and committee.get("min_quorum_count") is not None:
+        try:
+            return max(0, int(committee.get("min_quorum_count")))
+        except (TypeError, ValueError):
+            pass
+    try:
+        cw = (_load_json("lms_config.json") or {}).get("credit_workflow", {})
+        v = cw.get("default_min_quorum")
+        if v is not None:
+            return max(0, int(v))
+    except Exception:
+        pass
+    return 2
+
+
+def _derive_outcome_from_votes(votes: list, voting_rule: str,
+                               committee: dict = None) -> str:
     """Derive APPROVED/REJECTED from per-member votes and the voting rule.
     YES/NO counted; ABSTAIN/RECUSED excluded from the base. Ties -> REJECTED."""
     yes = sum(1 for v in votes if str(v.get("vote", "")).upper() == "YES")
     no = sum(1 for v in votes if str(v.get("vote", "")).upper() == "NO")
     base = yes + no
+
+    # ── QUORUM (pilot audit, 2026-08-12) ────────────────────────────────────
+    # BELOW QUORUM IS DEFERRED, NOT REJECTED. Too few people turning up is not
+    # the committee saying no - it is the committee not having met. Rejecting
+    # would put a decision on the record that nobody took, and would send a
+    # case to appeal against a verdict that was never reached.
+    #
+    # Counted over EVERYONE WHO ATTENDED, including abstentions and recusals: a
+    # member who recuses themselves was present, and recusal is how a conflict
+    # is handled rather than an absence.
+    attended = sum(1 for v in votes
+                   if str(v.get("vote", "")).upper()
+                   in ("YES", "NO", "ABSTAIN", "RECUSED"))
+    need = _committee_quorum(committee)
+    if need and attended < need:
+        return "DEFERRED"
+
     if base == 0:
         return "DEFERRED"
     rule = str(voting_rule or "SIMPLE_MAJORITY")
@@ -12303,7 +12602,9 @@ def record_deal_committee_decision(deal_id: str, payload: dict = Body(default_fa
                                 "role": str(v.get("role", "")).strip(), "vote": vote,
                                 "documents_validated": docs_ok,
                                 "comment": str(v.get("comment", "") or "").strip()})
-        outcome = _derive_outcome_from_votes(clean_votes, committee.get("voting_rule"))
+        outcome = _derive_outcome_from_votes(clean_votes,
+                                             committee.get("voting_rule"),
+                                             committee)
         record = {"outcome": outcome, "mode": "voting", "votes": clean_votes, "note": note}
     else:
         outcome = str(payload.get("outcome", "")).upper()

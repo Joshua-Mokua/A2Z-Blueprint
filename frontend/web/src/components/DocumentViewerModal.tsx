@@ -17,7 +17,7 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/Button';
 import { downloadDealDocument } from '@/lib/api';
 
-type Kind = 'pdf' | 'image' | 'text' | 'docx' | 'xlsx' | 'other';
+type Kind = 'pdf' | 'image' | 'text' | 'docx' | 'legacy-doc' | 'xlsx' | 'other';
 
 function kindOf(filename: string): Kind {
   const ext = (filename.toLowerCase().split('.').pop() || '');
@@ -25,6 +25,12 @@ function kindOf(filename: string): Kind {
   if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
   if (['txt', 'csv', 'json', 'md', 'log'].includes(ext)) return 'text';
   if (ext === 'docx') return 'docx';
+  // LEGACY WORD (.doc) IS A DIFFERENT FORMAT, not an older version of .docx -
+  // a binary container mammoth cannot read and no browser-side library reads
+  // reliably. It used to fall through to "other", which offered a DOWNLOAD -
+  // exactly what the bank is trying to avoid with customer documents sitting
+  // on people's PCs. Named here so it can be refused properly instead.
+  if (ext === 'doc') return 'legacy-doc';
   if (['xlsx', 'xls'].includes(ext)) return 'xlsx';
   return 'other';
 }
@@ -144,6 +150,38 @@ export function DocumentViewerModal({
               <div dangerouslySetInnerHTML={{ __html: html }} />
             </div>
           )}
+          {/* LEGACY .doc - REFUSED, NOT OFFERED FOR DOWNLOAD. Falling through to
+              the generic branch put a "Download to read" button in front of a
+              customer document, which is the thing the bank is trying to stop.
+              The honest answer is that the file is in a format nothing can
+              render in a browser, and the fix is at the source. */}
+          {!loading && !error && kind === 'legacy-doc' && (
+            <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+              <div className="text-sm text-gray-700">
+                This is a legacy Word file (.doc) and cannot be shown in the app.
+              </div>
+              <div className="max-w-md text-xs text-gray-500">
+                It is an older binary format from before 2007 — not a newer Word
+                document — and nothing renders it in a browser. Modern Word
+                files (<strong>.docx</strong>) open here normally, as do PDFs,
+                so asking for it in either keeps it in the app.
+              </div>
+              {/* DOWNLOAD IS OFFERED, but only to whoever already has the
+                  right (ruling 2026-08-12: "I would be okay to allow them
+                  download if it is Word, but remember there are those we have
+                  allowed the download rights especially in credit analysis").
+                  Blocking it outright was stricter than the policy - it left an
+                  analyst who IS permitted to download unable to read a document
+                  at all, which helps nobody. Everyone else still cannot. */}
+              {canDownload
+                ? <Button onClick={() => void doDownload()}>Download to read</Button>
+                : <div className="text-xs text-gray-400">
+                    Download is not permitted for your role — ask for this as a
+                    PDF or .docx and it will open here.
+                  </div>}
+            </div>
+          )}
+
           {!loading && !error && kind === 'other' && (
             <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
               <div className="text-sm text-gray-600">

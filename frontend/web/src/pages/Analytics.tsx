@@ -11,12 +11,16 @@ import { useBranding } from '@/hooks/useBranding';
 import { Card } from '@/components/Card';
 import { Badge, type BadgeTone } from '@/components/Badge';
 import { PageHeader } from '@/components/PageHeader';
-import PipelineAnalytics from '@/components/PipelineAnalytics';
 import { Skeleton } from '@/components/Skeleton';
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
 import { DonutChart } from '@/components/charts/DonutChart';
 
 function abbrev(n: number): string {
+  const a = Math.abs(n);
+  if (a >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+  if (a >= 1e9)  return (n / 1e9).toFixed(2) + 'B';
+  if (a >= 1e6)  return (n / 1e6).toFixed(1) + 'M';
+  if (a >= 1e3)  return (n / 1e3).toFixed(1) + 'K';
   return n.toLocaleString();
 }
 
@@ -101,15 +105,29 @@ export function Analytics() {
   // Model A — slice the pipeline by a chosen dimension. Each dimension maps to
   // a normalized [{label, value, count}] list. Branch/RM may be thin until the
   // pipeline carries populated unit/RM data (see seed-data note).
-  const DIMENSIONS = ['Product', 'Segment', 'Sector', 'Stage', 'Product Funnel', 'Probability', 'Currency', 'Branch', 'RM', 'Departments'] as const;
+  // ORIGIN sits first: where work came from is the question the seven-origin
+  // model exists to answer, and it was previously reduced to referred-vs-own.
+  // 'Business Line' sits FIRST because it is the level people reason in.
+  // Without it the MD saw Premier, Advantage and Direct as three rows and had
+  // to add them up before comparing Consumer with Commercial. Departments is
+  // still there for the step after.
+  const DIMENSIONS = ['Business Line', 'Origin', 'Product', 'Segment', 'Sector', 'Stage', 'Product Funnel', 'Probability', 'Currency', 'Branch', 'RM', 'Departments'] as const;
   type Dimension = typeof DIMENSIONS[number];
 
   const sliceFor = (dim: Dimension): { label: string; value: number; count: number }[] => {
     switch (dim) {
+      case 'Origin':
+        // Every configured origin, including those with nothing in them - an
+        // origin producing no deals is a finding, not a row to hide.
+        return (data.by_origin ?? []).map((x) => ({
+          label: x.label || x.origin, value: x.value, count: x.count }));
       case 'Product':
         return (data.by_product ?? []).map((x) => ({ label: x.product, value: x.value, count: x.count }));
       case 'Sector':
         return (data.by_sector ?? []).map((x) => ({ label: x.sector, value: x.value, count: x.count }));
+      case 'Business Line':
+        return (data.by_business_line ?? []).map((x) => ({
+          label: x.business_line, value: x.value, count: x.count }));
       case 'Segment':
         return (data.by_segment ?? []).map((x) => ({ label: x.segment, value: x.value, count: x.count }));
       case 'Stage':
@@ -145,8 +163,6 @@ export function Analytics() {
         subtitle="Assured pipeline value, in KES."
       />
       <div className="p-6 max-w-7xl 2xl:max-w-[1680px] mx-auto">
-
-      <PipelineAnalytics />
 
       {/* Headline KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -221,7 +237,9 @@ function PipelineSlicer({
   const isProbability = dim === 'Probability';
   const isReferralDept = dim === 'Departments';
   const isFunnel = dim === 'Stage' || isProductFunnel;
-  const isDonut = dim === 'Sector' || dim === 'Segment' || dim === 'Currency';
+  // ORIGIN is a share question - what proportion of the book came from each
+  // channel - so it belongs with the donuts rather than the ranked bars.
+  const isDonut = dim === 'Origin' || dim === 'Sector' || dim === 'Segment' || dim === 'Currency';
   const rows = useMemo(() => {
     if (isProductFunnel) {
       return (activePf?.funnel ?? []).map((f) => ({
