@@ -41,8 +41,30 @@ sys.path.insert(0, os.getcwd())
 
 CFG = os.path.join("data", "lms_config.json")
 
-DEFAULT_CHAIR = "branch manager"
-DEFAULT_MEMBERS = ["branch credit manager", "branch operations manager"]
+# THESE ARE THE ROLES THE REGISTER ACTUALLY CARRIES, checked against it rather
+# than taken from the hierarchy note - which still lists a "Branch Credit
+# Manager" the bank removed long ago, and which is why the first run found
+# nobody in any branch.
+#
+# CHAIR IS A FALLBACK CHAIN. Not every branch has a Branch Manager; the ruling
+# (2026-08-12) is "for those we get either the service manager or operations,
+# but admin can always change". First match wins, and admin can override any of
+# it afterwards.
+DEFAULT_CHAIR = ["branch manager",
+                 "customer service manager",
+                 "assistant branch service & operations manager"]
+
+# MEMBERS ARE TAKEN IN ORDER UNTIL THERE ARE ENOUGH, skipping whoever is
+# already chairing - one person cannot be two members, and a committee of one
+# counted twice is exactly the thing the quorum was added to stop.
+DEFAULT_MEMBERS = ["customer service manager",
+                   "assistant branch service & operations manager",
+                   "relationship manager, sme",
+                   "relationship manager",
+                   "branch operations officer"]
+
+# Enough to clear the default quorum of 2 without inventing a policy.
+WANTED_MEMBERS = 2
 
 
 def main():
@@ -70,9 +92,12 @@ def main():
         palette = []
 
     roles_cfg = cw.get("branch_committee_roles") or {}
-    chair_role = str(roles_cfg.get("chair") or DEFAULT_CHAIR).lower()
+    _c = roles_cfg.get("chair") or DEFAULT_CHAIR
+    chair_roles = [str(r).lower() for r in
+                   (_c if isinstance(_c, list) else [_c])]
     member_roles = [str(r).lower() for r in
                     (roles_cfg.get("members") or DEFAULT_MEMBERS)]
+    wanted = int(roles_cfg.get("wanted_members") or WANTED_MEMBERS)
 
     # Index the register by branch. Region carries the branch name - the same
     # field the committee generator matched on when it created these.
@@ -94,8 +119,9 @@ def main():
     print("=" * 74)
     print("  committees      %d" % len(branch_cttees))
     print("  register rows   %d across %d branches" % (len(df), len(by_branch)))
-    print("  chair role      %s" % chair_role)
-    print("  member roles    %s" % ", ".join(member_roles))
+    print("  chair, in order %s" % " -> ".join(chair_roles))
+    print("  members from    %s" % ", ".join(member_roles[:3]) + " ...")
+    print("  members wanted  %d (the default quorum)" % wanted)
 
     planned, short, untouched = [], [], []
     for c in branch_cttees:
@@ -105,20 +131,32 @@ def main():
         branch = str(c.get("branch") or "").strip().lower()
         people = by_branch.get(branch, [])
 
-        def _find(role_frag):
+        def _find(role_frag, exclude=()):
             return next((p for p in people
-                         if role_frag in p["role"].lower()), None)
+                         if role_frag in p["role"].lower()
+                         and p["code"] not in exclude), None)
 
-        chair = _find(chair_role)
+        # Chair: first role in the chain that this branch actually has.
+        chair = None
+        for cr in chair_roles:
+            chair = _find(cr)
+            if chair:
+                break
+
+        # Members: work down the list until there are enough, never reusing
+        # the chair. A branch that cannot fill two is reported, not padded.
+        used = {chair["code"]} if chair else set()
         members = []
-        missing = []
         for mr in member_roles:
-            p = _find(mr)
+            if len(members) >= wanted:
+                break
+            p = _find(mr, exclude=used)
             if p:
+                used.add(p["code"])
                 members.append({"staff_code": p["code"], "name": p["name"],
                                 "role": p["role"]})
-            else:
-                missing.append(mr)
+        missing = [] if len(members) >= wanted else ["only %d of %d found"
+                                                     % (len(members), wanted)]
         planned.append((c, chair, members, missing))
         # Below the default quorum of 2, this committee would DEFER every
         # decision - which is a quieter failure than an empty one, so it is
@@ -141,8 +179,8 @@ def main():
     if short:
         print("\n  *** %d committee(s) would have FEWER THAN 2 members:" % len(short))
         for c, n, missing in short:
-            print("     %-38s %d member(s), no %s"
-                  % (str(c.get("name"))[:38], n, ", ".join(missing) or "-"))
+            print("     %-38s %d member(s)  %s"
+                  % (str(c.get("name"))[:38], n, ", ".join(missing) or ""))
         print("")
         print("  The default quorum is 2, so these would DEFER every decision")
         print("  rather than approving or rejecting. Add people to those")
