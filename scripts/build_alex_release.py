@@ -71,7 +71,7 @@ CHAIN = [
     "patch_rf2a_referral_clock", "patch_pl2_pipeline_drill",
     "patch_rf2b_referral_bench_ui", "patch_rf3_auto_referral_field",
     "patch_p3_branch_pipeline_day",
-    "patch_perf1_roster_cache", "patch_mail1_smtp_negotiation",
+    "patch_perf1_roster_cache",
     "patch_as1_unit_activities", "patch_as2_unit_weights",
     "patch_as3_admin_unit_config", "patch_as4_unit_admin_ui",
     "patch_ul1_unit_labels", "patch_ex1_exclude_md_office",
@@ -105,6 +105,7 @@ NOT_FOR_RELEASE = {
     # warehouse is not to be released to Alex until I am certain it is well
     # built."
     "patch_dw1_warehouse",
+    "patch_mail1_smtp_negotiation",
     "patch_dq1_clean_warehouse",
     "patch_ic1_information_card",
     "patch_ic2_prospect_detail",
