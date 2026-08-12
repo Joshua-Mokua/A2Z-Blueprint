@@ -107,7 +107,11 @@ export function Analytics() {
   // pipeline carries populated unit/RM data (see seed-data note).
   // ORIGIN sits first: where work came from is the question the seven-origin
   // model exists to answer, and it was previously reduced to referred-vs-own.
-  const DIMENSIONS = ['Origin', 'Product', 'Segment', 'Sector', 'Stage', 'Product Funnel', 'Probability', 'Currency', 'Branch', 'RM', 'Departments'] as const;
+  // 'Business Line' sits FIRST because it is the level people reason in.
+  // Without it the MD saw Premier, Advantage and Direct as three rows and had
+  // to add them up before comparing Consumer with Commercial. Departments is
+  // still there for the step after.
+  const DIMENSIONS = ['Business Line', 'Origin', 'Product', 'Segment', 'Sector', 'Stage', 'Product Funnel', 'Probability', 'Currency', 'Branch', 'RM', 'Departments'] as const;
   type Dimension = typeof DIMENSIONS[number];
 
   const sliceFor = (dim: Dimension): { label: string; value: number; count: number }[] => {
@@ -121,6 +125,9 @@ export function Analytics() {
         return (data.by_product ?? []).map((x) => ({ label: x.product, value: x.value, count: x.count }));
       case 'Sector':
         return (data.by_sector ?? []).map((x) => ({ label: x.sector, value: x.value, count: x.count }));
+      case 'Business Line':
+        return (data.by_business_line ?? []).map((x) => ({
+          label: x.business_line, value: x.value, count: x.count }));
       case 'Segment':
         return (data.by_segment ?? []).map((x) => ({ label: x.segment, value: x.value, count: x.count }));
       case 'Stage':

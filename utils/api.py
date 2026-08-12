@@ -4154,6 +4154,79 @@ def _derive_segment(d: dict) -> str:
     return ct
 
 
+def _business_line_of(deal: dict) -> str:
+    """The business line a deal belongs to - Consumer, Commercial, CIB.
+
+    CLIENT TYPE FIRST, and this is a correction. The first version walked the
+    org chart up from the OWNER'S ROLE, which answers "who owns this deal"
+    rather than "what kind of deal is it" - and anyone missing from the chart
+    fell through to Unassigned, which is why the pilot saw so many.
+
+    client_type is COMPULSORY AT DEAL CREATION and already carries exactly the
+    three values wanted. It is the deal's own answer, given at the point
+    somebody knew it, and no derivation can beat that.
+
+    The org walk stays as a FALLBACK for older deals captured before the field
+    was compulsory, so nothing existing vanishes from the roll-up.
+    """
+    ct = str(deal.get("client_type") or deal.get("segment") or "").strip()
+    if ct:
+        # Normalise the spellings that reach the field, so one line does not
+        # appear twice in a report.
+        low = ct.lower()
+        if low.startswith("consumer") or low in ("individual", "personal", "retail"):
+            return "Consumer"
+        if low.startswith("commercial") or low in ("sme", "business"):
+            return "Commercial"
+        if low.startswith("cib") or low.startswith("corporate") or low == "institution":
+            return "CIB"
+        return ct
+
+    # ── FALLBACK: walk the org chart ────────────────────────────────────────
+    # Only for a deal with no client_type - captured before the field was
+    # compulsory. Both charts are consulted: functional_hierarchy carries the
+    # RM-to-unit-head links, hierarchy the head-to-head ones.
+    try:
+        from utils.core import get_org_config
+        _org = get_org_config() or {}
+        fh = dict(_org.get("hierarchy", {}) or {})
+        fh.update(_org.get("functional_hierarchy", {}) or {})
+    except Exception:
+        fh = {}
+    role = str(deal.get("staff_role") or deal.get("role") or "").strip()
+    if not role:
+        try:
+            from utils.api_pipeline_scope import get_staff_roster
+            df = get_staff_roster()
+            code = str(deal.get("staff_code") or "")
+            for _i, r in df.iterrows():
+                if str(r.get("Staff Code") or "") == code:
+                    role = str(r.get("Role") or "")
+                    break
+        except Exception:
+            pass
+
+    _EXEC = ("director", "chief", "managing", "ceo")
+    seen, cur, last_head = set(), role, ""
+    for _ in range(8):
+        if not cur or cur in seen:
+            break
+        seen.add(cur)
+        low = cur.lower()
+        if any(x in low for x in _EXEC):
+            break
+        if low.startswith("head"):
+            last_head = cur
+        nxt = fh.get(cur)
+        cur = (nxt[0] if isinstance(nxt, list) and nxt else
+               nxt if isinstance(nxt, str) else "")
+    if last_head:
+        out = last_head.split(",", 1)[-1] if "," in last_head else last_head
+        for tok in ("Head of", "Head"):
+            out = out.replace(tok, "")
+        return out.strip() or last_head
+    return ""
+
 def _segment_of(d: dict) -> str:
     """Customer segment for a deal, with the admin display-name map applied.
     Shared by the analytics by_segment dimension and the funnel stage-drill so
@@ -4608,6 +4681,33 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
         e["count"] += 1
     _by_segment = sorted(_seg.values(), key=lambda x: x["value"], reverse=True)
 
+    # ── BY BUSINESS LINE (pilot, 2026-08-12) ────────────────────────────────
+    # "On Sales Pro Analytics they are not able to see e.g. Consumer as a whole
+    # before they go into Premier, Advantage, Direct. It will be important when
+    # the MD or anybody is narrowing down to first see Consumer in general and
+    # then progress."
+    #
+    # The units were the only level available, so the MD saw three Consumer
+    # sub-lines and had to add them up mentally before comparing Consumer with
+    # Commercial. A roll-up is the level people actually think in.
+    #
+    # DERIVED BY WALKING THE ORG CHART, not by a second list to maintain.
+    # functional_hierarchy already says "Relationship Manager, Premier Banking"
+    # -> "Head Premier Banking" -> "Head of Consumer", so the business line is
+    # the top of that walk. A new sub-unit inherits its line the day it is added
+    # to the chart, with nothing else to update.
+    _by_business_line: list = []
+    try:
+        _bl: dict = {}
+        for d in live:
+            key = _business_line_of(d) or "Unassigned"
+            e = _bl.setdefault(key, {"business_line": key, "value": 0.0, "count": 0})
+            e["value"] += _deal_value(d)
+            e["count"] += 1
+        _by_business_line = sorted(_bl.values(), key=lambda x: x["value"], reverse=True)
+    except Exception as _exc:
+        logger.warning("business-line rollup unavailable: %s", _exc)
+
     # by_probability_band: ACTIVE deals grouped into 6 win-probability bands. Win
     # probability is DERIVED per-product-stage from the admin matrix
     # (_flow_stage_win_probability), the same source the deal read uses — so the
@@ -4937,6 +5037,7 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
         "by_product": _by_product,
         "by_sector": _by_sector,
         "by_segment": _by_segment,
+        "by_business_line": _by_business_line,
         "by_probability_band": _by_probability_band,
         "by_segment_funnel": by_segment_funnel,
         "by_product_funnel": by_product_funnel,

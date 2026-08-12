@@ -719,6 +719,10 @@ export interface PipelineAnalyticsResponse {
   by_product?:        ProductBreakdown[];
   by_sector?:         SectorBreakdown[];
   by_segment?:        SegmentBreakdown[];
+  /** Roll-up above the units: Premier, Advantage and Direct all report as
+   *  Consumer, so the MD can compare business lines before drilling in.
+   *  Derived by walking the org chart, not a second list to maintain. */
+  by_business_line?:  { business_line: string; value: number; count: number }[];
   by_segment_funnel?: SegmentFunnel[];
   by_currency_book?:  { LCY: CurrencyBookSplit; FCY: CurrencyBookSplit };
   by_unit?:           UnitBreakdown[];
