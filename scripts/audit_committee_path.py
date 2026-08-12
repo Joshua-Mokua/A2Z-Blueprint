@@ -95,25 +95,29 @@ def main():
     if not branch:
         block("no branch committee exists",
               "run pilot_apply.py --apply, or the generate-branch endpoint")
-        return report()
-    ok("branch committees exist", "%d" % len(branch))
-
-    target = None
-    if want:
-        target = next((c for c in branch if str(c.get("code")) == want), None)
-        if not target:
-            block("no committee with code %r" % want)
-            return report()
     else:
-        # Prefer one that could actually sit, so the walk is realistic.
-        target = next((c for c in branch if (c.get("members") or [])), branch[0])
-    print("  walking: %s (%s)" % (target.get("name"), target.get("code")))
+        ok("branch committees exist", "%d" % len(branch))
 
-    mode = str(target.get("recording_mode", "") or "").lower()
-    members = target.get("members") or []
-    chair = str(target.get("chaired_by", "") or "")
+    # KEEP GOING even with no committees. An audit that stops at the first
+    # blocker hides everything behind it - and when the first thing is broken
+    # is exactly when somebody needs to know what else is.
+    target = None
+    if branch:
+        if want:
+            target = next((c for c in branch if str(c.get("code")) == want), None)
+            if not target:
+                block("no committee with code %r" % want)
+        else:
+            # Prefer one that could actually sit, so the walk is realistic.
+            target = next((c for c in branch if (c.get("members") or [])), branch[0])
+    if target:
+        print("  walking: %s (%s)" % (target.get("name"), target.get("code")))
 
-    if mode == "voting":
+    mode = str((target or {}).get("recording_mode", "") or "").lower()
+    members = (target or {}).get("members") or []
+    chair = str((target or {}).get("chaired_by", "") or "")
+
+    if target and mode == "voting":
         # A VOTING committee with no members cannot produce a decision: the
         # endpoint refuses an empty votes[] with a 400. The case would reach
         # the gate and stop there with no way forward through the interface.
@@ -129,7 +133,7 @@ def main():
     else:
         ok("recording mode", mode or "(unset)")
 
-    n_empty = sum(1 for c in branch if not (c.get("members") or []))
+    n_empty = sum(1 for c in branch if not (c.get("members") or [])) if branch else 0
     if n_empty:
         warn("%d of %d branch committees have no members" % (n_empty, len(branch)),
              "each is a gate that would stop a case if assigned")
@@ -239,6 +243,57 @@ def main():
             ok("journey records %s" % label, "")
         else:
             warn("journey does NOT record %s" % label, "")
+
+    # ── 8. DEPARTMENT COMMITTEE THROUGH TO THE CREDIT ANALYST ───────────────
+    # The path the pilot is delivering today. Two config switches gate all of
+    # it, and neither announces itself when unset - the buttons simply do not
+    # appear, which reads as a permission fault rather than a setting.
+    rule("8. DEPARTMENT COMMITTEE -> CREDIT ANALYST")
+    cw = (lms.get("credit_workflow") or {})
+    da = cw.get("department_analyst") or {}
+    if not da:
+        block("department_analyst is NOT configured in credit_workflow",
+              "can_submit_to_dcc AND can_hand_to_credit_analyst both require "
+              "department_analyst.enabled. With it unset, an analyst cannot "
+              "send a case to the DCC and nobody can hand it to the credit "
+              "analyst - neither button appears, and nothing says why")
+    elif not da.get("enabled"):
+        block("department_analyst is present but enabled is false",
+              "same effect: the DCC step and the handoff are both off")
+    else:
+        ok("department analyst layer enabled", "")
+
+    perms = ""
+    try:
+        perms = open(os.path.join("utils", "api_lms_permissions.py"),
+                     encoding="utf-8").read()
+    except OSError:
+        pass
+    if "dcc_outcome" in perms:
+        ok("the handoff waits for a DCC outcome", "a case cannot skip the committee")
+    if "is_assigned_analyst and status ==" in perms:
+        ok("only the ASSIGNED analyst may hand over", "not anyone who can view")
+        warn("both steps require status 'assigned'",
+             "a case that has moved on - to credit_admin, say - loses both "
+             "buttons even though the work is unfinished. That is what took "
+             "Catherine's attach away earlier today")
+
+    # ── 9. IS THERE ONE PLACE TO CREATE A COMMITTEE? ────────────────────────
+    rule("9. IS THERE ONE PLACE TO CREATE A COMMITTEE")
+    single = cw.get("committee")
+    mode = str(cw.get("committee_mode", "") or "")
+    if single and pal:
+        warn("TWO committee models exist in credit_workflow",
+             "'committee' - a single charter, id %r, honoured only when "
+             "committee_mode is 'committee_voting', currently %r - and "
+             "'committee_palette', the list the admin page edits and the "
+             "product journeys use. They do not corrupt each other, but a "
+             "committee created in the first NEVER appears in the second"
+             % (str(single.get("committee_id", "?")), mode or "unset"))
+        if mode != "committee_voting":
+            ok("the single-charter model is INERT", "committee_mode is %r" % mode)
+    elif pal:
+        ok("one committee model in use", "committee_palette")
 
     return report()
 
