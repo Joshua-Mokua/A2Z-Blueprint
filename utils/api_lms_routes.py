@@ -40,6 +40,7 @@ from __future__ import annotations
 from typing import Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 from utils.auth_jwt import get_current_user, require_config_admin
 from utils.core import LoanApplicationManager
@@ -1271,7 +1272,156 @@ def lms_application_documents_list(
     if not resolve_application_permissions(user, app).get("can_view"):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     return {"files": app.get("document_files", {}) or {},
-            "provided": list(app.get("documents_provided", []) or [])}
+            "provided": list(app.get("documents_provided", []) or []),
+            # What has been asked for and not yet supplied, so one call answers
+            # "what is on file and what is still owed".
+            "requested": list(app.get("documents_requested", []) or [])}
+
+
+class _AnalystDocUpload(BaseModel):
+    doc_name: str
+    filename: str = ""
+    content_b64: str
+
+
+class _DocRequest(BaseModel):
+    doc_name: str
+    note: str = ""
+
+
+@router.post("/applications/{app_id}/documents/request", status_code=201)
+def lms_application_document_request(
+    app_id: str,
+    body: _DocRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The analyst asks for a document that is not on the case.
+
+    RULING (2026-08-12): "we can add another feature to click on request
+    document and she can also request for additional documentation - this is to
+    happen across all the analysts."
+
+    WHY A REQUEST RATHER THAN JUST ADDING IT TO THE REQUIRED LIST. The required
+    list is per PRODUCT and set by an admin; it describes what every case of
+    this kind needs. What one analyst wants on one case is a different thing,
+    and writing it into the product config would quietly change the rules for
+    every future deal.
+
+    So a request is recorded ON THE CASE, with who asked and why. It appears as
+    outstanding, and it is satisfied by the same upload route as anything else.
+    """
+    from datetime import datetime as _dt
+
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    perms = resolve_application_permissions(user, app)
+    if not (perms.get("can_update") or perms.get("can_submit_to_dcc")
+            or perms.get("can_decide") or perms.get("can_hand_to_credit_analyst")):
+        raise HTTPException(status_code=403,
+                            detail="Only somebody working this case can request documents.")
+
+    name = str(body.doc_name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="doc_name is required")
+
+    reqs = list(app.get("documents_requested", []) or [])
+    if not any(str(r.get("name")) == name for r in reqs if isinstance(r, dict)):
+        reqs.append({
+            "name": name,
+            "note": str(body.note or "").strip(),
+            "requested_by": str(user.get("full_name") or user.get("username") or ""),
+            "requested_role": str(user.get("role", "") or ""),
+            "requested_at": _dt.now().isoformat(timespec="seconds"),
+        })
+        lam.update(app_id, {"documents_requested": reqs})
+    audit_log("LMS_DOC_REQUESTED", str(user.get("username", "") or ""),
+              detail=f"{app_id}: {name}")
+    return {"ok": True, "documents_requested": reqs}
+
+
+@router.post("/applications/{app_id}/documents", status_code=201)
+def lms_application_document_upload(
+    app_id: str,
+    body: _AnalystDocUpload,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The analyst attaches a document to the case.
+
+    RULING (2026-08-12): "Catherine is to also be able to attach a few
+    documents, then submit to Department Credit Committee once she recommends."
+
+    STORED ON THE APPLICATION, not the deal. The credit side has no deal scope
+    by design - that is why the read route above serves the app's carried files
+    rather than the deal document routes. Writing to the deal would need a
+    scope the analyst deliberately does not have.
+
+    WHO MAY ATTACH: anyone who can act on the case - the assigned analyst, and
+    credit roles working it. Not merely anyone who can VIEW it: a committee
+    member reading a case should not be able to add papers to it.
+    """
+    import base64 as _b64
+    import hashlib as _hash
+    from datetime import datetime as _dt
+    from pathlib import Path as _Path
+
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    perms = resolve_application_permissions(user, app)
+    if not (perms.get("can_edit") or perms.get("can_submit_to_dcc")
+            or perms.get("can_decide") or perms.get("is_assigned_analyst")):
+        raise HTTPException(
+            status_code=403,
+            detail="Only somebody working this case can attach documents to it.")
+
+    doc_name = str(body.doc_name or "").strip()
+    if not doc_name:
+        raise HTTPException(status_code=400, detail="doc_name is required")
+    try:
+        raw = _b64.b64decode(body.content_b64)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"content_b64 invalid: {exc}")
+    if not raw:
+        raise HTTPException(status_code=400, detail="empty file")
+    if len(raw) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=400,
+                            detail=f"file too large ({len(raw)} bytes; max 20MB)")
+
+    safe = "".join(c for c in (body.filename or doc_name)
+                   if c.isalnum() or c in " ._-").strip() or "attachment"
+    safe_app = "".join(c for c in app_id if c.isalnum() or c in "._-")
+    safe_doc = "".join(c for c in doc_name if c.isalnum() or c in " ._-").strip()
+    ddir = _Path("data") / "lms_documents" / safe_app
+    ddir.mkdir(parents=True, exist_ok=True)
+    stored = ddir / f"{safe_doc}__{safe}"
+    stored.write_bytes(raw)
+
+    files = dict(app.get("document_files", {}) or {})
+    files[doc_name] = {
+        "filename": safe,
+        "path": str(stored),
+        "sha256": _hash.sha256(raw).hexdigest(),
+        "size": len(raw),
+        "uploaded_by": str(user.get("username", "") or ""),
+        "uploaded_by_name": str(user.get("full_name", "") or ""),
+        # WHO attached it, in the record itself. An analyst's paper and the
+        # owner's look identical once filed, and six weeks later somebody will
+        # need to know which is which.
+        "uploaded_role": str(user.get("role", "") or ""),
+        "uploaded_at": _dt.now().isoformat(timespec="seconds"),
+    }
+    provided = list(app.get("documents_provided", []) or [])
+    if doc_name not in provided:
+        provided.append(doc_name)
+    lam.update(app_id, {"document_files": files, "documents_provided": provided})
+
+    audit_log("LMS_DOC_ATTACHED", str(user.get("username", "") or ""),
+              detail=f"{app_id}: {doc_name}")
+    return {"ok": True, "doc_name": doc_name, "filename": safe,
+            "documents_provided": provided}
 
 
 @router.get("/applications/{app_id}/documents/{doc_name:path}")

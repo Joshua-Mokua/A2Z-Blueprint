@@ -677,6 +677,28 @@ export async function recordSlaCommitment(
   >(`/pipeline/deals/${dealId}/sla/commitment`, { reason, committed_date: committedDate });
 }
 
+// ── Referral bench (both directions, with the escalation clock) ───────────
+export interface ReferralClock {
+  status: 'due' | 'overdue' | 'decided';
+  state: string; sent_at: string; due_at: string;
+  hours_left: number; overdue_hours: number;
+  escalate_to: { level: string; code: string; name: string; role: string }[];
+}
+export interface ReferralBenchRow {
+  deal_id: string; client: string; product: string; value: number;
+  from_code: string; from_name: string; to_code: string; to_name: string;
+  sent_at: string; clock: ReferralClock;
+}
+export interface ReferralBench {
+  incoming: ReferralBenchRow[];
+  outgoing: ReferralBenchRow[];
+  incoming_overdue: number;
+  outgoing_overdue: number;
+}
+export async function fetchReferralBench(): Promise<ReferralBench> {
+  return getJson<ReferralBench>('/pipeline/referrals/bench');
+}
+
 export async function acceptReferral(dealId: string): Promise<{ status?: string }> {
   return postJson<{ status?: string }, Record<string, never>>(
     `/pipeline/deals/${dealId}/referral/accept`, {});
@@ -736,7 +758,7 @@ export async function fetchDealJourney(dealId: string): Promise<{ journey: LoanA
 }
 
 // ── Daily Branch Log ───────────────────────────────────────────
-export interface BranchLogField { key: string; label: string; type: string; unit: string; bsc_kpi: string | null; weight?: number; }
+export interface BranchLogField { key: string; label: string; type: string; unit: string; bsc_kpi: string | null; weight?: number; auto?: boolean; }
 export interface BranchLogEntry {
   id: string; log_date: string; staff_code: string; staff_name: string; unit: string; role: string;
   submitted_at?: string; updated_at?: string; validated?: boolean; rejected?: boolean;
@@ -766,13 +788,32 @@ export async function fetchBranchLogAutoActivities(): Promise<{ activities: Bran
   return getJson<{ activities: BranchLogActivity[]; date: string }>('/branch-log/auto-activities');
 }
 
-export interface BranchLogConfig { activity_weights: Record<string, number>; daily_index_target: number; fields: BranchLogField[]; }
+export interface BranchLogConfig {
+  activity_weights: Record<string, number>;
+  daily_index_target: number;
+  fields: BranchLogField[];
+  activity_sets?: Record<string, string[]>;
+  unit_activity_weights?: Record<string, Record<string, number>>;
+  units?: string[];
+  unit_labels?: Record<string, string>;
+}
 export async function fetchBranchLogConfig(): Promise<BranchLogConfig> {
   return getJson<BranchLogConfig>('/branch-log/config');
 }
 export async function saveBranchLogConfig(activity_weights: Record<string, number>, daily_index_target: number): Promise<{ status: string }> {
   return postJson<{ status: string }, { activity_weights: Record<string, number>; daily_index_target: number }>(
     '/branch-log/config', { activity_weights, daily_index_target });
+}
+// Per-unit sets and weights (AS1-AS3). Sent on their own, so saving one unit
+// never rewrites the bank-wide weights as a side effect.
+export interface UnitConfigPayload {
+  activity_sets?: Record<string, string[]>;
+  unit_activity_weights?: Record<string, Record<string, number>>;
+}
+export async function saveBranchLogUnitConfig(
+  body: UnitConfigPayload,
+): Promise<{ status: string }> {
+  return postJson<{ status: string }, UnitConfigPayload>('/branch-log/config', body);
 }
 export interface ExtraActivity { key: string; label: string; type: string; unit: string; weight: number; roles: string[]; }
 export async function fetchBranchLogActivities(): Promise<{ base: BranchLogField[]; extra: ExtraActivity[] }> {
@@ -857,12 +898,15 @@ export interface PipelineLeaderboardRow {
   staff_code: string; role: string; branch: string;
   deals: number; value: number; weighted: number;
   won: number; lost: number; referred: number; win_rate: number;
+  label?: string;
 }
 export interface PipelineLeaderboard {
   level: string; origin: string; start: string; end: string;
   rows: PipelineLeaderboardRow[];
   total_deals: number; total_value: number; total_weighted: number;
   branches: string[];
+  // Built from config, so a new origin appears without a frontend change.
+  origins?: { key: string; label: string; credits_party: boolean }[];
 }
 export async function fetchPipelineLeaderboard(opts: {
   days?: number; start?: string; end?: string;
@@ -879,8 +923,16 @@ export async function fetchPipelineLeaderboard(opts: {
   return getJson<PipelineLeaderboard>(`/pipeline/leaderboard?${q.toString()}`);
 }
 
+export interface DealOrigin {
+  key: string; label: string; credits_party: boolean;
+  party_label?: string; active?: boolean; note?: string;
+}
 export interface PipelineOriginSplit {
-  origin: string; count: number; value: number; won: number;
+  origin: string; label?: string; credits_party?: boolean;
+  count: number; value: number; won: number;
+}
+export async function fetchDealOrigins(): Promise<{ origins: DealOrigin[]; default: string }> {
+  return getJson<{ origins: DealOrigin[]; default: string }>('/pipeline/origins');
 }
 export interface PipelineJourneyFlow {
   flow: string; deals: number; buckets: DefinedBucket[];
@@ -918,6 +970,7 @@ export interface LeaderboardRow {
   days_filed: number; validated: number; cf_variance?: number;
   met_days?: number; scored_days?: number; met_rate?: number;
   segment?: string;
+  label?: string;            // readable department name; `name` stays the key
   avg_index?: number; avg_target?: number;   // per ON-DUTY day
 }
 export interface Leaderboard {
@@ -926,6 +979,7 @@ export interface Leaderboard {
   met_days?: number; scored_days?: number; met_rate?: number;
   filters: { role: string; branch: string; unit: string };
   roles: string[]; branches: string[]; units: string[]; segments?: string[];
+  unit_labels?: Record<string, string>;
   // Segment level only: people held back because they bear the branch.
   bears_branch?: { headcount: number; index: number } | null;
 }
@@ -1346,6 +1400,17 @@ export async function fetchPipelineDealDetail(
  * which are already provided, which are still missing, whether the deal
  * has already been submitted, and whether the caller may submit it.
  */
+export interface NextStep {
+  deal_id: string; current_stage: string; next_stage: string;
+  submit_label: string; flow: string[];
+  documents: { name: string; attached_by: string; mandatory: boolean }[];
+  by_attacher: { attacher: string; have: string[]; outstanding: string[] }[];
+  owner_outstanding: string[]; blocking: string[]; can_submit: boolean;
+  attachers: { key: string; label: string }[];
+}
+export async function fetchNextStep(dealId: string): Promise<NextStep> {
+  return getJson<NextStep>(`/pipeline/deals/${encodeURIComponent(dealId)}/next-step`);
+}
 export async function fetchCreditChecklist(
   dealId: string,
 ): Promise<CreditChecklistResponse> {
@@ -2543,10 +2608,31 @@ export async function downloadDealDocument(dealId: string, docName: string): Pro
 export interface LmsDocumentsResponse {
   files: Record<string, DealDocumentMeta>;
   provided: string[];
+  /** Documents an analyst has asked for on THIS case - separate from the
+   *  product's required list, which is an admin setting for every case of
+   *  its kind. */
+  requested?: { name: string; note?: string; requested_by?: string;
+                requested_role?: string; requested_at?: string }[];
 }
 export async function listLmsDocuments(appId: string): Promise<LmsDocumentsResponse> {
   return getJson<LmsDocumentsResponse>(
     `/lms/applications/${encodeURIComponent(appId)}/documents`);
+}
+export async function requestLmsDocument(
+  appId: string, docName: string, note = '',
+): Promise<{ ok: boolean; documents_requested: { name: string; note?: string }[] }> {
+  return postJson<{ ok: boolean; documents_requested: { name: string; note?: string }[] },
+                  { doc_name: string; note: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/documents/request`,
+    { doc_name: docName, note });
+}
+export async function uploadLmsDocument(
+  appId: string, docName: string, filename: string, contentB64: string,
+): Promise<{ ok: boolean; doc_name: string; documents_provided: string[] }> {
+  return postJson<{ ok: boolean; doc_name: string; documents_provided: string[] },
+                  { doc_name: string; filename: string; content_b64: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/documents`,
+    { doc_name: docName, filename, content_b64: contentB64 });
 }
 export async function downloadLmsDocument(appId: string, docName: string): Promise<Blob> {
   const headers: Record<string, string> = {};

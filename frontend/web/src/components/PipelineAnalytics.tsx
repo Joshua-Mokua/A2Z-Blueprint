@@ -20,6 +20,10 @@ function kes(n: number): string {
   return Math.round(n).toLocaleString();
 }
 
+// One colour per origin, in configured order - seven now, more later.
+const ORIGIN_COLOURS = ['#0082BB', '#669438', '#E0A02B', '#9455B0',
+                        '#C4536F', '#005B82', '#979797', '#3F6FC4'];
+
 const RAG: Record<string, string> = {
   green: '#669438', amber: '#E0A02B', red: '#C4536F', idle: '#D8DBDF',
 };
@@ -137,17 +141,19 @@ export default function PipelineAnalytics() {
         </Card>
       )}
 
-      {!loading && originTotal > 0 && (
+      {!loading && (data?.origin ?? []).length > 0 && (
         <Card>
           <Card.Header>
-            <h2 className="text-base font-semibold text-gray-900">Referred vs direct</h2>
+            <h2 className="text-base font-semibold text-gray-900">Where deals came from</h2>
           </Card.Header>
           <Card.Body>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {(data?.origin ?? []).map((o) => (
+              {(data?.origin ?? []).map((o, i) => (
                 <div key={o.origin} className="rounded-lg border border-gray-200 p-3">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-sm font-semibold text-gray-800">{o.origin}</span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {o.label || o.origin}
+                    </span>
                     <span className="text-xs tabular-nums text-gray-500">
                       {originTotal ? Math.round((o.count / originTotal) * 100) : 0}%
                     </span>
@@ -155,7 +161,7 @@ export default function PipelineAnalytics() {
                   <div className="mt-1 h-2 overflow-hidden rounded-full bg-gray-100">
                     <div className="h-full rounded-full"
                          style={{ width: `${originTotal ? (o.count / originTotal) * 100 : 0}%`,
-                                  background: o.origin === 'Referred' ? '#0082BB' : '#979797' }} />
+                                  background: ORIGIN_COLOURS[i % ORIGIN_COLOURS.length] }} />
                   </div>
                   <div className="mt-2 flex gap-4 text-[11px] tabular-nums text-gray-600">
                     <span>{o.count} deals</span>

@@ -14,7 +14,10 @@ import {
 import { periods, findPeriod, periodArgs, DEFAULT_PERIOD_KEY } from '@/lib/period';
 
 type Level = 'unit' | 'branch' | 'role' | 'staff';
-type Origin = 'all' | 'direct' | 'referred';
+// Origin keys come from the server (ruling 2026-08-11: seven now, more later),
+// so this is a plain string rather than a union that would need editing every
+// time the bank adds a channel.
+type Origin = string;
 
 const LEVELS: { key: Level; label: string }[] = [
   { key: 'unit', label: 'Units' },
@@ -23,11 +26,7 @@ const LEVELS: { key: Level; label: string }[] = [
   { key: 'staff', label: 'Individuals' },
 ];
 
-const ORIGINS: { key: Origin; label: string }[] = [
-  { key: 'all', label: 'All deals' },
-  { key: 'direct', label: 'Direct' },
-  { key: 'referred', label: 'Referred' },
-];
+
 
 const MEDAL = ['bg-[#BED600] text-[#3B6D11]', 'bg-[#E6F1FB] text-[#0C447C]', 'bg-[#FAEEDA] text-[#854F0B]'];
 
@@ -92,6 +91,10 @@ export default function PipelineLeaderboard() {
     }
   }
 
+  // Filters are built from what the server reports, so an eighth origin needs
+  // no frontend change. Declared after `data` exists.
+  const origins = data?.origins
+    ?? [{ key: 'all', label: 'All origins', credits_party: false }];
   const rows = data?.rows ?? [];
   const isStaff = level === 'staff';
   const max = Math.max(1, ...rows.map((r) => r.value));
@@ -121,7 +124,7 @@ export default function PipelineLeaderboard() {
       <Card.Body>
         <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
           <span className="inline-flex overflow-hidden rounded-lg border border-gray-200">
-            {ORIGINS.map((o) => (
+            {origins.map((o) => (
               <button key={o.key} type="button" onClick={() => setOrigin(o.key)}
                 className={'px-3 py-1 font-medium '
                   + (origin === o.key ? 'bg-[#005B82] text-white'
@@ -130,9 +133,14 @@ export default function PipelineLeaderboard() {
               </button>
             ))}
           </span>
-          {origin === 'referred' && (
-            <span className="text-[11px] text-gray-500">credited to the referrer</span>
-          )}
+          {(() => {
+            const o = origins.find((x) => x.key === origin);
+            return o?.credits_party ? (
+              <span className="text-[11px] text-gray-500">
+                credited to the {o.label.toLowerCase()} party, not the deal owner
+              </span>
+            ) : null;
+          })()}
           {data && (
             <span className="ml-auto text-gray-500">
               {data.total_deals} deals · KES{' '}
@@ -146,8 +154,8 @@ export default function PipelineLeaderboard() {
 
         {!loading && rows.length === 0 && (
           <p className="py-8 text-center text-sm text-gray-400">
-            {origin === 'referred'
-              ? 'No accepted referrals in this period.'
+            {origin !== 'all'
+              ? `No ${(origins.find((x) => x.key === origin)?.label ?? origin).toLowerCase()} deals in this period.`
               : 'Nothing to rank for this period.'}
           </p>
         )}
@@ -194,12 +202,12 @@ export default function PipelineLeaderboard() {
                         </span>
                       </td>
                       <td className={`${bg} truncate px-2 py-1.5 text-xs font-medium text-gray-900`}
-                          title={r.name}>
+                          title={r.label || r.name}>
                         {isStaff ? r.name : (
                           <button type="button" onClick={() => void expand(r.key)}
                                   className="flex items-center gap-1.5 text-left hover:text-brand-primary">
                             <span className="text-gray-400">{openRow === r.key ? '▾' : '▸'}</span>
-                            {r.name}
+                            {r.label || r.name}
                           </button>
                         )}
                       </td>

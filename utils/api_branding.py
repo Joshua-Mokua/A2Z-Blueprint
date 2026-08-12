@@ -31,6 +31,23 @@ router = APIRouter(prefix="/api", tags=["branding"])
 
 
 @router.get("/branding")
+def hidden_modules() -> list:
+    """Module paths this deployment should not show.
+
+    Listed by ROUTE, not by label, because a label can be renamed - "EKE Sales
+    Pro" is the same module as "A2Z Sales Pro" and a list keyed on the words
+    would stop matching the moment somebody rebranded.
+    """
+    try:
+        from utils.config import load_org_config
+        v = (load_org_config() or {}).get("hidden_modules")
+        if isinstance(v, list):
+            return [str(x).strip() for x in v if str(x).strip()]
+    except Exception:
+        pass
+    return []
+
+
 def get_branding() -> dict:
     """Return the current tenant's branding identity.
 
@@ -72,4 +89,9 @@ def get_branding() -> dict:
             "accent": brand_accent_hex(),
         },
         "ip_notice": ip_notice(),
+        # HIDDEN MODULES (ruling 2026-08-12). Config, not code - and config in
+        # org_config.json, a deployment delta file each side owns, so the pilot
+        # hides them by listing them in ITS config while this side keeps them.
+        # Default empty: absent config hides nothing.
+        "hidden_modules": hidden_modules(),
     }

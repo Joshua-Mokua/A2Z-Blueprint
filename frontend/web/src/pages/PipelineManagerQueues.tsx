@@ -46,6 +46,7 @@ import Leaderboard from '@/components/Leaderboard';
 import DailyLogAnalytics from '@/components/DailyLogAnalytics';
 import PipelineLeaderboard from '@/components/PipelineLeaderboard';
 import PipelineDayCountersign from '@/components/PipelineDayCountersign';
+import PipelineBranchDay from '@/components/PipelineBranchDay';
 import { fetchUnitDays } from '@/lib/api';
 import {
   stageTone, type PipelineDeal,
@@ -258,6 +259,11 @@ export function PipelineManagerQueues() {
         <PipelineDayCountersign onCount={() => { /* count shown on the tab */ }} />
       )}
 
+      {/* Tier 1 — the branch triad. This was the old per-deal card list; the
+          pilot reported that it did not match the daily log, so it now uses the
+          same shape: rows, a branch line, and a gate on closing the day. */}
+      {activeTab === 'validation' && tier === 'staff' && <PipelineBranchDay />}
+
       {/* Two rankings, one tab: the productivity INDEX and the PIPELINE. They
           measure different things over the same people, so they sit side by
           side rather than being blended into a single misleading number. */}
@@ -280,7 +286,7 @@ export function PipelineManagerQueues() {
 
       {/* Error panel */}
       {!['dailylog', 'ranking', 'analytics'].includes(activeTab)
-        && !(activeTab === 'validation' && (tier === 'branch' || tier === 'rollup'))
+        && !(activeTab === 'validation' && (tier === 'branch' || tier === 'rollup' || tier === 'staff'))
         && activeError && (
         <Card className="mt-4">
           <Card.Body>
@@ -297,7 +303,7 @@ export function PipelineManagerQueues() {
 
       {/* Empty / loading / content */}
       {['dailylog', 'ranking', 'analytics'].includes(activeTab)
-        || (activeTab === 'validation' && (tier === 'branch' || tier === 'rollup'))
+        || (activeTab === 'validation' && (tier === 'branch' || tier === 'rollup' || tier === 'staff'))
         ? null : activeLoading && activeDeals.length === 0 ? (
         <Card className="mt-4">
           <Card.Body>

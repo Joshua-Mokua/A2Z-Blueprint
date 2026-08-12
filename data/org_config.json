@@ -819,5 +819,13 @@
     "Branch Manager",
     "Assistant Branch Service & Operations Manager",
     "Customer Service Manager"
-  ]
+  ],
+  "excluded_from_ranking": [
+    "Business Manager",
+    "Personal Assistant"
+  ],
+  "unit_display_names": {
+    "Business Manager": "Office of the MD",
+    "Personal Assistant": "Office of the MD"
+  }
 }
