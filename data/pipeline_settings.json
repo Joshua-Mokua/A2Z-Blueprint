@@ -2343,10 +2343,13 @@
     }
   },
   "customer_segments": {
-    "Consumer ": [
+    "Consumer": [
       "Direct Banking",
       "Premier Banking",
-      "Advantage Banking"
+      "Advantage Banking",
+      "Premier",
+      "Direct",
+      "Advantage"
     ],
     "Commercial": [
       "SME",
