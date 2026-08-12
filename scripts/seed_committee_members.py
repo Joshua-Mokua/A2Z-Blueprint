@@ -54,16 +54,27 @@ DEFAULT_CHAIR = ["branch manager",
                  "customer service manager",
                  "assistant branch service & operations manager"]
 
-# MEMBERS ARE TAKEN IN ORDER UNTIL THERE ARE ENOUGH, skipping whoever is
-# already chairing - one person cannot be two members, and a committee of one
-# counted twice is exactly the thing the quorum was added to stop.
+# EVERY RELATIONSHIP MANAGER SITS, EXCEPT DIRECT SALES (ruling 2026-08-12:
+# "ensure any Relationship Manager other than the DSA are part of the
+# committee"). So this is not "take the first two that match" any more - the
+# managers below are taken, and then EVERY RM in the branch joins them.
+#
+# The committee is as large as the branch's RM bench, which is the point: the
+# people who bring the business sit on the committee that reviews it.
 DEFAULT_MEMBERS = ["customer service manager",
                    "assistant branch service & operations manager",
-                   "relationship manager, sme",
-                   "relationship manager",
                    "branch operations officer"]
 
-# Enough to clear the default quorum of 2 without inventing a policy.
+# Anyone whose role contains one of these joins as well, however many there are.
+ALL_OF_ROLE = ["relationship manager", "relationship officer"]
+
+# DIRECT SALES ARE EXCLUDED. A DSA or a DSA team lead sells; they do not sit in
+# review of what was sold. Matched as a substring, because the titles vary -
+# "Direct Sales Agent", "Branch DSA Team Lead".
+EXCLUDE = ["direct sales", "dsa"]
+
+# The floor, not the target. With every RM included most branches will exceed
+# it comfortably; this is what flags the ones that cannot.
 WANTED_MEMBERS = 2
 
 
@@ -120,8 +131,10 @@ def main():
     print("  committees      %d" % len(branch_cttees))
     print("  register rows   %d across %d branches" % (len(df), len(by_branch)))
     print("  chair, in order %s" % " -> ".join(chair_roles))
-    print("  members from    %s" % ", ".join(member_roles[:3]) + " ...")
-    print("  members wanted  %d (the default quorum)" % wanted)
+    print("  managers        %s" % ", ".join(member_roles))
+    print("  plus ALL        %s" % ", ".join(ALL_OF_ROLE))
+    print("  excluding       %s" % ", ".join(EXCLUDE))
+    print("  minimum         %d (the default quorum)" % wanted)
 
     planned, short, untouched = [], [], []
     for c in branch_cttees:
@@ -143,18 +156,30 @@ def main():
             if chair:
                 break
 
-        # Members: work down the list until there are enough, never reusing
-        # the chair. A branch that cannot fill two is reported, not padded.
+        # The named managers first, one each, then EVERY relationship manager.
+        # Never reusing the chair - one person cannot be two members, and a
+        # committee of one counted twice is what the quorum exists to stop.
         used = {chair["code"]} if chair else set()
         members = []
+
+        def _excluded(role):
+            rl = role.lower()
+            return any(x in rl for x in EXCLUDE)
+
         for mr in member_roles:
-            if len(members) >= wanted:
-                break
             p = _find(mr, exclude=used)
-            if p:
+            if p and not _excluded(p["role"]):
                 used.add(p["code"])
                 members.append({"staff_code": p["code"], "name": p["name"],
                                 "role": p["role"]})
+
+        for person in people:
+            if person["code"] in used or _excluded(person["role"]):
+                continue
+            if any(r in person["role"].lower() for r in ALL_OF_ROLE):
+                used.add(person["code"])
+                members.append({"staff_code": person["code"],
+                                "name": person["name"], "role": person["role"]})
         missing = [] if len(members) >= wanted else ["only %d of %d found"
                                                      % (len(members), wanted)]
         planned.append((c, chair, members, missing))
