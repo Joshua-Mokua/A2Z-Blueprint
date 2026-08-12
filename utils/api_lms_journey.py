@@ -149,6 +149,12 @@ def _events_from_deal(deal: Dict[str, Any],
             events.append({
                 "event": f"committee_{outcome}",
                 "by": str(rec.get("recorded_by", "") or ""),
+                # NAME THE PERSON. The record carries recorded_by_name and the
+                # journey was reading only the staff code, so a committee
+                # decision showed as "KE1218" or blank. The journey exists to
+                # answer "who decided this" - a code answers it for nobody
+                # reading the file six weeks later.
+                "by_name": rec.get("recorded_by_name") or None,
                 "at": _iso(rec.get("recorded_at")),
                 "note": " · ".join(note_bits),
             })

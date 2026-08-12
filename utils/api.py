@@ -12478,12 +12478,61 @@ def save_deal_cr(deal_id: str, payload: dict = Body(default_factory=dict),
 _COMMITTEE_OUTCOMES = ("APPROVED", "REJECTED", "DEFERRED")
 
 
-def _derive_outcome_from_votes(votes: list, voting_rule: str) -> str:
+def _committee_quorum(committee: dict = None) -> int:
+    """How many members must vote for a decision to stand.
+
+    PER COMMITTEE FIRST, then a bank-wide default, then 2.
+
+    WHY 2 AS THE FLOOR. The audit found a single YES approving a credit
+    facility: the arithmetic was right, but nothing checked how many people
+    had voted. One person is not a committee, and that is the finding - so the
+    floor is the smallest number that cannot be one.
+
+    NOT 3, which is what the older (inert) MCC model uses. Three would be the
+    right answer for a management committee and the wrong one for a small
+    branch, where it would strand cases nobody can decide. The bank should set
+    this deliberately per committee; 2 is what stops the indefensible case
+    without inventing a policy.
+    """
+    if isinstance(committee, dict) and committee.get("min_quorum_count") is not None:
+        try:
+            return max(0, int(committee.get("min_quorum_count")))
+        except (TypeError, ValueError):
+            pass
+    try:
+        cw = (_load_json("lms_config.json") or {}).get("credit_workflow", {})
+        v = cw.get("default_min_quorum")
+        if v is not None:
+            return max(0, int(v))
+    except Exception:
+        pass
+    return 2
+
+
+def _derive_outcome_from_votes(votes: list, voting_rule: str,
+                               committee: dict = None) -> str:
     """Derive APPROVED/REJECTED from per-member votes and the voting rule.
     YES/NO counted; ABSTAIN/RECUSED excluded from the base. Ties -> REJECTED."""
     yes = sum(1 for v in votes if str(v.get("vote", "")).upper() == "YES")
     no = sum(1 for v in votes if str(v.get("vote", "")).upper() == "NO")
     base = yes + no
+
+    # ── QUORUM (pilot audit, 2026-08-12) ────────────────────────────────────
+    # BELOW QUORUM IS DEFERRED, NOT REJECTED. Too few people turning up is not
+    # the committee saying no - it is the committee not having met. Rejecting
+    # would put a decision on the record that nobody took, and would send a
+    # case to appeal against a verdict that was never reached.
+    #
+    # Counted over EVERYONE WHO ATTENDED, including abstentions and recusals: a
+    # member who recuses themselves was present, and recusal is how a conflict
+    # is handled rather than an absence.
+    attended = sum(1 for v in votes
+                   if str(v.get("vote", "")).upper()
+                   in ("YES", "NO", "ABSTAIN", "RECUSED"))
+    need = _committee_quorum(committee)
+    if need and attended < need:
+        return "DEFERRED"
+
     if base == 0:
         return "DEFERRED"
     rule = str(voting_rule or "SIMPLE_MAJORITY")
@@ -12581,7 +12630,9 @@ def record_deal_committee_decision(deal_id: str, payload: dict = Body(default_fa
                                 "role": str(v.get("role", "")).strip(), "vote": vote,
                                 "documents_validated": docs_ok,
                                 "comment": str(v.get("comment", "") or "").strip()})
-        outcome = _derive_outcome_from_votes(clean_votes, committee.get("voting_rule"))
+        outcome = _derive_outcome_from_votes(clean_votes,
+                                             committee.get("voting_rule"),
+                                             committee)
         record = {"outcome": outcome, "mode": "voting", "votes": clean_votes, "note": note}
     else:
         outcome = str(payload.get("outcome", "")).upper()
