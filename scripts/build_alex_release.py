@@ -83,6 +83,12 @@ CHAIN = [
     "patch_ch3_channel_tabs", "patch_ch4_lead_generators",
     "patch_ch5_channels_ui", "patch_ch6_owner_picker",
     "patch_ch7_deal_tracker", "patch_ch8_origin_roundtrip",
+    "patch_doc1_document_roles",
+    "patch_hide1_module_visibility",
+    "patch_seg1_analyst_segment",
+    "patch_an1_analyst_attach_scope",
+    "patch_att1_analyst_attach_ui",
+    "patch_fix1_submit_and_docs",
 ]
 
 # Patchers that deliberately do NOT ship to the pilot. Anything in scripts/ that
@@ -128,6 +134,8 @@ NOT_FOR_RELEASE = {
     "patch_tz1_dateonly",
     "patch_wc2a_daycontext",
     "patch_wc2b_wiring",
+    "patch_wh3_shelf_polish",
+    "patch_pie1_origin_donut",
 }
 
 # Must be IDENTICAL to alex-dev when this finishes.
