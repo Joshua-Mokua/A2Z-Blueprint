@@ -5636,8 +5636,11 @@ def pipeline_deal_refer(
                 f"<p style='font-size:12px;color:#999'>Automated message — do not reply.</p>"
                 f"</div></body></html>",
             )
-    except Exception:
-        pass
+    except Exception as _notify_exc:
+        # Best-effort by design (a notification outage must never break the
+        # referral), but SILENT by accident was the actual bug — "emails not
+        # sending" had zero trace anywhere. Now it does.
+        logger.warning("referral notify_staff failed for %s: %s", _to_code, _notify_exc)
     return PipelineDealMutationResponse(
         deal=PipelineDeal.model_validate(created),
         status="referred",
@@ -7490,8 +7493,8 @@ def pipeline_deal_validate(
                 f"<p style='font-size:12px;color:#999'>Automated message — do not reply.</p>"
                 f"</div></body></html>",
             )
-    except Exception:
-        pass
+    except Exception as _notify_exc:
+        logger.warning("validation notify_staff failed for %s: %s", _owner, _notify_exc)
     return {
         "deal":           updated,
         "status":         "validated" if payload.approved else "queried",
