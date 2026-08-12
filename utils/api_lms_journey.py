@@ -232,6 +232,74 @@ def _events_from_deal(deal: Dict[str, Any],
                 "note": note,
             })
 
+    # ── TOUCH POINTS THAT WERE NOT BEING RECORDED (pilot, 2026-08-12) ────────
+    # "We had defined that any touch point of the case has to be recorded -
+    # could it be that the journey is not capturing everything?"
+    #
+    # It was not. The journey carried creation, stage changes, committee
+    # outcomes, appeals, affordability and SLA - but three decisions that
+    # CHANGE WHO CONTROLS THE DEAL left no trace at all:
+    #
+    #     MANAGER VALIDATION - the gate that lets a deal move at all
+    #     REFERRAL           - the deal changing hands
+    #     CANCELLATION       - a request to stop, and the answer to it
+    #
+    # A case journey missing those cannot answer "who let this through", which
+    # is the first question anybody asks of a credit file after the fact.
+
+    # Manager validation. The fields are already written by the validate
+    # endpoint (Item 5) - nothing new is recorded, it was simply never read.
+    if deal.get("manager_validated"):
+        who = str(deal.get("validated_by_name", "") or "")
+        role = str(deal.get("validated_by_role", "") or "")
+        events.append({
+            "event": "manager_validated",
+            "by": str(deal.get("validated_by_code", "") or ""),
+            "by_name": who or None,
+            "at": _iso(deal.get("validated_at")),
+            "note": ("Validated by %s%s" % (who or "a manager",
+                                            " (%s)" % role if role else ""))
+                    + " — the deal may now progress",
+        })
+
+    # Referral. Recorded whether or not it was accepted: a declined referral is
+    # part of the history, and leaving it out would make a deal look as though
+    # it had never moved.
+    rstatus = str(deal.get("referral_status", "") or "").strip().lower()
+    if rstatus:
+        frm = str(deal.get("referred_by_name", "") or "")
+        to = str(deal.get("referred_to_name", "") or "")
+        events.append({
+            "event": "referral_%s" % rstatus,
+            "by": str(deal.get("referred_by", "") or ""),
+            "by_name": frm or None,
+            "at": _iso(deal.get("referred_at")),
+            "note": ("Referred%s%s — %s"
+                     % (" by %s" % frm if frm else "",
+                        " to %s" % to if to else "", rstatus)),
+        })
+
+    # Cancellation, requested and answered as separate moments - the gap
+    # between them is often the thing somebody is asking about.
+    if deal.get("cancel_requested"):
+        events.append({
+            "event": "cancel_requested",
+            "by": str(deal.get("cancel_requested_by", "") or ""),
+            "by_name": deal.get("cancel_requested_by_name") or None,
+            "at": _iso(deal.get("cancel_requested_at")),
+            "note": "Cancellation requested"
+                    + (" — %s" % deal.get("cancel_request_reason")
+                       if deal.get("cancel_request_reason") else ""),
+        })
+    if deal.get("cancel_approved"):
+        events.append({
+            "event": "cancel_approved",
+            "by": str(deal.get("cancel_approved_by", "") or ""),
+            "by_name": deal.get("cancel_approved_by_name") or None,
+            "at": _iso(deal.get("cancel_approved_at")),
+            "note": "Cancellation approved",
+        })
+
     return events
 
 
