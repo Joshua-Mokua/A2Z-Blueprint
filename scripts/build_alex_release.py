@@ -89,6 +89,10 @@ CHAIN = [
     "patch_an1_analyst_attach_scope",
     "patch_att1_analyst_attach_ui",
     "patch_fix1_submit_and_docs",
+    "patch_pb1_daily_log_and_docs",
+    "patch_av1_advance_on_validation",
+    "patch_jr1_journey_touchpoints",
+    "patch_qm1_quorum_and_journey",
 ]
 
 # Patchers that deliberately do NOT ship to the pilot. Anything in scripts/ that
