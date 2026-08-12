@@ -14790,7 +14790,110 @@
     "unit": "Head Office",
     "role": "Card Officer",
     "submitted_at": "",
-    "updated_at": "2026-08-12T18:51:55.397229",
+    "updated_at": "2026-08-12T18:59:04.319264",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "18": {
+        "counts": {
+          "complaints_resolved": 6.0,
+          "customer_visits": 5.0,
+          "complaints_received": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 1.0,
+    "complaints_resolved": 6.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 5.0,
+    "nps_collected": 0.0,
+    "index": 19.5,
+    "remarks": "Conducted branch-wide training on the Instant Card Issuance process, PIN delivery process, and mobile app card functionalities to improve staff knowledge, customer support, and process compliance.\n\nHeld an issue resolution meeting with the IMF team to discuss operational matters relating to the Corporate Prepaid Card Programme and agree on actions to address outstanding concerns.\n\nSupported corporate clients, including Vivo Energy, lexo and UNOPS, by addressing card-related requests, service issues, and account management matters.\n\nContinued work on the Staff Infinite Card issuance process, reviewing requirements and supporting implementation activities.\n\nPerformed a daily review of the credit card portfolio, monitoring portfolio performance, delinquency trends, outstanding accounts, and key risk indicators.\nFollowed up on ongoing card business and operational matters, providing support to customers and internal stakeholders to ensure timely resolution of outstanding issues.\n\nContinued refinement of the Instant Card Issuance and PIN Issuance SOP and process flows to support standardization, training, and operational readiness."
+  },
+  {
+    "id": "LOG000355",
+    "log_date": "2026-08-12",
+    "staff_code": "KE1261",
+    "staff_name": "KIMUYU Stephen [EKE-Consumer]",
+    "unit": "Head Office",
+    "role": "Relationship Manager, Employee Schemes",
+    "submitted_at": "",
+    "updated_at": "2026-08-12T19:15:32.729767",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "10": {
+        "counts": {
+          "new_leads": 1.0
+        },
+        "meetings": []
+      },
+      "14": {
+        "counts": {},
+        "meetings": [],
+        "note": "Called Mogo Auto Limited - Confirmed the MOU is ready for sign-off."
+      },
+      "19": {
+        "counts": {},
+        "meetings": [],
+        "note": "End of Day Report"
+      },
+      "08": {
+        "counts": {},
+        "meetings": [],
+        "note": "Visited Gertrudes Children`s Hospital for MOU follow Up"
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 1.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 2.0,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000356",
+    "log_date": "2026-08-12",
+    "staff_code": "KE1217",
+    "staff_name": "VUNDI Gladys [EKE-Consumer Banking]",
+    "unit": "Head Office",
+    "role": "Manager, Partnership, Alliances & Diaspora",
+    "submitted_at": "",
+    "updated_at": "2026-08-12T19:15:08.270776",
     "validated": false,
     "validated_by": "",
     "validated_at": "",
@@ -14798,11 +14901,10 @@
     "rejected": false,
     "status": "draft",
     "hourly": {
-      "18": {
+      "19": {
         "counts": {
-          "complaints_resolved": 2.0,
-          "new_leads": 1.0,
-          "customer_visits": 2.0
+          "customer_visits": 1.0,
+          "new_leads": 1.0
         },
         "meetings": []
       }
@@ -14817,14 +14919,14 @@
     "deposits_mobilised": 0.0,
     "bancassurance_sold": 0.0,
     "complaints_received": 0.0,
-    "complaints_resolved": 2.0,
+    "complaints_resolved": 0.0,
     "digital_txns": 0.0,
     "new_leads": 1.0,
     "cross_sell_success": 0.0,
     "teller_errors": 0.0,
-    "customer_visits": 2.0,
+    "customer_visits": 1.0,
     "nps_collected": 0.0,
-    "index": 8.6,
-    "remarks": "Conducted branch-wide training on the Instant Card Issuance process, PIN delivery process, and mobile app card functionalities to improve staff knowledge, customer support, and process compliance.\n\nHeld an issue resolution meeting with the IMF team to discuss operational matters relating to the Corporate Prepaid Card Programme and agree on actions to address outstanding concerns.\n\nSupported corporate clients, including Vivo Energy and UNOPS, by addressing card-related requests, service issues, and account management matters.\n\nContinued work on the Staff Infinite Card issuance process, reviewing requirements and supporting implementation activities.\n\nPerformed a daily review of the credit card portfolio, monitoring portfolio performance, delinquency trends, outstanding accounts, and key risk indicators.\nFollowed up on ongoing card business and operational matters, providing support to customers and internal stakeholders to ensure timely resolution of outstanding issues.\n\nContinued refinement of the Instant Card Issuance and PIN Issuance SOP and process flows to support standardization, training, and operational readiness."
+    "index": 2.3,
+    "remarks": ""
   }
 ]

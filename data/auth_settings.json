@@ -1,0 +1,8 @@
+{
+  "ad_enabled": true,
+  "ad_primary_url": "http://10.8.32.3:400/api/send-login",
+  "ad_fallback_url": "",
+  "ad_timeout_seconds": 45,
+  "ad_verify_ssl": false,
+  "ad_fallback_to_local": true
+}

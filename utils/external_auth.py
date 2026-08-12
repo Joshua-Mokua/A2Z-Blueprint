@@ -27,7 +27,7 @@ _DEFAULTS: dict = {
     "ad_enabled": False,
     "ad_primary_url": "",
     "ad_fallback_url": "",
-    "ad_timeout_seconds": 60,
+    "ad_timeout_seconds": 45,
     "ad_verify_ssl": False,
     "ad_fallback_to_local": True,   # always fall back to bcrypt on AD failure
 }
@@ -86,7 +86,7 @@ class ExternalAuthService:
     def __init__(self, settings: dict):
         self.primary_url  = (settings.get("ad_primary_url")  or "").strip()
         self.fallback_url = (settings.get("ad_fallback_url") or "").strip()
-        self.timeout      = int(settings.get("ad_timeout_seconds") or 60)
+        self.timeout      = int(settings.get("ad_timeout_seconds") or 45)
         self.verify_ssl   = bool(settings.get("ad_verify_ssl", False))
         # Set when the most recent authenticate() call never got a response
         # from any configured URL within `timeout` — distinct from "AD
