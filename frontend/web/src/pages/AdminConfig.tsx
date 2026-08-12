@@ -227,11 +227,48 @@ export default function AdminConfig() {
   useEffect(() => {
     fetchDocumentCatalog().then(setDocCatalog).catch(() => setDocCatalog([]));
   }, []);
+  // WHO ATTACHES (ruling 2026-08-12). A required document used to be a bare
+  // name, which silently meant "the deal owner produces this" - including for
+  // papers only an analyst can write. These helpers read BOTH shapes, because
+  // every existing product is configured as a list of strings and breaking
+  // those to add a field would take the pilot down for no gain.
+  type DocReq = string | { name: string; attached_by?: string; mandatory?: boolean };
+  const docName = (d: DocReq) => (typeof d === 'string' ? d : d.name);
+  const docBy = (d: DocReq) => (typeof d === 'string' ? 'owner' : (d.attached_by || 'owner'));
+  const docMand = (d: DocReq) => (typeof d === 'string' ? false : Boolean(d.mandatory));
+
+  const ATTACHERS = [
+    { key: 'owner', label: 'Deal owner / RM' },
+    { key: 'department_analyst', label: 'Department analyst' },
+    { key: 'credit_analyst', label: 'Credit analyst' },
+    { key: 'credit_admin', label: 'Credit admin' },
+    { key: 'customer', label: 'Customer' },
+  ];
+
   function toggleFlowDoc(doc: string) {
     setFlowDraft((f) => {
-      const cur = f.required_documents ?? [];
-      return { ...f, required_documents: cur.includes(doc) ? cur.filter((d) => d !== doc) : [...cur, doc] };
+      const cur = (f.required_documents ?? []) as DocReq[];
+      const has = cur.some((d) => docName(d) === doc);
+      return {
+        ...f,
+        required_documents: has
+          ? cur.filter((d) => docName(d) !== doc)
+          // New documents default to the owner, which is what a bare string
+          // always meant - so ticking one behaves exactly as it did before.
+          : [...cur, { name: doc, attached_by: 'owner', mandatory: false }],
+      } as typeof f;
     });
+  }
+
+  function setDocField(doc: string, patch: { attached_by?: string; mandatory?: boolean }) {
+    setFlowDraft((f) => ({
+      ...f,
+      required_documents: ((f.required_documents ?? []) as DocReq[]).map((d) =>
+        docName(d) === doc
+          ? { name: docName(d), attached_by: patch.attached_by ?? docBy(d),
+              mandatory: patch.mandatory ?? docMand(d) }
+          : d),
+    } as typeof f));
   }
   const [flowBusy, setFlowBusy] = useState(false);
   // SLA config (the single source of truth for product_promise — the overall
@@ -951,11 +988,49 @@ export default function AdminConfig() {
                 <div className="mb-2 grid max-h-40 grid-cols-2 gap-x-4 gap-y-1 overflow-auto rounded border p-2">
                   {docCatalog.map((doc) => (
                     <label key={doc} className="flex items-center gap-2 text-sm">
-                      <input type="checkbox" checked={(flowDraft.required_documents ?? []).includes(doc)} onChange={() => toggleFlowDoc(doc)} />
+                      <input type="checkbox" checked={((flowDraft.required_documents ?? []) as DocReq[]).some((d) => docName(d) === doc)} onChange={() => toggleFlowDoc(doc)} />
                       {doc}
                     </label>
                   ))}
                 </div>
+                {/* WHO ATTACHES EACH ONE, and whether it blocks. Two settings per
+                    document, shown only for the ones actually ticked - a
+                    dropdown beside all sixty catalogue entries would be noise. */}
+                {((flowDraft.required_documents ?? []) as DocReq[]).length > 0 && (
+                  <div className="mb-3 overflow-hidden rounded border">
+                    <div className="grid grid-cols-[1fr_180px_110px] gap-2 border-b bg-gray-50 px-2 py-1 text-[11px] font-medium text-gray-600">
+                      <span>Document</span>
+                      <span>Attached by</span>
+                      <span>Blocks submission</span>
+                    </div>
+                    {((flowDraft.required_documents ?? []) as DocReq[]).map((d) => (
+                      <div key={docName(d)}
+                           className="grid grid-cols-[1fr_180px_110px] items-center gap-2 border-b px-2 py-1.5 text-sm last:border-b-0">
+                        <span className="truncate text-gray-800">{docName(d)}</span>
+                        <select
+                          className="h-8 rounded border border-gray-300 px-1 text-xs"
+                          value={docBy(d)}
+                          onChange={(e) => setDocField(docName(d), { attached_by: e.target.value })}>
+                          {ATTACHERS.map((a) => (
+                            <option key={a.key} value={a.key}>{a.label}</option>
+                          ))}
+                        </select>
+                        <label className="flex items-center gap-1.5 text-xs text-gray-600">
+                          <input type="checkbox" checked={docMand(d)}
+                                 onChange={(e) => setDocField(docName(d), { mandatory: e.target.checked })} />
+                          mandatory
+                        </label>
+                      </div>
+                    ))}
+                    <p className="px-2 py-1.5 text-[11px] text-gray-500">
+                      Only <strong>mandatory</strong> documents block submission. Everything
+                      else can be submitted pending and attached as the analysis
+                      progresses — and a document assigned to an analyst never blocks
+                      the deal owner, who has no way of producing it.
+                    </p>
+                  </div>
+                )}
+
                 {/* Admin: introduce a NEW document type into the global master list.
                     Once added it appears above as a tickable checkbox for any product. */}
                 <div className="mb-2 flex items-center gap-2">

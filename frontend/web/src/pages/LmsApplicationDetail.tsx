@@ -20,7 +20,7 @@ import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesT
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -251,27 +251,47 @@ export function LmsApplicationDetail() {
           </Card.Header>
           <Card.Body>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* PENDING, NOT "REQUIRED" (ruling 2026-08-12). Documents can now
+                  travel with a case rather than blocking it, so a list headed
+                  "Required" beside a case that is already in analysis states
+                  something that is no longer true - and "Required (0) / No
+                  documents required" on a case carrying five documents reads as
+                  a fault.
+
+                  What an analyst needs is what is STILL OUTSTANDING. When
+                  nothing is, the panel says so rather than showing an empty
+                  heading. */}
               <div>
-                <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
-                  Required ({application.docs_required?.length || 0})
-                </div>
-                {application.docs_required && application.docs_required.length > 0 ? (
-                  <ul className="text-sm text-gray-700 space-y-1">
-                    {application.docs_required.map((d, i) => {
-                      const submitted = application.docs_submitted?.includes(d) ?? false;
-                      return (
-                        <li key={i} className={`flex items-center gap-2 ${submitted ? '' : 'text-gray-500'}`}>
-                          <span className={submitted ? 'text-green-600' : 'text-gray-300'}>
-                            {submitted ? '✓' : '○'}
-                          </span>
-                          <span>{d}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <div className="text-xs text-gray-400">No documents required</div>
-                )}
+                {(() => {
+                  const req = application.docs_required ?? [];
+                  const have = application.docs_submitted ?? [];
+                  const pending = req.filter((d) => !have.includes(d));
+                  return (
+                    <>
+                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
+                        {pending.length > 0
+                          ? `Pending submission (${pending.length})`
+                          : 'Documentation'}
+                      </div>
+                      {pending.length > 0 ? (
+                        <ul className="text-sm text-gray-700 space-y-1">
+                          {pending.map((d, i) => (
+                            <li key={i} className="flex items-center gap-2 text-gray-600">
+                              <span className="text-[#E0A02B]">○</span>
+                              <span>{d}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-xs text-gray-500">
+                          {have.length > 0
+                            ? `Nothing outstanding — ${have.length} document${have.length === 1 ? '' : 's'} on file.`
+                            : 'Nothing outstanding.'}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
               <div>
                 <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
@@ -297,7 +317,17 @@ export function LmsApplicationDetail() {
           </Card.Body>
         </Card>
 
-        <LmsTravelledDocuments appId={application.id} canDownload={!!permissions.can_update} />
+        <LmsTravelledDocuments appId={application.id} canDownload={!!permissions.can_update}
+          // Whoever is WORKING the case may attach: the analyst who can send it
+          // to the DCC, anyone who can update it, and the credit analyst it was
+          // handed to. Not a committee member merely reading it.
+          // WIDER THAN THE FIRST ATTEMPT. can_submit_to_dcc is only true while
+          // a case sits at 'assigned' - so the moment it moved to credit_admin,
+          // Catherine lost the ability to attach to a case she is still working.
+          // can_view is the honest test here: the credit surface is already
+          // scoped, and somebody who can open the case can add a paper to it.
+          canAttach={!!(permissions.can_view ?? true)}
+          onAttached={refetch} />
 
         <DccVotePanel appId={application.id} toast={toast} onDone={refetch} />
 
@@ -1444,14 +1474,74 @@ function DccVotePanel({ appId, toast, onDone }: {
 }
 
 
-function LmsTravelledDocuments({ appId, canDownload }: { appId: string; canDownload: boolean }) {
+// WHAT THE ANALYST ATTACHES (ruling 2026-08-12: "in the pilot she is
+// particularly supposed to attach the CRB and the Call Back Memo").
+//
+// Offered as named buttons rather than a free-text box: a document called
+// "CRB" on one case and "CRB Report" on another cannot be checked off a
+// required list, and the analyst should not have to know the exact string.
+// "Other" stays for the paper nobody anticipated.
+const ANALYST_DOCS = ['CRB Report', 'Call Back Memo', 'Other'];
+
+function LmsTravelledDocuments({ appId, canDownload, canAttach, onAttached }: {
+  appId: string; canDownload: boolean; canAttach?: boolean; onAttached?: () => void;
+}) {
   const [files, setFiles] = useState<LmsDocumentsResponse['files']>({});
   const [viewing, setViewing] = useState<{ docName: string; filename: string } | null>(null);
-  useEffect(() => {
-    listLmsDocuments(appId).then((d) => setFiles(d.files || {})).catch(() => { /* none on file */ });
-  }, [appId]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const [requested, setRequested] = useState<{ name: string; note?: string }[]>([]);
+
+  const reload = () => {
+    listLmsDocuments(appId).then((d) => {
+      setFiles(d.files || {});
+      setRequested(d.requested || []);
+    }).catch(() => { /* none on file */ });
+  };
+
+  async function requestDoc() {
+    const name = (window.prompt('What document do you need?') || '').trim();
+    if (!name) return;
+    const note = (window.prompt('Why, or any detail for whoever supplies it? (optional)') || '').trim();
+    setBusy(true);
+    setErr('');
+    try {
+      await requestLmsDocument(appId, name, note);
+      reload();
+      onAttached?.();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not record that request.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  useEffect(reload, [appId]);
+
+  async function attach(docName: string, file: File) {
+    setBusy(true);
+    setErr('');
+    try {
+      const b64 = await new Promise<string>((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result).split(',')[1] ?? '');
+        r.onerror = () => rej(new Error('Could not read that file.'));
+        r.readAsDataURL(file);
+      });
+      await uploadLmsDocument(appId, docName, file.name, b64);
+      reload();
+      onAttached?.();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not attach that file.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const entries = Object.entries(files);
-  if (entries.length === 0) return null;
+  // The panel must render even with nothing on file - otherwise the analyst
+  // has nowhere to attach the first document.
+  if (entries.length === 0 && !canAttach) return null;
   return (
     <Card className="mt-4">
       <Card.Header>
@@ -1473,6 +1563,68 @@ function LmsTravelledDocuments({ appId, canDownload }: { appId: string; canDownl
             </div>
           ))}
         </div>
+        {entries.length === 0 && (
+          <p className="py-3 text-center text-xs text-gray-400">
+            Nothing on file yet.
+          </p>
+        )}
+
+        {canAttach && (
+          <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50/60 p-3">
+            <p className="mb-2 text-xs font-medium text-gray-700">Attach a document</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {[...ANALYST_DOCS, ...requested.map((r) => r.name)
+                .filter((n) => !ANALYST_DOCS.includes(n))].map((d) => (
+                <label key={d}
+                       className={'cursor-pointer rounded-md border px-3 py-1.5 text-xs '
+                         + (files[d]
+                           ? 'border-[#BED600] bg-[#F4F8E6] text-[#3B6D11]'
+                           : 'border-gray-300 bg-white text-gray-700 hover:border-brand-primary')}>
+                  {files[d] ? `✓ ${d}` : d}
+                  <input type="file" className="hidden" disabled={busy}
+                         onChange={(e) => {
+                           const f = e.target.files?.[0];
+                           if (!f) return;
+                           const name = d === 'Other'
+                             ? (window.prompt('What is this document called?') || '').trim()
+                             : d;
+                           if (!name) return;
+                           void attach(name, f);
+                           e.target.value = '';
+                         }} />
+                </label>
+              ))}
+              {busy && <span className="text-xs text-gray-500">Attaching…</span>}
+            </div>
+            {err && <p className="mt-2 text-xs text-rose-600">{err}</p>}
+
+            {/* ASK FOR SOMETHING NOT ON THE LIST. The required list is per
+                PRODUCT and set by an admin - it says what every case of this
+                kind needs. What one analyst wants on ONE case is a different
+                thing, and writing it into the product config would quietly
+                change the rules for every future deal. So it is recorded on
+                the case, with who asked. */}
+            <div className="mt-2 flex items-center gap-2">
+              <button type="button" disabled={busy}
+                      onClick={() => void requestDoc()}
+                      className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 hover:border-brand-primary">
+                Request a document
+              </button>
+              {requested.length > 0 && (
+                <span className="text-[11px] text-gray-500">
+                  {requested.length} requested:{' '}
+                  {requested.map((r) => r.name).join(', ')}
+                </span>
+              )}
+            </div>
+            <p className="mt-2 text-[11px] text-gray-500">
+              Attached against this case and recorded under your name and role,
+              so it is clear later which papers came from credit rather than
+              from the branch.
+            </p>
+          </div>
+        )}
+
         {!canDownload && (
           <p className="mt-2 text-xs text-gray-400">Read-only — download is not permitted for your role.</p>
         )}

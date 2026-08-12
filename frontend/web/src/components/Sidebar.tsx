@@ -67,6 +67,9 @@ interface SidebarProps { onNavigate?: () => void; }
 export function Sidebar({ onNavigate }: SidebarProps) {
   const { pathname } = useLocation();
   const { branding } = useBranding();
+  // Absent config hides nothing, so this can only ever take a module away
+  // deliberately, never by omission.
+  const hidden = new Set<string>(branding?.hidden_modules ?? []);
   const { user } = useRole();
   const { logout } = useAuth();
 
@@ -93,7 +96,9 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       <nav className="sb-nav">
         {NAV_GROUPS.map((group) => {
           const items = group.items.filter(
-            (item) => !DEMO_HIDE.has(item.path) && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff)),
+            (item) => !DEMO_HIDE.has(item.path)
+              && !hidden.has(item.path)
+              && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff)),
           );
           if (!items.length) return null;
           return (

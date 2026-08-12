@@ -15,6 +15,10 @@ export interface BrandColors {
 }
 
 export interface Branding {
+  /** Routes this deployment should not show in the sidebar. Empty or absent
+   *  means show everything - config can only ever take a module away
+   *  deliberately, never by omission. */
+  hidden_modules?: string[];
   bank_name: string;
   app_name: string;
   currency: string;

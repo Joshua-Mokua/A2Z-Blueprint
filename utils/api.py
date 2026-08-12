@@ -2483,8 +2483,23 @@ def _validate_product_flow(entry: dict, catalogue_names=None) -> tuple:
     # Batch 1: optional per-product document config.
     rd = entry.get("required_documents")
     if rd is not None:
-        if not isinstance(rd, list) or any(not isinstance(x, str) for x in rd):
-            return False, "required_documents must be a list of strings"
+        if not isinstance(rd, list):
+            return False, "required_documents must be a list"
+        for x in rd:
+            # A plain string is still valid and means "owner" - every existing
+            # configuration is a list of strings, and breaking those to add a
+            # field would take the pilot down to gain nothing.
+            if isinstance(x, str):
+                continue
+            if not isinstance(x, dict) or not str(x.get("name") or "").strip():
+                return False, ("required_documents entries must be a name, or "
+                               "{name, attached_by}")
+            by = str(x.get("attached_by") or "owner").lower()
+            if by not in {"owner", "department_analyst", "credit_analyst",
+                          "credit_admin", "customer"}:
+                return False, "unknown attached_by %r" % by
+            if "mandatory" in x and not isinstance(x.get("mandatory"), bool):
+                return False, "mandatory must be true or false"
     dstage = entry.get("documents_required_at_stage")
     if dstage:
         stage_names = {str(s.get("stage", "")).strip() for s in stages}
@@ -3561,6 +3576,60 @@ class SubmitToCreditRequest(BaseModel):
     documents_provided: List[str] = []
 
 
+# ── WHO ATTACHES A DOCUMENT ─────────────────────────────────────────────────
+# RULING (2026-08-12): "there are documents submitted by the owner, documents
+# attached by the department analyst, and documents attached by the credit
+# analyst. It was noted that the documents required are all to be attached at
+# the documentation stage, which is not the case."
+#
+# A flat list of names cannot express that, so every document fell to the deal
+# owner - including the ones only an analyst can produce. The owner was being
+# blocked from submitting by papers they had no way of obtaining.
+#
+# A document is now {"name": ..., "attached_by": ...}. PLAIN STRINGS STILL WORK
+# and mean "owner", because every existing configuration is a list of strings
+# and a migration that breaks the pilot to add a field is not worth it.
+DOC_ATTACHERS = [
+    {"key": "owner", "label": "Deal owner / RM"},
+    {"key": "department_analyst", "label": "Department analyst"},
+    {"key": "credit_analyst", "label": "Credit analyst"},
+    {"key": "credit_admin", "label": "Credit admin"},
+    {"key": "customer", "label": "Customer"},
+]
+_DOC_ATTACHER_KEYS = {d["key"] for d in DOC_ATTACHERS}
+
+
+def _normalise_document(doc) -> dict:
+    """One shape for a required document, whichever way it was configured."""
+    if isinstance(doc, dict):
+        name = str(doc.get("name") or doc.get("document") or "").strip()
+        by = str(doc.get("attached_by") or "owner").strip().lower()
+    else:
+        name, by = str(doc or "").strip(), "owner"
+    if by not in _DOC_ATTACHER_KEYS:
+        by = "owner"
+    # MANDATORY is opt-in, and deliberately so. Before today every document
+    # blocked; making them all mandatory by default would reinstate exactly the
+    # hard condition the pilot asked us to remove. The bank now marks the few
+    # that genuinely cannot be worked without.
+    mand = bool(doc.get("mandatory")) if isinstance(doc, dict) else False
+    return {"name": name, "attached_by": by, "mandatory": mand}
+
+
+def _documents_for(deal: dict, attached_by: str = "") -> list:
+    """Required documents, optionally narrowed to one attacher.
+
+    `attached_by="owner"` answers the only question the submit gate should ask:
+    what is OUTSTANDING FROM THE PERSON SUBMITTING. An analyst's paper is not
+    the owner's to produce, and blocking on it stops work for no benefit.
+    """
+    docs = [_normalise_document(d) for d in _get_required_documents_for_deal(deal)]
+    docs = [d for d in docs if d["name"]]
+    if attached_by:
+        docs = [d for d in docs if d["attached_by"] == attached_by]
+    return docs
+
+
 def _product_document_config(deal: dict) -> tuple:
     """(required_documents, required_at_stage) from the deal's PRODUCT flow
     (Batch 1 config in pipeline_settings.product_flows). ([], "") if unset."""
@@ -3705,6 +3774,76 @@ def pipeline_credit_checklist(deal_id: str, user: dict = Depends(get_current_use
     return _credit_submission_state(deal, user, visible_codes)
 
 
+@app.get("/api/pipeline/deals/{deal_id}/next-step")
+def pipeline_next_step(deal_id: str, user: dict = Depends(get_current_user)):
+    """What happens when this deal is submitted, and what is still owed.
+
+    RULING (2026-08-12): "the submit button is still reading submit to analysis,
+    which should instead be submitting to the next stage - which in a branch
+    case is submit to Branch Credit Committee, then after the committee
+    recommends, submit to the Department Credit Analyst, and so on."
+
+    The advance itself was always right - one stage, config-driven. The LABEL
+    was wrong, and a button that names a step three transitions away teaches
+    people the wrong shape of their own process.
+
+    Returns the real next stage so the button can say it, plus the documents
+    split BY WHO OWES THEM - because "8 documents outstanding" is not
+    actionable when six of them belong to an analyst who has not started.
+    """
+    pm = PipelineManager()
+    deal = pm.get_deal(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail="No such deal.")
+
+    # WHERE DOES SUBMIT ACTUALLY LAND? Not "one past wherever the deal is now".
+    # The credit handoff happens FROM THE DOCUMENT GATE STAGE and is refused
+    # anywhere else, so the button must name what follows the GATE.
+    #
+    # Computed from the current stage, a deal sitting at Initiation was offered
+    # "Submit to Negotiation" while the journey panel above it correctly read
+    # "Submit to Branch Credit Committee Review" - two labels for one action,
+    # disagreeing, on the same screen.
+    _prod_docs, _gate = _product_document_config(deal)
+    anchor_stage = _gate if (_gate and _gate in flow) else cur
+    nxt = ""
+    if anchor_stage in flow:
+        i = flow.index(anchor_stage)
+        if i + 1 < len(flow):
+            nxt = flow[i + 1]
+
+    docs = _documents_for(deal)
+    provided = set(str(d) for d in (deal.get("documents_provided") or []))
+    by_who = {}
+    for d in docs:
+        e = by_who.setdefault(d["attached_by"], {"attacher": d["attached_by"],
+                                                 "have": [], "outstanding": []})
+        (e["have"] if d["name"] in provided else e["outstanding"]).append(d["name"])
+
+    owner_out = [d["name"] for d in docs
+                 if d["attached_by"] == "owner" and d["name"] not in provided]
+    blocking = [d["name"] for d in docs
+                if d.get("mandatory") and d["name"] not in provided
+                and d["attached_by"] == "owner"]
+
+    return {
+        "deal_id": deal_id,
+        "current_stage": cur,
+        "next_stage": nxt,
+        "gate_stage": anchor_stage if anchor_stage != cur else "",
+        "at_gate": (not _gate) or cur == _gate,
+        # What the button should say. Naming the destination is the whole point.
+        "submit_label": ("Submit to %s" % nxt) if nxt else "Submit",
+        "flow": flow,
+        "documents": docs,
+        "by_attacher": sorted(by_who.values(), key=lambda x: x["attacher"]),
+        "owner_outstanding": owner_out,
+        "blocking": blocking,
+        "can_submit": not blocking,
+        "attachers": DOC_ATTACHERS,
+    }
+
+
 @app.post("/api/pipeline/deals/{deal_id}/submit-to-credit")
 def pipeline_submit_to_credit(
     deal_id: str,
@@ -3762,14 +3901,57 @@ def pipeline_submit_to_credit(
         # it). Every other reason now names itself.
         raise HTTPException(status_code=403,
             detail="Only the deal owner (or an admin) can submit it to credit.")
+    # ── SUBMIT PENDING OTHER DOCUMENTS ──────────────────────────────────────
+    # RULING (2026-08-12): "all documents may not be ready at the same time, and
+    # delaying the analysis due to a document that may not really be standing in
+    # the way of analysis has been picked up as a hard condition we need to
+    # relook into."
+    #
+    # The gate was ALL-OR-NOTHING: one outstanding paper stopped the deal, even
+    # when the analysis could have started without it. Three changes:
+    #
+    #   1. ONLY THE OWNER'S DOCUMENTS ARE EVEN CONSIDERED. An analyst's paper
+    #      was never the owner's to produce, and blocking on it stopped work
+    #      for nobody's benefit.
+    #
+    #   2. SUBMISSION IS ALLOWED WITH DOCUMENTS OUTSTANDING, and what is
+    #      outstanding is RECORDED ON THE DEAL rather than forgotten - so the
+    #      analyst can see what is still coming and the owner can be chased.
+    #
+    #   3. ATTACHING STAYS OPEN after submission, which is what makes this
+    #      honest rather than a way of skipping paperwork.
+    #
+    # A document may still be marked MANDATORY, and those DO block - some
+    # papers genuinely cannot be worked without. The difference is that the
+    # bank now chooses which, instead of every document being treated as
+    # blocking by default.
     provided = list(payload.documents_provided or [])
-    missing = [d for d in state["required"] if d not in provided]
-    if missing:
+    owner_docs = _documents_for(deal, attached_by="owner")
+    owner_names = [d["name"] for d in owner_docs] or list(state["required"])
+    outstanding = [d for d in owner_names if d not in provided]
+
+    blocking = []
+    for d in owner_docs:
+        if d["name"] in outstanding and bool(d.get("mandatory")):
+            blocking.append(d["name"])
+    if blocking:
         raise HTTPException(
             status_code=400,
-            detail="Cannot submit to credit — missing documents: "
-                   + ", ".join(missing),
+            detail="Cannot submit — these documents are mandatory before "
+                   "analysis can begin: " + ", ".join(blocking),
         )
+
+    if outstanding:
+        # Recorded, not waved through. The next person to open this deal sees
+        # exactly what is still owed and by whom.
+        try:
+            pm.update_deal(deal_id, {
+                "documents_outstanding": outstanding,
+                "documents_outstanding_at": datetime.now().isoformat(timespec="seconds"),
+            }, str(user.get("username", "") or ""))
+        except Exception as _exc:
+            logger.warning("could not record outstanding documents: %s", _exc)
+
     # C1 (manager-validation gate): a deal must be validated by a manager before
     # it can be handed to credit. Validation is a deliberate control point — the
     # manager confirms the deal is real/qualified before it consumes credit
@@ -6501,6 +6683,18 @@ def pipeline_deal_create(
 
     # Validate required fields + numeric sanity + stage allowlist
     deal_dict = payload.model_dump(exclude_unset=False)
+
+    # ORIGIN (ruling 2026-08-11). Recorded at creation because it describes how
+    # the deal ENTERED and cannot be reconstructed later. An unrecognised value
+    # falls back to the default rather than being stored: a typo'd origin would
+    # sit outside every configured bucket and appear in analytics as an orphan
+    # nobody can filter for.
+    try:
+        from utils.deal_origin import is_known as _known, DEFAULT_ORIGIN as _DEF
+        _org = str(deal_dict.get("origin") or "").strip()
+        deal_dict["origin"] = _org if _known(_org) else _DEF
+    except Exception:
+        deal_dict.setdefault("origin", "self")
     # SECURITY (stress Phase 3 — privileged-field injection): PipelineDealCreate
     # uses extra="allow", so a caller can smuggle workflow-controlled fields into
     # the create payload (manager_validated, referral_status, is_referral,
@@ -6516,6 +6710,12 @@ def pipeline_deal_create(
         "disbursed", "disbursed_at", "disbursed_under_override",
         "override_approved", "override_approved_by", "application_id",
         "credit_deferred_to", "credit_deferred_to_code",
+        # ORIGIN PARTY is workflow-controlled for the same reason as the
+        # referral fields: it decides whose index moves. The caller may declare
+        # WHERE a deal came from; they may not declare who gets credited for it.
+        # That is set by the workflow that routed the deal - the refer endpoint,
+        # or the warehouse claim.
+        "origin_party_code", "origin_party_name", "origin_backfilled_at",
     )
     _stripped = [k for k in _PRIVILEGED_AT_CREATE if k in deal_dict]
     for _k in _stripped:
@@ -6558,19 +6758,6 @@ def pipeline_deal_create(
         if not str(deal_dict.get("staff_name") or "").strip():
             deal_dict["staff_name"] = str(
                 _full.get("full_name", "") or user.get("username", "") or "")
-    # Item 1: a deal's originating branch defaults to the creator's own branch
-    # (their staff record's `unit`). Branch staff never need to pick it. Head
-    # Office RMs — whose own unit is "Head Office", not a real branch — send an
-    # explicit `unit` (the frontend shows them a branch picker), which we keep.
-    if not str(deal_dict.get("unit") or "").strip():
-        from utils.core import UserManager as _UM_unit
-        _cr = _UM_unit().users.get(str(user.get("username", "") or "")) or {}
-        _cru = str(_cr.get("unit", "") or "").strip()
-        # Don't stamp "Head Office" as a deal's branch — leave blank so an HO
-        # deal without an explicit pick stays clearly unassigned rather than
-        # masquerading as a branch.
-        if _cru and _cru.lower() != "head office":
-            deal_dict["unit"] = _cru
     ok, reason = validate_create_payload(deal_dict)
     if not ok:
         _audit("API_PIPELINE_CREATE_REJECTED", user, reason)
@@ -10538,6 +10725,17 @@ def pipeline_referral_bench(user: dict = Depends(get_current_user)):
     }
 
 
+@app.get("/api/pipeline/origins")
+def pipeline_origins(user: dict = Depends(get_current_user)):
+    """The configured deal origins, for filters and the create form.
+
+    Config-driven (ruling 2026-08-11: "in future I should be able to add more"),
+    so an eighth origin appears in every dropdown without a frontend change.
+    """
+    from utils.deal_origin import origins, DEFAULT_ORIGIN
+    return {"origins": origins(), "default": DEFAULT_ORIGIN}
+
+
 @app.get("/api/pipeline/leaderboard")
 def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
                          level: str = "staff", origin: str = "all",
@@ -10583,10 +10781,19 @@ def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
         return bool(d.get("is_referral")) and str(d.get("referral_status") or "") == "accepted"
 
     live = [d for d in deals if not d.get("draft") and lo <= (_when(d) or lo) <= hi]
-    if origin == "referred":
-        live = [d for d in live if _accepted_referral(d)]
-    elif origin == "direct":
-        live = [d for d in live if not _accepted_referral(d)]
+
+    # ORIGIN IS CONFIG, NOT A PAIR (ruling 2026-08-11). This filtered on
+    # referred-versus-direct, which works for two origins and breaks at seven.
+    # "referred" and "direct" are still accepted so an old bookmark or a stale
+    # client does not silently return everything.
+    from utils.deal_origin import origin_of as _origin_of, credits_party as _credits
+    org = str(origin or "all").strip()
+    if org == "referred":
+        org = "referral"
+    elif org == "direct":
+        org = "self"
+    if org and org != "all":
+        live = [d for d in live if _origin_of(d) == org]
 
     # The roster dimensions the daily log already builds - cached, canonical,
     # and the same source the rankings and grids use. Inventing a second reader
@@ -10602,10 +10809,14 @@ def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
     # instead - that is the whole point of the second level.
     rows_by_key: dict = {}
     for d in live:
-        if origin == "referred":
-            code = _canon_p(d.get("referred_by_code")
-                            or (d.get("referral_chain") or [{}])[0].get("referred_by_code")
-                            or "")
+        # When a single CREDITABLE origin is selected, attribute to the party
+        # that origin credits - the referrer, the warehouse lister, the lead
+        # generator, the contact-centre agent. Otherwise attribute to the owner.
+        # Mixing the two in one table is what would double-count.
+        if org and org != "all" and _credits(org):
+            from utils.deal_origin import party_of as _party_of
+            pcode, _pname = _party_of(d)
+            code = _canon_p(pcode or "")
         else:
             code = _canon_p(d.get("staff_code") or "")
         if not code:
@@ -10667,8 +10878,14 @@ def pipeline_leaderboard(days: int = 30, start: str = "", end: str = "",
     for i, r in enumerate(rows, 1):
         r["rank"] = i
 
+    from utils.deal_origin import origins as _origins
     return {
-        "level": level, "origin": origin, "start": lo, "end": hi,
+        "level": level, "origin": org, "start": lo, "end": hi,
+        # The UI builds its filter from this, so a new origin appears without
+        # a frontend change.
+        "origins": [{"key": "all", "label": "All origins", "credits_party": False}]
+                   + [{"key": o["key"], "label": o["label"],
+                       "credits_party": o["credits_party"]} for o in _origins()],
         "rows": rows,
         "total_deals": len(live),
         "total_value": round(sum(r["value"] for r in rows), 2),
@@ -10730,21 +10947,10 @@ def pipeline_analytics_summary(days: int = 30, start: str = "", end: str = "",
                         "deals": len(mine)})
     journey.sort(key=lambda f: -f["deals"])
 
-    # Referred vs direct. A referral is only counted once it has been ACCEPTED,
-    # matching the daily-log credit rule - a pending referral is an intention.
-    def _is_ref(d):
-        return bool(d.get("is_referral")) and str(d.get("referral_status") or "") == "accepted"
-
-    referred = [d for d in live if _is_ref(d)]
-    direct = [d for d in live if not _is_ref(d)]
-    origin = [
-        {"origin": "Referred", "count": len(referred),
-         "value": round(sum(_val(d) for d in referred), 2),
-         "won": sum(1 for d in referred if str(d.get("stage")) == "Closed Won")},
-        {"origin": "Direct", "count": len(direct),
-         "value": round(sum(_val(d) for d in direct), 2),
-         "won": sum(1 for d in direct if str(d.get("stage")) == "Closed Won")},
-    ]
+    # EVERY CONFIGURED ORIGIN, including the empty ones - an origin producing
+    # no deals is a finding, and hiding it is how a channel dies quietly.
+    from utils.deal_origin import summarise as _summarise
+    origin = _summarise(live)
 
     closed = len(won) + len(lost)
     return {

@@ -28,6 +28,10 @@ against the application records' `rm_code` field.
 """
 from __future__ import annotations
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 from typing import List, Dict, Any, Set
 import json as _json
 from pathlib import Path as _Path
@@ -149,6 +153,21 @@ def _analyst_segment(role: str, staff_code: str = "") -> str:
     if "cib credit analyst" in rl or "corporate credit analyst" in rl:
         return "cib"
     if "credit analyst" in rl:
+        # THE AMBIGUOUS CASE, and the one that bit the pilot. "Credit Analyst"
+        # spans Consumer and Commercial, so only the department can tell them
+        # apart - and a caller that forgets the staff code gets "" here, which
+        # is falsy and silently takes every gated branch the wrong way. It cost
+        # a Consumer analyst her ability to submit to the DCC, with no error
+        # raised anywhere.
+        #
+        # Now it says so in the log rather than shrugging. Still returns "" -
+        # raising would take down a page over a permission hint - but the next
+        # person gets a thread to pull instead of a blank screen.
+        if not str(staff_code or "").strip():
+            logger.warning(
+                "_analyst_segment(%r) called without a staff_code: the segment "
+                "cannot be resolved from the role alone, so this caller will be "
+                "treated as having NO segment.", role)
         dept = _staff_department(staff_code).lower()
         if "consumer" in dept:
             return "consumer"
