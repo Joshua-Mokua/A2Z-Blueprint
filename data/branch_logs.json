@@ -5433,7 +5433,9 @@
     "nps_collected": 0.0,
     "index": 22.2,
     "remarks": "SWIFT HORSE SAFARI LIMITED- TO complete documentation and process account opening\ncongregation of the most holy redeemer- redemptorist- new account to send certificate for search on monday 10th Aug\n",
-    "updated_at": "2026-08-07T17:54:50.931596"
+    "updated_at": "2026-08-07T17:54:50.931596",
+    "locked": true,
+    "locked_at": "2026-08-12T08:53:53.427472"
   },
   {
     "id": "LOG000165",
@@ -5683,7 +5685,9 @@
     "customer_visits": 12.0,
     "nps_collected": 1.0,
     "index": 31.0,
-    "remarks": ""
+    "remarks": "",
+    "locked": true,
+    "locked_at": "2026-08-12T08:53:53.427472"
   },
   {
     "id": "LOG000172",
@@ -5789,7 +5793,9 @@
     "customer_visits": 15.0,
     "nps_collected": 1.0,
     "index": 33.3,
-    "remarks": ""
+    "remarks": "",
+    "locked": true,
+    "locked_at": "2026-08-12T08:53:53.427472"
   },
   {
     "id": "LOG000175",
@@ -6326,7 +6332,9 @@
     "nps_collected": 0.0,
     "index": 12.0,
     "remarks": "Did one customer visit Sam nolvety , Two accounts filled awaiting search one approval of loan of 5m of Hangool ",
-    "updated_at": "2026-08-07T18:07:39.325536"
+    "updated_at": "2026-08-07T18:07:39.325536",
+    "locked": true,
+    "locked_at": "2026-08-12T08:53:53.427472"
   },
   {
     "id": "LOG000190",
@@ -6372,9 +6380,9 @@
     "role": "Assistant Branch Service & Operations Manager",
     "submitted_at": "2026-08-10T09:57:45.012778",
     "updated_at": "2026-08-07T18:31:19.052619",
-    "validated": false,
-    "validated_by": "",
-    "validated_at": "",
+    "validated": true,
+    "validated_by": "fmbuthia",
+    "validated_at": "2026-08-11T17:18:25.123246",
     "manager_note": "",
     "rejected": false,
     "status": "auto_submitted",
@@ -6730,9 +6738,9 @@
     "role": "Branch Operations Officer",
     "submitted_at": "2026-08-10T09:57:45.012778",
     "updated_at": "2026-08-08T10:07:17.197120",
-    "validated": false,
-    "validated_by": "",
-    "validated_at": "",
+    "validated": true,
+    "validated_by": "gwanjala@ecobank.com",
+    "validated_at": "2026-08-11T17:08:32.519099",
     "manager_note": "",
     "rejected": false,
     "status": "auto_submitted",
@@ -6874,9 +6882,9 @@
     "role": "Relationship Manager",
     "submitted_at": "",
     "updated_at": "2026-08-08T11:55:54.524161",
-    "validated": false,
-    "validated_by": "",
-    "validated_at": "",
+    "validated": true,
+    "validated_by": "fmbuthia",
+    "validated_at": "2026-08-11T17:18:58.591448",
     "manager_note": "",
     "rejected": false,
     "status": "submitted",
@@ -7094,14 +7102,14 @@
     "staff_name": "NYAKUNDI Caren [EKE-Operations]",
     "unit": "Westlands",
     "role": "Branch Operations Officer",
-    "submitted_at": "",
+    "submitted_at": "2026-08-11T16:45:29.673358",
     "updated_at": "2026-08-10T17:16:00.308624",
     "validated": false,
     "validated_by": "",
     "validated_at": "",
     "manager_note": "",
     "rejected": false,
-    "status": "draft",
+    "status": "auto_submitted",
     "hourly": {},
     "accounts_opened": 1.0,
     "accounts_activated": 1.0,
@@ -7121,7 +7129,9 @@
     "customer_visits": 11.0,
     "nps_collected": 3.0,
     "index": 25.7,
-    "remarks": "1. Dispatched card for lilian Ambasa ac no 6640007536 to Valley Arcade branch\n2. Did data clean up for CIF 471749532 before opening an additional account\n3. Did call over for outward cheques dated 03/08/2026\n4. Received and sent salaries for processing by team Industrial Area.\n5.Data clean up for CIF 470284236\n6. Dormant account reactivation for ac no.6640002114\n7.Did TT for ankenna Kennedy investment ltd ac no 6640006822\n8. mobile banking pin reset ac no 6610001102 and 6610002104\n9.  BTO for ac no 6640005030\n10.Atm card renewal ac no-6640002608\n11.Travel advisory for ac no-6640002608\n12. atm card renewal ac no-6640002797\n13. New account opened AC NO-6640007673"
+    "remarks": "1. Dispatched card for lilian Ambasa ac no 6640007536 to Valley Arcade branch\n2. Did data clean up for CIF 471749532 before opening an additional account\n3. Did call over for outward cheques dated 03/08/2026\n4. Received and sent salaries for processing by team Industrial Area.\n5.Data clean up for CIF 470284236\n6. Dormant account reactivation for ac no.6640002114\n7.Did TT for ankenna Kennedy investment ltd ac no 6640006822\n8. mobile banking pin reset ac no 6610001102 and 6610002104\n9.  BTO for ac no 6640005030\n10.Atm card renewal ac no-6640002608\n11.Travel advisory for ac no-6640002608\n12. atm card renewal ac no-6640002797\n13. New account opened AC NO-6640007673",
+    "auto_submitted": true,
+    "auto_submitted_at": "2026-08-11T16:45:29.673358"
   },
   {
     "id": "LOG000212",
@@ -7478,9 +7488,9 @@
     "role": "Relationship Manager",
     "submitted_at": "",
     "updated_at": "2026-08-10T16:09:43.497342",
-    "validated": false,
-    "validated_by": "",
-    "validated_at": "",
+    "validated": true,
+    "validated_by": "fmbuthia",
+    "validated_at": "2026-08-11T17:19:06.053070",
     "manager_note": "",
     "rejected": false,
     "status": "submitted",
@@ -7585,9 +7595,9 @@
     "role": "Assistant Branch Service & Operations Manager",
     "submitted_at": "",
     "updated_at": "2026-08-10T17:03:02.683277",
-    "validated": false,
-    "validated_by": "",
-    "validated_at": "",
+    "validated": true,
+    "validated_by": "fmbuthia",
+    "validated_at": "2026-08-11T17:18:17.102863",
     "manager_note": "",
     "rejected": false,
     "status": "submitted",
@@ -7752,9 +7762,9 @@
     "role": "Relationship Officer",
     "submitted_at": "",
     "updated_at": "2026-08-10T16:23:54.477988",
-    "validated": false,
-    "validated_by": "",
-    "validated_at": "",
+    "validated": true,
+    "validated_by": "fmbuthia",
+    "validated_at": "2026-08-11T17:19:00.337285",
     "manager_note": "",
     "rejected": false,
     "status": "submitted",
@@ -8198,9 +8208,9 @@
     "role": "Branch Operations Officer",
     "submitted_at": "",
     "updated_at": "2026-08-10T16:54:24.627933",
-    "validated": false,
-    "validated_by": "",
-    "validated_at": "",
+    "validated": true,
+    "validated_by": "gwanjala@ecobank.com",
+    "validated_at": "2026-08-11T17:08:39.532513",
     "manager_note": "",
     "rejected": false,
     "status": "submitted",
@@ -8242,9 +8252,9 @@
     "role": "Relationship Manager",
     "submitted_at": "",
     "updated_at": "2026-08-10T16:59:49.128077",
-    "validated": false,
-    "validated_by": "",
-    "validated_at": "",
+    "validated": true,
+    "validated_by": "fmbuthia",
+    "validated_at": "2026-08-11T17:19:01.730186",
     "manager_note": "",
     "rejected": false,
     "status": "submitted",
@@ -8588,9 +8598,9 @@
     "role": "Branch Operations Officer",
     "submitted_at": "",
     "updated_at": "2026-08-10T17:14:24.525723",
-    "validated": false,
-    "validated_by": "",
-    "validated_at": "",
+    "validated": true,
+    "validated_by": "fotwori",
+    "validated_at": "2026-08-11T17:19:09.965153",
     "manager_note": "",
     "rejected": false,
     "status": "submitted",
@@ -8633,9 +8643,9 @@
     "role": "Branch Operations Officer",
     "submitted_at": "",
     "updated_at": "2026-08-10T17:17:16.652324",
-    "validated": false,
-    "validated_by": "",
-    "validated_at": "",
+    "validated": true,
+    "validated_by": "fotwori",
+    "validated_at": "2026-08-11T17:15:22.353861",
     "manager_note": "",
     "rejected": false,
     "status": "submitted",
@@ -8722,14 +8732,14 @@
     "staff_name": "LANGAT Vincent [EKE-Operations]",
     "unit": "Kisumu",
     "role": "Branch Operations Officer",
-    "submitted_at": "",
+    "submitted_at": "2026-08-11T16:45:29.673358",
     "updated_at": "2026-08-10T17:23:25.331960",
     "validated": false,
     "validated_by": "",
     "validated_at": "",
     "manager_note": "",
     "rejected": false,
-    "status": "draft",
+    "status": "auto_submitted",
     "hourly": {},
     "accounts_opened": 4.0,
     "accounts_activated": 1.0,
@@ -8749,7 +8759,9 @@
     "customer_visits": 5.0,
     "nps_collected": 5.0,
     "index": 30.4,
-    "remarks": "ok"
+    "remarks": "ok",
+    "auto_submitted": true,
+    "auto_submitted_at": "2026-08-11T16:45:29.673358"
   },
   {
     "id": "LOG000241",
@@ -8897,14 +8909,14 @@
     "staff_name": "MURAYA Martha  [EKE-commercial Banking]",
     "unit": "Upper Hill",
     "role": "Branch Manager",
-    "submitted_at": "",
+    "submitted_at": "2026-08-11T16:45:29.673358",
     "updated_at": "2026-08-10T17:35:30.050106",
-    "validated": false,
-    "validated_by": "",
-    "validated_at": "",
+    "validated": true,
+    "validated_by": "hatibu",
+    "validated_at": "2026-08-11T17:47:16.964863",
     "manager_note": "",
     "rejected": false,
-    "status": "draft",
+    "status": "auto_submitted",
     "hourly": {
       "08": {
         "counts": {
@@ -8931,7 +8943,9 @@
     "customer_visits": 0.0,
     "nps_collected": 0.0,
     "index": 4.0,
-    "remarks": ""
+    "remarks": "",
+    "auto_submitted": true,
+    "auto_submitted_at": "2026-08-11T16:45:29.673358"
   },
   {
     "id": "LOG000245",
@@ -8940,14 +8954,14 @@
     "staff_name": "OYANDO Yvonne [EKE-Operations]",
     "unit": "Kisumu",
     "role": "Branch Operations Officer",
-    "submitted_at": "",
+    "submitted_at": "2026-08-11T16:45:29.673358",
     "updated_at": "2026-08-10T18:09:27.838314",
     "validated": false,
     "validated_by": "",
     "validated_at": "",
     "manager_note": "",
     "rejected": false,
-    "status": "draft",
+    "status": "auto_submitted",
     "hourly": {},
     "accounts_opened": 0.0,
     "accounts_activated": 0.0,
@@ -8967,7 +8981,9 @@
     "customer_visits": 8.0,
     "nps_collected": 0.0,
     "index": 39.4,
-    "remarks": ""
+    "remarks": "",
+    "auto_submitted": true,
+    "auto_submitted_at": "2026-08-11T16:45:29.673358"
   },
   {
     "id": "LOG000246",
@@ -8978,9 +8994,9 @@
     "role": "Customer Service Manager",
     "submitted_at": "",
     "updated_at": "2026-08-10T17:43:27.444578",
-    "validated": false,
-    "validated_by": "",
-    "validated_at": "",
+    "validated": true,
+    "validated_by": "fotwori",
+    "validated_at": "2026-08-11T17:15:18.278439",
     "manager_note": "",
     "rejected": false,
     "status": "submitted",
@@ -9272,9 +9288,9 @@
     "role": "Branch Operations Officer",
     "submitted_at": "",
     "updated_at": "2026-08-10T18:20:16.238963",
-    "validated": false,
-    "validated_by": "",
-    "validated_at": "",
+    "validated": true,
+    "validated_by": "lributhi",
+    "validated_at": "2026-08-11T18:09:01.652374",
     "manager_note": "",
     "rejected": false,
     "status": "submitted",
@@ -9459,5 +9475,3011 @@
     "nps_collected": 3.0,
     "index": 16.6,
     "remarks": ""
+  },
+  {
+    "id": "LOG000256",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1031",
+    "staff_name": "KARIARA Lazaro [EKE-Operations]",
+    "unit": "Nakuru",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:36:31.008037",
+    "validated": true,
+    "validated_by": "gwanjala@ecobank.com",
+    "validated_at": "2026-08-11T17:08:43.821816",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "accounts_opened": 1.0,
+          "accounts_activated": 1.0,
+          "transactions_count": 20.0,
+          "cards_issued": 2.0,
+          "dfs_registrations": 4.0,
+          "complaints_received": 1.0,
+          "complaints_resolved": 1.0,
+          "digital_txns": 5.0,
+          "cross_sell_success": 20.0,
+          "customer_visits": 37.0
+        },
+        "meetings": []
+      },
+      "08": {
+        "counts": {
+          "accounts_opened": 2.0,
+          "accounts_activated": 1.0,
+          "cards_issued": 1.0,
+          "dfs_registrations": 2.0,
+          "complaints_received": 2.0,
+          "complaints_resolved": 2.0,
+          "cross_sell_success": 2.0,
+          "customer_visits": 3.0,
+          "transactions_count": 20.0,
+          "deposits_mobilised": 5.0,
+          "bancassurance_sold": 2.0,
+          "digital_txns": 1.0,
+          "new_leads": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 3.0,
+    "accounts_activated": 2.0,
+    "transactions_count": 40.0,
+    "cards_issued": 3.0,
+    "dfs_registrations": 6.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 5.0,
+    "bancassurance_sold": 2.0,
+    "complaints_received": 3.0,
+    "complaints_resolved": 3.0,
+    "digital_txns": 6.0,
+    "new_leads": 1.0,
+    "cross_sell_success": 22.0,
+    "teller_errors": 0.0,
+    "customer_visits": 40.0,
+    "nps_collected": 0.0,
+    "index": 142.0,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000257",
+    "log_date": "2026-08-11",
+    "staff_code": "KE467",
+    "staff_name": "NYAKUNDI Caren [EKE-Operations]",
+    "unit": "Westlands",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T15:59:44.097869",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "10": {
+        "counts": {},
+        "meetings": [],
+        "note": "I did 4 courtesy calls for AFROEGYPT ENGINEERING COMPANY LTD ,CREDIBLE JEWELS ,EMERALD DREAMS LIMITED and  ROBEL GIRMA BIRHANIE"
+      },
+      "12": {
+        "counts": {
+          "digital_txns": 1.0,
+          "transactions_count": 1.0,
+          "customer_visits": 1.0
+        },
+        "meetings": [],
+        "note": "statement request for ac no 6640006551, assisted Customer [20615500] GINETTE NDJANDJA to load her xpress card via the mobile app,"
+      },
+      "15": {
+        "counts": {
+          "accounts_activated": 2.0,
+          "customer_visits": 5.0,
+          "transactions_count": 5.0,
+          "cards_issued": 3.0
+        },
+        "meetings": [],
+        "note": "reactivation for ac 6580005434 reactivation for ac 6640004035, atm card issue  for ac 6640005081, atm card order for ac 6640005080, atm card order for ac 6640007617"
+      },
+      "09": {
+        "counts": {
+          "dfs_registrations": 1.0,
+          "transactions_count": 2.0,
+          "customer_visits": 4.0,
+          "loans_referred": 1.0,
+          "digital_txns": 1.0
+        },
+        "meetings": [],
+        "note": "Did call over for 05 Aug 2026 for teller 1, assisted  BEDAN DANCAN AC NO 6682003580  with mobile app set up,"
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 2.0,
+    "transactions_count": 8.0,
+    "cards_issued": 3.0,
+    "dfs_registrations": 1.0,
+    "loans_referred": 1.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 2.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 10.0,
+    "nps_collected": 0.0,
+    "index": 23.6,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000258",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1153",
+    "staff_name": "RUBIA Grace [EKE-Operations]",
+    "unit": "Westlands",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:04:54.969368",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "10": {
+        "counts": {
+          "customer_visits": 3.0,
+          "complaints_received": 1.0,
+          "complaints_resolved": 1.0,
+          "digital_txns": 2.0,
+          "cards_issued": 1.0
+        },
+        "meetings": []
+      },
+      "11": {
+        "counts": {
+          "transactions_count": 1.0,
+          "customer_visits": 3.0
+        },
+        "meetings": []
+      },
+      "13": {
+        "counts": {
+          "customer_visits": 3.0,
+          "transactions_count": 5.0
+        },
+        "meetings": []
+      },
+      "14": {
+        "counts": {
+          "digital_txns": 2.0,
+          "customer_visits": 4.0,
+          "complaints_received": 1.0,
+          "complaints_resolved": 1.0
+        },
+        "meetings": []
+      },
+      "15": {
+        "counts": {
+          "customer_visits": 3.0,
+          "complaints_received": 3.0,
+          "complaints_resolved": 3.0,
+          "transactions_count": 3.0
+        },
+        "meetings": []
+      },
+      "09": {
+        "counts": {
+          "complaints_received": 1.0,
+          "digital_txns": 1.0,
+          "complaints_resolved": 1.0,
+          "customer_visits": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 9.0,
+    "cards_issued": 1.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 6.0,
+    "complaints_resolved": 6.0,
+    "digital_txns": 5.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 17.0,
+    "nps_collected": 0.0,
+    "index": 29.4,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000259",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1330",
+    "staff_name": "DOLA Jenipher",
+    "unit": "Ecobank Towers",
+    "role": "Relationship Manager",
+    "submitted_at": "2026-08-11T10:04:57.482777",
+    "validated": false,
+    "validated_by": "fmbuthia",
+    "validated_at": "2026-08-11T17:18:56.668326",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "11": {
+        "counts": {
+          "customer_visits": 2.0,
+          "new_leads": 1.0,
+          "bancassurance_sold": 1.0
+        },
+        "meetings": []
+      },
+      "14": {
+        "counts": {
+          "accounts_opened": 1.0,
+          "customer_visits": 3.0,
+          "cross_sell_success": 3.0,
+          "bancassurance_sold": 1.0,
+          "deposits_mobilised": 1000000.0
+        },
+        "meetings": []
+      },
+      "15": {
+        "counts": {
+          "new_leads": 2.0
+        },
+        "meetings": []
+      },
+      "09": {
+        "counts": {
+          "transactions_count": 1.0,
+          "customer_visits": 2.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 1.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 1.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 1000000.0,
+    "bancassurance_sold": 2.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 3.0,
+    "cross_sell_success": 3.0,
+    "teller_errors": 0.0,
+    "customer_visits": 7.0,
+    "nps_collected": 0.0,
+    "index": 45.3,
+    "remarks": "",
+    "updated_at": "2026-08-11T18:11:58.183496"
+  },
+  {
+    "id": "LOG000260",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1354",
+    "staff_name": "KYUMA Joshua [EKE-Operations]",
+    "unit": "Commercial Banking",
+    "role": "Staff",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:41:52.085077",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "10": {
+        "counts": {
+          "accounts_opened": 1.0
+        },
+        "meetings": []
+      },
+      "16": {
+        "counts": {
+          "transactions_count": 37.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 1.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 37.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 9.4,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000261",
+    "log_date": "2026-08-11",
+    "staff_code": "KE96",
+    "staff_name": "MWANGI Joyce  [EKE-Operations]",
+    "unit": "Westlands",
+    "role": "Customer Service Manager",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:24:25.637249",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "cards_issued": 1.0,
+          "accounts_activated": 1.0,
+          "transactions_count": 67.0,
+          "customer_visits": 8.0,
+          "dfs_registrations": 1.0
+        },
+        "meetings": []
+      },
+      "19": {
+        "counts": {
+          "nps_collected": 2.0
+        },
+        "meetings": []
+      },
+      "09": {
+        "counts": {
+          "accounts_opened": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 1.0,
+    "accounts_activated": 1.0,
+    "transactions_count": 67.0,
+    "cards_issued": 1.0,
+    "dfs_registrations": 1.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 8.0,
+    "nps_collected": 2.0,
+    "index": 27.8,
+    "remarks": "Confirmed Outward clearing cheques with the clients, made courtesy calls to Lamaira ltd, Tazora Limited and Trusgro SCA"
+  },
+  {
+    "id": "LOG000262",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1129",
+    "staff_name": "ODUOR Tobias [EKE-Operations]",
+    "unit": "Industrial Area",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T15:14:15.603843",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "10": {
+        "counts": {
+          "transactions_count": 2.0,
+          "cards_issued": 1.0,
+          "customer_visits": 1.0,
+          "nps_collected": 1.0
+        },
+        "meetings": []
+      },
+      "11": {
+        "counts": {
+          "customer_visits": 2.0
+        },
+        "meetings": []
+      },
+      "12": {
+        "counts": {
+          "customer_visits": 1.0
+        },
+        "meetings": []
+      },
+      "13": {
+        "counts": {
+          "digital_txns": 1.0,
+          "customer_visits": 1.0
+        },
+        "meetings": []
+      },
+      "14": {
+        "counts": {
+          "digital_txns": 2.0,
+          "customer_visits": 2.0,
+          "transactions_count": 4.0
+        },
+        "meetings": []
+      },
+      "15": {
+        "counts": {
+          "customer_visits": 1.0,
+          "cards_issued": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 6.0,
+    "cards_issued": 2.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 3.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 8.0,
+    "nps_collected": 1.0,
+    "index": 10.1,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000263",
+    "log_date": "2026-08-11",
+    "staff_code": "KE508",
+    "staff_name": "MJOMBA Nelly [EKE-Operations]",
+    "unit": "Upper Hill",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T11:08:29.495042",
+    "validated": true,
+    "validated_by": "hatibu",
+    "validated_at": "2026-08-11T17:47:19.029153",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "10": {
+        "counts": {
+          "accounts_opened": 1.0
+        },
+        "meetings": []
+      },
+      "11": {
+        "counts": {
+          "accounts_opened": 1.0,
+          "cards_issued": 2.0,
+          "customer_visits": 18.0,
+          "transactions_count": 9.0,
+          "nps_collected": 2.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 2.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 9.0,
+    "cards_issued": 2.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 18.0,
+    "nps_collected": 2.0,
+    "index": 17.2,
+    "remarks": "RTGS\n6658003712 * 2\n6628000503 *2\n6640005214\n6664002971 * 3\n6658000355\n\nAC OPENED\n6658003929\n\nCHEQUE BOOK\n6658000308 -ORDER\n6658000038 -ORDER\n6658003424- COLLECTED\nATM ORDERED\n6658002356\n6658003838\nONLINE BANKIING\n6658003926\nPREPAID \n0025425959\n\nSTATEMENT\n6580000128\n"
+  },
+  {
+    "id": "LOG000264",
+    "log_date": "2026-08-11",
+    "staff_code": "LBARANGA",
+    "staff_name": "BARANGA Leah",
+    "unit": "Industrial Area",
+    "role": "Staff",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:37:20.506325",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "10": {
+        "counts": {
+          "transactions_count": 5.0,
+          "customer_visits": 3.0
+        },
+        "meetings": []
+      },
+      "11": {
+        "counts": {
+          "transactions_count": 9.0,
+          "customer_visits": 7.0
+        },
+        "meetings": []
+      },
+      "12": {
+        "counts": {
+          "transactions_count": 3.0,
+          "customer_visits": 3.0,
+          "complaints_resolved": 1.0,
+          "nps_collected": 1.0
+        },
+        "meetings": []
+      },
+      "13": {
+        "counts": {
+          "transactions_count": 7.0,
+          "customer_visits": 7.0,
+          "nps_collected": 1.0
+        },
+        "meetings": []
+      },
+      "14": {
+        "counts": {
+          "transactions_count": 7.0,
+          "customer_visits": 7.0
+        },
+        "meetings": []
+      },
+      "15": {
+        "counts": {
+          "nps_collected": 3.0,
+          "customer_visits": 4.0,
+          "transactions_count": 4.0
+        },
+        "meetings": []
+      },
+      "09": {
+        "counts": {
+          "transactions_count": 2.0,
+          "customer_visits": 2.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 37.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 1.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 33.0,
+    "nps_collected": 5.0,
+    "index": 25.3,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000265",
+    "log_date": "2026-08-11",
+    "staff_code": "KE313",
+    "staff_name": "ODERA Philgona  [EKE-Operations]",
+    "unit": "Nyeri",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:35:35.746198",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "11": {
+        "counts": {
+          "cards_issued": 3.0,
+          "cross_sell_success": 2.0,
+          "digital_txns": 1.0,
+          "customer_visits": 3.0
+        },
+        "meetings": []
+      },
+      "16": {
+        "counts": {
+          "transactions_count": 1.0,
+          "customer_visits": 1.0,
+          "cross_sell_success": 2.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 1.0,
+    "cards_issued": 3.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 1.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 4.0,
+    "teller_errors": 0.0,
+    "customer_visits": 4.0,
+    "nps_collected": 0.0,
+    "index": 19.9,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000266",
+    "log_date": "2026-08-11",
+    "staff_code": "KE561",
+    "staff_name": "Abok Susan [EKE-Operations]",
+    "unit": "Upper Hill",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:08:40.574651",
+    "validated": true,
+    "validated_by": "hatibu",
+    "validated_at": "2026-08-11T17:47:20.149754",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "complaints_received": 2.0,
+          "transactions_count": 23.0,
+          "complaints_resolved": 2.0,
+          "cross_sell_success": 2.0,
+          "nps_collected": 2.0,
+          "loans_referred": 1.0
+        },
+        "meetings": []
+      },
+      "08": {
+        "counts": {
+          "accounts_opened": 1.0,
+          "accounts_activated": 1.0,
+          "loans_disbursed": 1.0,
+          "nps_collected": 1.0,
+          "customer_visits": 20.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 1.0,
+    "accounts_activated": 1.0,
+    "transactions_count": 23.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 1.0,
+    "loans_disbursed": 1.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 2.0,
+    "complaints_resolved": 2.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 2.0,
+    "teller_errors": 0.0,
+    "customer_visits": 20.0,
+    "nps_collected": 3.0,
+    "index": 33.6,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000267",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1285",
+    "staff_name": "NYAKANGO Jackson",
+    "unit": "Kisumu Branch",
+    "role": "Staff",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T15:25:48.893782",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "02": {
+        "counts": {
+          "accounts_opened": 3.0,
+          "complaints_received": 2.0,
+          "new_leads": 2.0,
+          "loans_disbursed": 325000.0,
+          "deposits_mobilised": 100000.0,
+          "dfs_registrations": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 3.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 1.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 325000.0,
+    "deposits_mobilised": 100000.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 2.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 2.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 37.75,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000268",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1026",
+    "staff_name": "WAMBUA Rene [EKE-Operations]",
+    "unit": "Upper Hill",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T15:40:39.864277",
+    "validated": true,
+    "validated_by": "hatibu",
+    "validated_at": "2026-08-11T17:47:21.409460",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "10": {
+        "counts": {
+          "customer_visits": 2.0
+        },
+        "meetings": []
+      },
+      "11": {
+        "counts": {
+          "transactions_count": 4.0
+        },
+        "meetings": []
+      },
+      "12": {
+        "counts": {
+          "transactions_count": 2.0,
+          "complaints_received": 1.0,
+          "complaints_resolved": 1.0
+        },
+        "meetings": []
+      },
+      "13": {
+        "counts": {
+          "customer_visits": 3.0,
+          "nps_collected": 2.0,
+          "cross_sell_success": 2.0,
+          "transactions_count": 4.0
+        },
+        "meetings": []
+      },
+      "14": {
+        "counts": {
+          "complaints_received": 2.0,
+          "complaints_resolved": 2.0,
+          "customer_visits": 2.0
+        },
+        "meetings": []
+      },
+      "15": {
+        "counts": {
+          "digital_txns": 2.0,
+          "customer_visits": 2.0
+        },
+        "meetings": []
+      },
+      "09": {
+        "counts": {
+          "accounts_opened": 1.0,
+          "nps_collected": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 1.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 10.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 3.0,
+    "complaints_resolved": 3.0,
+    "digital_txns": 2.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 2.0,
+    "teller_errors": 0.0,
+    "customer_visits": 9.0,
+    "nps_collected": 3.0,
+    "index": 25.7,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000269",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1133",
+    "staff_name": "WAMBUI Francis [EKE-Operations]",
+    "unit": "Karatina",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T15:45:43.648473",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "15": {
+        "counts": {
+          "transactions_count": 38.0,
+          "customer_visits": 38.0,
+          "digital_txns": 2.0,
+          "complaints_received": 4.0,
+          "complaints_resolved": 3.0,
+          "loans_disbursed": 113000.0,
+          "cards_issued": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 38.0,
+    "cards_issued": 1.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 113000.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 4.0,
+    "complaints_resolved": 3.0,
+    "digital_txns": 2.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 38.0,
+    "nps_collected": 0.0,
+    "index": 38.91,
+    "remarks": "authorized 38 transactions\nkarembo ltd loan kes 113,000"
+  },
+  {
+    "id": "LOG000270",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1044",
+    "staff_name": "MWIRIGI Esther [EKE-Operations]",
+    "unit": "Karatina",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:13:19.881944",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "15": {
+        "counts": {
+          "cross_sell_success": 1.0,
+          "customer_visits": 30.0,
+          "loans_disbursed": 1.0
+        },
+        "meetings": [],
+        "note": "SALARY ADVANCE DISBURSED"
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 1.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 1.0,
+    "teller_errors": 0.0,
+    "customer_visits": 30.0,
+    "nps_collected": 0.0,
+    "index": 12.0,
+    "remarks": "SALARY ADVANCE DISBURSED"
+  },
+  {
+    "id": "LOG000271",
+    "log_date": "2026-08-11",
+    "staff_code": "KE973",
+    "staff_name": "PATROBA George [EKE-Commercial Banking]",
+    "unit": "Ecobank Towers",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:28:01.250387",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "accounts_activated": 2.0,
+          "transactions_count": 34.0,
+          "digital_txns": 1.0,
+          "complaints_resolved": 2.0,
+          "new_leads": 2.0,
+          "nps_collected": 1.0,
+          "customer_visits": 15.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 2.0,
+    "transactions_count": 34.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 2.0,
+    "digital_txns": 1.0,
+    "new_leads": 2.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 15.0,
+    "nps_collected": 1.0,
+    "index": 28.8,
+    "remarks": "DORMANCY REACTIVATED\n6640003729\n6640003729\nTCHIDA RIB ASSISTED AND TRANSACTED"
+  },
+  {
+    "id": "LOG000272",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1154",
+    "staff_name": "OCHIENG Macklin [EKE-Operations]",
+    "unit": "Ecobank Towers",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:20:25.673471",
+    "validated": true,
+    "validated_by": "fotwori",
+    "validated_at": "2026-08-11T17:15:39.406275",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "15": {
+        "counts": {
+          "accounts_opened": 8.0,
+          "accounts_activated": 5.0,
+          "transactions_count": 30.0
+        },
+        "meetings": []
+      },
+      "16": {
+        "counts": {
+          "accounts_opened": 4.0,
+          "accounts_activated": 5.0,
+          "transactions_count": 10.0,
+          "cards_issued": 10.0,
+          "dfs_registrations": 20.0,
+          "loans_referred": 12.0,
+          "bancassurance_sold": 1.0,
+          "deposits_mobilised": 1000000.0,
+          "complaints_received": 30.0,
+          "new_leads": 1.0,
+          "complaints_resolved": 60.0,
+          "digital_txns": 15.0,
+          "cross_sell_success": 12.0,
+          "customer_visits": 65.0,
+          "nps_collected": 30.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 12.0,
+    "accounts_activated": 10.0,
+    "transactions_count": 40.0,
+    "cards_issued": 10.0,
+    "dfs_registrations": 20.0,
+    "loans_referred": 12.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 1000000.0,
+    "bancassurance_sold": 1.0,
+    "complaints_received": 30.0,
+    "complaints_resolved": 60.0,
+    "digital_txns": 15.0,
+    "new_leads": 1.0,
+    "cross_sell_success": 12.0,
+    "teller_errors": 0.0,
+    "customer_visits": 65.0,
+    "nps_collected": 30.0,
+    "index": 476.0,
+    "remarks": "mobile banking ussd activation challenge."
+  },
+  {
+    "id": "LOG000273",
+    "log_date": "2026-08-11",
+    "staff_code": "KE327",
+    "staff_name": "NJERI Ivy",
+    "unit": "EKE-COMMERCIAL BANKING DEPARTMENT",
+    "role": "Staff",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:16:52.139863",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "deposits_mobilised": 1805448.0,
+          "cross_sell_success": 2.0,
+          "complaints_received": 2.0,
+          "complaints_resolved": 2.0,
+          "transactions_count": 35.0,
+          "customer_visits": 22.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 35.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 1805448.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 2.0,
+    "complaints_resolved": 2.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 2.0,
+    "teller_errors": 0.0,
+    "customer_visits": 22.0,
+    "nps_collected": 0.0,
+    "index": 61.71,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000274",
+    "log_date": "2026-08-11",
+    "staff_code": "KE958",
+    "staff_name": "KIDULLAH Tamara [EKE-Operations]",
+    "unit": "Nakuru",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:56:09.527144",
+    "validated": true,
+    "validated_by": "gwanjala@ecobank.com",
+    "validated_at": "2026-08-11T17:08:53.592447",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "transactions_count": 57.0,
+          "deposits_mobilised": 395000.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 57.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 395000.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 19.3,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000275",
+    "log_date": "2026-08-11",
+    "staff_code": "KE810",
+    "staff_name": "GATERU Caroline [EKE-Operations]",
+    "unit": "Plaza 2000",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:31:56.950142",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "transactions_count": 20.0,
+          "cards_issued": 3.0,
+          "dfs_registrations": 2.0,
+          "complaints_received": 2.0,
+          "complaints_resolved": 2.0,
+          "new_leads": 1.0,
+          "customer_visits": 5.0,
+          "nps_collected": 2.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 20.0,
+    "cards_issued": 3.0,
+    "dfs_registrations": 2.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 2.0,
+    "complaints_resolved": 2.0,
+    "digital_txns": 0.0,
+    "new_leads": 1.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 5.0,
+    "nps_collected": 2.0,
+    "index": 27.5,
+    "remarks": "2 prepaid cards issued 1 ATM. 5 Statement requests.2 transaction/loan deduction complains. 3 RTGS's. 1 account class transfer one cheque book issue. 2 Alert maintainance.2 dormancy call backs 2 nps captured"
+  },
+  {
+    "id": "LOG000276",
+    "log_date": "2026-08-11",
+    "staff_code": "KE970",
+    "staff_name": "KAMAU Wanjora [EKE-Consumer Banking]",
+    "unit": "Ecobank Towers",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:29:42.692976",
+    "validated": true,
+    "validated_by": "fotwori",
+    "validated_at": "2026-08-11T17:15:42.067431",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "accounts_opened": 6.0,
+          "dfs_registrations": 2.0,
+          "nps_collected": 2.0,
+          "accounts_activated": 1.0,
+          "complaints_received": 3.0,
+          "transactions_count": 10.0,
+          "complaints_resolved": 3.0,
+          "digital_txns": 2.0,
+          "customer_visits": 25.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 6.0,
+    "accounts_activated": 1.0,
+    "transactions_count": 10.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 2.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 3.0,
+    "complaints_resolved": 3.0,
+    "digital_txns": 2.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 25.0,
+    "nps_collected": 2.0,
+    "index": 42.5,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000277",
+    "log_date": "2026-08-11",
+    "staff_code": "CN202",
+    "staff_name": "MUSUMBA Topister",
+    "unit": "Commercial",
+    "role": "Staff",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:36:33.835443",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "accounts_opened": 2.0,
+          "new_leads": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 2.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 1.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 6.0,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000278",
+    "log_date": "2026-08-11",
+    "staff_code": "CN48",
+    "staff_name": "JEREMIAH Ann",
+    "unit": "Consumer",
+    "role": "Staff",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:34:27.308841",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "new_leads": 3.0,
+          "bancassurance_sold": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 1.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 3.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 9.0,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000279",
+    "log_date": "2026-08-11",
+    "staff_code": "KE672",
+    "staff_name": "MURITU Martin [EKE-commercial Banking]",
+    "unit": "Nyeri",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:36:30.184698",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "customer_visits": 30.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 30.0,
+    "nps_collected": 0.0,
+    "index": 9.0,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000280",
+    "log_date": "2026-08-11",
+    "staff_code": "KE966",
+    "staff_name": "MURIITHI Lindah [EKE-Operations]",
+    "unit": "Thika",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:39:24.220976",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "12": {
+        "counts": {
+          "complaints_received": 1.0,
+          "transactions_count": 21.0
+        },
+        "meetings": [],
+        "note": "teller vouchers checked for 10.8.2026"
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 21.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 1.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 4.2,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000281",
+    "log_date": "2026-08-11",
+    "staff_code": "KE539",
+    "staff_name": "Lidahuli Lucy [EKE-Consumer Banking]",
+    "unit": "Ecobank Towers",
+    "role": "Relationship Manager, Premier Banking",
+    "submitted_at": "2026-08-11T16:42:16.683384",
+    "validated": true,
+    "validated_by": "fmbuthia",
+    "validated_at": "2026-08-11T17:18:54.740512",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "accounts_activated": 4.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 4.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 12.0,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000282",
+    "log_date": "2026-08-11",
+    "staff_code": "KE949",
+    "staff_name": "Gikonyo Monica [EKE-Consumer Banking]",
+    "unit": "Ecobank Towers",
+    "role": "Relationship Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T16:43:43.360717",
+    "validated": true,
+    "validated_by": "fmbuthia",
+    "validated_at": "2026-08-11T17:19:10.679761",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "accounts_opened": 1.0,
+          "bancassurance_sold": 7.0,
+          "complaints_resolved": 25.0,
+          "complaints_received": 25.0,
+          "customer_visits": 21.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 1.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 7.0,
+    "complaints_received": 25.0,
+    "complaints_resolved": 25.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 21.0,
+    "nps_collected": 0.0,
+    "index": 104.3,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000283",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1228",
+    "staff_name": "CHISAKANE James [EKE-Consumer Banking]",
+    "unit": "Westlands",
+    "role": "Relationship Manager",
+    "submitted_at": "2026-08-11T16:47:01.640370",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "accounts_opened": 1.0,
+          "cards_issued": 2.0,
+          "bancassurance_sold": 1.0,
+          "complaints_received": 3.0,
+          "complaints_resolved": 3.0,
+          "digital_txns": 4.0,
+          "customer_visits": 11.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 1.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 2.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 1.0,
+    "complaints_received": 3.0,
+    "complaints_resolved": 3.0,
+    "digital_txns": 4.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 11.0,
+    "nps_collected": 0.0,
+    "index": 23.3,
+    "remarks": "ok",
+    "updated_at": "2026-08-11T16:49:07.260512"
+  },
+  {
+    "id": "LOG000284",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1100",
+    "staff_name": "ODERA Edna [EKE-Operations]",
+    "unit": "Ecobank Towers",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:01:51.244319",
+    "validated": true,
+    "validated_by": "fotwori",
+    "validated_at": "2026-08-11T17:15:46.546117",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "transactions_count": 75.0,
+          "cross_sell_success": 2.0,
+          "customer_visits": 75.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 75.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 2.0,
+    "teller_errors": 0.0,
+    "customer_visits": 75.0,
+    "nps_collected": 0.0,
+    "index": 43.5,
+    "remarks": "cross selling accouts to western union clients\natm loading and off loading\ncross selling float-NDANU LIMITED(SUPER)"
+  },
+  {
+    "id": "LOG000285",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1162",
+    "staff_name": "BULIMO Brian [EKE-Operations]",
+    "unit": "Westlands",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:20:23.045419",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "10": {
+        "counts": {
+          "transactions_count": 5.0,
+          "customer_visits": 5.0
+        },
+        "meetings": []
+      },
+      "11": {
+        "counts": {
+          "transactions_count": 6.0,
+          "customer_visits": 4.0
+        },
+        "meetings": []
+      },
+      "12": {
+        "counts": {
+          "transactions_count": 8.0,
+          "customer_visits": 4.0
+        },
+        "meetings": []
+      },
+      "13": {
+        "counts": {
+          "complaints_resolved": 1.0,
+          "transactions_count": 5.0,
+          "customer_visits": 3.0
+        },
+        "meetings": []
+      },
+      "14": {
+        "counts": {
+          "complaints_resolved": 5.0
+        },
+        "meetings": [],
+        "note": "ARCHIVING FROM 1PM TO 4PM"
+      },
+      "09": {
+        "counts": {
+          "transactions_count": 2.0,
+          "customer_visits": 2.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 26.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 6.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 18.0,
+    "nps_collected": 0.0,
+    "index": 28.6,
+    "remarks": "ARCHIVING FROM 1PM TO 4PM"
+  },
+  {
+    "id": "LOG000286",
+    "log_date": "2026-08-11",
+    "staff_code": "CN142",
+    "staff_name": "MATHANI Emmanuel [EKE-Operations]",
+    "unit": "Operations",
+    "role": "Staff",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:06:06.966378",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "transactions_count": 63.0,
+          "complaints_received": 2.0,
+          "complaints_resolved": 2.0,
+          "digital_txns": 9.0,
+          "customer_visits": 39.0,
+          "nps_collected": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 63.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 2.0,
+    "complaints_resolved": 2.0,
+    "digital_txns": 9.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 39.0,
+    "nps_collected": 1.0,
+    "index": 35.8,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000287",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1048",
+    "staff_name": "SIMIYU Maryanne [EKE-Operations]",
+    "unit": "Ecobank Towers",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:14:18.223321",
+    "validated": true,
+    "validated_by": "fotwori",
+    "validated_at": "2026-08-11T17:15:48.655496",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "transactions_count": 92.0,
+          "customer_visits": 86.0,
+          "complaints_received": 4.0,
+          "complaints_resolved": 4.0,
+          "cross_sell_success": 3.0,
+          "new_leads": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 92.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 4.0,
+    "complaints_resolved": 4.0,
+    "digital_txns": 0.0,
+    "new_leads": 1.0,
+    "cross_sell_success": 3.0,
+    "teller_errors": 0.0,
+    "customer_visits": 86.0,
+    "nps_collected": 0.0,
+    "index": 67.2,
+    "remarks": "92 TRANSACTIONS PROCESSED, WITH 86 CLIENTS SERVED. MANAGED TO GIVE ONE PREPAID CARD LEAD TO BE CLOSED TOMORROW. RECEIVED 4 CLIENT COMPLAINTS WHICH I RESOLVED SAME DAY.3 SUCCESSFUL CROSS SELLS ON DIGITAL ACCOUNT OPENING AND OMNI SET UP."
+  },
+  {
+    "id": "LOG000288",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1289",
+    "staff_name": "WANJALA Geoffrey [EKE-Commercial]",
+    "unit": "Nakuru",
+    "role": "Branch Manager",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:11:06.964945",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "customer_visits": 5.0,
+          "new_leads": 1.0,
+          "cross_sell_success": 2.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 1.0,
+    "cross_sell_success": 2.0,
+    "teller_errors": 0.0,
+    "customer_visits": 5.0,
+    "nps_collected": 0.0,
+    "index": 9.5,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000289",
+    "log_date": "2026-08-11",
+    "staff_code": "KE852",
+    "staff_name": "BUSOLO Faith [EKE-Commercial Banking]",
+    "unit": "Ecobank Towers",
+    "role": "Assistant Branch Service & Operations Manager",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:14:08.990519",
+    "validated": true,
+    "validated_by": "fmbuthia",
+    "validated_at": "2026-08-11T17:19:08.336587",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "accounts_opened": 1.0,
+          "accounts_activated": 2.0,
+          "transactions_count": 131.0,
+          "cards_issued": 3.0,
+          "dfs_registrations": 5.0,
+          "loans_referred": 1.0,
+          "digital_txns": 10.0,
+          "complaints_resolved": 5.0,
+          "complaints_received": 5.0,
+          "new_leads": 1.0,
+          "cross_sell_success": 5.0,
+          "customer_visits": 150.0,
+          "deposits_mobilised": 10000000.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 1.0,
+    "accounts_activated": 2.0,
+    "transactions_count": 131.0,
+    "cards_issued": 3.0,
+    "dfs_registrations": 5.0,
+    "loans_referred": 1.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 10000000.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 5.0,
+    "complaints_resolved": 5.0,
+    "digital_txns": 10.0,
+    "new_leads": 1.0,
+    "cross_sell_success": 5.0,
+    "teller_errors": 0.0,
+    "customer_visits": 150.0,
+    "nps_collected": 0.0,
+    "index": 340.2,
+    "remarks": "FX DEAL - WAREN LAW ADVOCATES (USD 77,484"
+  },
+  {
+    "id": "LOG000290",
+    "log_date": "2026-08-11",
+    "staff_code": "KE827",
+    "staff_name": "LALARARI Veronica [EKE-Consumer Banking]",
+    "unit": "Upper Hill",
+    "role": "Relationship Manager, Premier Banking",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:14:39.228339",
+    "validated": true,
+    "validated_by": "hatibu",
+    "validated_at": "2026-08-11T17:47:22.433957",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "digital_txns": 1.0,
+          "new_leads": 2.0,
+          "complaints_resolved": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 1.0,
+    "digital_txns": 1.0,
+    "new_leads": 2.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 7.5,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000291",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1175",
+    "staff_name": "SAKWA George [EKE-Operations]",
+    "unit": "Fortis",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:18:21.314249",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "16": {
+        "counts": {
+          "accounts_opened": 2.0,
+          "transactions_count": 22.0,
+          "cards_issued": 2.0,
+          "dfs_registrations": 2.0,
+          "deposits_mobilised": 262998.0,
+          "complaints_received": 5.0,
+          "customer_visits": 15.0,
+          "nps_collected": 1.0,
+          "cross_sell_success": 1.0,
+          "new_leads": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 2.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 22.0,
+    "cards_issued": 2.0,
+    "dfs_registrations": 2.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 262998.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 5.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 1.0,
+    "cross_sell_success": 1.0,
+    "teller_errors": 0.0,
+    "customer_visits": 15.0,
+    "nps_collected": 1.0,
+    "index": 34.16,
+    "remarks": "ok"
+  },
+  {
+    "id": "LOG000292",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1214",
+    "staff_name": "KAMAMI Linet [EKE-Consumer Banking]",
+    "unit": "Head Office",
+    "role": "Scheme Administrator Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:20:04.589938",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "complaints_received": 2.0,
+          "complaints_resolved": 2.0,
+          "transactions_count": 6.0,
+          "loans_disbursed": 10713148.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 6.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 10713148.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 2.0,
+    "complaints_resolved": 2.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 757.12,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000293",
+    "log_date": "2026-08-11",
+    "staff_code": "KE484",
+    "staff_name": "Mbuthia Florence [EKE-Operations]",
+    "unit": "Ecobank Towers",
+    "role": "Customer Service Manager",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:22:20.871329",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "accounts_opened": 3.0,
+          "accounts_activated": 4.0,
+          "transactions_count": 40.0,
+          "cards_issued": 4.0,
+          "complaints_received": 5.0,
+          "complaints_resolved": 5.0,
+          "digital_txns": 5.0,
+          "new_leads": 2.0,
+          "cross_sell_success": 5.0,
+          "bancassurance_sold": 1.0,
+          "deposits_mobilised": 5000000.0,
+          "customer_visits": 35.0
+        },
+        "meetings": [],
+        "note": "closed 1 bancasurance lead for 20 000 premium, reviewed all CSO/TELLER work for all the transactions they did for the day"
+      }
+    },
+    "accounts_opened": 3.0,
+    "accounts_activated": 4.0,
+    "transactions_count": 40.0,
+    "cards_issued": 4.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 5000000.0,
+    "bancassurance_sold": 1.0,
+    "complaints_received": 5.0,
+    "complaints_resolved": 5.0,
+    "digital_txns": 5.0,
+    "new_leads": 2.0,
+    "cross_sell_success": 5.0,
+    "teller_errors": 0.0,
+    "customer_visits": 35.0,
+    "nps_collected": 0.0,
+    "index": 184.0,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000294",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1339",
+    "staff_name": "OKUMU Emmanuel [EKE-Consumer Banking]",
+    "unit": "Head Office",
+    "role": "Card Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:32:15.486532",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "customer_visits": 8.0,
+          "complaints_received": 2.0,
+          "complaints_resolved": 2.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 2.0,
+    "complaints_resolved": 2.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 8.0,
+    "nps_collected": 0.0,
+    "index": 8.4,
+    "remarks": "\nSpent most of the day on the Network International Credit Card Project, including an interdepartmental meeting to review test results and obtain feedback on the completed test scripts ahead of go-live.\n\nContinued managing the Credit Card PDO portfolio, successfully recovering seven PDO accounts and reducing outstanding arrears.\nHandled routine card business matters and customer requests, including follow-up on operational issues, escalations, and account maintenance.\n\nProvided support to corporate card clients and internal teams on ongoing card-related requests and service issues."
+  },
+  {
+    "id": "LOG000295",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1300",
+    "staff_name": "MUTISYA Catherine [EKE-Consumer Banking]",
+    "unit": "Head Office",
+    "role": "Credit Analyst",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:28:11.115939",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "loans_disbursed": 10713148.0,
+          "cross_sell_success": 1.0,
+          "customer_visits": 11.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 10713148.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 1.0,
+    "teller_errors": 0.0,
+    "customer_visits": 11.0,
+    "nps_collected": 0.0,
+    "index": 756.22,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000296",
+    "log_date": "2026-08-11",
+    "staff_code": "CN233",
+    "staff_name": "ATIENO Vera",
+    "unit": "Karen",
+    "role": "Staff",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:43:48.403286",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "transactions_count": 92.0,
+          "customer_visits": 92.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 92.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 92.0,
+    "nps_collected": 0.0,
+    "index": 46.0,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000297",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1269",
+    "staff_name": "LEIN Fiona [EKE-Consumer]",
+    "unit": "Head Office",
+    "role": "Head Premier Banking",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T18:31:42.413017",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "bancassurance_sold": 1.0,
+          "new_leads": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 1.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 1.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 5.0,
+    "remarks": "Engaged a NTB client on a medical policy and shared quotations\nReferred 1 motor insurance deal that was closed, client made payment"
+  },
+  {
+    "id": "LOG000298",
+    "log_date": "2026-08-11",
+    "staff_code": "KE968",
+    "staff_name": "ATIBU Honest [EKE-Operations]",
+    "unit": "Upper Hill",
+    "role": "Customer Service Manager",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:48:45.002477",
+    "validated": true,
+    "validated_by": "mmuraya",
+    "validated_at": "2026-08-12T10:57:47.021960",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "customer_visits": 5.0,
+          "deposits_mobilised": 13000000.0,
+          "transactions_count": 49.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 49.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 13000000.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 5.0,
+    "nps_collected": 0.0,
+    "index": 271.3,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000299",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1352",
+    "staff_name": "ONYANGO Eric",
+    "unit": "EKE-COMMERCIAL BANKING DEPARTMENT",
+    "role": "Staff",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T17:53:27.498350",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "transactions_count": 88.0,
+          "customer_visits": 55.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 88.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 55.0,
+    "nps_collected": 0.0,
+    "index": 34.1,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000300",
+    "log_date": "2026-08-11",
+    "staff_code": "KE762",
+    "staff_name": "GAKINYA Caroline [EKE-commercial Banking]",
+    "unit": "Ecobank Towers",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T18:00:46.622712",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "accounts_opened": 1.0,
+          "cards_issued": 10.0,
+          "loans_disbursed": 1000000.0,
+          "new_leads": 2.0,
+          "customer_visits": 20.0,
+          "accounts_activated": 3.0,
+          "dfs_registrations": 10.0,
+          "cross_sell_success": 5.0,
+          "nps_collected": 5.0,
+          "loans_referred": 1.0,
+          "digital_txns": 5.0,
+          "deposits_mobilised": 5000000.0
+        },
+        "meetings": [],
+        "note": "n/a"
+      }
+    },
+    "accounts_opened": 1.0,
+    "accounts_activated": 3.0,
+    "transactions_count": 0.0,
+    "cards_issued": 10.0,
+    "dfs_registrations": 10.0,
+    "loans_referred": 1.0,
+    "loans_disbursed": 1000000.0,
+    "deposits_mobilised": 5000000.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 5.0,
+    "new_leads": 2.0,
+    "cross_sell_success": 5.0,
+    "teller_errors": 0.0,
+    "customer_visits": 20.0,
+    "nps_collected": 5.0,
+    "index": 266.5,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000301",
+    "log_date": "2026-08-11",
+    "staff_code": "KE988",
+    "staff_name": "OYANDO Yvonne [EKE-Operations]",
+    "unit": "Kisumu",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T18:02:15.117200",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "17": {
+        "counts": {
+          "accounts_activated": 3.0,
+          "transactions_count": 88.0,
+          "cards_issued": 4.0,
+          "dfs_registrations": 2.0,
+          "complaints_received": 1.0,
+          "complaints_resolved": 1.0,
+          "cross_sell_success": 2.0,
+          "customer_visits": 7.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 3.0,
+    "transactions_count": 88.0,
+    "cards_issued": 4.0,
+    "dfs_registrations": 2.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 1.0,
+    "complaints_resolved": 1.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 2.0,
+    "teller_errors": 0.0,
+    "customer_visits": 7.0,
+    "nps_collected": 0.0,
+    "index": 51.7,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000302",
+    "log_date": "2026-08-11",
+    "staff_code": "KE822",
+    "staff_name": "LANGAT Vincent [EKE-Operations]",
+    "unit": "Kisumu",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T18:04:18.551715",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "11": {
+        "counts": {
+          "accounts_opened": 2.0,
+          "accounts_activated": 1.0,
+          "deposits_mobilised": 1.0,
+          "complaints_received": 1.0,
+          "complaints_resolved": 1.0,
+          "digital_txns": 3.0,
+          "cross_sell_success": 1.0,
+          "nps_collected": 4.0,
+          "customer_visits": 6.0
+        },
+        "meetings": []
+      },
+      "18": {
+        "counts": {
+          "accounts_opened": 3.0,
+          "accounts_activated": 1.0,
+          "cards_issued": 1.0,
+          "deposits_mobilised": 1.0,
+          "nps_collected": 1.0,
+          "customer_visits": 2.0
+        },
+        "meetings": []
+      },
+      "03": {
+        "counts": {
+          "accounts_opened": 1.0,
+          "digital_txns": 2.0,
+          "customer_visits": 3.0,
+          "nps_collected": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 6.0,
+    "accounts_activated": 2.0,
+    "transactions_count": 0.0,
+    "cards_issued": 1.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 2.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 1.0,
+    "complaints_resolved": 1.0,
+    "digital_txns": 5.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 1.0,
+    "teller_errors": 0.0,
+    "customer_visits": 11.0,
+    "nps_collected": 6.0,
+    "index": 37.8,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000303",
+    "log_date": "2026-08-11",
+    "staff_code": "KE1301",
+    "staff_name": "ODHIAMBO Susan [EKE-Consumer Banking]",
+    "unit": "Karen",
+    "role": "Relationship Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T18:05:14.256413",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "13": {
+        "counts": {
+          "accounts_opened": 1.0,
+          "deposits_mobilised": 3.0,
+          "digital_txns": 2.0,
+          "new_leads": 3.0,
+          "nps_collected": 1.0,
+          "customer_visits": 5.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 1.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 3.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 2.0,
+    "new_leads": 3.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 5.0,
+    "nps_collected": 1.0,
+    "index": 11.5,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000304",
+    "log_date": "2026-08-11",
+    "staff_code": "KE632",
+    "staff_name": "MEEME Joyce [EKE-Operations]",
+    "unit": "Fortis",
+    "role": "Branch Manager",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T18:09:16.932546",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "18": {
+        "counts": {
+          "accounts_opened": 1.0,
+          "accounts_activated": 1.0,
+          "transactions_count": 2.0,
+          "loans_referred": 1.0,
+          "deposits_mobilised": 10000000.0,
+          "complaints_resolved": 1.0,
+          "complaints_received": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 1.0,
+    "accounts_activated": 1.0,
+    "transactions_count": 2.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 1.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 10000000.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 1.0,
+    "complaints_resolved": 1.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 211.4,
+    "remarks": "1. Initiated a lona conversatin with Kijiji managemnet\n2. Sope to Leguiche/intouch\n3. Spoke tp proscene on loan finalisation\n"
+  },
+  {
+    "id": "LOG000305",
+    "log_date": "2026-08-11",
+    "staff_code": "KE814",
+    "staff_name": "RIBUTHI Loise [EKE-Operations]",
+    "unit": "Karen",
+    "role": "Customer Service Manager",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T18:08:41.853222",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "18": {
+        "counts": {
+          "complaints_received": 1.0,
+          "complaints_resolved": 1.0,
+          "digital_txns": 1.0,
+          "nps_collected": 1.0,
+          "customer_visits": 6.0,
+          "transactions_count": 86.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 86.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 1.0,
+    "complaints_resolved": 1.0,
+    "digital_txns": 1.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 6.0,
+    "nps_collected": 1.0,
+    "index": 23.5,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000306",
+    "log_date": "2026-08-11",
+    "staff_code": "KE986",
+    "staff_name": "MOMANYI Richard [EKE-Operations]",
+    "unit": "Kisumu",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-11T18:13:01.717928",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "18": {
+        "counts": {
+          "accounts_opened": 3.0,
+          "accounts_activated": 3.0,
+          "transactions_count": 16.0,
+          "cards_issued": 2.0,
+          "dfs_registrations": 1.0,
+          "complaints_received": 1.0,
+          "complaints_resolved": 1.0,
+          "digital_txns": 2.0,
+          "customer_visits": 29.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 3.0,
+    "accounts_activated": 3.0,
+    "transactions_count": 16.0,
+    "cards_issued": 2.0,
+    "dfs_registrations": 1.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 1.0,
+    "complaints_resolved": 1.0,
+    "digital_txns": 2.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 29.0,
+    "nps_collected": 0.0,
+    "index": 37.9,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000307",
+    "log_date": "2026-08-12",
+    "staff_code": "LBARANGA",
+    "staff_name": "BARANGA Leah",
+    "unit": "Industrial Area",
+    "role": "Staff",
+    "submitted_at": "",
+    "updated_at": "2026-08-12T11:20:07.706571",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "draft",
+    "hourly": {
+      "10": {
+        "counts": {
+          "transactions_count": 1.0,
+          "customer_visits": 1.0,
+          "nps_collected": 1.0
+        },
+        "meetings": [],
+        "note": "archiving of branch documents"
+      },
+      "11": {
+        "counts": {
+          "transactions_count": 1.0,
+          "customer_visits": 1.0
+        },
+        "meetings": []
+      },
+      "09": {
+        "counts": {
+          "transactions_count": 2.0,
+          "customer_visits": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 4.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 3.0,
+    "nps_collected": 1.0,
+    "index": 2.7,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000308",
+    "log_date": "2026-08-12",
+    "staff_code": "KE1153",
+    "staff_name": "RUBIA Grace [EKE-Operations]",
+    "unit": "Westlands",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-12T11:11:20.750968",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "draft",
+    "hourly": {
+      "10": {
+        "counts": {
+          "cards_issued": 1.0,
+          "transactions_count": 1.0,
+          "customer_visits": 1.0,
+          "complaints_resolved": 1.0,
+          "complaints_received": 1.0,
+          "accounts_activated": 1.0
+        },
+        "meetings": []
+      },
+      "09": {
+        "counts": {
+          "cards_issued": 3.0,
+          "customer_visits": 3.0,
+          "complaints_received": 1.0,
+          "complaints_resolved": 1.0,
+          "transactions_count": 3.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 1.0,
+    "transactions_count": 4.0,
+    "cards_issued": 4.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 2.0,
+    "complaints_resolved": 2.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 4.0,
+    "nps_collected": 0.0,
+    "index": 19.0,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000309",
+    "log_date": "2026-08-12",
+    "staff_code": "KE1330",
+    "staff_name": "DOLA Jenipher",
+    "unit": "Ecobank Towers",
+    "role": "Relationship Manager",
+    "submitted_at": "",
+    "updated_at": "2026-08-12T09:47:22.268473",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "09": {
+        "counts": {
+          "cross_sell_success": 2.0,
+          "customer_visits": 2.0,
+          "deposits_mobilised": 300000.0,
+          "cards_issued": 1.0,
+          "loans_referred": 1.0,
+          "transactions_count": 2.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 2.0,
+    "cards_issued": 1.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 1.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 300000.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 2.0,
+    "teller_errors": 0.0,
+    "customer_visits": 2.0,
+    "nps_collected": 0.0,
+    "index": 18.0,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000310",
+    "log_date": "2026-08-12",
+    "staff_code": "KE1340",
+    "staff_name": "MUTISYA Mathew",
+    "unit": "Ecobank Towers",
+    "role": "Relationship Manager",
+    "submitted_at": "",
+    "updated_at": "2026-08-12T10:03:12.920641",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "09": {
+        "counts": {
+          "new_leads": 1.0,
+          "customer_visits": 2.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 1.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 2.0,
+    "nps_collected": 0.0,
+    "index": 2.6,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000311",
+    "log_date": "2026-08-12",
+    "staff_code": "KE1129",
+    "staff_name": "ODUOR Tobias [EKE-Operations]",
+    "unit": "Industrial Area",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-12T10:15:10.667428",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "10": {
+        "counts": {
+          "complaints_received": 1.0,
+          "nps_collected": 1.0,
+          "customer_visits": 1.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 1.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 1.0,
+    "nps_collected": 1.0,
+    "index": 1.3,
+    "remarks": "compaint and querry from customer for amount held in account 6592005493"
   }
 ]
