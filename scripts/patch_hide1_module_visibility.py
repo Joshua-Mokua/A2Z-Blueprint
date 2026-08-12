@@ -102,167 +102,31 @@ ACCESSOR = r'''def hidden_modules() -> list:
 
 '''
 
-SIDEBAR_SRC = r'''import { displayName } from "../lib/names";
-import { Link, useLocation } from 'react-router-dom';
-import { useBranding } from '@/hooks/useBranding';
-import { useAuth } from '@/hooks/useAuth';
-import { useRole } from '@/hooks/useRole';
-import { isManager } from '@/lib/role';
-
-interface NavItem {
-  path: string;
-  label: string;
-  matchActive: (pathname: string) => boolean;
-  visibleFor?: (isMgr: boolean, isAdmin: boolean, isCfgAdmin: boolean, isAdminOrMd: boolean, isCreditStaff: boolean) => boolean;
-}
-interface NavGroup { label: string; items: NavItem[]; }
-
-// A hardcoded hide list already existed and was empty. Rather than add a second
-// mechanism beside it, the same filter now also reads `hidden_modules` from
-// BRANDING - which comes from org_config.json, a file each deployment owns.
-//
-// So the pilot hides a module by listing its route in ITS config, and this side
-// keeps it, with no divergent code and nothing to remember at release time.
-// Keyed on ROUTE, not label: "EKE Sales Pro" and "A2Z Sales Pro" are the same
-// module, and a list keyed on the words would stop matching after a rebrand.
-const DEMO_HIDE = new Set<string>([]);
-
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: 'Executive Intelligence',
-    items: [
-      { path: '/',              label: 'Dashboard',        matchActive: (p) => p === '/' },
-      { path: '/perform',       label: 'Balanced Scorecard', matchActive: (p) => p === '/perform' },
-      { path: '/cascade',       label: 'Target Cascade',   matchActive: (p) => p === '/cascade' || p.startsWith('/cascade/'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/initiatives',   label: 'Initiatives',      matchActive: (p) => p === '/initiatives' || p.startsWith('/initiatives/') },
-      { path: '/profitability', label: 'Profitability',    matchActive: (p) => p === '/profitability' },
-      { path: '/sla',           label: 'SLA Monitor',      matchActive: (p) => p.startsWith('/sla'), visibleFor: (m, a) => m || a },
-    ],
-  },
-  {
-    label: 'Pipeline Intelligence (PIS)',
-    items: [
-      { path: '/pipeline',        label: 'A2Z Sales Pro',        matchActive: (p) => p === '/pipeline' || (p.startsWith('/pipeline/') && !p.startsWith('/pipeline/queues') && !p.startsWith('/pipeline/events') && !p.startsWith('/pipeline/channels') && !p.startsWith('/pipeline/warehouse')) },
-      { path: '/analytics',       label: 'Sales Pro Analytics',  matchActive: (p) => p.startsWith('/analytics') },
-      { path: '/pipeline/queues', label: 'Manager Queues',       matchActive: (p) => p.startsWith('/pipeline/queues'), visibleFor: (m) => m },
-      { path: '/pipeline/channels', label: 'Origin Channels',    matchActive: (p) => p.startsWith('/pipeline/channels') || p.startsWith('/pipeline/events') },
-      // Standalone, NOT a channel: a shelf with claim mechanics and no budget,
-      // so grouping it with the invested channels would imply a return question
-      // it cannot answer.
-      { path: '/pipeline/warehouse', label: 'Deals Warehouse',    matchActive: (p) => p.startsWith('/pipeline/warehouse') },
-      { path: '/referrals',       label: 'A2Z Sales Referral Analytics', matchActive: (p) => p.startsWith('/referrals') },
-      { path: '/branch-log',      label: 'Daily Log',     matchActive: (p) => p.startsWith('/branch-log') },
-      { path: '/portfolio',       label: 'Portfolio',            matchActive: (p) => p.startsWith('/portfolio') },
-    ],
-  },
-  {
-    label: 'Credit Intelligence (CIS)',
-    items: [
-      { path: '/lms',                 label: 'Credit Analysis',     matchActive: (p) => p === '/lms' || p.startsWith('/lms/'), visibleFor: (_m, _a, _c, _md, credit) => credit },
-      { path: '/committee/convening', label: 'Committee Convening', matchActive: (p) => p.startsWith('/committee/convening'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/credit-admin',        label: 'Credit Admin',        matchActive: (p) => p === '/credit-admin' || p.startsWith('/credit-admin/'), visibleFor: (_m, _a, _c, _md, credit) => credit },
-      { path: '/troops',              label: 'Trops Disbursement',  matchActive: (p) => p.startsWith('/troops'), visibleFor: (_m, _a, _c, _md, credit) => credit },
-      { path: '/credit-analytics',    label: 'Credit Analytics',    matchActive: (p) => p.startsWith('/credit-analytics'), visibleFor: (_m, _a, _c, _md, credit) => credit },
-    ],
-  },
-  {
-    label: 'Reference & Admin',
-    items: [
-      { path: '/cbs',              label: 'Customer Lookup',     matchActive: (p) => p === '/cbs' || p.startsWith('/cbs/'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/admin/config',     label: 'Administration',      matchActive: (p) => (p.startsWith('/admin/') && !p.startsWith('/admin/cbs-debug')) || p.startsWith('/fx-rates'), visibleFor: (_m, _a, _c, md) => md },
-      { path: '/admin/cbs-debug', label: 'CBS / FlexCube Debug', matchActive: (p) => p.startsWith('/admin/cbs-debug'), visibleFor: (_m, isA) => isA },
-    ],
-  },
-];
-
-function initials(name?: string) {
-  return (name ?? '?').trim().split(/\s+/).slice(0, 2).map((s) => s[0]?.toUpperCase() ?? '').join('');
-}
-
-interface SidebarProps { onNavigate?: () => void; }
-
-export function Sidebar({ onNavigate }: SidebarProps) {
-  const { pathname } = useLocation();
-  const { branding } = useBranding();
-  // Absent config hides nothing, so this cannot take a module away from
-  // somebody who never asked for it.
-  const hidden = new Set<string>(branding?.hidden_modules ?? []);
-  const { user } = useRole();
-  const { logout } = useAuth();
-
-  const isMgr      = isManager(user);
-  const isAdmin    = user?.is_admin ?? false;
-  const isCfgAdmin = isAdmin || ['admin', 'director', 'chief', 'managing'].some((t) => (user?.role ?? '').toLowerCase().includes(t));
-  // First-rollout gate: admin or the MD/CEO only.
-  const isAdminOrMd = isAdmin || ['managing director', 'chief executive'].some((t) => (user?.role ?? '').toLowerCase().includes(t));
-  // Credit Intelligence modules belong to credit staff (analysts, credit admin,
-  // treasury/disbursement, recovery) + admin/MD. Front-line RMs/branch see the
-  // pipeline instead, and track their own cases there.
-  const isCreditStaff = isAdminOrMd || /credit|analys|underwrit|recover|collection|treasur|disburs/i.test(user?.role ?? '');
-
-  return (
-    <aside className="sidebar">
-      <div className="sb-brand">
-        <img src="/img/ecobank-light.svg" alt="Ecobank" className="sb-logo" />
-        <div className="sb-brand-text">
-          <div className="sb-brand-name">{branding?.app_name ?? 'A2Z Blueprint'}</div>
-          <div className="sb-brand-tag">MIS 360</div>
-        </div>
-      </div>
-
-      <nav className="sb-nav">
-        {NAV_GROUPS.map((group) => {
-          const items = group.items.filter(
+# ANCHORED SIDEBAR EDITS, not a whole-file embed.
+#
+# The first version shipped the entire Sidebar.tsx captured from a tree with the
+# warehouse applied - so it carried a "Deals Warehouse" nav entry pointing at
+# /pipeline/warehouse, a route the pilot build does not have. It would have put
+# a dead link in the bank's menu while the warehouse itself was correctly held
+# back, which is the sort of thing nobody notices until a user clicks it.
+#
+# Three small edits cannot carry a menu entry at all.
+SIDEBAR_EDITS = [
+    ("  const { branding } = useBranding();",
+     """  const { branding } = useBranding();
+  // Absent config hides nothing, so this can only ever take a module away
+  // deliberately, never by omission.
+  const hidden = new Set<string>(branding?.hidden_modules ?? []);"""),
+    ("""          const items = group.items.filter(
+            (item) => !DEMO_HIDE.has(item.path) && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff)),
+          );""",
+     """          const items = group.items.filter(
             (item) => !DEMO_HIDE.has(item.path)
               && !hidden.has(item.path)
               && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff)),
-          );
-          if (!items.length) return null;
-          return (
-            <div key={group.label}>
-              <div className="sb-section-lbl">{group.label}</div>
-              {items.map((item) => {
-                const active = item.matchActive(pathname);
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={onNavigate}
-                    className={`sb-item${active ? ' active' : ''}`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-          );
-        })}
-      </nav>
+          );"""),
+]
 
-      <div className="sb-foot">
-        <div className="sb-user">
-          <div className="sb-av">{initials(user?.full_name ?? user?.username)}</div>
-          <div className="sb-user-info">
-            <div className="sb-user-name">{user?.full_name ? displayName(user.full_name, (user as any).display_name) : (user?.username ?? '—')}</div>
-            <div className="sb-user-role">{user?.role ?? ''}</div>
-          </div>
-        </div>
-        <button
-          type="button"
-          className="sb-logout"
-          onClick={() => { logout(); onNavigate?.(); }}
-        >
-          Sign out
-        </button>
-        <Link to="/about" onClick={() => onNavigate?.()}
-          className="mt-2 block text-center text-[11px] text-white/40 hover:text-white/70">
-          © 2026 A2Z · About
-        </Link>
-      </div>
-    </aside>
-  );
-}
-'''
 
 TYPES_SRC = r'''// v10.495 — TypeScript types for the /api/branding response.
 //
@@ -517,23 +381,29 @@ def main():
         print("ABORT: the default is not empty - absent config could hide a")
         print("       module from somebody who never asked.")
         return 1
-    if "hidden.has(item.path)" not in SIDEBAR_SRC:
-        print("ABORT: the sidebar does not apply the list.")
+    sb = open(SIDEBAR, encoding="utf-8").read()
+    if "hidden.has(item.path)" in sb:
+        print("ABORT: the sidebar already applies the list.")
         return 1
-    if "item.label" in SIDEBAR_SRC.split("hidden.has")[0][-200:]:
-        print("ABORT: hiding appears keyed on label, which breaks on a rebrand.")
-        return 1
-    for op, cl in (("{", "}"), ("(", ")")):
-        if SIDEBAR_SRC.count(op) != SIDEBAR_SRC.count(cl):
-            print("ABORT: sidebar unbalanced %s%s." % (op, cl))
+    for old, new in SIDEBAR_EDITS:
+        if sb.count(old) != 1:
+            print("ABORT: a sidebar anchor matched %d times:" % sb.count(old))
+            print("       %s" % old.strip().split(chr(10))[0][:70])
             return 1
+        sb = sb.replace(old, new, 1)
+    # NOTHING ABOUT THE WAREHOUSE MAY TRAVEL IN THIS PATCHER. The warehouse is
+    # held back from the pilot; a nav entry pointing into it would be a dead
+    # link in the bank's menu.
+    if "warehouse" in "".join(n for _o, n in SIDEBAR_EDITS).lower():
+        print("ABORT: a sidebar edit mentions the warehouse.")
+        return 1
     print("  ok  post-checks: empty default, keyed on route")
 
     if not apply:
         print("\nDRY RUN - nothing written. Re-run with --apply.")
         return 0
 
-    for path, content in ((BRANDING, br), (SIDEBAR, SIDEBAR_SRC), (TYPES, TYPES_SRC)):
+    for path, content in ((BRANDING, br), (SIDEBAR, sb), (TYPES, TYPES_SRC)):
         shutil.copy2(path, path + BACKUP_SUFFIX)
         open(path, "w", encoding="utf-8", newline="").write(content)
         print("APPLIED %s" % path)
