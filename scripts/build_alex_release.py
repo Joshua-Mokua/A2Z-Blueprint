@@ -95,6 +95,7 @@ CHAIN = [
     "patch_qm1_quorum_and_journey",
     "patch_sp1_credit_spine",
     "patch_rl1_role_from_store",
+    "patch_un1_unit_rollup_click",
     "patch_pf1_validate_and_gates",
     "patch_bl1_business_line",
 ]
@@ -273,7 +274,7 @@ def main():
     here = sh("git", "rev-parse", "--abbrev-ref", "HEAD").strip()
     ahead = sh("git", "rev-list", "--count", "origin/alex-dev..HEAD").strip()
 
-    branch = "release/alex-%s" % datetime.date.today().isoformat()
+    branch = "release/alex-%s-%s" % (datetime.date.today().isoformat(), datetime.datetime.now().strftime("%H%M"))
     print("=" * 72)
     print("PLAN")
     print("=" * 72)
