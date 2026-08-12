@@ -14539,13 +14539,13 @@
     "unit": "Head Office",
     "role": "Credit Analyst",
     "submitted_at": "",
-    "updated_at": "2026-08-12T18:13:49.243986",
+    "updated_at": "2026-08-12T18:14:12.502792",
     "validated": false,
     "validated_by": "",
     "validated_at": "",
     "manager_note": "",
     "rejected": false,
-    "status": "draft",
+    "status": "submitted",
     "hourly": {
       "18": {
         "counts": {
@@ -14575,5 +14575,256 @@
     "nps_collected": 0.0,
     "index": 175.07,
     "remarks": ""
+  },
+  {
+    "id": "LOG000350",
+    "log_date": "2026-08-12",
+    "staff_code": "KE1214",
+    "staff_name": "KAMAMI Linet [EKE-Consumer Banking]",
+    "unit": "Head Office",
+    "role": "Scheme Administrator Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-12T18:15:36.894776",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "18": {
+        "counts": {
+          "accounts_activated": 1.0,
+          "transactions_count": 2.0,
+          "complaints_received": 1.0,
+          "complaints_resolved": 1.0,
+          "loans_disbursed": 2419562.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 1.0,
+    "transactions_count": 2.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 2419562.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 1.0,
+    "complaints_resolved": 1.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 175.77,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000351",
+    "log_date": "2026-08-12",
+    "staff_code": "KE982",
+    "staff_name": "MWANGI Milcah [EKE-commercial Banking]",
+    "unit": "Karen",
+    "role": "Branch Operations Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-12T18:22:43.957203",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "18": {
+        "counts": {
+          "accounts_opened": 2.0,
+          "customer_visits": 10.0,
+          "new_leads": 1.0,
+          "transactions_count": 10.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 2.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 10.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 1.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 10.0,
+    "nps_collected": 0.0,
+    "index": 11.0,
+    "remarks": "2 accounts opened with 374,000/- received."
+  },
+  {
+    "id": "LOG000352",
+    "log_date": "2026-08-12",
+    "staff_code": "KE816",
+    "staff_name": "KAMERE Annette [EKE-Consumer Banking]",
+    "unit": "Head Office",
+    "role": "Head, Consumer Products",
+    "submitted_at": "",
+    "updated_at": "2026-08-12T18:27:21.164329",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "12": {
+        "counts": {
+          "transactions_count": 1.0
+        },
+        "meetings": [],
+        "note": "Transaction review for BATUK customer with the frontline"
+      },
+      "18": {
+        "counts": {
+          "transactions_count": 2.0,
+          "complaints_resolved": 1.0
+        },
+        "meetings": []
+      },
+      "08": {
+        "counts": {},
+        "meetings": [],
+        "note": "Training with the bank on the digital pin Issuance"
+      },
+      "02": {
+        "counts": {},
+        "meetings": [],
+        "note": "Test and Learn call with Group EXCO on approval of PP on Micro loans"
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 3.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 1.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 3.6,
+    "remarks": ""
+  },
+  {
+    "id": "LOG000353",
+    "log_date": "2026-08-12",
+    "staff_code": "KE1319",
+    "staff_name": "MBANO Esther [EKE-Consumer]",
+    "unit": "Head Office",
+    "role": "Asset Product Manager",
+    "submitted_at": "",
+    "updated_at": "2026-08-12T18:34:55.121421",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "submitted",
+    "hourly": {
+      "10": {
+        "counts": {},
+        "meetings": [],
+        "note": "Engaged sales agents from Apple Tree and Mango Tree development in Syokimau on our mortgage proposition and equipped them with basic information as they engage offtakers. This was done in conjunction with Plaza 200 Branch and their EXCO sponsor.."
+      },
+      "17": {
+        "counts": {},
+        "meetings": [],
+        "note": "Currated End of year Asset Campaign proposal."
+      },
+      "08": {
+        "counts": {},
+        "meetings": [],
+        "note": "Training Plaza 200 Branch staff on mortgage offering."
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 0.0,
+    "digital_txns": 0.0,
+    "new_leads": 0.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 0.0,
+    "nps_collected": 0.0,
+    "index": 0.0,
+    "remarks": "Approved 5 salary advance requests. Approved 6 disbursement notes.\nDid market comparative on secured and unsecured lending."
+  },
+  {
+    "id": "LOG000354",
+    "log_date": "2026-08-12",
+    "staff_code": "KE1339",
+    "staff_name": "OKUMU Emmanuel [EKE-Consumer Banking]",
+    "unit": "Head Office",
+    "role": "Card Officer",
+    "submitted_at": "",
+    "updated_at": "2026-08-12T18:51:55.397229",
+    "validated": false,
+    "validated_by": "",
+    "validated_at": "",
+    "manager_note": "",
+    "rejected": false,
+    "status": "draft",
+    "hourly": {
+      "18": {
+        "counts": {
+          "complaints_resolved": 2.0,
+          "new_leads": 1.0,
+          "customer_visits": 2.0
+        },
+        "meetings": []
+      }
+    },
+    "accounts_opened": 0.0,
+    "accounts_activated": 0.0,
+    "transactions_count": 0.0,
+    "cards_issued": 0.0,
+    "dfs_registrations": 0.0,
+    "loans_referred": 0.0,
+    "loans_disbursed": 0.0,
+    "deposits_mobilised": 0.0,
+    "bancassurance_sold": 0.0,
+    "complaints_received": 0.0,
+    "complaints_resolved": 2.0,
+    "digital_txns": 0.0,
+    "new_leads": 1.0,
+    "cross_sell_success": 0.0,
+    "teller_errors": 0.0,
+    "customer_visits": 2.0,
+    "nps_collected": 0.0,
+    "index": 8.6,
+    "remarks": "Conducted branch-wide training on the Instant Card Issuance process, PIN delivery process, and mobile app card functionalities to improve staff knowledge, customer support, and process compliance.\n\nHeld an issue resolution meeting with the IMF team to discuss operational matters relating to the Corporate Prepaid Card Programme and agree on actions to address outstanding concerns.\n\nSupported corporate clients, including Vivo Energy and UNOPS, by addressing card-related requests, service issues, and account management matters.\n\nContinued work on the Staff Infinite Card issuance process, reviewing requirements and supporting implementation activities.\n\nPerformed a daily review of the credit card portfolio, monitoring portfolio performance, delinquency trends, outstanding accounts, and key risk indicators.\nFollowed up on ongoing card business and operational matters, providing support to customers and internal stakeholders to ensure timely resolution of outstanding issues.\n\nContinued refinement of the Instant Card Issuance and PIN Issuance SOP and process flows to support standardization, training, and operational readiness."
   }
 ]
