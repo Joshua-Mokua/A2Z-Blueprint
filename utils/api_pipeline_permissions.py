@@ -205,8 +205,47 @@ def resolve_deal_permissions(
     else:
         is_manager_in_scope = False
 
+    # ── CREDIT ANALYST, READ ONLY, WITHIN THEIR SEGMENT ─────────────────────
+    # RULING (2026-08-12): "Catherine, being in the consumer head office unit,
+    # is supposed to also have view of all consumer pipeline - same case for the
+    # other analysts."
+    #
+    # An analyst has no reports, so the reporting tree gives her nothing and
+    # every deal but her own returned 404. She could be handed a case for
+    # analysis and could not see the pipeline it came from.
+    #
+    # VIEW ONLY, and only within her own segment. She is not an owner, not a
+    # backup and not a manager - so can_edit, can_advance and the rest are
+    # untouched below and stay false. Widening the read is what was asked for;
+    # widening the write was not, and would put a credit analyst in charge of
+    # somebody else's deal.
+    is_segment_viewer = False
+    try:
+        from utils.api_lms_scope import _analyst_segment
+        _seg = _analyst_segment(str(user.get("role", "") or ""),
+                                str(user.get("staff_code", "") or ""))
+        if _seg:
+            _ct = str(deal.get("client_type") or deal.get("segment") or "").lower()
+            _prod = str(deal.get("product_type") or deal.get("product") or "").lower()
+            _hay = _ct + " " + _prod
+            _match = {"consumer": ("individual", "personal", "consumer", "retail"),
+                      "commercial": ("business", "sme", "commercial"),
+                      "cib": ("corporate", "institution", "cib")}.get(_seg, ())
+            # A deal whose segment cannot be read is NOT shown. Guessing here
+            # would leak a corporate deal to a consumer analyst, which is the
+            # error that matters in this direction.
+            is_segment_viewer = any(m in _hay for m in _match)
+    except Exception:
+        is_segment_viewer = False
+
     # If none of owner/backup/manager-in-scope/referral-participant, out-of-scope.
-    if not (is_owner or is_backup or is_manager_in_scope or is_referral_participant):
+    if not (is_owner or is_backup or is_manager_in_scope
+            or is_referral_participant or is_segment_viewer):
+        return _all_false()
+
+    # If none of owner/backup/manager-in-scope/referral-participant, out-of-scope.
+    if not (is_owner or is_backup or is_manager_in_scope
+            or is_referral_participant or is_segment_viewer):
         return _all_false()
 
     # Stage gates
@@ -214,7 +253,8 @@ def resolve_deal_permissions(
     in_validation_stage = stage in VALIDATION_STAGES
 
     # ── Permission computation ─────────────────────────────────────
-    can_view = is_owner or is_backup or is_manager_in_scope or is_referral_participant
+    can_view = (is_owner or is_backup or is_manager_in_scope
+                or is_referral_participant or is_segment_viewer)
 
     # B7: a non-admin manager oversees/validates/queries but does NOT operate a
     # subordinate's deal — the owner drives it (advance/edit). Admin retains
