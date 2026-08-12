@@ -7399,6 +7399,47 @@ def pipeline_deal_validate(
     except Exception:
         pass
 
+    # ── ADVANCE ON VALIDATION (pilot, 2026-08-12) ───────────────────────────
+    # "The stage was to move automatically once the manager validates, but now
+    # the owner has to go and move it from Actions to the next stage."
+    #
+    # Validation was unlocking the move and leaving the owner to make it. That
+    # is a second action for a decision already taken - and worse, the deal
+    # sits at the old stage in every queue and report in between, so the branch
+    # looks stalled when it is not.
+    #
+    # ONE STAGE, FROM THE CONFIGURED FLOW. Not a jump to credit: the same
+    # single step the owner would have made, so nothing skips a gate.
+    #
+    # ONLY ON APPROVAL, never on a query - a queried deal goes back to the
+    # owner and must not move forward.
+    #
+    # NEVER OUT OF A TERMINAL STAGE, and never past one. A closed deal stays
+    # closed, and validation must not be a way to reopen it.
+    #
+    # BEST EFFORT: a failure here leaves the deal validated and unmoved, which
+    # is exactly where it used to be. Validation must not fail because an
+    # advance did.
+    if payload.approved:
+        try:
+            _d = pm.get_deal(deal_id) or {}
+            _cur = str(_d.get("stage") or "")
+            _flow = _stage_flow_for(_d.get("product_type") or _d.get("product", "")) or []
+            if _cur in _flow:
+                _i = _flow.index(_cur)
+                if _i + 1 < len(_flow):
+                    _next = _flow[_i + 1]
+                    _terminal = ("closed" in _cur.lower(), "closed" in _next.lower())
+                    if not any(_terminal):
+                        pm.update_stage(deal_id, _next,
+                                        "Advanced on manager validation by %s."
+                                        % (user.get("full_name") or user.get("username") or ""),
+                                        str(user.get("username", "") or ""))
+                        _audit("DEAL_AUTO_ADVANCED", user,
+                               "%s: %s -> %s on validation" % (deal_id, _cur, _next))
+        except Exception as _exc:
+            logger.warning("could not advance %s on validation: %s", deal_id, _exc)
+
     # Persist the validation to the DB read path. The analytics assured value
     # and funnel read deals via _acquire_scoped_deals (DB-first); without this
     # sync, manager_validated would live only in the JSON store and the DB
@@ -12200,12 +12241,61 @@ def save_deal_cr(deal_id: str, payload: dict = Body(default_factory=dict),
 _COMMITTEE_OUTCOMES = ("APPROVED", "REJECTED", "DEFERRED")
 
 
-def _derive_outcome_from_votes(votes: list, voting_rule: str) -> str:
+def _committee_quorum(committee: dict = None) -> int:
+    """How many members must vote for a decision to stand.
+
+    PER COMMITTEE FIRST, then a bank-wide default, then 2.
+
+    WHY 2 AS THE FLOOR. The audit found a single YES approving a credit
+    facility: the arithmetic was right, but nothing checked how many people
+    had voted. One person is not a committee, and that is the finding - so the
+    floor is the smallest number that cannot be one.
+
+    NOT 3, which is what the older (inert) MCC model uses. Three would be the
+    right answer for a management committee and the wrong one for a small
+    branch, where it would strand cases nobody can decide. The bank should set
+    this deliberately per committee; 2 is what stops the indefensible case
+    without inventing a policy.
+    """
+    if isinstance(committee, dict) and committee.get("min_quorum_count") is not None:
+        try:
+            return max(0, int(committee.get("min_quorum_count")))
+        except (TypeError, ValueError):
+            pass
+    try:
+        cw = (_load_json("lms_config.json") or {}).get("credit_workflow", {})
+        v = cw.get("default_min_quorum")
+        if v is not None:
+            return max(0, int(v))
+    except Exception:
+        pass
+    return 2
+
+
+def _derive_outcome_from_votes(votes: list, voting_rule: str,
+                               committee: dict = None) -> str:
     """Derive APPROVED/REJECTED from per-member votes and the voting rule.
     YES/NO counted; ABSTAIN/RECUSED excluded from the base. Ties -> REJECTED."""
     yes = sum(1 for v in votes if str(v.get("vote", "")).upper() == "YES")
     no = sum(1 for v in votes if str(v.get("vote", "")).upper() == "NO")
     base = yes + no
+
+    # ── QUORUM (pilot audit, 2026-08-12) ────────────────────────────────────
+    # BELOW QUORUM IS DEFERRED, NOT REJECTED. Too few people turning up is not
+    # the committee saying no - it is the committee not having met. Rejecting
+    # would put a decision on the record that nobody took, and would send a
+    # case to appeal against a verdict that was never reached.
+    #
+    # Counted over EVERYONE WHO ATTENDED, including abstentions and recusals: a
+    # member who recuses themselves was present, and recusal is how a conflict
+    # is handled rather than an absence.
+    attended = sum(1 for v in votes
+                   if str(v.get("vote", "")).upper()
+                   in ("YES", "NO", "ABSTAIN", "RECUSED"))
+    need = _committee_quorum(committee)
+    if need and attended < need:
+        return "DEFERRED"
+
     if base == 0:
         return "DEFERRED"
     rule = str(voting_rule or "SIMPLE_MAJORITY")
@@ -12303,7 +12393,9 @@ def record_deal_committee_decision(deal_id: str, payload: dict = Body(default_fa
                                 "role": str(v.get("role", "")).strip(), "vote": vote,
                                 "documents_validated": docs_ok,
                                 "comment": str(v.get("comment", "") or "").strip()})
-        outcome = _derive_outcome_from_votes(clean_votes, committee.get("voting_rule"))
+        outcome = _derive_outcome_from_votes(clean_votes,
+                                             committee.get("voting_rule"),
+                                             committee)
         record = {"outcome": outcome, "mode": "voting", "votes": clean_votes, "note": note}
     else:
         outcome = str(payload.get("outcome", "")).upper()

@@ -489,6 +489,36 @@ class BranchLogManager:
         existing = next((l for l in self.logs
                          if str(l.get("staff_code")) == code and l.get("log_date") == today), None)
         if existing:
+            # ── HOURLY IS MERGED, NEVER REPLACED (pilot, 2026-08-12) ─────────
+            # "When a teller keys in a transaction done at 9, then at 11 they
+            # want to add other transactions, it overrides the one at 9."
+            #
+            # It did. The whole hourly map was replaced by whatever the form
+            # last held, so a page opened fresh at 11 - or one where the user
+            # began typing before the rehydrate fetch returned - wrote back
+            # only the 11 o'clock block and the morning vanished.
+            #
+            # MERGED BY HOUR, NOT SUMMED. Each hour is a slot: a payload
+            # carrying hour 11 leaves hour 9 alone, and one carrying hour 9
+            # again REPLACES hour 9 - which is what a correction is. Summing
+            # would double a corrected figure, so a teller fixing a typo would
+            # silently inflate the branch.
+            #
+            # Fixed on the SERVER because the client cannot be relied on to
+            # send the whole day: it races its own rehydrate, and a second
+            # device knows nothing of the first.
+            #
+            # APPLIED TO BOTH submit() AND save_draft() - a draft saved at 11
+            # would erase the morning just as effectively as a submission.
+            if hourly:
+                _merged = dict(existing.get("hourly") or {})
+                _merged.update(hourly)
+                hourly = _merged
+                _derived = derive_from_hourly(hourly)
+                metrics = {k: _num(_derived.get(k, 0)) for k in metric_keys()}
+                for _k in metric_keys():
+                    if _k not in metrics:
+                        metrics[_k] = 0
             existing.update(metrics)
             existing["remarks"] = remarks
             if hourly:
@@ -581,6 +611,36 @@ class BranchLogManager:
         existing = next((l for l in self.logs
                          if str(l.get("staff_code")) == code and l.get("log_date") == today), None)
         if existing:
+            # ── HOURLY IS MERGED, NEVER REPLACED (pilot, 2026-08-12) ─────────
+            # "When a teller keys in a transaction done at 9, then at 11 they
+            # want to add other transactions, it overrides the one at 9."
+            #
+            # It did. The whole hourly map was replaced by whatever the form
+            # last held, so a page opened fresh at 11 - or one where the user
+            # began typing before the rehydrate fetch returned - wrote back
+            # only the 11 o'clock block and the morning vanished.
+            #
+            # MERGED BY HOUR, NOT SUMMED. Each hour is a slot: a payload
+            # carrying hour 11 leaves hour 9 alone, and one carrying hour 9
+            # again REPLACES hour 9 - which is what a correction is. Summing
+            # would double a corrected figure, so a teller fixing a typo would
+            # silently inflate the branch.
+            #
+            # Fixed on the SERVER because the client cannot be relied on to
+            # send the whole day: it races its own rehydrate, and a second
+            # device knows nothing of the first.
+            #
+            # APPLIED TO BOTH submit() AND save_draft() - a draft saved at 11
+            # would erase the morning just as effectively as a submission.
+            if hourly:
+                _merged = dict(existing.get("hourly") or {})
+                _merged.update(hourly)
+                hourly = _merged
+                _derived = derive_from_hourly(hourly)
+                metrics = {k: _num(_derived.get(k, 0)) for k in metric_keys()}
+                for _k in metric_keys():
+                    if _k not in metrics:
+                        metrics[_k] = 0
             existing.update(metrics)
             existing["remarks"] = remarks
             if hourly:
