@@ -249,19 +249,42 @@ def main():
     # it, and neither announces itself when unset - the buttons simply do not
     # appear, which reads as a permission fault rather than a setting.
     rule("8. DEPARTMENT COMMITTEE -> CREDIT ANALYST")
+    # READ THROUGH THE ACCESSOR, not the file. get_credit_workflow_config()
+    # falls back to complete code defaults, so a section absent from
+    # lms_config.json is not absent from the system - it is running on the
+    # default, which is DISABLED. The first version of this audit read the file
+    # and reported "not configured", which sent somebody looking for a missing
+    # block that was really a switch set to off.
     cw = (lms.get("credit_workflow") or {})
-    da = cw.get("department_analyst") or {}
+    try:
+        from utils.api_lms_mutations import get_credit_workflow_config
+        eff = get_credit_workflow_config() or {}
+    except Exception:
+        eff = cw
+    da = eff.get("department_analyst") or {}
+    dcc = eff.get("dcc") or {}
     if not da:
-        block("department_analyst is NOT configured in credit_workflow",
-              "can_submit_to_dcc AND can_hand_to_credit_analyst both require "
-              "department_analyst.enabled. With it unset, an analyst cannot "
-              "send a case to the DCC and nobody can hand it to the credit "
-              "analyst - neither button appears, and nothing says why")
+        block("department_analyst is missing entirely",
+              "not even a default - the layer cannot be switched on")
     elif not da.get("enabled"):
-        block("department_analyst is present but enabled is false",
-              "same effect: the DCC step and the handoff are both off")
+        block("the Department Analyst layer is DISABLED",
+              "can_submit_to_dcc AND can_hand_to_credit_analyst both require "
+              "department_analyst.enabled. An analyst cannot send a case to "
+              "the DCC and nobody can hand it to the credit analyst - neither "
+              "button appears, and nothing says why. "
+              "Run scripts\\enable_department_analyst.py")
     else:
         ok("department analyst layer enabled", "")
+        if not dcc.get("enabled"):
+            block("the DCC itself is DISABLED while the analyst layer is on",
+                  "a case could be submitted to a committee that is switched "
+                  "off, and would stop between the two")
+        elif not (dcc.get("members") or []):
+            block("the DCC roster is EMPTY",
+                  "a case reaching it cannot be decided, exactly as an empty "
+                  "branch committee - name the members in admin")
+        else:
+            ok("DCC enabled with a roster", "%d member(s)" % len(dcc.get("members")))
 
     perms = ""
     try:
