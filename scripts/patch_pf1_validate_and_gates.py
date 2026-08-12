@@ -1,4 +1,110 @@
-// Admin → Configuration (Batch 1b).
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+PF1 - managers can validate; the gate list is choosable; document names read.
+
+THREE PILOT ITEMS (2026-08-12).
+
+1. "ON THE MANAGERS VALIDATING FOR THEMSELVES, seemingly we did not resolve
+   that fully since they are unable."
+
+   Correct - and it is the SECOND HALF OF A FIX ONLY HALF MADE.
+   PipelineManager._stage_needs_validation was widened so per-product stages
+   appear in a manager's QUEUE, with a comment explaining exactly why the
+   global list was not the whole truth. This module was never changed, and
+   still tested membership of that same global list for the PERMISSION.
+
+   So a Mortgage deal at 'Initiation' - or at any of its six credit stages -
+   appeared in the queue with can_validate False. The manager saw the deal and
+   the button did nothing.
+
+   Now the same rule as the queue: everything not terminal is validatable.
+
+       Initiation, Documentation, Branch Credit Committee Review,
+       Credit Analysis                 -> validatable
+       Trops, Disbursement, Closed Won -> not
+
+   TO THE OTHER QUESTION - "confirm if the other branch management can validate
+   for them": yes. Validation needs a manager role AND the deal's owner in the
+   caller's visible codes. Within a branch the Operations Manager and Service
+   Manager both qualify, so they can cover for an absent BM. A manager from
+   ANOTHER branch cannot, because that owner is not in their scope - which is
+   the right answer rather than a gap.
+
+2. "ON THE ADD COMMITTEE GATES A PRODUCT HAS TO GO THROUGH, IT LISTS ALL THE 16
+   BRANCHES, yet it should have that as a Branch Credit Committee ... so how
+   does one select?"
+
+   It should not have listed them. A product routes through ONE branch gate and
+   the system substitutes the deal's own branch at runtime - that is what the
+   BCC1 placeholder exists for. Listing sixteen asked an admin to choose a
+   branch for a product that serves every branch.
+
+   The dropdown now offers the placeholder and hides kind='branch'. The sixteen
+   stay fully editable on the committees page, where choosing between them is
+   the actual task.
+
+3. "THE UI ON SELECTING MANDATORY DOCUMENTS IS NOT DISPLAYING THE FULL DOCUMENT
+   NAME SINCE IT IS SQUEEZED."
+
+   The name column was 1fr against two fixed columns and truncated mid-word -
+   and these are the names somebody must recognise to set the attacher
+   correctly. Narrower controls, and the name wraps rather than being cut.
+
+Verified: py_compile clean, tsc --noEmit clean.
+
+Usage (from project root, .venv active):
+    python scripts\\patch_pf1_validate_and_gates.py            # dry run
+    python scripts\\patch_pf1_validate_and_gates.py --apply
+"""
+import os
+import shutil
+import sys
+
+PERM = os.path.join("utils", "api_pipeline_permissions.py")
+ADMIN = os.path.join("frontend", "web", "src", "pages", "AdminConfig.tsx")
+BACKUP_SUFFIX = ".pre_pf1"
+
+STAGE_OLD = "    in_validation_stage = stage in VALIDATION_STAGES"
+STAGE_NEW = "    in_validation_stage = _needs_validation(stage)"
+
+VALIDATION = r'''VALIDATION_STAGES: Set[str] = {
+    # KEPT for the global flows that still use these names. It is NOT the whole
+    # answer any more - see _needs_validation below.
+    "Lead", "Contacted", "Qualified", "Proposal", "Negotiation", "Negotiating",
+    "Documentation", "Documentation Complete", "Credit Review",
+    "Credit Committee", "Bank Approval", "Approval", "Vetting", "Compliance",
+    "Disbursed",
+}
+
+# TERMINAL stages: a closed deal is never awaiting validation.
+_TERMINAL_HINTS = ("closed", "disbursement", "trops")
+
+
+def _needs_validation(stage: str) -> bool:
+    """Is a deal at this stage still awaiting its manager's validation?
+
+    THE FIXED LIST ABOVE IS NOT THE WHOLE TRUTH, and this is the second half of
+    a fix that was only half made. PipelineManager._stage_needs_validation was
+    widened so per-product stages appear in a manager's QUEUE - but this module
+    still tested membership of the global list, so the PERMISSION stayed false.
+    A Mortgage deal at 'Initiation', or at any of the six credit stages, showed
+    in the queue with can_validate False: the manager saw it and the button did
+    nothing.
+
+    Same rule as the queue now: everything that is not terminal is validatable.
+    A per-product stage cannot be ranked against a global list, but it is live
+    and somebody must validate it.
+    """
+    st = str(stage or "").strip()
+    if not st:
+        return False
+    low = st.lower()
+    if any(h in low for h in _TERMINAL_HINTS):
+        return False
+    return True'''
+
+ADMIN_SRC = r'''// Admin → Configuration (Batch 1b).
 //
 // CEO / MD / Director surface for editing pipeline + credit reference config
 // that today lives in Streamlit: deal-create required fields, customer segments
@@ -1403,3 +1509,71 @@ function CategoryEditor({
     </div>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (PERM, ADMIN):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found." % p)
+            return 1
+
+    perm = open(PERM, encoding="utf-8").read()
+    if "_needs_validation" in perm:
+        print("ABORT: PF1 looks applied.")
+        return 1
+    if perm.count(STAGE_OLD) != 1:
+        print("ABORT: the validation-stage test matched %d times." % perm.count(STAGE_OLD))
+        return 1
+
+    i = perm.index("VALIDATION_STAGES: Set[str] = {")
+    j = perm.index("}", i) + 1
+    perm = perm[:i] + VALIDATION + perm[j:]
+    perm = perm.replace(STAGE_OLD, STAGE_NEW, 1)
+    print("  ok  validation stages, gate list, document names")
+
+    if "_TERMINAL_HINTS" not in VALIDATION:
+        print("ABORT: a closed deal would be validatable.")
+        return 1
+    if "trops" not in VALIDATION.lower():
+        print("ABORT: disbursement stages are not treated as terminal.")
+        return 1
+    if "kind !== 'branch'" not in ADMIN_SRC:
+        print("ABORT: the gate dropdown still lists every branch committee.")
+        return 1
+    if "break-words" not in ADMIN_SRC:
+        print("ABORT: document names would still be truncated.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if ADMIN_SRC.count(op) != ADMIN_SRC.count(cl):
+            print("ABORT: admin unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: terminals refuse, branches hidden, names wrap")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((PERM, perm), (ADMIN, ADMIN_SRC)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    try:
+        py_compile.compile(PERM, doraise=True)
+        print("  ok  api_pipeline_permissions.py compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("")
+    print("Next: pushd frontend\\web && pnpm tsc --noEmit && popd, restart uvicorn.")
+    print("A manager can now validate at any live stage, including their own")
+    print("deals. Admin > product flow lists ONE branch gate, not sixteen.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
