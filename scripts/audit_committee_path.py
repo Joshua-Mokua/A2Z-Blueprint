@@ -279,12 +279,35 @@ def main():
             block("the DCC itself is DISABLED while the analyst layer is on",
                   "a case could be submitted to a committee that is switched "
                   "off, and would stop between the two")
-        elif not (dcc.get("members") or []):
-            block("the DCC roster is EMPTY",
-                  "a case reaching it cannot be decided, exactly as an empty "
-                  "branch committee - name the members in admin")
         else:
-            ok("DCC enabled with a roster", "%d member(s)" % len(dcc.get("members")))
+            # THE OPERATIVE DCC IS THE ONE client_type_to_dcc POINTS AT, not
+            # credit_workflow.dcc.members. That third structure is a P4
+            # scaffold nothing currently reads, and checking it made this
+            # audit report an empty roster while B1/B2/B3 sat there with four
+            # members each. Second time today a check has read a different
+            # structure from the one the code uses.
+            route = (ps.get("committee_routing") or {}).get("client_type_to_dcc") or {}
+            if not route:
+                block("no client type routes to a DCC",
+                      "committee_routing.client_type_to_dcc is unset, so a "
+                      "case has no department committee to go to")
+            else:
+                for ct, code in route.items():
+                    c = next((x for x in pal if str(x.get("code")) == str(code)), None)
+                    if not c:
+                        block("%s routes to %r, which is not in the palette"
+                              % (ct, code),
+                              "the case stops at a gate that does not exist - "
+                              "run scripts\\fix_committee_routing.py")
+                    elif len(c.get("members") or []) < 2:
+                        block("%s routes to %s with %d member(s)"
+                              % (ct, code, len(c.get("members") or [])),
+                              "below the default quorum, so every decision "
+                              "would DEFER")
+                    else:
+                        ok("%s routes to %s" % (ct, code),
+                           "%s, %d members" % (str(c.get("name"))[:34],
+                                               len(c.get("members") or [])))
 
     perms = ""
     try:
