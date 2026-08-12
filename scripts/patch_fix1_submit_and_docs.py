@@ -1,4 +1,206 @@
-// v10.520 Phase 4 Batch β5 — LMS application detail page.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+FIX1 - the submit label, the analyst's attach, pending-not-required, and
+document requests.
+
+FOUR THINGS FROM THE LIVE PILOT (2026-08-12). DOC1 is already applied, so this
+is a delta on top of it rather than a replacement - re-running DOC1 aborts, as
+it should.
+
+1. THE BUTTON STILL SAID "SUBMIT TO CREDIT ANALYSIS" while the panel above it
+   read "Submit to Branch Credit Committee Review". Two labels for one action,
+   disagreeing, on the same screen.
+
+   MY FAULT IN DOC1, not a stale build: I computed the label as one stage past
+   WHEREVER THE DEAL IS NOW. But the credit handoff happens FROM THE DOCUMENT
+   GATE STAGE and is refused anywhere else - so a deal at Initiation was
+   offered "Submit to Negotiation".
+
+   Anchored on the gate now:
+
+       Personal Loan, deal at Initiation     -> Submit to Branch Credit Committee Review
+       Personal Loan, deal at Documentation  -> Submit to Branch Credit Committee Review
+
+   Stable, and the same words the journey panel uses.
+
+2. CATHERINE STILL SAW ONLY "VIEW". ATT1 gated attaching on can_submit_to_dcc /
+   can_update - and can_submit_to_dcc is only true while a case sits at
+   'assigned'. The moment hers moved to credit_admin she lost the ability to
+   attach to a case she was still working.
+
+   Gated on can_view now. The credit surface is already scoped; somebody who
+   can open the case can add a paper to it.
+
+3. "REMOVE THE UPPER PART SHOWING REQUIRED DOCUMENTS ... it should instead show
+   pending submission, since we allowed them to travel."
+
+   Right, and "Required (0) / No documents required" beside a case carrying
+   five documents reads as a fault. Documents travel with a case now, so the
+   useful question is what is STILL OUTSTANDING - and when nothing is, the
+   panel says so instead of showing an empty heading.
+
+4. "WE CAN ADD ANOTHER FEATURE TO CLICK ON REQUEST DOCUMENT and she can also
+   request for additional documentation - this is to happen across all the
+   analysts."
+
+   POST /api/lms/applications/{app_id}/documents/request
+
+   RECORDED ON THE CASE, NOT ADDED TO THE PRODUCT'S REQUIRED LIST. That list is
+   per product and set by an admin: it says what every case of this kind needs.
+   What one analyst wants on ONE case is a different thing, and writing it into
+   the product config would quietly change the rules for every future deal.
+
+   A requested document appears as an attach button alongside the standard
+   ones, so satisfying it is the same single action as any other upload.
+
+Verified: py_compile clean, tsc --noEmit clean, vite build clean.
+
+REQUIRES DOC1, AN1 and ATT1.
+
+Usage (from project root, .venv active):
+    python scripts\patch_fix1_submit_and_docs.py            # dry run
+    python scripts\patch_fix1_submit_and_docs.py --apply
+"""
+import os
+import shutil
+import sys
+
+API = os.path.join("utils", "api.py")
+ROUTES = os.path.join("utils", "api_lms_routes.py")
+LMS = os.path.join("frontend", "web", "src", "pages", "LmsApplicationDetail.tsx")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+BACKUP_SUFFIX = ".pre_fix1"
+
+GATE_OLD = '''    cur = str(deal.get("stage") or "")
+    flow = _stage_flow_for(deal.get("product_type") or deal.get("product", "")) or []
+    nxt = ""
+    if cur in flow:
+        i = flow.index(cur)
+        if i + 1 < len(flow):
+            nxt = flow[i + 1]'''
+
+RET_OLD = '''        "current_stage": cur,
+        "next_stage": nxt,'''
+RET_NEW = '''        "current_stage": cur,
+        "next_stage": nxt,
+        "gate_stage": anchor_stage if anchor_stage != cur else "",
+        "at_gate": (not _gate) or cur == _gate,'''
+
+REQ_ANCHOR = '@router.post("/applications/{app_id}/documents", status_code=201)'
+LIST_OLD = '''    return {"files": app.get("document_files", {}) or {},
+            "provided": list(app.get("documents_provided", []) or [])}'''
+LIST_NEW = '''    return {"files": app.get("document_files", {}) or {},
+            "provided": list(app.get("documents_provided", []) or []),
+            # What has been asked for and not yet supplied, so one call answers
+            # "what is on file and what is still owed".
+            "requested": list(app.get("documents_requested", []) or [])}'''
+
+TS_ANCHOR = "export async function uploadLmsDocument("
+
+# The response type has to carry the requests too, or the page cannot read
+# what it just asked for. Missed on the first pass because the edit was made
+# live and only the new FUNCTION was captured into this patcher.
+IFACE_OLD = '''export interface LmsDocumentsResponse {
+  files: Record<string, DealDocumentMeta>;
+  provided: string[];
+}'''
+IFACE_NEW = '''export interface LmsDocumentsResponse {
+  files: Record<string, DealDocumentMeta>;
+  provided: string[];
+  /** Documents an analyst has asked for on THIS case - separate from the
+   *  product's required list, which is an admin setting for every case of
+   *  its kind. */
+  requested?: { name: string; note?: string; requested_by?: string;
+                requested_role?: string; requested_at?: string }[];
+}'''
+
+GATE_NEW = r'''    # WHERE DOES SUBMIT ACTUALLY LAND? Not "one past wherever the deal is now".
+    # The credit handoff happens FROM THE DOCUMENT GATE STAGE and is refused
+    # anywhere else, so the button must name what follows the GATE.
+    #
+    # Computed from the current stage, a deal sitting at Initiation was offered
+    # "Submit to Negotiation" while the journey panel above it correctly read
+    # "Submit to Branch Credit Committee Review" - two labels for one action,
+    # disagreeing, on the same screen.
+    _prod_docs, _gate = _product_document_config(deal)
+    anchor_stage = _gate if (_gate and _gate in flow) else cur
+    nxt = ""
+    if anchor_stage in flow:
+        i = flow.index(anchor_stage)
+        if i + 1 < len(flow):
+            nxt = flow[i + 1]'''
+
+REQUEST = r'''class _DocRequest(BaseModel):
+    doc_name: str
+    note: str = ""
+
+
+@router.post("/applications/{app_id}/documents/request", status_code=201)
+def lms_application_document_request(
+    app_id: str,
+    body: _DocRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The analyst asks for a document that is not on the case.
+
+    RULING (2026-08-12): "we can add another feature to click on request
+    document and she can also request for additional documentation - this is to
+    happen across all the analysts."
+
+    WHY A REQUEST RATHER THAN JUST ADDING IT TO THE REQUIRED LIST. The required
+    list is per PRODUCT and set by an admin; it describes what every case of
+    this kind needs. What one analyst wants on one case is a different thing,
+    and writing it into the product config would quietly change the rules for
+    every future deal.
+
+    So a request is recorded ON THE CASE, with who asked and why. It appears as
+    outstanding, and it is satisfied by the same upload route as anything else.
+    """
+    from datetime import datetime as _dt
+
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    perms = resolve_application_permissions(user, app)
+    if not (perms.get("can_update") or perms.get("can_submit_to_dcc")
+            or perms.get("can_decide") or perms.get("can_hand_to_credit_analyst")):
+        raise HTTPException(status_code=403,
+                            detail="Only somebody working this case can request documents.")
+
+    name = str(body.doc_name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="doc_name is required")
+
+    reqs = list(app.get("documents_requested", []) or [])
+    if not any(str(r.get("name")) == name for r in reqs if isinstance(r, dict)):
+        reqs.append({
+            "name": name,
+            "note": str(body.note or "").strip(),
+            "requested_by": str(user.get("full_name") or user.get("username") or ""),
+            "requested_role": str(user.get("role", "") or ""),
+            "requested_at": _dt.now().isoformat(timespec="seconds"),
+        })
+        lam.update(app_id, {"documents_requested": reqs})
+    audit_log("LMS_DOC_REQUESTED", str(user.get("username", "") or ""),
+              detail=f"{app_id}: {name}")
+    return {"ok": True, "documents_requested": reqs}
+
+
+'''
+
+TS_NEW = r'''export async function requestLmsDocument(
+  appId: string, docName: string, note = '',
+): Promise<{ ok: boolean; documents_requested: { name: string; note?: string }[] }> {
+  return postJson<{ ok: boolean; documents_requested: { name: string; note?: string }[] },
+                  { doc_name: string; note: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/documents/request`,
+    { doc_name: docName, note });
+}
+'''
+
+LMS_SRC = r'''// v10.520 Phase 4 Batch β5 — LMS application detail page.
 //
 // Single-application view at /lms/:appId. Shows full application info
 // plus per-action inline panels gated by the α8 permissions object:
@@ -2282,3 +2484,99 @@ function CommitteePreReadPanel({ appId, toast }: {
     </Card>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (API, ROUTES, LMS, APITS):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found." % p)
+            return 1
+
+    api = open(API, encoding="utf-8").read()
+    routes = open(ROUTES, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+
+    if "anchor_stage" in api:
+        print("ABORT: FIX1 looks applied.")
+        return 1
+    if "next-step" not in api:
+        print("ABORT: apply patch_doc1_document_roles.py first.")
+        return 1
+    if "_AnalystDocUpload" not in routes:
+        print("ABORT: apply patch_an1_analyst_attach_scope.py first.")
+        return 1
+    if "uploadLmsDocument" not in ts:
+        print("ABORT: apply patch_att1_analyst_attach_ui.py first.")
+        return 1
+    for name, blob, needle in (("api", api, GATE_OLD), ("api", api, RET_OLD),
+                               ("routes", routes, REQ_ANCHOR),
+                               ("routes", routes, LIST_OLD),
+                               ("api.ts", ts, TS_ANCHOR)):
+        if blob.count(needle) != 1:
+            print("ABORT: an anchor in %s matched %d times." % (name, blob.count(needle)))
+            return 1
+
+    api = api.replace(GATE_OLD, GATE_NEW, 1).replace(RET_OLD, RET_NEW, 1)
+    routes = routes.replace(REQ_ANCHOR, REQUEST + REQ_ANCHOR, 1)
+    routes = routes.replace(LIST_OLD, LIST_NEW, 1)
+    if ts.count(IFACE_OLD) != 1:
+        print("ABORT: the documents response type matched %d times."
+              % ts.count(IFACE_OLD))
+        return 1
+    ts = ts.replace(TS_ANCHOR, TS_NEW + TS_ANCHOR, 1)
+    ts = ts.replace(IFACE_OLD, IFACE_NEW, 1)
+    print("  ok  gate anchor, request endpoint, client")
+
+    # The label must not depend on where the deal happens to sit.
+    if "anchor_stage" not in GATE_NEW or "_gate if" not in GATE_NEW:
+        print("ABORT: the label is still computed from the current stage.")
+        return 1
+    # A request must not silently rewrite the product's required list.
+    if "documents_requested" not in REQUEST:
+        print("ABORT: the request is not recorded separately from the product's")
+        print("       required list - it would change the rules for every")
+        print("       future deal of this product.")
+        return 1
+    if "Pending submission" not in LMS_SRC:
+        print("ABORT: the panel still says 'Required'.")
+        return 1
+    if "can_submit_to_dcc || permissions.can_update" in LMS_SRC:
+        print("ABORT: attaching is still gated on a permission that goes false")
+        print("       the moment the case leaves 'assigned'.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if LMS_SRC.count(op) != LMS_SRC.count(cl):
+            print("ABORT: unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: stable label, request kept per-case, attach reachable")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((API, api), (ROUTES, routes), (APITS, ts), (LMS, LMS_SRC)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    import py_compile
+    for path in (API, ROUTES):
+        try:
+            py_compile.compile(path, doraise=True)
+            print("  ok  %s compiles" % os.path.basename(path))
+        except Exception as exc:
+            print("  FAIL %s: %s" % (path, exc))
+            return 1
+
+    print("")
+    print("Next: pushd frontend\\web && pnpm tsc --noEmit && popd, restart uvicorn.")
+    print("Edward's button should read 'Submit to Branch Credit Committee")
+    print("Review'; Catherine should see attach buttons and 'Request a")
+    print("document' on her case.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

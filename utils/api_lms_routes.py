@@ -1272,13 +1272,73 @@ def lms_application_documents_list(
     if not resolve_application_permissions(user, app).get("can_view"):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     return {"files": app.get("document_files", {}) or {},
-            "provided": list(app.get("documents_provided", []) or [])}
+            "provided": list(app.get("documents_provided", []) or []),
+            # What has been asked for and not yet supplied, so one call answers
+            # "what is on file and what is still owed".
+            "requested": list(app.get("documents_requested", []) or [])}
 
 
 class _AnalystDocUpload(BaseModel):
     doc_name: str
     filename: str = ""
     content_b64: str
+
+
+class _DocRequest(BaseModel):
+    doc_name: str
+    note: str = ""
+
+
+@router.post("/applications/{app_id}/documents/request", status_code=201)
+def lms_application_document_request(
+    app_id: str,
+    body: _DocRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """The analyst asks for a document that is not on the case.
+
+    RULING (2026-08-12): "we can add another feature to click on request
+    document and she can also request for additional documentation - this is to
+    happen across all the analysts."
+
+    WHY A REQUEST RATHER THAN JUST ADDING IT TO THE REQUIRED LIST. The required
+    list is per PRODUCT and set by an admin; it describes what every case of
+    this kind needs. What one analyst wants on one case is a different thing,
+    and writing it into the product config would quietly change the rules for
+    every future deal.
+
+    So a request is recorded ON THE CASE, with who asked and why. It appears as
+    outstanding, and it is satisfied by the same upload route as anything else.
+    """
+    from datetime import datetime as _dt
+
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    perms = resolve_application_permissions(user, app)
+    if not (perms.get("can_update") or perms.get("can_submit_to_dcc")
+            or perms.get("can_decide") or perms.get("can_hand_to_credit_analyst")):
+        raise HTTPException(status_code=403,
+                            detail="Only somebody working this case can request documents.")
+
+    name = str(body.doc_name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="doc_name is required")
+
+    reqs = list(app.get("documents_requested", []) or [])
+    if not any(str(r.get("name")) == name for r in reqs if isinstance(r, dict)):
+        reqs.append({
+            "name": name,
+            "note": str(body.note or "").strip(),
+            "requested_by": str(user.get("full_name") or user.get("username") or ""),
+            "requested_role": str(user.get("role", "") or ""),
+            "requested_at": _dt.now().isoformat(timespec="seconds"),
+        })
+        lam.update(app_id, {"documents_requested": reqs})
+    audit_log("LMS_DOC_REQUESTED", str(user.get("username", "") or ""),
+              detail=f"{app_id}: {name}")
+    return {"ok": True, "documents_requested": reqs}
 
 
 @router.post("/applications/{app_id}/documents", status_code=201)

@@ -2832,10 +2832,23 @@ export async function downloadDealDocument(dealId: string, docName: string): Pro
 export interface LmsDocumentsResponse {
   files: Record<string, DealDocumentMeta>;
   provided: string[];
+  /** Documents an analyst has asked for on THIS case - separate from the
+   *  product's required list, which is an admin setting for every case of
+   *  its kind. */
+  requested?: { name: string; note?: string; requested_by?: string;
+                requested_role?: string; requested_at?: string }[];
 }
 export async function listLmsDocuments(appId: string): Promise<LmsDocumentsResponse> {
   return getJson<LmsDocumentsResponse>(
     `/lms/applications/${encodeURIComponent(appId)}/documents`);
+}
+export async function requestLmsDocument(
+  appId: string, docName: string, note = '',
+): Promise<{ ok: boolean; documents_requested: { name: string; note?: string }[] }> {
+  return postJson<{ ok: boolean; documents_requested: { name: string; note?: string }[] },
+                  { doc_name: string; note: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/documents/request`,
+    { doc_name: docName, note });
 }
 export async function uploadLmsDocument(
   appId: string, docName: string, filename: string, contentB64: string,

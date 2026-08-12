@@ -3567,11 +3567,19 @@ def pipeline_next_step(deal_id: str, user: dict = Depends(get_current_user)):
     if not deal:
         raise HTTPException(status_code=404, detail="No such deal.")
 
-    cur = str(deal.get("stage") or "")
-    flow = _stage_flow_for(deal.get("product_type") or deal.get("product", "")) or []
+    # WHERE DOES SUBMIT ACTUALLY LAND? Not "one past wherever the deal is now".
+    # The credit handoff happens FROM THE DOCUMENT GATE STAGE and is refused
+    # anywhere else, so the button must name what follows the GATE.
+    #
+    # Computed from the current stage, a deal sitting at Initiation was offered
+    # "Submit to Negotiation" while the journey panel above it correctly read
+    # "Submit to Branch Credit Committee Review" - two labels for one action,
+    # disagreeing, on the same screen.
+    _prod_docs, _gate = _product_document_config(deal)
+    anchor_stage = _gate if (_gate and _gate in flow) else cur
     nxt = ""
-    if cur in flow:
-        i = flow.index(cur)
+    if anchor_stage in flow:
+        i = flow.index(anchor_stage)
         if i + 1 < len(flow):
             nxt = flow[i + 1]
 
@@ -3593,6 +3601,8 @@ def pipeline_next_step(deal_id: str, user: dict = Depends(get_current_user)):
         "deal_id": deal_id,
         "current_stage": cur,
         "next_stage": nxt,
+        "gate_stage": anchor_stage if anchor_stage != cur else "",
+        "at_gate": (not _gate) or cur == _gate,
         # What the button should say. Naming the destination is the whole point.
         "submit_label": ("Submit to %s" % nxt) if nxt else "Submit",
         "flow": flow,
