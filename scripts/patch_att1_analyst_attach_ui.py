@@ -1,4 +1,190 @@
-// v10.520 Phase 4 Batch β5 — LMS application detail page.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+ATT1 - the analyst can actually attach, from the page.
+
+RULING (2026-08-12): "I note Catherine can now view but not attach. Remember we
+said there are documents she needs to attach from her end - in the pilot she is
+particularly supposed to attach the CRB and the Call Back Memo."
+
+AN1 added the endpoint; the page had no control for it. This is the control.
+
+NAMED BUTTONS, NOT A FREE-TEXT BOX. "CRB Report" on one case and "CRB" on
+another cannot be checked off a required list, and the analyst should not have
+to know the exact string a config file expects. The two the pilot needs are
+offered by name, and "Other" stays for the paper nobody anticipated - it asks
+what the document is called rather than filing it under a guess.
+
+An attached document shows a tick, so a second look tells you what is already
+done without opening anything.
+
+THE PANEL NOW RENDERS WITH NOTHING ON FILE. It returned null on an empty list,
+which was fine when it was read-only and useless the moment somebody needed to
+attach the FIRST document.
+
+WHO MAY ATTACH: whoever is WORKING the case - the analyst who can send it to
+the DCC, anyone who can update it, and the credit analyst it was handed to. Not
+a committee member merely reading it, which is the same line the endpoint draws.
+
+Every file is recorded under the attacher's name AND ROLE, and the panel says
+so - an analyst's paper and the branch's look identical once filed, and six
+weeks later somebody will need to know which is which.
+
+REQUIRES AN1.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+Usage (from project root, .venv active):
+    python scripts\patch_att1_analyst_attach_ui.py            # dry run
+    python scripts\patch_att1_analyst_attach_ui.py --apply
+"""
+import os
+import shutil
+import sys
+
+LMS = os.path.join("frontend", "web", "src", "pages", "LmsApplicationDetail.tsx")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+BACKUP_SUFFIX = ".pre_att1"
+
+TS_ANCHOR = "export async function downloadLmsDocument("
+
+UPLOAD = r'''export async function uploadLmsDocument(
+  appId: string, docName: string, filename: string, contentB64: string,
+): Promise<{ ok: boolean; doc_name: string; documents_provided: string[] }> {
+  return postJson<{ ok: boolean; doc_name: string; documents_provided: string[] },
+                  { doc_name: string; filename: string; content_b64: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/documents`,
+    { doc_name: docName, filename, content_b64: contentB64 });
+}
+'''
+
+PANEL = r'''// WHAT THE ANALYST ATTACHES (ruling 2026-08-12: "in the pilot she is
+// particularly supposed to attach the CRB and the Call Back Memo").
+//
+// Offered as named buttons rather than a free-text box: a document called
+// "CRB" on one case and "CRB Report" on another cannot be checked off a
+// required list, and the analyst should not have to know the exact string.
+// "Other" stays for the paper nobody anticipated.
+const ANALYST_DOCS = ['CRB Report', 'Call Back Memo', 'Other'];
+
+function LmsTravelledDocuments({ appId, canDownload, canAttach, onAttached }: {
+  appId: string; canDownload: boolean; canAttach?: boolean; onAttached?: () => void;
+}) {
+  const [files, setFiles] = useState<LmsDocumentsResponse['files']>({});
+  const [viewing, setViewing] = useState<{ docName: string; filename: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const reload = () => {
+    listLmsDocuments(appId).then((d) => setFiles(d.files || {})).catch(() => { /* none on file */ });
+  };
+  useEffect(reload, [appId]);
+
+  async function attach(docName: string, file: File) {
+    setBusy(true);
+    setErr('');
+    try {
+      const b64 = await new Promise<string>((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result).split(',')[1] ?? '');
+        r.onerror = () => rej(new Error('Could not read that file.'));
+        r.readAsDataURL(file);
+      });
+      await uploadLmsDocument(appId, docName, file.name, b64);
+      reload();
+      onAttached?.();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not attach that file.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const entries = Object.entries(files);
+  // The panel must render even with nothing on file - otherwise the analyst
+  // has nowhere to attach the first document.
+  if (entries.length === 0 && !canAttach) return null;
+  return (
+    <Card className="mt-4">
+      <Card.Header>
+        <h2 className="text-base font-semibold text-gray-900">Documents on file</h2>
+        <span className="text-xs text-gray-500">
+          {entries.length} document{entries.length === 1 ? '' : 's'} travelled with the case
+        </span>
+      </Card.Header>
+      <Card.Body>
+        <div className="space-y-2">
+          {entries.map(([doc, meta]) => (
+            <div key={doc} className="flex items-center justify-between gap-2 rounded border p-2 text-sm">
+              <span className="text-gray-800">
+                <span className="text-gray-400">📄</span> {doc}
+                {meta?.filename && <span className="ml-2 text-xs text-gray-500">{meta.filename}</span>}
+              </span>
+              <button type="button" className="text-brand-primary hover:underline text-xs"
+                onClick={() => setViewing({ docName: doc, filename: meta?.filename || doc })}>View</button>
+            </div>
+          ))}
+        </div>
+        {entries.length === 0 && (
+          <p className="py-3 text-center text-xs text-gray-400">
+            Nothing on file yet.
+          </p>
+        )}
+
+        {canAttach && (
+          <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50/60 p-3">
+            <p className="mb-2 text-xs font-medium text-gray-700">Attach a document</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {ANALYST_DOCS.map((d) => (
+                <label key={d}
+                       className={'cursor-pointer rounded-md border px-3 py-1.5 text-xs '
+                         + (files[d]
+                           ? 'border-[#BED600] bg-[#F4F8E6] text-[#3B6D11]'
+                           : 'border-gray-300 bg-white text-gray-700 hover:border-brand-primary')}>
+                  {files[d] ? `✓ ${d}` : d}
+                  <input type="file" className="hidden" disabled={busy}
+                         onChange={(e) => {
+                           const f = e.target.files?.[0];
+                           if (!f) return;
+                           const name = d === 'Other'
+                             ? (window.prompt('What is this document called?') || '').trim()
+                             : d;
+                           if (!name) return;
+                           void attach(name, f);
+                           e.target.value = '';
+                         }} />
+                </label>
+              ))}
+              {busy && <span className="text-xs text-gray-500">Attaching…</span>}
+            </div>
+            {err && <p className="mt-2 text-xs text-rose-600">{err}</p>}
+            <p className="mt-2 text-[11px] text-gray-500">
+              Attached against this case and recorded under your name and role,
+              so it is clear later which papers came from credit rather than
+              from the branch.
+            </p>
+          </div>
+        )}
+
+        {!canDownload && (
+          <p className="mt-2 text-xs text-gray-400">Read-only — download is not permitted for your role.</p>
+        )}
+      </Card.Body>
+      {viewing && (
+        <DocumentViewerModal
+          dealId="" docName={viewing.docName} filename={viewing.filename}
+          canDownload={canDownload}
+          fetchBlob={() => downloadLmsDocument(appId, viewing.docName)}
+          onClose={() => setViewing(null)}
+        />
+      )}
+    </Card>
+  );
+}
+
+'''
+
+LMS_SRC = r'''// v10.520 Phase 4 Batch β5 — LMS application detail page.
 //
 // Single-application view at /lms/:appId. Shows full application info
 // plus per-action inline panels gated by the α8 permissions object:
@@ -2215,3 +2401,65 @@ function CommitteePreReadPanel({ appId, toast }: {
     </Card>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (LMS, APITS):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found." % p)
+            return 1
+
+    ts = open(APITS, encoding="utf-8").read()
+    cur = open(LMS, encoding="utf-8").read()
+
+    if "uploadLmsDocument" in ts:
+        print("ABORT: ATT1 looks applied.")
+        return 1
+    if ts.count(TS_ANCHOR) != 1:
+        print("ABORT: api.ts anchor matched %d times." % ts.count(TS_ANCHOR))
+        return 1
+    if "LmsTravelledDocuments" not in cur:
+        print("ABORT: the documents panel is not where expected.")
+        return 1
+
+    ts = ts.replace(TS_ANCHOR, UPLOAD + TS_ANCHOR, 1)
+    print("  ok  upload client")
+
+    # The two the pilot needs, by name.
+    if "CRB Report" not in PANEL or "Call Back Memo" not in PANEL:
+        print("ABORT: the documents the pilot needs are not offered by name.")
+        return 1
+    # The panel must render with nothing on file, or the first attach is
+    # impossible.
+    if "entries.length === 0 && !canAttach" not in PANEL:
+        print("ABORT: the panel still returns null on an empty list, so there")
+        print("       is nowhere to attach the first document.")
+        return 1
+    if "can_submit_to_dcc" not in LMS_SRC:
+        print("ABORT: attaching is not gated on working the case.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if LMS_SRC.count(op) != LMS_SRC.count(cl):
+            print("ABORT: unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: named documents, empty panel renders, gated")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((APITS, ts), (LMS, LMS_SRC)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd")
+    print("Credit Analysis > a case > Documentation. Catherine should see")
+    print("CRB Report, Call Back Memo and Other, and a tick once attached.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

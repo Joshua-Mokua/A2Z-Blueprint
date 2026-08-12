@@ -2837,6 +2837,14 @@ export async function listLmsDocuments(appId: string): Promise<LmsDocumentsRespo
   return getJson<LmsDocumentsResponse>(
     `/lms/applications/${encodeURIComponent(appId)}/documents`);
 }
+export async function uploadLmsDocument(
+  appId: string, docName: string, filename: string, contentB64: string,
+): Promise<{ ok: boolean; doc_name: string; documents_provided: string[] }> {
+  return postJson<{ ok: boolean; doc_name: string; documents_provided: string[] },
+                  { doc_name: string; filename: string; content_b64: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/documents`,
+    { doc_name: docName, filename, content_b64: contentB64 });
+}
 export async function downloadLmsDocument(appId: string, docName: string): Promise<Blob> {
   const headers: Record<string, string> = {};
   const tok = getCurrentTokenForBlob();
