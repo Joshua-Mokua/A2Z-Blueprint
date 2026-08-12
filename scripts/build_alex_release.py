@@ -76,13 +76,13 @@ CHAIN = [
     "patch_as3_admin_unit_config", "patch_as4_unit_admin_ui",
     "patch_ul1_unit_labels", "patch_ex1_exclude_md_office",
     "patch_or1_deal_origin", "patch_or2_origin_wiring",
-    "patch_or3_origin_evidence", "patch_or4_origin_capture",
-    "patch_or5_preserve_channel",
-    "patch_ev1_origin_sources", "patch_ev2_events_page",
-    "patch_ch1_origin_channels", "patch_ch2_channels_page",
-    "patch_ch3_channel_tabs", "patch_ch4_lead_generators",
-    "patch_ch5_channels_ui", "patch_ch6_owner_picker",
-    "patch_ch7_deal_tracker", "patch_ch8_origin_roundtrip",
+     
+    
+     
+     
+     
+     
+     
     "patch_doc1_document_roles",
     "patch_hide1_module_visibility",
     "patch_seg1_analyst_segment",
@@ -105,6 +105,19 @@ NOT_FOR_RELEASE = {
     # warehouse is not to be released to Alex until I am certain it is well
     # built."
     "patch_dw1_warehouse",
+    "patch_or3_origin_evidence",
+    "patch_or4_origin_capture",
+    "patch_or5_preserve_channel",
+    "patch_ev1_origin_sources",
+    "patch_ev2_events_page",
+    "patch_ch1_origin_channels",
+    "patch_ch2_channels_page",
+    "patch_ch3_channel_tabs",
+    "patch_ch4_lead_generators",
+    "patch_ch5_channels_ui",
+    "patch_ch6_owner_picker",
+    "patch_ch7_deal_tracker",
+    "patch_ch8_origin_roundtrip",
     "patch_mail1_smtp_negotiation",
     "patch_dq1_clean_warehouse",
     "patch_ic1_information_card",
