@@ -93,6 +93,8 @@ CHAIN = [
     "patch_av1_advance_on_validation",
     "patch_jr1_journey_touchpoints",
     "patch_qm1_quorum_and_journey",
+    "patch_sp1_credit_spine",
+    "patch_rl1_role_from_store",
 ]
 
 # Patchers that deliberately do NOT ship to the pilot. Anything in scripts/ that

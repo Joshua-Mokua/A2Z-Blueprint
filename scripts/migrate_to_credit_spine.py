@@ -61,6 +61,21 @@ SPINE = [
 
 RENAME = {
     "credit assessment - bcc": "Branch Credit Committee Review",
+    # Found by re-reading the flows AFTER the first migration, not before it.
+    # Credit Card and the asset CLASS flow use the same steps under yet more
+    # names, and two of them are typos that reach users.
+    "branch credit committee": "Branch Credit Committee Review",
+    "department credit committee": "Department Credit Committee Review",
+    "department business committee": "Department Credit Committee Review",
+    "credit administarion": "Credit Administration",       # typo, live
+    # The department analyst step under three names. "Consumer Credit
+    # Analysis" is the same stage for a consumer product - leaving it beside
+    # "Department Credit Analysis" gave two analyst stages in one flow, and a
+    # case would stop at whichever nobody works.
+    "department analyst": "Department Credit Analysis",
+    "consumer credit analysis": "Department Credit Analysis",
+    "commercial credit analysis": "Department Credit Analysis",
+    "disbursement": "Trops",
     "credit analysis & assesment": "Credit Analysis",
     "credit analyst & assesment": "Credit Analysis",
     "credit admin": "Credit Administration",
@@ -175,7 +190,39 @@ def main():
             if n:
                 moves.append((prod, old, new, n))
 
-    if not plans:
+    # DUPLICATE ANALYST STAGES. A flow carrying both "Consumer Credit Analysis"
+    # and "Department Credit Analysis" has two analyst steps, and a case stops
+    # at whichever nobody works. The first pass ADDED the spine stage without
+    # recognising the existing one as the same step.
+    dupes = []
+    for prod, e in sorted(flows.items()):
+        names = [str(x.get("stage", "") or "") for x in (e or {}).get("stages") or []]
+        olds = [n for n in names
+                if n.strip().lower() in
+                ("consumer credit analysis", "commercial credit analysis",
+                 "department analyst")]
+        if olds and "Department Credit Analysis" in names:
+            dupes.append((prod, olds))
+
+    if dupes:
+        print("\n  DUPLICATE ANALYST STAGES - the older name will be removed:")
+        for prod, olds in dupes:
+            print("     %-24s drop %s" % (prod[:24], ", ".join(olds)))
+
+    # THE CLASS FLOW is checked whether or not any product needs work - a
+    # product with no flow of its own falls back to it. The first version
+    # returned before reaching this when every product already passed.
+    sf = ps.get("stage_flows") or {}
+    class_needs = False
+    if isinstance(sf.get("asset"), list):
+        cur = sf["asset"]
+        class_needs = (any(str(n).strip().lower() in RENAME for n in cur)
+                       or any(sp not in cur for sp in SPINE))
+        if class_needs:
+            print("\n  THE ASSET CLASS FLOW also needs the spine:")
+            print("     before  %s" % " -> ".join(cur))
+
+    if not plans and not dupes and not class_needs:
         print("  Every lending product already carries the spine.")
         return 0
 
@@ -206,6 +253,12 @@ def main():
         return 0
 
     shutil.copy2(PS, PS + ".pre_spine")
+    for prod, olds in dupes:
+        e = flows[prod]
+        e["stages"] = [x for x in (e.get("stages") or [])
+                       if str(x.get("stage", "") or "") not in olds]
+        flows[prod] = e
+
     for prod, _old, new_names, _r, _i in plans:
         e = flows[prod]
         by_name = {str(s.get("stage", "") or ""): s for s in (e.get("stages") or [])}
@@ -226,6 +279,41 @@ def main():
         e["stages"] = rebuilt
         flows[prod] = e
     ps["product_flows"] = flows
+
+    # THE CLASS FLOWS TOO. A product with no flow of its own falls back to
+    # stage_flows[class] - so leaving those on the old names means a product
+    # can still land on a stage the spine does not know. The audit reads this
+    # one, which is how it surfaced.
+    if isinstance(sf.get("asset"), list):
+        out, seen = [], set()
+        for n in sf["asset"]:
+            r = RENAME.get(str(n).strip().lower(), n)
+            if r not in seen:
+                seen.add(r)
+                out.append(r)
+        # SAME REBUILD AS THE PRODUCT FLOWS. The first version inserted missing
+        # spine stages near the end, which produced Trops BEFORE Credit
+        # Administration - the good algorithm was used in one place and a
+        # shortcut in the other, and the shortcut was wrong.
+        spine_set = set(SPINE)
+        after = {sp: [] for sp in SPINE}
+        lead, cur = [], None
+        for n in out:
+            if n in spine_set:
+                cur = n
+            elif cur is None:
+                lead.append(n)
+            else:
+                after[cur].append(n)
+        rebuilt = list(lead)
+        for sp in SPINE:
+            rebuilt.append(sp)
+            rebuilt.extend(after.get(sp, []))
+        for c in CLOSING:
+            if not any(c.lower() == x.lower() for x in rebuilt):
+                rebuilt.append(c)
+        sf["asset"] = rebuilt
+        ps["stage_flows"] = sf
     tmp = PS + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(ps, fh, indent=2)

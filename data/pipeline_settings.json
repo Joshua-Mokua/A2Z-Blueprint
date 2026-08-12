@@ -267,7 +267,7 @@
     },
     {
       "category": "Customer Referral",
-      "description": "Referral yield tracking — staff, agent, customer, and partner referrals",
+      "description": "Referral yield tracking \u2014 staff, agent, customer, and partner referrals",
       "stages": [
         "Referral Received",
         "Contacted",
@@ -357,7 +357,7 @@
         "asset"
       ],
       "surface": "pipeline",
-      "description": "Asset-side pipeline — loans and credit facilities.",
+      "description": "Asset-side pipeline \u2014 loans and credit facilities.",
       "stages": [
         "Lead",
         "Prospecting",
@@ -380,7 +380,7 @@
         "other"
       ],
       "surface": "pipeline",
-      "description": "Liability-side pipeline — deposits, accounts, transactional.",
+      "description": "Liability-side pipeline \u2014 deposits, accounts, transactional.",
       "stages": [
         "Lead",
         "Prospecting",
@@ -435,13 +435,14 @@
     "asset": [
       "Initiation",
       "Documentation",
-      "Branch Credit Committee",
-      "Department Analyst",
-      "Department Business Committee",
+      "Branch Credit Committee Review",
+      "Department Credit Analysis",
+      "Department Credit Committee Review",
       "Credit Analysis",
       "Offer Letter",
       "Legal - Security Perfection",
-      "Disbursement",
+      "Credit Administration",
+      "Trops",
       "Closed Won",
       "Closed Lost"
     ],
@@ -598,12 +599,12 @@
           "win_probability": 10
         },
         {
-          "stage": "Credit Analysis & Assesment",
+          "stage": "Documentation",
           "target_days": 3,
-          "win_probability": 10
+          "win_probability": null
         },
         {
-          "stage": "Credit Assessment - BCC",
+          "stage": "Branch Credit Committee Review",
           "target_days": 2,
           "win_probability": 30
         },
@@ -623,14 +624,39 @@
           "win_probability": 7
         },
         {
-          "stage": "Credit Admin",
+          "stage": "Department Credit Analysis",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Department Credit Committee Review",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Credit Analysis",
+          "target_days": 3,
+          "win_probability": 10
+        },
+        {
+          "stage": "Credit Administration",
           "target_days": 1,
           "win_probability": 5
         },
         {
-          "stage": "Closed Lost - Trops",
+          "stage": "Trops",
           "target_days": 1,
           "win_probability": 7
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ],
       "required_documents": [
@@ -658,43 +684,63 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Negotiation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Documentation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Branch Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Offer Letter",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Administration",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Trops",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ]
     },
@@ -721,12 +767,12 @@
           "win_probability": 10
         },
         {
-          "stage": "Credit Analysis & Assesment",
+          "stage": "Documentation",
           "target_days": 3,
-          "win_probability": 10
+          "win_probability": null
         },
         {
-          "stage": "Credit Assessment - BCC",
+          "stage": "Branch Credit Committee Review",
           "target_days": 2,
           "win_probability": 30
         },
@@ -741,14 +787,39 @@
           "win_probability": 10
         },
         {
-          "stage": "Credit Admin",
+          "stage": "Department Credit Analysis",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Department Credit Committee Review",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Credit Analysis",
+          "target_days": 3,
+          "win_probability": 10
+        },
+        {
+          "stage": "Credit Administration",
           "target_days": 1,
           "win_probability": 10
         },
         {
-          "stage": "Closed - Trops",
+          "stage": "Trops",
           "target_days": 1,
           "win_probability": 7
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ],
       "required_documents": [
@@ -790,12 +861,12 @@
           "win_probability": 10
         },
         {
-          "stage": "Credit Analyst & Assesment",
+          "stage": "Documentation",
           "target_days": 3,
-          "win_probability": 10
+          "win_probability": null
         },
         {
-          "stage": "Credit Assessment - BCC",
+          "stage": "Branch Credit Committee Review",
           "target_days": 3,
           "win_probability": 30
         },
@@ -815,14 +886,39 @@
           "win_probability": 10
         },
         {
-          "stage": "Credit Admin",
+          "stage": "Department Credit Analysis",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Department Credit Committee Review",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Credit Analysis",
+          "target_days": 3,
+          "win_probability": 10
+        },
+        {
+          "stage": "Credit Administration",
           "target_days": 1,
           "win_probability": 5
         },
         {
-          "stage": "Closed - Trops",
+          "stage": "Trops",
           "target_days": 1,
           "win_probability": 2
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ],
       "required_documents": [
@@ -850,43 +946,63 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Negotiation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Documentation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Branch Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Offer Letter",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Administration",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Trops",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ]
     },
@@ -896,43 +1012,63 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Negotiation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Documentation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Branch Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Offer Letter",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Administration",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Trops",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ]
     },
@@ -942,43 +1078,63 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Negotiation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Documentation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Branch Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Offer Letter",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Administration",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Trops",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ]
     },
@@ -999,7 +1155,18 @@
         },
         {
           "stage": "Account Openned",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ],
       "required_documents": [
@@ -1023,6 +1190,16 @@
           "stage": "Documentation",
           "target_days": 1,
           "win_probability": 50
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ],
       "required_documents": [
@@ -1044,6 +1221,16 @@
           "stage": "Fixed Deposit Openned",
           "target_days": 0.5,
           "win_probability": 50
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ],
       "required_documents": [],
@@ -1286,39 +1473,58 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Negotiation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Documentation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Branch Credit Committee",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Committee",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Offer Letter",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Administarion",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Trops",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ],
       "required_documents": [
@@ -1795,9 +2001,9 @@
           "win_probability": 30
         },
         {
-          "stage": "Consumer Credit Analysis",
-          "target_days": 1,
-          "win_probability": 40
+          "stage": "Department Credit Analysis",
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Committee Review",
@@ -1821,7 +2027,18 @@
         },
         {
           "stage": "Trops",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ],
       "required_documents": [
@@ -1841,43 +2058,63 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Negotiation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Documentation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Branch Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Offer Letter",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Administration",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Trops",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ]
     },
@@ -1887,43 +2124,63 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Negotiation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Documentation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Branch Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Offer Letter",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Administration",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Trops",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ]
     },
@@ -1951,9 +2208,9 @@
           "win_probability": 30
         },
         {
-          "stage": "Consumer Credit Analysis",
-          "target_days": 1,
-          "win_probability": 40
+          "stage": "Department Credit Analysis",
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Committee Review",
@@ -1977,7 +2234,18 @@
         },
         {
           "stage": "Trops",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ],
       "required_documents": [
@@ -1998,43 +2266,63 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Negotiation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Documentation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Branch Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Department Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Offer Letter",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": null
         },
         {
           "stage": "Credit Administration",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
         },
         {
           "stage": "Trops",
-          "target_days": 3
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 3,
+          "win_probability": null
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 3,
+          "win_probability": null
         }
       ],
       "required_documents": [
@@ -2209,9 +2497,9 @@
   },
   "committee_routing": {
     "client_type_to_dcc": {
-      "Consumer": "DCC_CONS",
-      "Commercial": "DCC_COMM",
-      "CIB": "DCC_CIB"
+      "Consumer": "B1",
+      "Commercial": "B2",
+      "CIB": "B3"
     },
     "branch_only_codes": [
       "BCC1"
