@@ -4119,6 +4119,72 @@ def _derive_segment(d: dict) -> str:
     return ct
 
 
+def _business_line_of(deal: dict) -> str:
+    """The business line a deal belongs to - Consumer, SME, Corporate.
+
+    Walks functional_hierarchy up from the owner's role until it reaches a
+    "Head of / Head," role, and reports that. Nothing to maintain: a new
+    sub-unit inherits its line the day somebody puts it in the org chart.
+
+    Falls back to the deal's client_type, so a deal whose owner is not in the
+    chart still lands somewhere rather than vanishing from the roll-up.
+    """
+    # BOTH CHARTS. functional_hierarchy carries the RM-to-unit-head links;
+    # hierarchy carries the head-to-head ones. Consulting only the first
+    # stopped the walk at "Head Premier Banking" and reported Premier Banking -
+    # the sub-line the MD already sees, and exactly not the roll-up wanted.
+    try:
+        from utils.core import get_org_config
+        _org = get_org_config() or {}
+        fh = dict(_org.get("hierarchy", {}) or {})
+        fh.update(_org.get("functional_hierarchy", {}) or {})
+    except Exception:
+        fh = {}
+    role = str(deal.get("staff_role") or deal.get("role") or "").strip()
+    if not role:
+        try:
+            from utils.api_pipeline_scope import get_staff_roster
+            df = get_staff_roster()
+            code = str(deal.get("staff_code") or "")
+            for _i, r in df.iterrows():
+                if str(r.get("Staff Code") or "") == code:
+                    role = str(r.get("Role") or "")
+                    break
+        except Exception:
+            pass
+
+    # WALK TO THE TOP, not to the first head. Stopping at the first "Head..."
+    # gave "Relationship Manager, Premier Banking" -> "Premier Banking", which
+    # is the sub-line the MD already sees and precisely NOT the roll-up asked
+    # for. Premier reports to Head of Consumer, so the walk has to continue.
+    #
+    # The line is the LAST head before the executive tier - Director, Chief,
+    # Managing - because above that everything converges on the MD and the
+    # distinction disappears.
+    _EXEC = ("director", "chief", "managing", "ceo")
+    seen = set()
+    cur = role
+    last_head = ""
+    for _ in range(8):                      # the chart is shallow; this is a guard
+        if not cur or cur in seen:
+            break
+        seen.add(cur)
+        low = cur.lower()
+        if any(x in low for x in _EXEC):
+            break
+        if low.startswith("head"):
+            last_head = cur
+        nxt = fh.get(cur)
+        cur = (nxt[0] if isinstance(nxt, list) and nxt else
+               nxt if isinstance(nxt, str) else "")
+    if last_head:
+        # "Head of Consumer" -> "Consumer"; "Head, SME" -> "SME"
+        out = last_head.split(",", 1)[-1] if "," in last_head else last_head
+        for tok in ("Head of", "Head"):
+            out = out.replace(tok, "")
+        return out.strip() or last_head
+    return str(deal.get("client_type") or "").strip()
+
 def _segment_of(d: dict) -> str:
     """Customer segment for a deal, with the admin display-name map applied.
     Shared by the analytics by_segment dimension and the funnel stage-drill so
@@ -4573,6 +4639,33 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
         e["count"] += 1
     _by_segment = sorted(_seg.values(), key=lambda x: x["value"], reverse=True)
 
+    # ── BY BUSINESS LINE (pilot, 2026-08-12) ────────────────────────────────
+    # "On Sales Pro Analytics they are not able to see e.g. Consumer as a whole
+    # before they go into Premier, Advantage, Direct. It will be important when
+    # the MD or anybody is narrowing down to first see Consumer in general and
+    # then progress."
+    #
+    # The units were the only level available, so the MD saw three Consumer
+    # sub-lines and had to add them up mentally before comparing Consumer with
+    # Commercial. A roll-up is the level people actually think in.
+    #
+    # DERIVED BY WALKING THE ORG CHART, not by a second list to maintain.
+    # functional_hierarchy already says "Relationship Manager, Premier Banking"
+    # -> "Head Premier Banking" -> "Head of Consumer", so the business line is
+    # the top of that walk. A new sub-unit inherits its line the day it is added
+    # to the chart, with nothing else to update.
+    _by_business_line: list = []
+    try:
+        _bl: dict = {}
+        for d in live:
+            key = _business_line_of(d) or "Unassigned"
+            e = _bl.setdefault(key, {"business_line": key, "value": 0.0, "count": 0})
+            e["value"] += _deal_value(d)
+            e["count"] += 1
+        _by_business_line = sorted(_bl.values(), key=lambda x: x["value"], reverse=True)
+    except Exception as _exc:
+        logger.warning("business-line rollup unavailable: %s", _exc)
+
     # by_probability_band: ACTIVE deals grouped into 6 win-probability bands. Win
     # probability is DERIVED per-product-stage from the admin matrix
     # (_flow_stage_win_probability), the same source the deal read uses — so the
@@ -4892,6 +4985,7 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
         "by_product": _by_product,
         "by_sector": _by_sector,
         "by_segment": _by_segment,
+        "by_business_line": _by_business_line,
         "by_probability_band": _by_probability_band,
         "by_segment_funnel": by_segment_funnel,
         "by_product_funnel": by_product_funnel,
