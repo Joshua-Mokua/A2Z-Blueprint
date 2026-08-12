@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
+import { CommitteeQueue } from '@/components/CommitteeQueue';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { useToast } from '@/components/Toast';
@@ -447,6 +448,15 @@ export default function BranchLog() {
           </Card.Body>
         </Card>
       )}
+
+      {/* A committee member who is not a manager never opens Manager
+
+          Queues, so the same list appears here. It renders nothing at
+
+          all for somebody on no committee. */}
+
+      <CommitteeQueue compact />
+
 
       {tab === 'history' && (
         <Card>

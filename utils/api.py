@@ -7301,6 +7301,97 @@ def pipeline_queue_validation(user: dict = Depends(get_current_user)):
     }
 
 
+@app.get("/api/pipeline/queues/committee")
+def pipeline_queue_committee(user: dict = Depends(get_current_user)):
+    """Cases waiting on a committee this person sits on.
+
+    RULING (2026-08-12): the branch managers were gathered and nothing moved -
+    and once the committees existed, the reason it still would not have moved
+    is that MEMBERS HAD NOWHERE TO LOOK. A decision could only be recorded by
+    knowing a deal id and opening it. A committee that cannot find its own
+    cases is not a committee.
+
+    MEMBERSHIP DECIDES WHAT YOU SEE, not role. A branch manager sees their own
+    branch's committee because they sit on it; somebody added to two committees
+    sees both. That is the same rule the bank would apply in a room.
+
+    A CASE APPEARS WHEN it is at a stage whose journey includes that committee
+    AND no decision has been recorded for it yet. It leaves the moment one is,
+    which is what makes the list trustworthy enough to work from.
+    """
+    me = str(user.get("staff_code", "") or "").strip()
+    me_name = str(user.get("full_name", "") or "").strip().lower()
+    if not me and not me_name:
+        return {"committees": [], "cases": [], "total": 0}
+
+    # Which committees is this person on? Chair counts - they convene it.
+    mine = []
+    for c in _read_committee_palette():
+        members = c.get("members") or []
+        codes = {str(m.get("staff_code", "") or "").strip()
+                 for m in members if isinstance(m, dict)}
+        names = {str(m.get("name", "") or "").strip().lower()
+                 for m in members if isinstance(m, dict)}
+        chair = str(c.get("chaired_by", "") or "").strip().lower()
+        if (me and me in codes) or (me_name and (me_name in names or me_name == chair)):
+            mine.append(c)
+    if not mine:
+        return {"committees": [], "cases": [], "total": 0}
+
+    my_codes = {str(c.get("code")) for c in mine}
+    # Imported locally, as every other queue in this module does - api.py has
+    # no module-level PipelineManager and adding one here would be a different
+    # convention for no reason.
+    from utils.core import PipelineManager as _PM_for_api
+    from utils.api_pipeline_scope import get_visible_staff_codes as _vis
+    from utils.api_pipeline_permissions import resolve_deal_permissions as _perms
+    pm = _PM_for_api()
+    try:
+        visible = _vis(user)
+    except Exception:
+        visible = set()
+
+    cases = []
+    for d in (getattr(pm, "deals", []) or []):
+        if str(d.get("stage", "")).lower().startswith("closed"):
+            continue
+        try:
+            journey = _effective_committee_journey(d)
+        except Exception:
+            continue
+        pending = [c for c in journey if c in my_codes
+                   and not (d.get("committee_records") or {}).get(c)]
+        if not pending:
+            continue
+        # SCOPE STILL APPLIES. Sitting on a committee does not open every deal
+        # in the bank - a member sees the cases their scope already allows,
+        # which for a branch committee is their own branch.
+        if not _perms(d, user, visible).get("can_view"):
+            continue
+        cases.append({
+            "deal_id": d.get("id"),
+            "client_name": d.get("client_name"),
+            "product": d.get("product_type") or d.get("product"),
+            "deal_value": d.get("deal_value"),
+            "currency": d.get("currency") or "KES",
+            "branch": d.get("branch") or d.get("unit"),
+            "stage": d.get("stage"),
+            "owner": d.get("staff_name"),
+            "awaiting": pending,
+            "awaiting_names": [next((str(c.get("name")) for c in mine
+                                     if str(c.get("code")) == p), p) for p in pending],
+            "submitted_at": d.get("updated_at") or d.get("created_at"),
+        })
+
+    cases.sort(key=lambda x: str(x.get("submitted_at") or ""), reverse=True)
+    return {
+        "committees": [{"code": c.get("code"), "name": c.get("name"),
+                        "members": len(c.get("members") or [])} for c in mine],
+        "cases": cases,
+        "total": len(cases),
+    }
+
+
 @app.get("/api/pipeline/queues/cancellation")
 def pipeline_queue_cancellation(user: dict = Depends(get_current_user)):
     """List deals with pending cancel requests in caller's cascade.

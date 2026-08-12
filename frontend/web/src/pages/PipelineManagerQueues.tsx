@@ -39,6 +39,7 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
 import { PageHeader } from '@/components/PageHeader';
+import { CommitteeQueue } from '@/components/CommitteeQueue';
 import DailyLogValidation from '@/components/DailyLogValidation';
 import BranchCountersign from '@/components/BranchCountersign';
 import UnitRollup from '@/components/UnitRollup';
@@ -53,7 +54,7 @@ import {
 } from '@/types/pipeline';
 
 
-type TabKey = 'validation' | 'dailylog' | 'ranking' | 'analytics';
+type TabKey = 'validation' | 'committee' | 'dailylog' | 'ranking' | 'analytics';
 
 
 // ── Page component ──────────────────────────────────────────────────────
@@ -200,6 +201,16 @@ export function PipelineManagerQueues() {
           count={validationDeals.length}
           loading={loadingV}
         />
+        {/* Committee sits beside validation because it is the same kind of
+            work - a queue of things waiting on this person's decision. No new
+            sidebar entry (ruling 2026-08-12). */}
+        <TabBtn
+          active={activeTab === 'committee'}
+          onClick={() => setActiveTab('committee')}
+          label="Committee"
+          count={0}
+          loading={false}
+        />
         <TabBtn
           active={activeTab === 'dailylog'}
           onClick={() => setActiveTab('dailylog')}
@@ -233,6 +244,8 @@ export function PipelineManagerQueues() {
       </div>
 
       {/* Daily-log validation owns its own loading, empty and error states. */}
+      {activeTab === 'committee' && <CommitteeQueue />}
+
       {activeTab === 'dailylog' && tier === null && (
         <Card className="mt-4"><Card.Body>
           <div className="text-sm text-gray-400">Loading…</div>
