@@ -267,7 +267,7 @@
     },
     {
       "category": "Customer Referral",
-      "description": "Referral yield tracking — staff, agent, customer, and partner referrals",
+      "description": "Referral yield tracking \u2014 staff, agent, customer, and partner referrals",
       "stages": [
         "Referral Received",
         "Contacted",
@@ -357,7 +357,7 @@
         "asset"
       ],
       "surface": "pipeline",
-      "description": "Asset-side pipeline — loans and credit facilities.",
+      "description": "Asset-side pipeline \u2014 loans and credit facilities.",
       "stages": [
         "Lead",
         "Prospecting",
@@ -380,7 +380,7 @@
         "other"
       ],
       "surface": "pipeline",
-      "description": "Liability-side pipeline — deposits, accounts, transactional.",
+      "description": "Liability-side pipeline \u2014 deposits, accounts, transactional.",
       "stages": [
         "Lead",
         "Prospecting",
@@ -2057,10 +2057,12 @@
     }
   },
   "customer_segments": {
-    "Consumer ": [
+    "Consumer": [
       "Direct Banking",
       "Premier Banking",
-      "Advantage Banking"
+      "Advantage Banking",
+      "Premier",
+      "Advantage"
     ],
     "Commercial": [
       "SME",
