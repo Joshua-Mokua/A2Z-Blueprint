@@ -223,7 +223,13 @@ def resolve_application_permissions(
             from utils.api_lms_mutations import get_credit_workflow_config
             if _role_sees_pool(_role, get_pool_visibility_config()["roles"]):
                 _sp = (get_credit_workflow_config() or {}).get("self_pick") or {}
-                _seg = _analyst_segment(_role)
+                # ROLE ALONE IS AMBIGUOUS. _analyst_segment's own docstring
+                # says so: "Credit Analyst" spans Consumer and Commercial, and
+                # the DEPARTMENT is what disambiguates. Called with the role
+                # only, it returns "" for every plain "Credit Analyst" - and ""
+                # is falsy, so the branch silently took the wrong path with no
+                # error anywhere.
+                _seg = _analyst_segment(_role, str(user.get("staff_code", "") or ""))
                 _allowed = (_sp.get("department_analyst", False) if _seg
                             else _sp.get("credit_analyst", False))
                 _seg_ok = (not _seg) or (_app_segment(app) in ("", _seg))
@@ -249,7 +255,13 @@ def resolve_application_permissions(
             from utils.api_lms_scope import _analyst_segment
             from utils.api_lms_mutations import get_credit_workflow_config
             _da = (get_credit_workflow_config() or {}).get("department_analyst") or {}
-            if _da.get("enabled") and _analyst_segment(str(user.get("role", "") or "")):
+            # Same defect here, and this is the one the pilot hit: Catherine is
+            # a Consumer Credit Analyst whose role reads "Credit Analyst", so
+            # this resolved to "" and can_submit_to_dcc stayed False. She could
+            # analyse a case and had no way to send it on.
+            if _da.get("enabled") and _analyst_segment(
+                    str(user.get("role", "") or ""),
+                    str(user.get("staff_code", "") or "")):
                 can_submit_to_dcc = True
     except Exception:
         can_submit_to_dcc = False

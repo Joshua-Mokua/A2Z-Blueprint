@@ -13,6 +13,14 @@ interface NavItem {
 }
 interface NavGroup { label: string; items: NavItem[]; }
 
+// A hardcoded hide list already existed and was empty. Rather than add a second
+// mechanism beside it, the same filter now also reads `hidden_modules` from
+// BRANDING - which comes from org_config.json, a file each deployment owns.
+//
+// So the pilot hides a module by listing its route in ITS config, and this side
+// keeps it, with no divergent code and nothing to remember at release time.
+// Keyed on ROUTE, not label: "EKE Sales Pro" and "A2Z Sales Pro" are the same
+// module, and a list keyed on the words would stop matching after a rebrand.
 const DEMO_HIDE = new Set<string>([]);
 
 const NAV_GROUPS: NavGroup[] = [
@@ -72,6 +80,9 @@ interface SidebarProps { onNavigate?: () => void; }
 export function Sidebar({ onNavigate }: SidebarProps) {
   const { pathname } = useLocation();
   const { branding } = useBranding();
+  // Absent config hides nothing, so this cannot take a module away from
+  // somebody who never asked for it.
+  const hidden = new Set<string>(branding?.hidden_modules ?? []);
   const { user } = useRole();
   const { logout } = useAuth();
 
@@ -98,7 +109,9 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       <nav className="sb-nav">
         {NAV_GROUPS.map((group) => {
           const items = group.items.filter(
-            (item) => !DEMO_HIDE.has(item.path) && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff)),
+            (item) => !DEMO_HIDE.has(item.path)
+              && !hidden.has(item.path)
+              && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff)),
           );
           if (!items.length) return null;
           return (
