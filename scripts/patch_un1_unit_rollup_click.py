@@ -1,4 +1,46 @@
-// v10.510 Phase 4 Batch β1 — Pipeline page.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+UN1 - click Consumer and see the whole line.
+
+RULING (2026-08-12): "still Consumer is not even able to press and see the
+entire Consumer."
+
+The unit name was a LABEL, not a control. So somebody wanting Consumer as a
+whole had to click Premier, read it, click Advantage, read it, click Direct,
+read it, and add up - when the line itself is the level they were asking about.
+
+The unit name is now a button. Clicking it selects every sub-segment beneath it
+and shows the line's total; clicking again clears back to All. The sub-segments
+work exactly as before - this adds the level above them rather than replacing
+anything.
+
+THE FILTER UNDERSTANDS A WHOLE-LINE SELECTION. `unit:Consumer` matches every
+sub-segment configured under Consumer, resolved from the same config the
+grouping uses, so a sub-segment added tomorrow is included without touching
+this code.
+
+CONTEXT: this is the last of three faults behind one complaint. The first was a
+TRAILING SPACE on the "Consumer " key in customer_segments, invisible in the
+admin table. The second was the config naming sub-segments "Premier Banking"
+while the deals carried "Premier", so they fell to "Other" - the grouping code
+was behaving correctly on bad data. Both were config, fixed by
+scripts/fix_customer_segments.py. Only this one was missing UI.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+Usage (from project root, .venv active):
+    python scripts\\patch_un1_unit_rollup_click.py            # dry run
+    python scripts\\patch_un1_unit_rollup_click.py --apply
+"""
+import os
+import shutil
+import sys
+
+PIPELINE = os.path.join("frontend", "web", "src", "pages", "Pipeline.tsx")
+BACKUP_SUFFIX = ".pre_un1"
+
+NEW_SRC = r'''// v10.510 Phase 4 Batch β1 — Pipeline page.
 //
 // First read-only consumer of the α1-α7 pipeline API surface. Shows
 // the caller's cascade-scoped deal list with per-deal permission
@@ -791,3 +833,51 @@ function DrillBreakdown({
     </div>
   );
 }
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    if not os.path.isfile(PIPELINE):
+        print("ABORT: %s not found." % PIPELINE)
+        return 1
+
+    cur = open(PIPELINE, encoding="utf-8").read()
+    if "unit:${g.unit}" in cur:
+        print("ABORT: UN1 looks applied.")
+        return 1
+    if "segmentGroups" not in cur:
+        print("ABORT: the segment grouping is not where expected.")
+        return 1
+
+    if "unit:${g.unit}" not in NEW_SRC:
+        print("ABORT: the unit name is still not a control.")
+        return 1
+    if "segmentFilter.startsWith('unit:')" not in NEW_SRC:
+        print("ABORT: the filter does not understand a whole-line selection,")
+        print("       so the button would select nothing.")
+        return 1
+    if "setSegmentFilter(sg.key)" not in NEW_SRC:
+        print("ABORT: the sub-segment buttons have been lost.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if NEW_SRC.count(op) != NEW_SRC.count(cl):
+            print("ABORT: unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: unit clickable, filter understands it, subs kept")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    shutil.copy2(PIPELINE, PIPELINE + BACKUP_SUFFIX)
+    open(PIPELINE, "w", encoding="utf-8", newline="").write(NEW_SRC)
+    print("APPLIED %s" % PIPELINE)
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd")
+    print("Pipeline Deals: click CONSUMER for the whole line, or a sub-segment")
+    print("to narrow as before.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

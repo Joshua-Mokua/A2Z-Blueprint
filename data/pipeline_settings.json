@@ -2354,7 +2354,8 @@
     "Commercial": [
       "SME",
       "EFS",
-      "Local Corporate"
+      "Local Corporate",
+      "Micro Enterprise"
     ],
     "CIB": [
       "Multinational",
@@ -2364,7 +2365,8 @@
       "International Organizations",
       "Public Corporates",
       "Multinationals Chinese",
-      "Multinationals Others"
+      "Multinationals Others",
+      "Large Corporate"
     ],
     "Treasury": [
       "Treasury"
