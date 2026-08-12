@@ -4435,9 +4435,19 @@ def _business_line_of(deal: dict) -> str:
         except Exception:
             pass
 
+    # WALK TO THE TOP, not to the first head. Stopping at the first "Head..."
+    # gave "Relationship Manager, Premier Banking" -> "Premier Banking", which
+    # is the sub-line the MD already sees and precisely NOT the roll-up asked
+    # for. Premier reports to Head of Consumer, so the walk has to continue.
+    #
+    # The line is the LAST head before the executive tier - Director, Chief,
+    # Managing - because above that everything converges on the MD and the
+    # distinction disappears.
     _EXEC = ("director", "chief", "managing", "ceo")
-    seen, cur, last_head = set(), role, ""
-    for _ in range(8):
+    seen = set()
+    cur = role
+    last_head = ""
+    for _ in range(8):                      # the chart is shallow; this is a guard
         if not cur or cur in seen:
             break
         seen.add(cur)
@@ -4450,11 +4460,12 @@ def _business_line_of(deal: dict) -> str:
         cur = (nxt[0] if isinstance(nxt, list) and nxt else
                nxt if isinstance(nxt, str) else "")
     if last_head:
+        # "Head of Consumer" -> "Consumer"; "Head, SME" -> "SME"
         out = last_head.split(",", 1)[-1] if "," in last_head else last_head
         for tok in ("Head of", "Head"):
             out = out.replace(tok, "")
         return out.strip() or last_head
-    return ""
+    return str(deal.get("client_type") or "").strip()
 
 def _segment_of(d: dict) -> str:
     """Customer segment for a deal, with the admin display-name map applied.
