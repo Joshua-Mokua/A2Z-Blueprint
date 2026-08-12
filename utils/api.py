@@ -2257,8 +2257,23 @@ def _validate_product_flow(entry: dict, catalogue_names=None) -> tuple:
     # Batch 1: optional per-product document config.
     rd = entry.get("required_documents")
     if rd is not None:
-        if not isinstance(rd, list) or any(not isinstance(x, str) for x in rd):
-            return False, "required_documents must be a list of strings"
+        if not isinstance(rd, list):
+            return False, "required_documents must be a list"
+        for x in rd:
+            # A plain string is still valid and means "owner" - every existing
+            # configuration is a list of strings, and breaking those to add a
+            # field would take the pilot down to gain nothing.
+            if isinstance(x, str):
+                continue
+            if not isinstance(x, dict) or not str(x.get("name") or "").strip():
+                return False, ("required_documents entries must be a name, or "
+                               "{name, attached_by}")
+            by = str(x.get("attached_by") or "owner").lower()
+            if by not in {"owner", "department_analyst", "credit_analyst",
+                          "credit_admin", "customer"}:
+                return False, "unknown attached_by %r" % by
+            if "mandatory" in x and not isinstance(x.get("mandatory"), bool):
+                return False, "mandatory must be true or false"
     dstage = entry.get("documents_required_at_stage")
     if dstage:
         stage_names = {str(s.get("stage", "")).strip() for s in stages}
@@ -3332,6 +3347,60 @@ class SubmitToCreditRequest(BaseModel):
     documents_provided: List[str] = []
 
 
+# ── WHO ATTACHES A DOCUMENT ─────────────────────────────────────────────────
+# RULING (2026-08-12): "there are documents submitted by the owner, documents
+# attached by the department analyst, and documents attached by the credit
+# analyst. It was noted that the documents required are all to be attached at
+# the documentation stage, which is not the case."
+#
+# A flat list of names cannot express that, so every document fell to the deal
+# owner - including the ones only an analyst can produce. The owner was being
+# blocked from submitting by papers they had no way of obtaining.
+#
+# A document is now {"name": ..., "attached_by": ...}. PLAIN STRINGS STILL WORK
+# and mean "owner", because every existing configuration is a list of strings
+# and a migration that breaks the pilot to add a field is not worth it.
+DOC_ATTACHERS = [
+    {"key": "owner", "label": "Deal owner / RM"},
+    {"key": "department_analyst", "label": "Department analyst"},
+    {"key": "credit_analyst", "label": "Credit analyst"},
+    {"key": "credit_admin", "label": "Credit admin"},
+    {"key": "customer", "label": "Customer"},
+]
+_DOC_ATTACHER_KEYS = {d["key"] for d in DOC_ATTACHERS}
+
+
+def _normalise_document(doc) -> dict:
+    """One shape for a required document, whichever way it was configured."""
+    if isinstance(doc, dict):
+        name = str(doc.get("name") or doc.get("document") or "").strip()
+        by = str(doc.get("attached_by") or "owner").strip().lower()
+    else:
+        name, by = str(doc or "").strip(), "owner"
+    if by not in _DOC_ATTACHER_KEYS:
+        by = "owner"
+    # MANDATORY is opt-in, and deliberately so. Before today every document
+    # blocked; making them all mandatory by default would reinstate exactly the
+    # hard condition the pilot asked us to remove. The bank now marks the few
+    # that genuinely cannot be worked without.
+    mand = bool(doc.get("mandatory")) if isinstance(doc, dict) else False
+    return {"name": name, "attached_by": by, "mandatory": mand}
+
+
+def _documents_for(deal: dict, attached_by: str = "") -> list:
+    """Required documents, optionally narrowed to one attacher.
+
+    `attached_by="owner"` answers the only question the submit gate should ask:
+    what is OUTSTANDING FROM THE PERSON SUBMITTING. An analyst's paper is not
+    the owner's to produce, and blocking on it stops work for no benefit.
+    """
+    docs = [_normalise_document(d) for d in _get_required_documents_for_deal(deal)]
+    docs = [d for d in docs if d["name"]]
+    if attached_by:
+        docs = [d for d in docs if d["attached_by"] == attached_by]
+    return docs
+
+
 def _product_document_config(deal: dict) -> tuple:
     """(required_documents, required_at_stage) from the deal's PRODUCT flow
     (Batch 1 config in pipeline_settings.product_flows). ([], "") if unset."""
@@ -3476,6 +3545,66 @@ def pipeline_credit_checklist(deal_id: str, user: dict = Depends(get_current_use
     return _credit_submission_state(deal, user, visible_codes)
 
 
+@app.get("/api/pipeline/deals/{deal_id}/next-step")
+def pipeline_next_step(deal_id: str, user: dict = Depends(get_current_user)):
+    """What happens when this deal is submitted, and what is still owed.
+
+    RULING (2026-08-12): "the submit button is still reading submit to analysis,
+    which should instead be submitting to the next stage - which in a branch
+    case is submit to Branch Credit Committee, then after the committee
+    recommends, submit to the Department Credit Analyst, and so on."
+
+    The advance itself was always right - one stage, config-driven. The LABEL
+    was wrong, and a button that names a step three transitions away teaches
+    people the wrong shape of their own process.
+
+    Returns the real next stage so the button can say it, plus the documents
+    split BY WHO OWES THEM - because "8 documents outstanding" is not
+    actionable when six of them belong to an analyst who has not started.
+    """
+    pm = PipelineManager()
+    deal = pm.get_deal(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail="No such deal.")
+
+    cur = str(deal.get("stage") or "")
+    flow = _stage_flow_for(deal.get("product_type") or deal.get("product", "")) or []
+    nxt = ""
+    if cur in flow:
+        i = flow.index(cur)
+        if i + 1 < len(flow):
+            nxt = flow[i + 1]
+
+    docs = _documents_for(deal)
+    provided = set(str(d) for d in (deal.get("documents_provided") or []))
+    by_who = {}
+    for d in docs:
+        e = by_who.setdefault(d["attached_by"], {"attacher": d["attached_by"],
+                                                 "have": [], "outstanding": []})
+        (e["have"] if d["name"] in provided else e["outstanding"]).append(d["name"])
+
+    owner_out = [d["name"] for d in docs
+                 if d["attached_by"] == "owner" and d["name"] not in provided]
+    blocking = [d["name"] for d in docs
+                if d.get("mandatory") and d["name"] not in provided
+                and d["attached_by"] == "owner"]
+
+    return {
+        "deal_id": deal_id,
+        "current_stage": cur,
+        "next_stage": nxt,
+        # What the button should say. Naming the destination is the whole point.
+        "submit_label": ("Submit to %s" % nxt) if nxt else "Submit",
+        "flow": flow,
+        "documents": docs,
+        "by_attacher": sorted(by_who.values(), key=lambda x: x["attacher"]),
+        "owner_outstanding": owner_out,
+        "blocking": blocking,
+        "can_submit": not blocking,
+        "attachers": DOC_ATTACHERS,
+    }
+
+
 @app.post("/api/pipeline/deals/{deal_id}/submit-to-credit")
 def pipeline_submit_to_credit(
     deal_id: str,
@@ -3533,14 +3662,57 @@ def pipeline_submit_to_credit(
         # it). Every other reason now names itself.
         raise HTTPException(status_code=403,
             detail="Only the deal owner (or an admin) can submit it to credit.")
+    # ── SUBMIT PENDING OTHER DOCUMENTS ──────────────────────────────────────
+    # RULING (2026-08-12): "all documents may not be ready at the same time, and
+    # delaying the analysis due to a document that may not really be standing in
+    # the way of analysis has been picked up as a hard condition we need to
+    # relook into."
+    #
+    # The gate was ALL-OR-NOTHING: one outstanding paper stopped the deal, even
+    # when the analysis could have started without it. Three changes:
+    #
+    #   1. ONLY THE OWNER'S DOCUMENTS ARE EVEN CONSIDERED. An analyst's paper
+    #      was never the owner's to produce, and blocking on it stopped work
+    #      for nobody's benefit.
+    #
+    #   2. SUBMISSION IS ALLOWED WITH DOCUMENTS OUTSTANDING, and what is
+    #      outstanding is RECORDED ON THE DEAL rather than forgotten - so the
+    #      analyst can see what is still coming and the owner can be chased.
+    #
+    #   3. ATTACHING STAYS OPEN after submission, which is what makes this
+    #      honest rather than a way of skipping paperwork.
+    #
+    # A document may still be marked MANDATORY, and those DO block - some
+    # papers genuinely cannot be worked without. The difference is that the
+    # bank now chooses which, instead of every document being treated as
+    # blocking by default.
     provided = list(payload.documents_provided or [])
-    missing = [d for d in state["required"] if d not in provided]
-    if missing:
+    owner_docs = _documents_for(deal, attached_by="owner")
+    owner_names = [d["name"] for d in owner_docs] or list(state["required"])
+    outstanding = [d for d in owner_names if d not in provided]
+
+    blocking = []
+    for d in owner_docs:
+        if d["name"] in outstanding and bool(d.get("mandatory")):
+            blocking.append(d["name"])
+    if blocking:
         raise HTTPException(
             status_code=400,
-            detail="Cannot submit to credit — missing documents: "
-                   + ", ".join(missing),
+            detail="Cannot submit — these documents are mandatory before "
+                   "analysis can begin: " + ", ".join(blocking),
         )
+
+    if outstanding:
+        # Recorded, not waved through. The next person to open this deal sees
+        # exactly what is still owed and by whom.
+        try:
+            pm.update_deal(deal_id, {
+                "documents_outstanding": outstanding,
+                "documents_outstanding_at": datetime.now().isoformat(timespec="seconds"),
+            }, str(user.get("username", "") or ""))
+        except Exception as _exc:
+            logger.warning("could not record outstanding documents: %s", _exc)
+
     # C1 (manager-validation gate): a deal must be validated by a manager before
     # it can be handed to credit. Validation is a deliberate control point — the
     # manager confirms the deal is real/qualified before it consumes credit

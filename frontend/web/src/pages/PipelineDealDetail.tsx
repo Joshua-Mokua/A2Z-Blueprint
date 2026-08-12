@@ -38,7 +38,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
+import { fetchPipelineDealDetail, fetchCreditChecklist, fetchNextStep, type NextStep, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
 import { Timeline } from '@/components/Timeline';
 import type { LoanAppHistoryEvent } from '@/types/lms';
 import { useRole } from '@/hooks/useRole';
@@ -715,6 +715,10 @@ function CreditJourneyStepper({ checklist, stageFlow }: { checklist: CreditCheck
 function CreditSubmissionPanel({ deal, onChanged, stageFlow, canEdit = true }: CreditPanelProps & { stageFlow?: string[]; canEdit?: boolean }) {
   const { toast } = useToast();
   const [checklist,  setChecklist]  = useState<CreditChecklistResponse | null>(null);
+  // What the next stage actually is, and who owes which document. Fetched
+  // rather than assumed - the flow is config-driven and per product, so the
+  // page cannot know it without asking.
+  const [nextStep, setNextStep] = useState<NextStep | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [docFiles,   setDocFiles]   = useState<Record<string, DealDocumentsResponse['files'][string]>>({});
@@ -772,6 +776,8 @@ function CreditSubmissionPanel({ deal, onChanged, stageFlow, canEdit = true }: C
 
   useEffect(() => {
     let alive = true;
+    void fetchNextStep(deal.id).then((n) => { if (alive) setNextStep(n); })
+      .catch(() => { /* label falls back to "Submit to next stage" */ });
     fetchCreditChecklist(deal.id)
       .then((c) => {
         if (!alive) return;
@@ -964,12 +970,20 @@ function CreditSubmissionPanel({ deal, onChanged, stageFlow, canEdit = true }: C
             {!checklist.can_submit && (
               <span className="text-xs text-gray-500">Submission opens once all prerequisites are complete.</span>
             )}
+            {/* THE BUTTON NAMES THE REAL DESTINATION (ruling 2026-08-12). The
+                advance was always right - one stage, config-driven - but the
+                label named a step three transitions away, which teaches people
+                the wrong shape of their own process.
+
+                And it is no longer disabled by outstanding paperwork: only
+                MANDATORY documents block now, so the deal can move while the
+                rest is still being gathered. */}
             <Button
               onClick={() => void onSubmit()}
               loading={submitting}
-              disabled={missing.length > 0 || !checklist.can_submit}
+              disabled={(nextStep?.blocking?.length ?? 0) > 0 || !checklist.can_submit}
             >
-              Submit to Credit Analysis
+              {nextStep?.submit_label ?? 'Submit to next stage'}
             </Button>
           </div>
         ) : (

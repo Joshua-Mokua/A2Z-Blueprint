@@ -1624,6 +1624,17 @@ export async function fetchPipelineDealDetail(
  * which are already provided, which are still missing, whether the deal
  * has already been submitted, and whether the caller may submit it.
  */
+export interface NextStep {
+  deal_id: string; current_stage: string; next_stage: string;
+  submit_label: string; flow: string[];
+  documents: { name: string; attached_by: string; mandatory: boolean }[];
+  by_attacher: { attacher: string; have: string[]; outstanding: string[] }[];
+  owner_outstanding: string[]; blocking: string[]; can_submit: boolean;
+  attachers: { key: string; label: string }[];
+}
+export async function fetchNextStep(dealId: string): Promise<NextStep> {
+  return getJson<NextStep>(`/pipeline/deals/${encodeURIComponent(dealId)}/next-step`);
+}
 export async function fetchCreditChecklist(
   dealId: string,
 ): Promise<CreditChecklistResponse> {

@@ -1,4 +1,359 @@
-// Admin → Configuration (Batch 1b).
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+DOC1 - who attaches each document, submit pending the rest, and a truthful button.
+
+THREE RULINGS FROM THE PILOT (2026-08-12), plus an audit of the whole journey.
+
+1. "THERE ARE DOCUMENTS SUBMITTED BY THE OWNER, DOCUMENTS ATTACHED BY THE
+   DEPARTMENT ANALYST, AND DOCUMENTS ATTACHED BY THE CREDIT ANALYST. It was
+   noted that the documents required are all to be attached at the
+   documentation stage, which is not the case."
+
+   A required document was a bare NAME, which silently meant "the deal owner
+   produces this" - including for papers only an analyst can write. The owner
+   was blocked by documents they had no way of obtaining.
+
+   A document is now {name, attached_by, mandatory}. The admin sets who owes
+   each one from a dropdown. PLAIN STRINGS STILL WORK and mean "owner", because
+   every product is configured as a list of strings today and breaking those to
+   add a field would take the pilot down to gain nothing.
+
+2. "ALL DOCUMENTS MAY NOT BE READY AT THE SAME TIME, and delaying the analysis
+   due to a document that may not really be standing in the way has been picked
+   up as a hard condition we need to relook into."
+
+   The gate was ALL-OR-NOTHING. Now:
+
+       ONLY THE OWNER'S DOCUMENTS are considered at submission. An analyst's
+       paper was never the owner's to produce.
+
+       SUBMISSION PROCEEDS with documents outstanding, and what is outstanding
+       is RECORDED ON THE DEAL - so the analyst sees what is still coming and
+       the owner can be chased. Waved through would be worse than blocked;
+       recorded is neither.
+
+       MANDATORY documents still block, and that is the point: the bank now
+       chooses which few genuinely cannot be worked without, instead of every
+       document blocking by default.
+
+3. "THE SUBMIT BUTTON IS STILL READING SUBMIT TO ANALYSIS, which should instead
+   be submitting to the next stage - which in a branch case is Branch Credit
+   Committee, then the Department Credit Analyst, and so on."
+
+   THE ADVANCE WAS ALWAYS RIGHT - one stage, config-driven, per product. Only
+   the LABEL lied, and a button naming a step three transitions away teaches
+   people the wrong shape of their own process. GET .../next-step returns the
+   real next stage, so the button says "Submit to Branch Credit Committee".
+
+THE JOURNEY AUDIT (scripts/audit_deal_journey.py) walks capture to disbursement
+and reports blocks and warnings. It found exactly the two faults above and
+nothing else: the flow resolves end to end, every advance is config-driven, an
+application is created and linked back, and the credit-admin and disbursement
+stages all exist.
+
+It also taught me two things about auditing, both now fixed in it:
+
+    A WINDOW SIZED IN BYTES silently truncates when the endpoint grows, and
+    then reports what fell past the cut as MISSING. It claimed no application
+    was created, minutes after I had read the line that creates one.
+
+    MATCHING A PHRASE ANYWHERE IN A FILE matches the comment explaining why the
+    phrase was wrong. It reported the button fix as the button fault.
+
+    And its first run claimed eight stages were rejected by an allow-list the
+    advance endpoint never consults - a catastrophic-sounding finding that was
+    not true. settings["stages"] is dead config from the old generic sales
+    pipeline; it is now reported as such, once, as a warning.
+
+THE FRONTEND EDITS ARE ANCHORED, NOT WHOLE FILES. PipelineDealDetail.tsx is on
+the deployment delta list and Alex has his own additions in it - a read-only
+"attached documents" view for oversight roles. Shipping the whole file would
+erase that. Four anchored edits apply on top of whatever he has.
+
+(Checked while there: his copy also still abbreviates KES to K/M/B, which the
+FMT ruling of 2026-08-09 deliberately removed. That travels to him with this
+release; his document view stays.)
+
+Verified: py_compile clean, tsc --noEmit clean, vite build clean, audit green.
+
+Usage (from project root, .venv active):
+    python scripts\patch_doc1_document_roles.py            # dry run
+    python scripts\patch_doc1_document_roles.py --apply
+"""
+import os
+import shutil
+import sys
+
+API = os.path.join("utils", "api.py")
+ADMIN = os.path.join("frontend", "web", "src", "pages", "AdminConfig.tsx")
+DETAIL = os.path.join("frontend", "web", "src", "pages", "PipelineDealDetail.tsx")
+APITS = os.path.join("frontend", "web", "src", "lib", "api.ts")
+AUDIT = os.path.join("scripts", "audit_deal_journey.py")
+BACKUP_SUFFIX = ".pre_doc1"
+
+MODEL_ANCHOR = "def _product_document_config(deal: dict) -> tuple:"
+EP_ANCHOR = '@app.post("/api/pipeline/deals/{deal_id}/submit-to-credit")'
+
+VALID_OLD = '''    rd = entry.get("required_documents")
+    if rd is not None:
+        if not isinstance(rd, list) or any(not isinstance(x, str) for x in rd):
+            return False, "required_documents must be a list of strings"'''
+VALID_NEW = '''    rd = entry.get("required_documents")
+    if rd is not None:
+        if not isinstance(rd, list):
+            return False, "required_documents must be a list"
+        for x in rd:
+            # A plain string is still valid and means "owner" - every existing
+            # configuration is a list of strings, and breaking those to add a
+            # field would take the pilot down to gain nothing.
+            if isinstance(x, str):
+                continue
+            if not isinstance(x, dict) or not str(x.get("name") or "").strip():
+                return False, ("required_documents entries must be a name, or "
+                               "{name, attached_by}")
+            by = str(x.get("attached_by") or "owner").lower()
+            if by not in {"owner", "department_analyst", "credit_analyst",
+                          "credit_admin", "customer"}:
+                return False, "unknown attached_by %r" % by
+            if "mandatory" in x and not isinstance(x.get("mandatory"), bool):
+                return False, "mandatory must be true or false"'''
+
+GATE_OLD = '''    provided = list(payload.documents_provided or [])
+    missing = [d for d in state["required"] if d not in provided]
+    if missing:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot submit to credit — missing documents: "
+                   + ", ".join(missing),
+        )'''
+
+TS_ANCHOR = "export async function fetchCreditChecklist("
+TS_NEW = '''export interface NextStep {
+  deal_id: string; current_stage: string; next_stage: string;
+  submit_label: string; flow: string[];
+  documents: { name: string; attached_by: string; mandatory: boolean }[];
+  by_attacher: { attacher: string; have: string[]; outstanding: string[] }[];
+  owner_outstanding: string[]; blocking: string[]; can_submit: boolean;
+  attachers: { key: string; label: string }[];
+}
+export async function fetchNextStep(dealId: string): Promise<NextStep> {
+  return getJson<NextStep>(`/pipeline/deals/${encodeURIComponent(dealId)}/next-step`);
+}
+'''
+
+# ── ANCHORED EDITS to the deal detail page. Alex has his own additions in this
+# file; replacing it wholesale would erase them.
+DETAIL_EDITS = [
+    ("import { fetchPipelineDealDetail, fetchCreditChecklist,",
+     "import { fetchPipelineDealDetail, fetchCreditChecklist, fetchNextStep, type NextStep,"),
+    ("  const [checklist,  setChecklist]  = useState<CreditChecklistResponse | null>(null);",
+     """  const [checklist,  setChecklist]  = useState<CreditChecklistResponse | null>(null);
+  // What the next stage actually is, and who owes which document. Fetched
+  // rather than assumed - the flow is config-driven and per product, so the
+  // page cannot know it without asking.
+  const [nextStep, setNextStep] = useState<NextStep | null>(null);"""),
+    ("""    fetchCreditChecklist(deal.id)
+      .then((c) => {""",
+     """    void fetchNextStep(deal.id).then((n) => { if (alive) setNextStep(n); })
+      .catch(() => { /* label falls back to "Submit to next stage" */ });
+    fetchCreditChecklist(deal.id)
+      .then((c) => {"""),
+    ("""            <Button
+              onClick={() => void onSubmit()}
+              loading={submitting}
+              disabled={missing.length > 0 || !checklist.can_submit}
+            >
+              Submit to Credit Analysis
+            </Button>""",
+     """            {/* THE BUTTON NAMES THE REAL DESTINATION (ruling 2026-08-12). The
+                advance was always right - one stage, config-driven - but the
+                label named a step three transitions away, which teaches people
+                the wrong shape of their own process.
+
+                And it is no longer disabled by outstanding paperwork: only
+                MANDATORY documents block now, so the deal can move while the
+                rest is still being gathered. */}
+            <Button
+              onClick={() => void onSubmit()}
+              loading={submitting}
+              disabled={(nextStep?.blocking?.length ?? 0) > 0 || !checklist.can_submit}
+            >
+              {nextStep?.submit_label ?? 'Submit to next stage'}
+            </Button>"""),
+]
+
+MODEL = r'''# ── WHO ATTACHES A DOCUMENT ─────────────────────────────────────────────────
+# RULING (2026-08-12): "there are documents submitted by the owner, documents
+# attached by the department analyst, and documents attached by the credit
+# analyst. It was noted that the documents required are all to be attached at
+# the documentation stage, which is not the case."
+#
+# A flat list of names cannot express that, so every document fell to the deal
+# owner - including the ones only an analyst can produce. The owner was being
+# blocked from submitting by papers they had no way of obtaining.
+#
+# A document is now {"name": ..., "attached_by": ...}. PLAIN STRINGS STILL WORK
+# and mean "owner", because every existing configuration is a list of strings
+# and a migration that breaks the pilot to add a field is not worth it.
+DOC_ATTACHERS = [
+    {"key": "owner", "label": "Deal owner / RM"},
+    {"key": "department_analyst", "label": "Department analyst"},
+    {"key": "credit_analyst", "label": "Credit analyst"},
+    {"key": "credit_admin", "label": "Credit admin"},
+    {"key": "customer", "label": "Customer"},
+]
+_DOC_ATTACHER_KEYS = {d["key"] for d in DOC_ATTACHERS}
+
+
+def _normalise_document(doc) -> dict:
+    """One shape for a required document, whichever way it was configured."""
+    if isinstance(doc, dict):
+        name = str(doc.get("name") or doc.get("document") or "").strip()
+        by = str(doc.get("attached_by") or "owner").strip().lower()
+    else:
+        name, by = str(doc or "").strip(), "owner"
+    if by not in _DOC_ATTACHER_KEYS:
+        by = "owner"
+    # MANDATORY is opt-in, and deliberately so. Before today every document
+    # blocked; making them all mandatory by default would reinstate exactly the
+    # hard condition the pilot asked us to remove. The bank now marks the few
+    # that genuinely cannot be worked without.
+    mand = bool(doc.get("mandatory")) if isinstance(doc, dict) else False
+    return {"name": name, "attached_by": by, "mandatory": mand}
+
+
+def _documents_for(deal: dict, attached_by: str = "") -> list:
+    """Required documents, optionally narrowed to one attacher.
+
+    `attached_by="owner"` answers the only question the submit gate should ask:
+    what is OUTSTANDING FROM THE PERSON SUBMITTING. An analyst's paper is not
+    the owner's to produce, and blocking on it stops work for no benefit.
+    """
+    docs = [_normalise_document(d) for d in _get_required_documents_for_deal(deal)]
+    docs = [d for d in docs if d["name"]]
+    if attached_by:
+        docs = [d for d in docs if d["attached_by"] == attached_by]
+    return docs
+
+
+'''
+
+ENDPOINT = r'''@app.get("/api/pipeline/deals/{deal_id}/next-step")
+def pipeline_next_step(deal_id: str, user: dict = Depends(get_current_user)):
+    """What happens when this deal is submitted, and what is still owed.
+
+    RULING (2026-08-12): "the submit button is still reading submit to analysis,
+    which should instead be submitting to the next stage - which in a branch
+    case is submit to Branch Credit Committee, then after the committee
+    recommends, submit to the Department Credit Analyst, and so on."
+
+    The advance itself was always right - one stage, config-driven. The LABEL
+    was wrong, and a button that names a step three transitions away teaches
+    people the wrong shape of their own process.
+
+    Returns the real next stage so the button can say it, plus the documents
+    split BY WHO OWES THEM - because "8 documents outstanding" is not
+    actionable when six of them belong to an analyst who has not started.
+    """
+    pm = PipelineManager()
+    deal = pm.get_deal(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail="No such deal.")
+
+    cur = str(deal.get("stage") or "")
+    flow = _stage_flow_for(deal.get("product_type") or deal.get("product", "")) or []
+    nxt = ""
+    if cur in flow:
+        i = flow.index(cur)
+        if i + 1 < len(flow):
+            nxt = flow[i + 1]
+
+    docs = _documents_for(deal)
+    provided = set(str(d) for d in (deal.get("documents_provided") or []))
+    by_who = {}
+    for d in docs:
+        e = by_who.setdefault(d["attached_by"], {"attacher": d["attached_by"],
+                                                 "have": [], "outstanding": []})
+        (e["have"] if d["name"] in provided else e["outstanding"]).append(d["name"])
+
+    owner_out = [d["name"] for d in docs
+                 if d["attached_by"] == "owner" and d["name"] not in provided]
+    blocking = [d["name"] for d in docs
+                if d.get("mandatory") and d["name"] not in provided
+                and d["attached_by"] == "owner"]
+
+    return {
+        "deal_id": deal_id,
+        "current_stage": cur,
+        "next_stage": nxt,
+        # What the button should say. Naming the destination is the whole point.
+        "submit_label": ("Submit to %s" % nxt) if nxt else "Submit",
+        "flow": flow,
+        "documents": docs,
+        "by_attacher": sorted(by_who.values(), key=lambda x: x["attacher"]),
+        "owner_outstanding": owner_out,
+        "blocking": blocking,
+        "can_submit": not blocking,
+        "attachers": DOC_ATTACHERS,
+    }
+
+
+'''
+
+SOFT_GATE = r'''    # ── SUBMIT PENDING OTHER DOCUMENTS ──────────────────────────────────────
+    # RULING (2026-08-12): "all documents may not be ready at the same time, and
+    # delaying the analysis due to a document that may not really be standing in
+    # the way of analysis has been picked up as a hard condition we need to
+    # relook into."
+    #
+    # The gate was ALL-OR-NOTHING: one outstanding paper stopped the deal, even
+    # when the analysis could have started without it. Three changes:
+    #
+    #   1. ONLY THE OWNER'S DOCUMENTS ARE EVEN CONSIDERED. An analyst's paper
+    #      was never the owner's to produce, and blocking on it stopped work
+    #      for nobody's benefit.
+    #
+    #   2. SUBMISSION IS ALLOWED WITH DOCUMENTS OUTSTANDING, and what is
+    #      outstanding is RECORDED ON THE DEAL rather than forgotten - so the
+    #      analyst can see what is still coming and the owner can be chased.
+    #
+    #   3. ATTACHING STAYS OPEN after submission, which is what makes this
+    #      honest rather than a way of skipping paperwork.
+    #
+    # A document may still be marked MANDATORY, and those DO block - some
+    # papers genuinely cannot be worked without. The difference is that the
+    # bank now chooses which, instead of every document being treated as
+    # blocking by default.
+    provided = list(payload.documents_provided or [])
+    owner_docs = _documents_for(deal, attached_by="owner")
+    owner_names = [d["name"] for d in owner_docs] or list(state["required"])
+    outstanding = [d for d in owner_names if d not in provided]
+
+    blocking = []
+    for d in owner_docs:
+        if d["name"] in outstanding and bool(d.get("mandatory")):
+            blocking.append(d["name"])
+    if blocking:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot submit — these documents are mandatory before "
+                   "analysis can begin: " + ", ".join(blocking),
+        )
+
+    if outstanding:
+        # Recorded, not waved through. The next person to open this deal sees
+        # exactly what is still owed and by whom.
+        try:
+            pm.update_deal(deal_id, {
+                "documents_outstanding": outstanding,
+                "documents_outstanding_at": datetime.now().isoformat(timespec="seconds"),
+            }, str(user.get("username", "") or ""))
+        except Exception as _exc:
+            logger.warning("could not record outstanding documents: %s", _exc)
+'''
+
+ADMIN_SRC = r'''// Admin → Configuration (Batch 1b).
 //
 // CEO / MD / Director surface for editing pipeline + credit reference config
 // that today lives in Streamlit: deal-create required fields, customer segments
@@ -1388,3 +1743,352 @@ function CategoryEditor({
     </div>
   );
 }
+'''
+
+AUDIT_SRC = r'''#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Walk a deal from capture to disbursement. READ ONLY unless --live. Exit 1 on a block.
+
+RULING (2026-08-12): "today the pilot has to see a case travel from a deal to
+disbursement. You can also audit that journey and confirm that there are no
+hidden bugs."
+
+WHY A WALK RATHER THAN A REVIEW. Reading the code tells you what each step
+intends; only walking it tells you whether step 4 accepts what step 3 produced.
+Every expensive bug on this system so far has lived in that seam - the DB sync
+dropping event_id, the funnel bucket the seeder never filled, the settings file
+thinned by a bare except. None of them were visible in the file that contained
+them.
+
+WHAT IT CHECKS, in the order a real deal meets them:
+
+    1  the journey is configured and reachable end to end
+    2  every stage transition the flow declares is actually permitted
+    3  the document gate - what it demands, and WHO can satisfy it
+    4  the manager-validation gate
+    5  the credit handoff (does an application get created, and linked back)
+    6  the credit-admin and disbursement steps
+    7  the labels a person actually reads at each step
+
+A BLOCK is something that stops the deal. A WARNING is something that will
+confuse the person driving it. Both are reported; only blocks fail the run.
+
+    python scripts\\audit_deal_journey.py
+    python scripts\\audit_deal_journey.py --product "Business Term Loan"
+"""
+import os
+import sys
+
+sys.path.insert(0, os.getcwd())
+
+BLOCKS, WARNINGS = [], []
+
+
+def block(what, detail=""):
+    BLOCKS.append((what, detail))
+    print("  BLOCK  %s" % what)
+    if detail:
+        print("         %s" % detail)
+
+
+def warn(what, detail=""):
+    WARNINGS.append((what, detail))
+    print("  warn   %s" % what)
+    if detail:
+        print("         %s" % detail)
+
+
+def ok(what, detail=""):
+    print("  ok     %-44s %s" % (what, detail))
+
+
+def rule(t):
+    print("\n" + "=" * 78)
+    print(t)
+    print("=" * 78)
+
+
+def main():
+    product = "Business Term Loan"
+    if "--product" in sys.argv:
+        i = sys.argv.index("--product")
+        if i + 1 < len(sys.argv):
+            product = sys.argv[i + 1]
+
+    try:
+        from utils.core import get_pipeline_settings
+        from utils.pipeline_funnel import buckets_for
+    except Exception as exc:
+        print("ABORT: %s" % exc)
+        return 1
+
+    cfg = get_pipeline_settings() or {}
+
+    rule("1. IS THE JOURNEY CONFIGURED END TO END?")
+    flows = cfg.get("stage_flows") or {}
+    flow_key = None
+    prod_flows = cfg.get("product_flows") or {}
+    entry = prod_flows.get(product) if isinstance(prod_flows, dict) else None
+    if isinstance(entry, dict) and entry.get("stages"):
+        stages = [str(s.get("stage", "")).strip() for s in entry["stages"]]
+        flow_key = "product:%s" % product
+    else:
+        # Fall back to the class flow the deal would actually resolve to.
+        for key in ("asset", "loan", "default"):
+            if isinstance(flows.get(key), list) and flows[key]:
+                stages = [str(x) for x in flows[key]]
+                flow_key = key
+                break
+        else:
+            stages = []
+    if not stages:
+        block("no stage flow resolves for %r" % product,
+              "the deal would have nowhere to advance to")
+        return 1
+    ok("flow resolved", "%s - %d stages" % (flow_key, len(stages)))
+    for n, st in enumerate(stages, 1):
+        print("         %2d. %s" % (n, st))
+
+    terminal = [s for s in stages if s.lower().startswith("closed")]
+    if not terminal:
+        warn("no terminal stage in the flow",
+             "nothing marks the deal finished; it can be advanced for ever")
+
+    rule("2. DOES EVERY DECLARED TRANSITION EXIST?")
+    # settings["stages"] is a LEGACY generic sales list - Prospecting, Needs
+    # Analysis, Proposal - left over from before the banking journey existed.
+    # The advance endpoint validates against _stage_flow_for(), NOT against it.
+    #
+    # The first version of this audit compared the two and reported eight
+    # stages as rejected, which would have been catastrophic and is not true.
+    # Checked instead: does the advance path consult that list at all?
+    api_src = open(os.path.join("utils", "api.py"), encoding="utf-8").read()
+    ai = api_src.find('@app.post("/api/pipeline/deals/{deal_id}/advance")')
+    aseg = api_src[ai:ai + 4000] if ai > 0 else ""
+    if aseg and '"stages"' in aseg:
+        block("the advance endpoint validates against settings['stages']",
+              "which still holds the legacy sales list, so the banking stages "
+              "would be refused")
+    elif aseg:
+        ok("advance validates against the product flow", "not the legacy list")
+    else:
+        warn("advance endpoint not found", "could not verify what it validates")
+
+    legacy = [str(s.get("stage", s) if isinstance(s, dict) else s)
+              for s in (cfg.get("stages") or [])]
+    if legacy and not set(stages) & set(legacy):
+        warn("settings['stages'] shares nothing with the live journey",
+             "it is dead config (%d entries) - harmless today, but the next "
+             "person to read it will believe it is the pipeline" % len(legacy))
+
+    rule("3. THE DOCUMENT GATE")
+    docs = (entry or {}).get("required_documents") or []
+    at_stage = str((entry or {}).get("documents_required_at_stage", "") or "")
+    if not docs:
+        warn("no documents configured for %r" % product,
+             "the gate passes trivially - fine today, but nothing is being asked for")
+    else:
+        ok("documents configured", "%d required" % len(docs))
+        if at_stage and at_stage not in stages:
+            block("documents_required_at_stage %r is not in the flow" % at_stage,
+                  "the gate can never be reached, so it never releases")
+        elif at_stage:
+            ok("required at", at_stage)
+
+        # WHO ATTACHES. A flat list of names says nothing about who is
+        # responsible, so every document lands on the deal owner - including
+        # the ones only an analyst can produce.
+        shaped = [d for d in docs if isinstance(d, dict)]
+        if not shaped:
+            warn("no document says WHO attaches it",
+                 "every one falls to the deal owner, including analyst-produced "
+                 "papers the owner cannot obtain")
+
+    rule("4. GATES BETWEEN THE OWNER AND CREDIT")
+    src = open(os.path.join("utils", "api.py"), encoding="utf-8").read()
+    i = src.find('@app.post("/api/pipeline/deals/{deal_id}/submit-to-credit")')
+    # To the NEXT endpoint, not a fixed byte count. A window sized in bytes
+    # silently truncates the moment the endpoint grows, and then reports the
+    # things past the cut as missing - which is what happened the first time
+    # this ran after the soft gate was added.
+    j = src.find("\n@app.", i + 10) if i > 0 else -1
+    seg = src[i:j if j > 0 else i + 12000] if i > 0 else ""
+    if not seg:
+        block("submit-to-credit endpoint not found")
+    else:
+        if "manager_validated" in seg:
+            ok("manager validation is required", "deliberate control point")
+        else:
+            warn("no manager-validation gate", "an unvalidated deal can reach credit")
+        if 'detail="Cannot submit to credit — missing documents' in seg:
+            # This is the hard condition the pilot flagged.
+            block("the document gate is ALL-OR-NOTHING",
+                  "one outstanding paper blocks submission entirely, even when it "
+                  "is not what the analysis is waiting for")
+        else:
+            ok("document gate allows partial submission", "")
+
+    rule("5. THE CREDIT HANDOFF")
+    if "create_from_pipeline_deal" in seg:
+        ok("an application is created on submit", "")
+    else:
+        block("no application is created", "the deal reaches credit with nothing to work on")
+    if "lms_application_id" in src or "application_id" in seg:
+        ok("the application id is linked back to the deal", "")
+    else:
+        warn("no link back from the deal to its application",
+             "somebody on the deal cannot find the credit case")
+
+    rule("6. CREDIT ADMIN AND DISBURSEMENT")
+    for label, needle in (("offer letter step", "Offer Letter"),
+                          ("security perfection step", "Legal - Security Perfection"),
+                          ("disbursement step", "Disbursement")):
+        if needle in stages:
+            ok(label, needle)
+        else:
+            warn("%s missing from the flow" % label,
+                 "the deal cannot reach it by advancing")
+
+    rule("7. WHAT THE PERSON READS")
+    try:
+        pdd = open(os.path.join("frontend", "web", "src", "pages",
+                                "PipelineDealDetail.tsx"), encoding="utf-8").read()
+    except OSError:
+        pdd = ""
+    # Look at the JSX the button RENDERS, not anywhere in the file - the phrase
+    # also appears in comments explaining why it was wrong, and matching those
+    # made the audit report a fix as a fault.
+    import re as _re
+    btn = _re.search(r"<Button[^>]*>\s*\{?([^<}]{0,60})", pdd)
+    label = (btn.group(1).strip() if btn else "")
+    if "Submit to Credit Analysis" in pdd and "submit_label" not in pdd:
+        # The advance is one stage, config-driven and correct. The LABEL is not.
+        nxt = ""
+        if "Documentation" in stages:
+            k = stages.index("Documentation")
+            if k + 1 < len(stages):
+                nxt = stages[k + 1]
+        block("the button says 'Submit to Credit Analysis'",
+              "but the deal advances ONE stage, which from Documentation is %r. "
+              "The label names a step three transitions away." % (nxt or "the next stage"))
+    elif "submit_label" in pdd:
+        ok("the submit button names the real next stage",
+           "from the flow, per product")
+    else:
+        warn("could not determine the submit label", label[:40])
+
+    rule("VERDICT")
+    if not BLOCKS:
+        print("A deal can travel from capture to disbursement.")
+        if WARNINGS:
+            print("%d warning(s) - none stop the deal, all will confuse somebody."
+                  % len(WARNINGS))
+        return 0
+    print("%d BLOCK(S) between a deal and disbursement:\n" % len(BLOCKS))
+    for what, detail in BLOCKS:
+        print("   * %s" % what)
+        if detail:
+            print("     %s" % detail)
+    if WARNINGS:
+        print("\n%d warning(s) as well." % len(WARNINGS))
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (API, ADMIN, DETAIL, APITS):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found." % p)
+            return 1
+
+    api = open(API, encoding="utf-8").read()
+    ts = open(APITS, encoding="utf-8").read()
+    det = open(DETAIL, encoding="utf-8").read()
+
+    if "DOC_ATTACHERS" in api:
+        print("ABORT: DOC1 looks applied.")
+        return 1
+    for name, blob, needle in (("api", api, MODEL_ANCHOR), ("api", api, EP_ANCHOR),
+                               ("api", api, VALID_OLD), ("api", api, GATE_OLD),
+                               ("api.ts", ts, TS_ANCHOR)):
+        if blob.count(needle) != 1:
+            print("ABORT: an anchor in %s matched %d times." % (name, blob.count(needle)))
+            return 1
+
+    api = api.replace(MODEL_ANCHOR, MODEL + MODEL_ANCHOR, 1)
+    api = api.replace(VALID_OLD, VALID_NEW, 1)
+    api = api.replace(GATE_OLD, SOFT_GATE, 1)
+    api = api.replace(EP_ANCHOR, ENDPOINT + EP_ANCHOR, 1)
+    ts = ts.replace(TS_ANCHOR, TS_NEW + TS_ANCHOR, 1)
+    print("  ok  document model, soft gate, next-step endpoint, client")
+
+    # ANCHORED, so this applies on top of Alex's own additions to the file.
+    for old, new in DETAIL_EDITS:
+        if det.count(old) != 1:
+            print("ABORT: a deal-detail anchor matched %d times:" % det.count(old))
+            print("       %s" % old.strip().split("\n")[0][:70])
+            print("       This file carries pilot-side changes; a whole-file")
+            print("       replacement would erase them, so it must be anchored.")
+            return 1
+        det = det.replace(old, new, 1)
+    print("  ok  deal detail - %d anchored edits" % len(DETAIL_EDITS))
+
+    # The gate must be soft, but not toothless.
+    if "mandatory" not in SOFT_GATE:
+        print("ABORT: nothing can block any more - the gate is toothless.")
+        return 1
+    if "documents_outstanding" not in SOFT_GATE:
+        print("ABORT: outstanding documents are not recorded, so submitting")
+        print("       pending would mean forgetting rather than deferring.")
+        return 1
+    if 'attached_by="owner"' not in SOFT_GATE:
+        print("ABORT: the gate still weighs documents the owner cannot produce.")
+        return 1
+    if "submit_label" not in ENDPOINT:
+        print("ABORT: the endpoint does not return a label for the button.")
+        return 1
+    if "setDocField" not in ADMIN_SRC or "Attached by" not in ADMIN_SRC:
+        print("ABORT: the admin cannot set who attaches a document.")
+        return 1
+    print("  ok  post-checks: soft but not toothless, recorded, admin can set it")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((API, api), (APITS, ts), (DETAIL, det),
+                          (ADMIN, ADMIN_SRC)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+    if not os.path.exists(AUDIT):
+        open(AUDIT, "w", encoding="utf-8", newline="").write(AUDIT_SRC)
+        print("CREATED %s" % AUDIT)
+
+    import py_compile
+    try:
+        py_compile.compile(API, doraise=True)
+        print("  ok  api.py compiles")
+    except Exception as exc:
+        print("  FAIL %s" % exc)
+        return 1
+
+    print("")
+    print("Next: pushd frontend\\web && pnpm tsc --noEmit && popd, restart uvicorn.")
+    print("Then walk the journey and confirm it is clear:")
+    print("  python scripts\\audit_deal_journey.py")
+    print("")
+    print("Admin > product flow > Required documents now has a row per document")
+    print("with WHO ATTACHES and whether it BLOCKS. Existing products keep")
+    print("working unchanged - a bare name still means the owner.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
