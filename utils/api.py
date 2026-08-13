@@ -498,6 +498,44 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "portfolio_owner_code": deal.get("portfolio_owner_code"),
                 "portfolio_owner_name": deal.get("portfolio_owner_name"),
                 "lms_application_id":   deal.get("lms_application_id"),
+                # ── FIELDS THAT WERE BEING SILENTLY DROPPED (2026-08-13) ────
+                # metadata is a HAND-LISTED set, not a catch-all: anything not
+                # named here never reached Postgres. Since deals are read
+                # DB-first, these came back EMPTY on the next read.
+                #
+                # BRANCH IS THE WORST OF THEM. Without it a deal is not
+                # branch-originated, so no branch committee is substituted into
+                # its journey and the case NEVER REACHES A COMMITTEE - very
+                # likely why the branch managers were gathered and nothing
+                # moved. Underneath the missing committees, the deals had lost
+                # the field that routes them.
+                #
+                # COMMITTEE_RECORDS is the decision itself. A committee could
+                # record a recommendation and find it gone the next morning.
+                "branch":              deal.get("branch"),
+                "segment":             deal.get("segment"),
+                "committee_records":   deal.get("committee_records"),
+                "documents_required_at_stage": deal.get("documents_required_at_stage"),
+                "documents_provided":  deal.get("documents_provided"),
+                "document_files":      deal.get("document_files"),
+                "application_id":      deal.get("application_id"),
+                "manager_validated":   deal.get("manager_validated"),
+                "validated_by_name":   deal.get("validated_by_name"),
+                "validated_by_code":   deal.get("validated_by_code"),
+                "validated_by_role":   deal.get("validated_by_role"),
+                "validated_at":        deal.get("validated_at"),
+                "cancel_requested":    deal.get("cancel_requested"),
+                "cancel_approved":     deal.get("cancel_approved"),
+                "cancel_requested_at": deal.get("cancel_requested_at"),
+                "cancel_request_reason": deal.get("cancel_request_reason"),
+                "referral_status":     deal.get("referral_status"),
+                "referred_by_name":    deal.get("referred_by_name"),
+                "referred_to_name":    deal.get("referred_to_name"),
+                "referred_by_code":    deal.get("referred_by_code"),
+                "referred_to_code":    deal.get("referred_to_code"),
+                "referred_at":         deal.get("referred_at"),
+                "created_at":          deal.get("created_at"),
+                "updated_at":          deal.get("updated_at"),
                 "mou_id":               deal.get("mou_id"),
                 "mou_title":            deal.get("mou_title"),
                 "sector":               deal.get("sector"),
@@ -611,6 +649,32 @@ def _normalize_db_deal_row(row):
         r["pipeline_category"] = md.get("pipeline_category")
     if isinstance(md, dict) and not r.get("lms_application_id"):
         r["lms_application_id"] = md.get("lms_application_id")
+    # ---- LIFTED BACK OUT (2026-08-13) -------------------------------------
+    # The other half of the same fix. Writing a field into metadata and never
+    # reading it back loses it just as completely as never writing it.
+    #
+    # ANCHORED ON THE lms_application_id LINE, because it exists on BOTH
+    # branches. The first version anchored on the origin/event_id lift loop,
+    # which belongs to the origin work and is NOT released - so the replay
+    # failed on the pilot branch with "matched 0 times".
+    if isinstance(md, dict):
+        for _k in ("branch", "segment", "committee_records",
+                   "documents_required_at_stage", "documents_provided",
+                   "document_files", "application_id",
+                   "validated_by_name", "validated_by_code",
+                   "validated_by_role", "validated_at",
+                   "cancel_requested_at", "cancel_request_reason",
+                   "referral_status", "referred_by_name", "referred_to_name",
+                   "referred_by_code", "referred_to_code", "referred_at",
+                   "created_at", "updated_at"):
+            if not r.get(_k) and md.get(_k):
+                r[_k] = md.get(_k)
+        # BOOLEANS NEED `is not None`, not truthiness. manager_validated=False
+        # and cancel_requested=False are meaningful answers; treating them as
+        # absent leaves a caller unable to tell "no" from "unknown".
+        for _k in ("manager_validated", "cancel_requested", "cancel_approved"):
+            if r.get(_k) is None and md.get(_k) is not None:
+                r[_k] = md.get(_k)
     # Lift the FX money set + client-type fields out of metadata so DB-first
     # readers (analytics, dashboard canonical path) see KES-equivalent values
     # and the currency book — matching the JSON read path. Without this,
@@ -5284,10 +5348,37 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
 
 
 @app.get("/api/pipeline/analytics")
-def pipeline_analytics(user: dict = Depends(get_current_user)):
+def pipeline_analytics(unit: str = "", segment: str = "",
+                       user: dict = Depends(get_current_user)):
     """Funnel + headline pipeline metrics over the caller's visible deals."""
     _audit("API_PIPELINE_ANALYTICS", user, "")
     deals = _acquire_scoped_deals(user)
+    # ---- THE CARDS FOLLOW THE SELECTION TOO (2026-08-13) ------------------
+    # "It would be important that when one selects Consumer, even that card
+    # adjusts." The funnel already followed the business line; the headline
+    # figures above it did not, so the top of the page described the whole book
+    # while everything beneath it described one line.
+    #
+    # Same resolution as the funnel, through the same customer_segments config,
+    # so the two can never disagree about what a line contains.
+    _unit = str(unit or "").strip()
+    _seg = str(segment or "").strip()
+    if _unit or _seg:
+        _wanted = set()
+        if _seg:
+            _wanted.add(_seg.lower())
+        if _unit:
+            try:
+                _cfg = _load_json("pipeline_settings.json") or {}
+                for _k, _subs in (_cfg.get("customer_segments") or {}).items():
+                    if str(_k).strip().lower() == _unit.lower():
+                        _wanted |= {str(x).strip().lower() for x in (_subs or [])}
+                        _wanted.add(_unit.lower())
+            except Exception:
+                _wanted.add(_unit.lower())
+        if _wanted:
+            deals = [d for d in deals
+                     if str(d.get("segment", "") or "").strip().lower() in _wanted]
     # Referral-inclusive set: the scoped deals PLUS any deal referred BY someone in
     # the caller's visible scope (their outgoing referrals, owned by recipients
     # elsewhere). Lets a support unit see its referral contribution.
@@ -7308,6 +7399,68 @@ def pipeline_deal_advance(
     # can't advance to a loan-only stage. Skips gracefully if no flow is
     # configured for the class (fallback to the prior global allowlist).
     _flow = _stage_flow_for(deal.get("product_type") or deal.get("product", ""))
+    # ── A COMMITTEE STAGE CANNOT BE WALKED PAST ─────────────────────────────
+    # FROM THE PILOT (2026-08-13): "from the action area I note that someone
+    # can easily move a deal to the next stage and it records on the case
+    # journey even though it has not moved that."
+    #
+    # They could. Advance checked the product flow and the manager validation
+    # and stopped there - so a deal sitting AT a committee stage could be moved
+    # off it by its owner with no committee having met, and the journey then
+    # recorded a clean stage change as though the gate had been passed. A gate
+    # anybody can step around is not a gate, and the record of it is worse than
+    # no record because it looks like due process.
+    #
+    # LEAVING a committee stage now requires that committee to have decided.
+    # Sitting AT the stage is fine, moving BACKWARD is fine - a deal returned
+    # for rework must be able to go back. It is the forward step that needs the
+    # committee's answer.
+    #
+    # A REJECTION ALSO BLOCKS, and deliberately: submit-to-credit already
+    # refuses a rejected committee, so allowing the stage to advance would only
+    # move the case somewhere it cannot leave.
+    try:
+        _cur_stage = str(deal.get("stage", "") or "")
+        if _flow and "committee" in _cur_stage.lower():
+            _here = _flow.index(_cur_stage) if _cur_stage in _flow else -1
+            _there = _flow.index(payload.new_stage) if payload.new_stage in _flow else -1
+            if _here >= 0 and _there > _here:
+                _recs = deal.get("committee_records") or {}
+                _jrny = _effective_committee_journey(deal) or []
+                # Which committee is this stage's gate? The one on the journey
+                # whose name the stage carries - a branch stage is answered by
+                # the branch committee, a department stage by the DCC.
+                _due = []
+                for _c in _read_committee_palette():
+                    _code = str(_c.get("code"))
+                    if _code not in _jrny:
+                        continue
+                    _kind = str(_c.get("kind", "")).lower()
+                    _is_branch_stage = "branch" in _cur_stage.lower()
+                    if (_kind == "branch") == _is_branch_stage:
+                        _due.append((_code, _c))
+                for _code, _c in _due:
+                    _rec = _recs.get(_code)
+                    if not _rec:
+                        _cast = ((deal.get("committee_votes") or {}).get(_code) or {})
+                        _q = _committee_quorum(_c)
+                        raise HTTPException(
+                            status_code=400,
+                            detail=("%s has not decided yet - %d of %d "
+                                    "member(s) have voted. The case cannot "
+                                    "leave this stage until it has."
+                                    % (_c.get("name") or _code, len(_cast), _q)))
+                    if str(_rec.get("outcome", "")).upper() == "REJECTED":
+                        raise HTTPException(
+                            status_code=400,
+                            detail=("%s did not recommend this case. It cannot "
+                                    "advance from here."
+                                    % (_c.get("name") or _code)))
+    except HTTPException:
+        raise
+    except Exception as _exc:
+        logger.warning("committee gate check skipped for %s: %s", deal_id, _exc)
+
     # ── A NON-BRANCH DEAL SKIPS THE BRANCH COMMITTEE ────────────────────────
     # RULING (2026-08-12): "for any RM who is not at the branch, especially CIB
     # RMs and a few in commercial, they start theirs from the Department Credit
@@ -7505,6 +7658,172 @@ def pipeline_queue_validation(user: dict = Depends(get_current_user)):
         ],
         "count":  len(deals),
         "queue":  "validation",
+    }
+
+
+@app.get("/api/pipeline/queues/committee")
+def pipeline_queue_committee(user: dict = Depends(get_current_user)):
+    """Cases waiting on a committee this person sits on.
+
+    RULING (2026-08-12): the branch managers were gathered and nothing moved -
+    and once the committees existed, the reason it still would not have moved
+    is that MEMBERS HAD NOWHERE TO LOOK. A decision could only be recorded by
+    knowing a deal id and opening it. A committee that cannot find its own
+    cases is not a committee.
+
+    MEMBERSHIP DECIDES WHAT YOU SEE, not role. A branch manager sees their own
+    branch's committee because they sit on it; somebody added to two committees
+    sees both. That is the same rule the bank would apply in a room.
+
+    A CASE APPEARS WHEN it is at a stage whose journey includes that committee
+    AND no decision has been recorded for it yet. It leaves the moment one is,
+    which is what makes the list trustworthy enough to work from.
+    """
+    me = str(user.get("staff_code", "") or "").strip()
+    me_name = str(user.get("full_name", "") or "").strip().lower()
+    if not me and not me_name:
+        return {"committees": [], "cases": [], "total": 0}
+
+    # Which committees is this person on? Chair counts - they convene it.
+    mine = []
+    for c in _read_committee_palette():
+        members = c.get("members") or []
+        codes = {str(m.get("staff_code", "") or "").strip()
+                 for m in members if isinstance(m, dict)}
+        names = {str(m.get("name", "") or "").strip().lower()
+                 for m in members if isinstance(m, dict)}
+        chair = str(c.get("chaired_by", "") or "").strip().lower()
+        if (me and me in codes) or (me_name and (me_name in names or me_name == chair)):
+            mine.append(c)
+    if not mine:
+        return {"committees": [], "cases": [], "total": 0}
+
+    my_codes = {str(c.get("code")) for c in mine}
+    # ── THE SAME DEALS EVERY OTHER SCREEN SEES ──────────────────────────────
+    # This read PipelineManager, which loads pipeline_deals.json and NOTHING
+    # ELSE - while _PIPELINE_READ_DB_FIRST is True and every other screen reads
+    # Postgres. On the pilot box that was 33 deals in one store against 2 in
+    # the other, and the symptom was a case listed in this queue whose Review
+    # button opened an empty page: the queue found it, the detail page did not.
+    #
+    # _acquire_scoped_deals is the canonical read - DB first, JSON as fallback,
+    # and cascade scope already applied. Using it means this queue can never
+    # again disagree with the page it links to.
+    from utils.api_pipeline_permissions import resolve_deal_permissions as _perms
+    try:
+        all_deals = _acquire_scoped_deals(user)
+    except Exception:
+        all_deals = []
+    try:
+        from utils.api_pipeline_scope import get_visible_staff_codes as _vis
+        visible = _vis(user)
+    except Exception:
+        visible = set()
+
+    # A COMMITTEE MEMBER IS NOT ALWAYS IN THEIR OWN CASCADE. A department
+    # committee sits at head office, so scoped deals alone would hide the very
+    # cases they must decide - the fault CM1 fixed in permissions. The canonical
+    # read is scoped, so anything the committee is entitled to but scope drops
+    # is recovered here, and can_view still decides.
+    # RECOVERED FROM WHICHEVER STORE IS LIVE, not only from the database. The
+    # first version guarded this with _db_available(), so on a box falling back
+    # to JSON a department committee saw nothing at all - the exact failure it
+    # was written to prevent, reintroduced by the guard.
+    seen = {str(d.get("id")) for d in all_deals}
+    _extra = []
+    if _db_available():
+        try:
+            from utils.db import db as _db2
+            rows = _db2.fetch_all("SELECT * FROM pipeline_deals", tuple())
+            _extra = [_normalize_db_deal_row(x) for x in _serialize(rows)]
+        except Exception:
+            _extra = []
+    if not _extra:
+        try:
+            from utils.core import PipelineManager as _PM_fallback
+            _extra = list(getattr(_PM_fallback(), "deals", []) or [])
+        except Exception:
+            _extra = []
+    for d in _extra:
+        if str(d.get("id")) not in seen:
+            all_deals.append(d)
+
+    cases = []
+    for d in all_deals:
+        if str(d.get("stage", "")).lower().startswith("closed"):
+            continue
+        try:
+            journey = _effective_committee_journey(d)
+        except Exception:
+            continue
+        pending = [c for c in journey if c in my_codes
+                   and not (d.get("committee_records") or {}).get(c)]
+        if not pending:
+            continue
+        # ── ONLY CASES THAT HAVE ACTUALLY REACHED THE COMMITTEE ─────────────
+        # RULING (2026-08-13): "should a case at Documentation appear in the
+        # committee queue at all? No, until it is submitted. At or past the
+        # committee's own stage - yes."
+        #
+        # The queue listed every deal whose journey included this committee,
+        # which for a branch committee is EVERY DEAL IN THE BRANCH from
+        # Initiation onward - forty cases of which thirty-eight are nowhere
+        # near ready to discuss. A committee that opens its queue and finds
+        # mostly noise stops opening it, so this is worse than an empty list.
+        #
+        # AT OR PAST, not exactly at: a case that has moved on without the
+        # committee deciding is precisely the one somebody needs to see.
+        try:
+            _flow = _stage_flow_for(d.get("product_type") or d.get("product", "")) or []
+            _cur = str(d.get("stage", "") or "")
+            if _flow and _cur in _flow:
+                _here = _flow.index(_cur)
+                _gate_at = -1
+                for _n, _st in enumerate(_flow):
+                    _low = _st.lower()
+                    if "committee" not in _low:
+                        continue
+                    # Which committee stage belongs to which of my committees:
+                    # a branch stage answers to a branch committee, any other
+                    # committee stage to a department one.
+                    _is_branch_stage = "branch" in _low
+                    for _cc in pending:
+                        _c = next((x for x in mine
+                                   if str(x.get("code")) == _cc), None)
+                        if not _c:
+                            continue
+                        if (str(_c.get("kind", "")).lower() == "branch") == _is_branch_stage:
+                            _gate_at = _n if _gate_at < 0 else min(_gate_at, _n)
+                if _gate_at >= 0 and _here < _gate_at:
+                    continue
+        except Exception:
+            pass
+        # SCOPE STILL APPLIES. Sitting on a committee does not open every deal
+        # in the bank - a member sees the cases their scope already allows,
+        # which for a branch committee is their own branch.
+        if not _perms(d, user, visible).get("can_view"):
+            continue
+        cases.append({
+            "deal_id": d.get("id"),
+            "client_name": d.get("client_name"),
+            "product": d.get("product_type") or d.get("product"),
+            "deal_value": d.get("deal_value"),
+            "currency": d.get("currency") or "KES",
+            "branch": d.get("branch") or d.get("unit"),
+            "stage": d.get("stage"),
+            "owner": d.get("staff_name"),
+            "awaiting": pending,
+            "awaiting_names": [next((str(c.get("name")) for c in mine
+                                     if str(c.get("code")) == p), p) for p in pending],
+            "submitted_at": d.get("updated_at") or d.get("created_at"),
+        })
+
+    cases.sort(key=lambda x: str(x.get("submitted_at") or ""), reverse=True)
+    return {
+        "committees": [{"code": c.get("code"), "name": c.get("name"),
+                        "members": len(c.get("members") or [])} for c in mine],
+        "cases": cases,
+        "total": len(cases),
     }
 
 
@@ -11235,7 +11554,8 @@ def pipeline_analytics_summary(days: int = 30, start: str = "", end: str = "",
 
 
 @app.get("/api/pipeline/funnel")
-def pipeline_funnel_defined(user: dict = Depends(get_current_user)):
+def pipeline_funnel_defined(unit: str = "", segment: str = "",
+                            user: dict = Depends(get_current_user)):
     """The DEFINED journey per product flow — from admin config, not from code.
 
     Returns every configured stage of every flow in order, including the ones
@@ -11259,6 +11579,37 @@ def pipeline_funnel_defined(user: dict = Depends(get_current_user)):
     # "all deals" would silently show a caller deals outside their cascade, and
     # a scope bypass that looks like a working page is worse than an error.
     deals = _acquire_scoped_deals(user)
+    # ---- THE FUNNEL FOLLOWS THE SELECTION (2026-08-13) --------------------
+    # "Now that we have Consumer, Commercial, CIB being selected and we get
+    # their numbers, I wanted us to make it interactive."
+    #
+    # The journey showed the whole book whatever was selected, so picking
+    # Consumer changed the deal list beneath it and left the funnel above
+    # describing something else - two panels on one screen disagreeing about
+    # what is being looked at.
+    #
+    # `unit` is a WHOLE LINE - Consumer, Commercial, CIB - resolved through the
+    # same customer_segments config the deal list groups by, so a sub-segment
+    # added tomorrow is included without touching this code.
+    # `segment` is one sub-segment exactly.
+    _unit = str(unit or "").strip()
+    _seg = str(segment or "").strip()
+    if _unit or _seg:
+        _wanted = set()
+        if _seg:
+            _wanted.add(_seg.lower())
+        if _unit:
+            try:
+                _cfg = _load_json("pipeline_settings.json") or {}
+                for _k, _subs in (_cfg.get("customer_segments") or {}).items():
+                    if str(_k).strip().lower() == _unit.lower():
+                        _wanted |= {str(x).strip().lower() for x in (_subs or [])}
+                        _wanted.add(_unit.lower())
+            except Exception:
+                _wanted.add(_unit.lower())
+        if _wanted:
+            deals = [d for d in deals
+                     if str(d.get("segment", "") or "").strip().lower() in _wanted]
 
     grouped: dict = {}
     for d in deals:
@@ -12555,7 +12906,36 @@ def get_deal_committee_records(deal_id: str, user: dict = Depends(get_current_us
     gates = []
     for code in codes:
         c = _committee_by_code(code)
+        # VOTING PROGRESS travels with the gate. A member opening the case
+        # needs to know whether the committee is waiting on them or on
+        # somebody else - and before quorum there is no record to read it
+        # from, because nothing has been decided yet.
+        _cast = ((deal.get("committee_votes") or {}).get(str(c.get("code"))) or {})
+        _mem = c.get("members") or []
+        # ── WHETHER *THIS* VIEWER MAY VOTE ──────────────────────────────────
+        # The panel was gating the voting box on canEdit, which means "owner or
+        # admin" - so the one person who must vote, a committee member, was
+        # shown the read-only branch and the bench never appeared. The server
+        # already knows the roster and already refuses a non-member with a 403;
+        # it should answer the question rather than leave the UI guessing at it.
+        _me = str(user.get("staff_code", "") or "").strip()
+        _myname = str(user.get("full_name", "") or "").strip().lower()
+        _codes = {str(m.get("staff_code", "") or "").strip()
+                  for m in _mem if isinstance(m, dict)}
+        _names = {str(m.get("name", "") or "").strip().lower()
+                  for m in _mem if isinstance(m, dict)}
+        _chair = str(c.get("chaired_by", "") or "").strip().lower()
+        _can_vote = bool((_me and _me in _codes)
+                         or (_myname and (_myname in _names or _myname == _chair)))
         gates.append({
+            "can_vote": _can_vote,
+            "votes_cast": len(_cast),
+            "quorum": _committee_quorum(c),
+            "awaiting": [str(m.get("name") or m.get("staff_code"))
+                         for m in _mem if isinstance(m, dict)
+                         and str(m.get("staff_code", "") or "").strip() not in _cast
+                         and str(m.get("name", "") or "").strip() not in _cast],
+
             "code": code,
             "name": c.get("name", code),
             "recording_mode": c.get("recording_mode", "voting"),
@@ -12564,6 +12944,176 @@ def get_deal_committee_records(deal_id: str, user: dict = Depends(get_current_us
             "record": records.get(code),
         })
     return {"gates": gates, "cr_only": len(codes) == 0}
+
+
+@app.post("/api/pipeline/deals/{deal_id}/committee/{code}/vote", tags=["pipeline"])
+def cast_committee_vote(deal_id: str, code: str,
+                        payload: dict = Body(default_factory=dict),
+                        user: dict = Depends(get_current_user)):
+    """ONE MEMBER, ONE VOTE, FROM THEIR OWN LOGIN.
+
+    FROM THE PILOT (2026-08-13): "one member of the committee logged in and
+    when they input their vote, a single vote, it locks the rest and the case
+    journey records DEFERRED."
+
+    It did, and the design was the fault rather than the code. The existing
+    endpoint takes EVERY vote in one payload and writes a finished record - so
+    one member submitting their own vote produced: one vote, below quorum,
+    DEFERRED, record written, gate closed, and the case gone from everybody
+    else's queue before they had seen it.
+
+    A committee does not vote that way. Each member signs in on their own
+    machine, records their own view, and the outcome belongs to the committee
+    once enough of them have spoken.
+
+    HOW THIS WORKS
+
+      Votes accumulate under deal.committee_votes[code][staff_code]. Voting
+      again REPLACES that member's own vote and nobody else's - somebody who
+      changes their mind before the meeting closes should be able to.
+
+      NO RECORD IS WRITTEN UNTIL QUORUM IS REACHED. The gate reads
+      committee_records; while that is absent the case stays pending, stays in
+      every member's queue, and the journey says nothing - because nothing has
+      been decided yet.
+
+      When the last member needed arrives, the outcome is derived from all the
+      votes at once and written as one record, exactly as before. The journey
+      then shows one decision with its tally, not a trail of half-decisions.
+
+      THE VOTER IS THE CALLER. Name and role come from their login and the
+      committee roster, never from the request body - a vote attributed by
+      whoever sent it is not a vote.
+    """
+    _pm, deal = _deal_for_docs(deal_id, user)
+    committee = _committee_by_code(code)
+    if not committee:
+        raise HTTPException(status_code=404, detail=f"No committee {code!r}.")
+
+    journey = _effective_committee_journey(deal)
+    if code not in journey:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{code} is not in this deal's committee journey.")
+
+    # WHO IS VOTING - resolved from the roster, not from the payload.
+    me = str(user.get("staff_code", "") or "").strip()
+    myname = str(user.get("full_name", "") or "").strip()
+    members = committee.get("members") or []
+    mine = next((m for m in members
+                 if isinstance(m, dict)
+                 and (str(m.get("staff_code", "") or "").strip() == me
+                      or str(m.get("name", "") or "").strip().lower() == myname.lower())), None)
+    is_chair = (str(committee.get("chaired_by", "") or "").strip().lower()
+                == myname.lower())
+    if not mine and not is_chair:
+        raise HTTPException(
+            status_code=403,
+            detail=f"You are not on {committee.get('name') or code}.")
+
+    vote = str(payload.get("vote", "")).upper()
+    if vote not in ("YES", "NO", "ABSTAIN", "RECUSED"):
+        raise HTTPException(status_code=400, detail=f"invalid vote {vote!r}")
+    docs_ok = bool(payload.get("documents_validated"))
+    if vote == "YES" and not docs_ok:
+        raise HTTPException(
+            status_code=400,
+            detail="A YES needs confirmation that the documentation was checked.")
+
+    key = me or myname
+    all_votes = dict(deal.get("committee_votes") or {})
+    cast = dict(all_votes.get(code) or {})
+    cast[key] = {
+        "name": (mine or {}).get("name") or myname,
+        "role": (mine or {}).get("role") or ("Chair" if is_chair else ""),
+        "staff_code": me,
+        "vote": vote,
+        "documents_validated": docs_ok,
+        "comment": str(payload.get("comment", "") or "").strip(),
+        "at": datetime.now().isoformat(timespec="seconds"),
+    }
+    all_votes[code] = cast
+
+    quorum = _committee_quorum(committee)
+    attended = len(cast)
+    updates = {"committee_votes": all_votes}
+    outcome = ""
+
+    # ── THE CHAIR MUST HAVE VOTED ───────────────────────────────────────────
+    # RULING (2026-08-13): "as a rule of law we should make the chair vote
+    # mandatory, and in the absence the operations manager."
+    #
+    # Quorum counts heads; it does not care WHOSE. A committee could reach two
+    # votes without the person who convenes it having said anything, and the
+    # decision would carry their committee's name. That is the difference
+    # between a meeting and a headcount.
+    #
+    # IN THEIR ABSENCE, THE OPERATIONS MANAGER stands in - a named deputy
+    # rather than "anybody else", so the authority is traceable to a role the
+    # bank recognises.
+    #
+    # THE VOTES ARE KEPT EITHER WAY. Nobody's view is discarded for arriving
+    # before the chair's; the decision simply is not final until the chair (or
+    # their deputy) has spoken.
+    _chair_name = str(committee.get("chaired_by", "") or "").strip().lower()
+    _chair_code = str(committee.get("chair_staff_code", "") or "").strip()
+
+    def _is_chair(v):
+        return ((_chair_code and str(v.get("staff_code", "")).strip() == _chair_code)
+                or (_chair_name and str(v.get("name", "")).strip().lower() == _chair_name)
+                or str(v.get("role", "")).strip().lower() == "chair")
+
+    def _is_deputy(v):
+        _r = str(v.get("role", "") or "").lower()
+        return "operations manager" in _r or "operations" in _r
+
+    _chair_spoke = any(_is_chair(v) for v in cast.values())
+    _deputy_spoke = any(_is_deputy(v) for v in cast.values())
+    _authority = _chair_spoke or _deputy_spoke
+
+    if attended >= quorum and _authority:
+        # Enough of the committee has spoken - decide, once, from all of it.
+        vlist = list(cast.values())
+        outcome = _derive_outcome_from_votes(vlist, committee.get("voting_rule"),
+                                             committee)
+        records = dict(deal.get("committee_records") or {})
+        records[code] = {
+            "outcome": outcome, "mode": "voting", "votes": vlist,
+            "note": str(payload.get("note", "") or "").strip(),
+            "recorded_by": me, "recorded_by_name": myname,
+            "recorded_at": datetime.now().isoformat(timespec="seconds"),
+        }
+        updates["committee_records"] = records
+
+    _pm.update_deal(deal_id, updates, str(user.get("username", "") or ""))
+    _audit("API_COMMITTEE_VOTE", user,
+           f"deal={deal_id}|committee={code}|vote={vote}|"
+           f"{attended}/{quorum}|outcome={outcome or 'pending'}")
+
+    return {
+        "status": "recorded",
+        "committee": code,
+        "your_vote": vote,
+        "votes_cast": attended,
+        "quorum": quorum,
+        # So the panel can say WHY a case with enough votes is still open -
+        # "waiting on the chair" is a different thing from "waiting on a body".
+        "chair_voted": _chair_spoke,
+        "deputy_voted": _deputy_spoke,
+        "awaiting_chair": bool(attended >= quorum and not _authority),
+        "decided": bool(outcome),
+        "outcome": outcome,
+        # So the panel can show who has voted and who is still awaited, which
+        # is the thing a chair actually wants to see.
+        "tally": [{"name": v.get("name"), "role": v.get("role"),
+                   "vote": v.get("vote"), "at": v.get("at")}
+                  for v in cast.values()],
+        "awaiting": [str(m.get("name") or m.get("staff_code"))
+                     for m in members
+                     if isinstance(m, dict)
+                     and str(m.get("staff_code", "") or "").strip() not in cast
+                     and str(m.get("name", "") or "").strip() not in cast],
+    }
 
 
 @app.post("/api/pipeline/deals/{deal_id}/committee-records", tags=["pipeline"])

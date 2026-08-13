@@ -150,7 +150,7 @@ export function Lms() {
       {/* Header strip — same brand-navy as Pipeline pages */}
       <PageHeader
         ribbon
-        breadcrumbs={[{ label: 'EKE Credit Intelligence System (CIS)' }, { label: 'Credit Analysis' }]}
+        breadcrumbs={[{ label: 'A2Z Credit Intelligence System (CIS)' }, { label: 'Credit Analysis' }]}
         title="Credit Analysis"
         subtitle="Submitted, assigned, and decided applications in your cascade."
       />
