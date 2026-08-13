@@ -13,7 +13,7 @@
 // probably sits inside the bank, inferred from its probability. It sits beneath
 // the journey and never filters it.
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Card } from '@/components/Card';
 import { useToast } from '@/components/Toast';
 import { fetchPipelineDefinedFunnel, type DefinedFunnel as FunnelData, type DefinedFlow } from '@/lib/api';
@@ -58,12 +58,26 @@ export default function DefinedFunnel({ onStageClick, unit, segment, aside }: De
   const { toast } = useToast();
   const [data, setData] = useState<FunnelData | null>(null);
   const [loading, setLoading] = useState(false);
+  // Distinct from `loading`: a REFRESH keeps the bands on screen and dims them;
+  // a load has nothing to show yet.
+  const [refreshing, setRefreshing] = useState(false);
+  const loadedOnce = useRef(false);
   const [flowKey, setFlowKey] = useState('');
   const [hover, setHover] = useState('');
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
+    // KEEP THE OLD NUMBERS ON SCREEN WHILE FETCHING THE NEW ONES. Selecting a
+    // business line blanked the whole card to "Loading the journey..." and
+    // then redrew it - a flash on every click, and a moment where the screen
+    // said nothing at all. The previous figures stay until the new ones
+    // arrive, dimmed so nobody reads a stale number as current.
+    // A REF, NOT `data`. Reading `data` here would be a stale closure, and
+    // adding it to the dependency list would loop: the effect sets data, which
+    // re-runs the effect. A ref answers "has this ever loaded" without taking
+    // part in the dependency graph.
+    setLoading(!loadedOnce.current);
+    setRefreshing(true);
     void (async () => {
       try {
         const r = await fetchPipelineDefinedFunnel({ unit, segment });
@@ -73,7 +87,7 @@ export default function DefinedFunnel({ onStageClick, unit, segment, aside }: De
       } catch (e) {
         if (alive) toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Could not load the funnel.' });
       } finally {
-        if (alive) setLoading(false);
+        if (alive) { loadedOnce.current = true; setLoading(false); setRefreshing(false); }
       }
     })();
     return () => { alive = false; };
@@ -115,7 +129,10 @@ export default function DefinedFunnel({ onStageClick, unit, segment, aside }: De
             the thing it filters. On a narrow screen it stacks. */}
         {!loading && data && data.flows.length > 0 && (
           <div className={aside ? 'lg:flex lg:items-start lg:gap-6' : ''}>
-          <div className={aside ? 'min-w-0 lg:flex-1' : ''}>
+          <div className={[
+            aside ? 'min-w-0 lg:flex-1' : '',
+            refreshing ? 'opacity-50 transition-opacity' : 'transition-opacity',
+          ].join(' ')}>
             <div className="mb-3 flex flex-wrap gap-1.5">
               {data.flows.map((f) => (
                 <button key={f.flow} type="button" onClick={() => setFlowKey(f.flow)}

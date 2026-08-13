@@ -54,7 +54,20 @@ import {
 /** Format a deal_value in the tenant's currency. Compact format for table cells. */
 function formatValue(v: number, symbol: string): string {
   if (!Number.isFinite(v) || v === 0) return '—';
-  return `${symbol} ${v.toLocaleString()}`;
+  // COMPACT ABOVE A MILLION. "KES 632,907,965.8" is eighteen characters and
+  // overflowed the card at text-3xl; nobody reads the last six digits of a
+  // pipeline total anyway. The exact figure stays in the tooltip.
+  const abs = Math.abs(v);
+  if (abs >= 1_000_000_000) return `${symbol} ${(v / 1_000_000_000).toFixed(2)}B`;
+  if (abs >= 1_000_000) return `${symbol} ${(v / 1_000_000).toFixed(1)}M`;
+  return `${symbol} ${Math.round(v).toLocaleString()}`;
+}
+
+/** The exact figure, for a title attribute - compact display should never be
+ *  the only place a number exists. */
+function exactValue(v: number, symbol: string): string {
+  if (!Number.isFinite(v)) return '—';
+  return `${symbol} ${v.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
 /** Days a deal has been open, from its earliest available timestamp. */
@@ -166,7 +179,7 @@ export function Pipeline() {
   // selection, so the two panels always describe the same book.
   const segmentAside = segmentGroups.length === 0 ? null : (
     <div role="tablist" aria-label="Filter by segment" className="text-sm">
-      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
         Business line
       </div>
       <button
@@ -175,7 +188,7 @@ export function Pipeline() {
         className={[
           'mb-1 w-full rounded-md px-2.5 py-1.5 text-left text-xs font-semibold transition-colors',
           segmentFilter === '' ? 'bg-[#005B82] text-white'
-                               : 'text-gray-600 hover:bg-gray-100',
+                               : 'text-gray-900 hover:bg-[#0082BB]/10 hover:text-[#005B82]',
         ].join(' ')}
       >
         All
@@ -194,15 +207,16 @@ export function Pipeline() {
                 'flex w-full items-center justify-between rounded-md px-2.5 py-1.5',
                 'text-xs font-semibold transition-colors',
                 unitOn ? 'bg-[#005B82] text-white'
-                       : 'text-gray-700 hover:bg-gray-100',
+                       : 'text-gray-900 hover:bg-[#0082BB]/10 hover:text-[#005B82]',
               ].join(' ')}
             >
               <span>{g.unit}</span>
-              <span className={unitOn ? 'text-white/70' : 'text-gray-400'}>{total}</span>
+              <span className={unitOn ? 'text-white/80'
+                                      : 'font-semibold text-[#005B82]'}>{total}</span>
             </button>
             {/* Sub-segments sit UNDER their line, indented, so the hierarchy
                 is visible rather than implied by ordering. */}
-            <div className="ml-2 border-l border-gray-200 pl-2">
+            <div className="ml-2 border-l-2 border-[#0082BB]/25 pl-2">
               {g.subs.map((sg) => {
                 const on = segmentFilter === sg.key;
                 return (
@@ -213,12 +227,12 @@ export function Pipeline() {
                     className={[
                       'flex w-full items-center justify-between rounded-md px-2 py-1',
                       'text-[11px] transition-colors',
-                      on ? 'bg-[var(--brand-secondary)]/10 font-semibold text-[var(--brand-secondary)]'
-                         : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800',
+                      on ? 'bg-[#0082BB]/15 font-semibold text-[#005B82]'
+                         : 'text-gray-700 hover:bg-[#0082BB]/10 hover:text-[#005B82]',
                     ].join(' ')}
                   >
                     <span className="truncate">{sg.key}</span>
-                    <span className="ml-2 shrink-0 text-gray-400">{sg.count}</span>
+                    <span className="ml-2 shrink-0 font-medium text-gray-600">{sg.count}</span>
                   </button>
                 );
               })}
@@ -297,11 +311,17 @@ export function Pipeline() {
   useEffect(() => {
     if (loading) return;
     let active = true;
-    fetchPipelineAnalytics()
+    // THE HEADLINE FIGURES FOLLOW THE BUSINESS LINE, like the funnel below
+    // them. Without this the top of the page described the whole book while
+    // everything under it described one line.
+    fetchPipelineAnalytics({
+      unit: segmentFilter.startsWith('unit:') ? segmentFilter.slice(5) : undefined,
+      segment: segmentFilter && !segmentFilter.startsWith('unit:') ? segmentFilter : undefined,
+    })
       .then((a) => { if (active) setAnalytics(a); })
       .catch(() => { /* tiles fall back to local sums if analytics fails */ });
     return () => { active = false; };
-  }, [loading, count]);
+  }, [loading, count, segmentFilter]);
 
   // Stage options narrow to the selected category's flow; else all stages.
   const stageOptions = useMemo(() => {
@@ -452,7 +472,13 @@ export function Pipeline() {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         ribbon
-        breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'A2Z Sales Pro' }]}
+        // STICKY: the ribbon carries Export and New Deal, and it scrolled away
+        // the moment somebody moved down the deal list - so the two things they
+        // most often want were only reachable by scrolling back up.
+        sticky
+        // The breadcrumb repeated what the bar above already says. One trail is
+        // a trail; two is noise. The subtitle carries the only line that was
+        // adding anything.
         title="A2Z Sales Pro"
         subtitle="Your pipeline"
         actions={
@@ -480,10 +506,13 @@ export function Pipeline() {
       <main className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-8">
         {/* Assured pipeline by product class — validated value headline,
             pending-assurance beneath. Sourced from /api/pipeline/analytics. */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* FOUR ACROSS, and now exactly four cards. With five children the fifth
+            wrapped onto a row of its own and the block looked broken. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Stat
             label="Asset Pipeline"
             value={analytics ? formatValue(analytics.pipelines.asset.value, sym) : '—'}
+            titleText={analytics ? exactValue(analytics.pipelines.asset.value, sym) : undefined}
             sub={analytics && analytics.pipelines.asset.pending_value > 0
               ? `${formatValue(analytics.pipelines.asset.pending_value, sym)} pending assurance`
               : 'Assured'}
@@ -495,6 +524,7 @@ export function Pipeline() {
           <Stat
             label="Liability Pipeline"
             value={analytics ? formatValue(analytics.pipelines.liability.value, sym) : '—'}
+            titleText={analytics ? exactValue(analytics.pipelines.liability.value, sym) : undefined}
             sub={analytics && analytics.pipelines.liability.pending_value > 0
               ? `${formatValue(analytics.pipelines.liability.pending_value, sym)} pending assurance`
               : 'Assured'}
@@ -549,17 +579,10 @@ export function Pipeline() {
             tone={analytics && analytics.totals.pending_validation > 0 ? 'accent' : 'neutral'}
             onClick={() => navigate('/pipeline/queues')}
           />
-          <Stat
-            label="Total Assured"
-            value={analytics ? formatValue(analytics.totals.total_value, sym) : '—'}
-            sub={analytics && analytics.totals.pending_value > 0
-              ? `${formatValue(analytics.totals.pending_value, sym)} pending assurance`
-              : 'All validated'}
-            loading={loading}
-            stripe={false}
-            tone="secondary"
-            onClick={() => navigate('/analytics')}
-          />
+          {/* "Total Assured" REMOVED (ruling 2026-08-13): it added the asset
+              and liability books together, which is not a number anybody uses -
+              a loan and a deposit do not sum to anything meaningful. The two
+              books are already shown separately above. */}
         </div>
 
         {/* Validated pipeline funnel */}

@@ -1560,8 +1560,14 @@ export async function fetchCustomerPortfolioOwner(cif: string): Promise<Customer
  * value split, per-class buckets (asset/liability/insurance/other), the
  * validated funnel, and the scope-aware pending-validation count.
  */
-export async function fetchPipelineAnalytics(): Promise<PipelineAnalyticsResponse> {
-  return getJson<PipelineAnalyticsResponse>('/pipeline/analytics');
+export async function fetchPipelineAnalytics(
+  opts: { unit?: string; segment?: string } = {},
+): Promise<PipelineAnalyticsResponse> {
+  const q = new URLSearchParams();
+  if (opts.unit) q.set('unit', opts.unit);
+  if (opts.segment) q.set('segment', opts.segment);
+  const qs = q.toString();
+  return getJson<PipelineAnalyticsResponse>(`/pipeline/analytics${qs ? `?${qs}` : ''}`);
 }
 
 export async function fetchPipelineDrill(

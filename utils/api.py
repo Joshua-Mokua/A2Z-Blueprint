@@ -5115,10 +5115,37 @@ def _compute_pipeline_analytics(deals: list, referral_deals: Optional[list] = No
 
 
 @app.get("/api/pipeline/analytics")
-def pipeline_analytics(user: dict = Depends(get_current_user)):
+def pipeline_analytics(unit: str = "", segment: str = "",
+                       user: dict = Depends(get_current_user)):
     """Funnel + headline pipeline metrics over the caller's visible deals."""
     _audit("API_PIPELINE_ANALYTICS", user, "")
     deals = _acquire_scoped_deals(user)
+    # ---- THE CARDS FOLLOW THE SELECTION TOO (2026-08-13) ------------------
+    # "It would be important that when one selects Consumer, even that card
+    # adjusts." The funnel already followed the business line; the headline
+    # figures above it did not, so the top of the page described the whole book
+    # while everything beneath it described one line.
+    #
+    # Same resolution as the funnel, through the same customer_segments config,
+    # so the two can never disagree about what a line contains.
+    _unit = str(unit or "").strip()
+    _seg = str(segment or "").strip()
+    if _unit or _seg:
+        _wanted = set()
+        if _seg:
+            _wanted.add(_seg.lower())
+        if _unit:
+            try:
+                _cfg = _load_json("pipeline_settings.json") or {}
+                for _k, _subs in (_cfg.get("customer_segments") or {}).items():
+                    if str(_k).strip().lower() == _unit.lower():
+                        _wanted |= {str(x).strip().lower() for x in (_subs or [])}
+                        _wanted.add(_unit.lower())
+            except Exception:
+                _wanted.add(_unit.lower())
+        if _wanted:
+            deals = [d for d in deals
+                     if str(d.get("segment", "") or "").strip().lower() in _wanted]
     # Referral-inclusive set: the scoped deals PLUS any deal referred BY someone in
     # the caller's visible scope (their outgoing referrals, owned by recipients
     # elsewhere). Lets a support unit see its referral contribution.
