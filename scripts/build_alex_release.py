@@ -120,6 +120,7 @@ NOT_FOR_RELEASE = {
     # warehouse is not to be released to Alex until I am certain it is well
     # built."
     "patch_dw1_warehouse",
+    "patch_lb1_cancellation_labels",
     "patch_or3_origin_evidence",
     "patch_or4_origin_capture",
     "patch_or5_preserve_channel",
