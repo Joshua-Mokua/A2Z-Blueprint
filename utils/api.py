@@ -498,6 +498,44 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "portfolio_owner_code": deal.get("portfolio_owner_code"),
                 "portfolio_owner_name": deal.get("portfolio_owner_name"),
                 "lms_application_id":   deal.get("lms_application_id"),
+                # ── FIELDS THAT WERE BEING SILENTLY DROPPED (2026-08-13) ────
+                # metadata is a HAND-LISTED set, not a catch-all: anything not
+                # named here never reached Postgres. Since deals are read
+                # DB-first, these came back EMPTY on the next read.
+                #
+                # BRANCH IS THE WORST OF THEM. Without it a deal is not
+                # branch-originated, so no branch committee is substituted into
+                # its journey and the case NEVER REACHES A COMMITTEE - very
+                # likely why the branch managers were gathered and nothing
+                # moved. Underneath the missing committees, the deals had lost
+                # the field that routes them.
+                #
+                # COMMITTEE_RECORDS is the decision itself. A committee could
+                # record a recommendation and find it gone the next morning.
+                "branch":              deal.get("branch"),
+                "segment":             deal.get("segment"),
+                "committee_records":   deal.get("committee_records"),
+                "documents_required_at_stage": deal.get("documents_required_at_stage"),
+                "documents_provided":  deal.get("documents_provided"),
+                "document_files":      deal.get("document_files"),
+                "application_id":      deal.get("application_id"),
+                "manager_validated":   deal.get("manager_validated"),
+                "validated_by_name":   deal.get("validated_by_name"),
+                "validated_by_code":   deal.get("validated_by_code"),
+                "validated_by_role":   deal.get("validated_by_role"),
+                "validated_at":        deal.get("validated_at"),
+                "cancel_requested":    deal.get("cancel_requested"),
+                "cancel_approved":     deal.get("cancel_approved"),
+                "cancel_requested_at": deal.get("cancel_requested_at"),
+                "cancel_request_reason": deal.get("cancel_request_reason"),
+                "referral_status":     deal.get("referral_status"),
+                "referred_by_name":    deal.get("referred_by_name"),
+                "referred_to_name":    deal.get("referred_to_name"),
+                "referred_by_code":    deal.get("referred_by_code"),
+                "referred_to_code":    deal.get("referred_to_code"),
+                "referred_at":         deal.get("referred_at"),
+                "created_at":          deal.get("created_at"),
+                "updated_at":          deal.get("updated_at"),
                 "mou_id":               deal.get("mou_id"),
                 # ORIGIN AND ITS SOURCE (2026-08-11). Without these three the
                 # database round-trip DROPS them: a deal tagged to an event
@@ -629,8 +667,27 @@ def _normalize_db_deal_row(row):
     # produced nothing, and the page looks broken rather than empty.
     if isinstance(md, dict):
         for _k in ("origin", "origin_party_code", "origin_party_name",
-                   "event_id", "mou_id", "channel_id", "warehouse_prospect_id"):
+                   "event_id", "mou_id", "channel_id", "warehouse_prospect_id",
+                   # ── LIFTED BACK OUT (2026-08-13) ────────────────────────
+                   # The other half of the same fix. Writing a field into
+                   # metadata and never reading it back loses it just as
+                   # completely as never writing it at all.
+                   "branch", "segment", "committee_records",
+                   "documents_required_at_stage", "documents_provided",
+                   "document_files", "application_id",
+                   "validated_by_name", "validated_by_code",
+                   "validated_by_role", "validated_at",
+                   "cancel_requested_at", "cancel_request_reason",
+                   "referral_status", "referred_by_name", "referred_to_name",
+                   "referred_by_code", "referred_to_code", "referred_at",
+                   "created_at", "updated_at"):
             if not r.get(_k) and md.get(_k):
+                r[_k] = md.get(_k)
+        # BOOLEANS NEED `is not None`, not truthiness. manager_validated=False
+        # and cancel_requested=False are meaningful answers; treating them as
+        # absent would leave the caller unable to tell "no" from "unknown".
+        for _k in ("manager_validated", "cancel_requested", "cancel_approved"):
+            if r.get(_k) is None and md.get(_k) is not None:
                 r[_k] = md.get(_k)
     # Lift the FX money set + client-type fields out of metadata so DB-first
     # readers (analytics, dashboard canonical path) see KES-equivalent values
