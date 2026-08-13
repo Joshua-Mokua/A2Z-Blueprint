@@ -13128,7 +13128,23 @@ def get_deal_committee_records(deal_id: str, user: dict = Depends(get_current_us
         # from, because nothing has been decided yet.
         _cast = ((deal.get("committee_votes") or {}).get(str(c.get("code"))) or {})
         _mem = c.get("members") or []
+        # ── WHETHER *THIS* VIEWER MAY VOTE ──────────────────────────────────
+        # The panel was gating the voting box on canEdit, which means "owner or
+        # admin" - so the one person who must vote, a committee member, was
+        # shown the read-only branch and the bench never appeared. The server
+        # already knows the roster and already refuses a non-member with a 403;
+        # it should answer the question rather than leave the UI guessing at it.
+        _me = str(user.get("staff_code", "") or "").strip()
+        _myname = str(user.get("full_name", "") or "").strip().lower()
+        _codes = {str(m.get("staff_code", "") or "").strip()
+                  for m in _mem if isinstance(m, dict)}
+        _names = {str(m.get("name", "") or "").strip().lower()
+                  for m in _mem if isinstance(m, dict)}
+        _chair = str(c.get("chaired_by", "") or "").strip().lower()
+        _can_vote = bool((_me and _me in _codes)
+                         or (_myname and (_myname in _names or _myname == _chair)))
         gates.append({
+            "can_vote": _can_vote,
             "votes_cast": len(_cast),
             "quorum": _committee_quorum(c),
             "awaiting": [str(m.get("name") or m.get("staff_code"))

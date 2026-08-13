@@ -38,7 +38,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, fetchNextStep, type NextStep, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeVote, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
+import { fetchPipelineDealDetail, fetchCreditChecklist, fetchNextStep, type NextStep, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, castCommitteeVote, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
 import { Timeline } from '@/components/Timeline';
 import type { LoanAppHistoryEvent } from '@/types/lms';
 import { useRole } from '@/hooks/useRole';
@@ -1531,7 +1531,6 @@ function CommitteeJourneyCard({ dealId, canEdit }: { dealId: string; canEdit: bo
   const { toast } = useToast();
   const [data, setData] = useState<CommitteeRecordsResponse | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [voteDraft, setVoteDraft] = useState<Record<string, CommitteeVote[]>>({});
   const [outcomeDraft, setOutcomeDraft] = useState<Record<string, string>>({});
   const [appealReason, setAppealReason] = useState<Record<string, string>>({});
   const doAppeal = async (code: string) => {
@@ -1563,32 +1562,55 @@ function CommitteeJourneyCard({ dealId, canEdit }: { dealId: string; canEdit: bo
   };
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [dealId]);
 
+  // ---- HOOKS BEFORE THE EARLY RETURN ------------------------------------
+  // These three were declared AFTER `if (!data ...) return null` - so on a
+  // render where data was absent React saw six hooks and on the next it saw
+  // nine. That is the Rules of Hooks violation, and it does not fail quietly:
+  // it throws, and the page renders blank.
+  //
+  //     Warning: React has detected a change in the order of Hooks called by
+  //     CommitteeJourneyCard ... 7. undefined -> useState
+  //
+  // Every hook must run on every render, so they belong above any return.
+  const [myVote, setMyVote] = useState<Record<string, string>>({});
+  const [myDocs, setMyDocs] = useState<Record<string, boolean>>({});
+  const [myComment, setMyComment] = useState<Record<string, string>>({});
+
   if (!data || data.cr_only) return null;
 
-  const setVote = (code: string, i: number, field: keyof CommitteeVote, value: string | boolean) => {
-    setVoteDraft((p) => {
-      const gate = data.gates.find((g) => g.code === code);
-      const base = p[code] ?? (gate?.members ?? []).map((m) => ({ name: m.name, role: m.role, vote: '', documents_validated: false, comment: '' }));
-      const arr = base.map((v, j) => (j === i ? { ...v, [field]: value } : v));
-      return { ...p, [code]: arr };
-    });
-  };
 
-  const votesFor = (gate: CommitteeGate): CommitteeVote[] =>
-    voteDraft[gate.code] ?? (gate.members ?? []).map((m) => ({ name: m.name, role: m.role, vote: '', documents_validated: false, comment: '' }));
 
-  const recordVoting = async (gate: CommitteeGate) => {
-    const votes = votesFor(gate).filter((v) => v.vote);
-    if (votes.length === 0) { toast({ tone: 'danger', message: 'Record at least one vote.' }); return; }
-    const yesNoDocs = votes.find((v) => v.vote === 'YES' && !v.documents_validated);
-    if (yesNoDocs) {
-      toast({ tone: 'danger', message: `${yesNoDocs.name || 'A member'} must confirm all documentation was checked & validated to vote YES.` });
+  // ── YOUR OWN VOTE, NOT THE WHOLE COMMITTEE'S ─────────────────────────────
+  // This used to post every member's row at once, so one member pressing the
+  // button submitted a committee's worth of votes - one vote, below quorum,
+  // DEFERRED, case closed before anybody else had seen it. Each member now
+  // records their own view from their own login and the case stays open until
+  // enough of them have.
+
+  const castMyVote = async (gate: CommitteeGate) => {
+    const vote = myVote[gate.code];
+    if (!vote) { toast({ tone: 'danger', message: 'Pick your vote.' }); return; }
+    if (vote === 'YES' && !myDocs[gate.code]) {
+      toast({ tone: 'danger', message: 'Confirm the documentation was checked before voting YES.' });
       return;
     }
     setBusy(gate.code);
     try {
-      await recordDealCommitteeDecision(dealId, { code: gate.code, votes });
-      toast({ tone: 'success', message: `${gate.code} decision recorded.` });
+      const r = await castCommitteeVote(dealId, gate.code, {
+        vote,
+        documents_validated: !!myDocs[gate.code],
+        comment: myComment[gate.code] ?? '',
+      });
+      // THE MESSAGE SAYS WHAT ACTUALLY HAPPENED. "Decision recorded" after one
+      // vote is what made people think the case had been decided.
+      toast({
+        tone: 'success',
+        message: r.decided
+          ? `Committee decided: ${r.outcome === 'APPROVED' ? 'recommended'
+              : r.outcome === 'REJECTED' ? 'not recommended' : 'deferred'}.`
+          : `Your vote is in — ${r.votes_cast} of ${r.quorum}.`
+            + (r.awaiting.length ? ` Awaiting ${r.awaiting.join(', ')}.` : ''),
+      });
       await load();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Failed' });
@@ -1683,43 +1705,74 @@ function CommitteeJourneyCard({ dealId, canEdit }: { dealId: string; canEdit: bo
                     </div>
                   )}
                 </div>
-              ) : canEdit ? (
+              ) : (gate.can_vote ?? canEdit) ? (
+                /* CAN THIS PERSON VOTE, not can they edit the deal. canEdit
+                   means owner or admin; a committee member is neither, so the
+                   voting bench never rendered for the one person who needed
+                   it. The server answers from the roster, and falls back to
+                   canEdit for a build where the gate does not carry it. */
                 gate.recording_mode === 'voting' ? (
                   <div>
                     {(gate.members ?? []).length === 0 && (
                       <p className="mb-2 text-xs text-amber-600">No members configured for this committee — add them in Credit Committees admin.</p>
                     )}
-                    <div className="space-y-1">
-                      {votesFor(gate).map((v, i) => (
-                        <div key={i} className="rounded border border-gray-100 p-2">
-                          <div className="flex items-center gap-2 text-sm">
-                            <input className="w-1/3 rounded border px-2 py-1 text-xs" placeholder="Name" value={v.name}
-                              onChange={(e) => setVote(gate.code, i, 'name', e.target.value)} />
-                            <input className="w-1/3 rounded border px-2 py-1 text-xs" placeholder="Role" value={v.role}
-                              onChange={(e) => setVote(gate.code, i, 'role', e.target.value)} />
-                            <select className="w-1/3 rounded border px-2 py-1 text-xs" value={v.vote}
-                              onChange={(e) => setVote(gate.code, i, 'vote', e.target.value)}>
-                              <option value="">— vote —</option>
-                              <option value="YES">YES</option>
-                              <option value="NO">NO</option>
-                              <option value="ABSTAIN">ABSTAIN</option>
-                              <option value="RECUSED">RECUSED</option>
-                            </select>
-                          </div>
-                          <label className="mt-1 flex items-center gap-2 text-xs text-gray-700">
-                            <input type="checkbox" checked={!!v.documents_validated}
-                              onChange={(e) => setVote(gate.code, i, 'documents_validated', e.target.checked)} />
-                            I have checked &amp; validated all documentation{v.vote === 'YES' ? ' (required for YES)' : ''}
-                          </label>
-                          <input className="mt-1 w-full rounded border px-2 py-1 text-xs" placeholder="Comment (optional)"
-                            value={v.comment ?? ''} onChange={(e) => setVote(gate.code, i, 'comment', e.target.value)} />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-2 flex justify-end">
-                      <Button size="sm" onClick={() => void recordVoting(gate)} disabled={busy === gate.code}>
-                        {busy === gate.code ? 'Recording…' : 'Record votes'}
-                      </Button>
+
+                    {/* ── YOUR VOTE ────────────────────────────────────────
+                        One member, one vote, from their own login. This used
+                        to be a row per member with a single "Record votes"
+                        button, so whoever pressed it submitted the whole
+                        committee - and one vote below quorum closed the case
+                        as DEFERRED before anybody else had seen it.
+
+                        Who is voting comes from the session, not a name typed
+                        here, so it cannot be misattributed. */}
+                    <div className="rounded-md border border-gray-200 p-3">
+                      <div className="mb-2 text-xs font-semibold text-gray-700">
+                        Your vote
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          className="rounded border px-2 py-1 text-xs"
+                          value={myVote[gate.code] ?? ''}
+                          onChange={(e) => setMyVote((m) => ({ ...m, [gate.code]: e.target.value }))}
+                        >
+                          <option value="">— your view —</option>
+                          <option value="YES">Recommend</option>
+                          <option value="NO">Do not recommend</option>
+                          <option value="ABSTAIN">Abstain</option>
+                          <option value="RECUSED">Recuse myself</option>
+                        </select>
+                        <label className="flex items-center gap-1.5 text-xs text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={!!myDocs[gate.code]}
+                            onChange={(e) => setMyDocs((m) => ({ ...m, [gate.code]: e.target.checked }))}
+                          />
+                          Documentation checked
+                        </label>
+                      </div>
+                      <input
+                        className="mt-2 w-full rounded border px-2 py-1 text-xs"
+                        placeholder="Comment (optional)"
+                        value={myComment[gate.code] ?? ''}
+                        onChange={(e) => setMyComment((m) => ({ ...m, [gate.code]: e.target.value }))}
+                      />
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        {/* WHO HAS ALREADY VOTED, so a member can see whether
+                            the committee is waiting on them or on somebody
+                            else. */}
+                        <span className="text-[11px] text-gray-500">
+                          {(gate.votes_cast ?? 0) > 0
+                            ? `${gate.votes_cast} of ${gate.quorum ?? 2} voted`
+                            : 'No votes yet'}
+                          {(gate.awaiting ?? []).length > 0
+                            ? ` · awaiting ${(gate.awaiting ?? []).join(', ')}`
+                            : ''}
+                        </span>
+                        <Button size="sm" onClick={() => void castMyVote(gate)} disabled={busy === gate.code}>
+                          {busy === gate.code ? 'Submitting…' : 'Submit my vote'}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ) : (

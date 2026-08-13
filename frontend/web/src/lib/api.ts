@@ -2955,11 +2955,39 @@ export interface CommitteeGate {
   code: string; name: string; recording_mode: string; voting_rule: string;
   members: { name: string; role: string }[];
   record: CommitteeRecord | null;
+  /** Progress BEFORE a decision exists. Without these a member cannot tell
+   *  whether the committee is waiting on them or on somebody else, which is
+   *  the question they opened the case to answer. */
+  /** Whether THIS viewer may vote on this gate. canEdit means owner or
+   *  admin, which a committee member is not - they were shown a read-only
+   *  panel with nothing to vote with. The server answers from the roster. */
+  can_vote?: boolean;
+  votes_cast?: number;
+  quorum?: number;
+  awaiting?: string[];
 }
 export interface CommitteeRecordsResponse { gates: CommitteeGate[]; cr_only: boolean; }
 export async function getDealCommitteeRecords(dealId: string): Promise<CommitteeRecordsResponse> {
   return getJson<CommitteeRecordsResponse>(`/pipeline/deals/${encodeURIComponent(dealId)}/committee-records`);
 }
+export interface CommitteeVoteResult {
+  status: string; committee: string; your_vote: string;
+  votes_cast: number; quorum: number; decided: boolean; outcome: string;
+  tally: { name?: string; role?: string; vote?: string; at?: string }[];
+  awaiting: string[];
+}
+/** ONE MEMBER, ONE VOTE, from their own login. recordDealCommitteeDecision
+ *  posts every member's vote at once, which is how a single member closed a
+ *  case: one vote, below quorum, DEFERRED, done. */
+export async function castCommitteeVote(
+  dealId: string, code: string,
+  body: { vote: string; documents_validated?: boolean; comment?: string; note?: string },
+): Promise<CommitteeVoteResult> {
+  return postJson<CommitteeVoteResult>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/committee/${encodeURIComponent(code)}/vote`,
+    body);
+}
+
 export async function recordDealCommitteeDecision(
   dealId: string,
   body: { code: string; outcome?: string; votes?: CommitteeVote[]; note?: string },
