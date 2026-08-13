@@ -13,7 +13,7 @@
 // probably sits inside the bank, inferred from its probability. It sits beneath
 // the journey and never filters it.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Card } from '@/components/Card';
 import { useToast } from '@/components/Toast';
 import { fetchPipelineDefinedFunnel, type DefinedFunnel as FunnelData, type DefinedFlow } from '@/lib/api';
@@ -44,9 +44,17 @@ export interface DefinedFunnelProps {
   /** Clicking a non-empty band drills into that flow + stage. Preserved from the
    *  previous funnel: dropping it would have removed a working feature quietly. */
   onStageClick?: (flow: string, stage: string) => void;
+  /** THE JOURNEY FOLLOWS THE SELECTION. Without this the funnel showed the
+   *  whole book while the list beneath it showed one line - two panels on one
+   *  screen describing different things. `unit` is a whole line (Consumer),
+   *  `segment` one sub-segment (Premier). */
+  unit?: string;
+  segment?: string;
+  /** Rendered beside the bands, where the funnel leaves space. */
+  aside?: ReactNode;
 }
 
-export default function DefinedFunnel({ onStageClick }: DefinedFunnelProps = {}) {
+export default function DefinedFunnel({ onStageClick, unit, segment, aside }: DefinedFunnelProps = {}) {
   const { toast } = useToast();
   const [data, setData] = useState<FunnelData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -58,7 +66,7 @@ export default function DefinedFunnel({ onStageClick }: DefinedFunnelProps = {})
     setLoading(true);
     void (async () => {
       try {
-        const r = await fetchPipelineDefinedFunnel();
+        const r = await fetchPipelineDefinedFunnel({ unit, segment });
         if (!alive) return;
         setData(r);
         setFlowKey((k) => k || (r.flows[0]?.flow ?? ''));
@@ -69,7 +77,7 @@ export default function DefinedFunnel({ onStageClick }: DefinedFunnelProps = {})
       }
     })();
     return () => { alive = false; };
-  }, [toast]);
+  }, [toast, unit, segment]);
 
   const flow: DefinedFlow | undefined = useMemo(
     () => data?.flows.find((f) => f.flow === flowKey) ?? data?.flows[0],
@@ -99,8 +107,15 @@ export default function DefinedFunnel({ onStageClick }: DefinedFunnelProps = {})
           </p>
         )}
 
+        {/* THE BANDS AND THE SELECTOR SIDE BY SIDE. The funnel is a narrowing
+            shape, so the right-hand side of the card was empty space while the
+            business-line selector sat above the deal list in a wrapped row of
+            chips. Putting the selector where the space already is reads better
+            and, more importantly, puts the thing you are filtering BY next to
+            the thing it filters. On a narrow screen it stacks. */}
         {!loading && data && data.flows.length > 0 && (
-          <>
+          <div className={aside ? 'lg:flex lg:items-start lg:gap-6' : ''}>
+          <div className={aside ? 'min-w-0 lg:flex-1' : ''}>
             <div className="mb-3 flex flex-wrap gap-1.5">
               {data.flows.map((f) => (
                 <button key={f.flow} type="button" onClick={() => setFlowKey(f.flow)}
@@ -243,8 +258,18 @@ export default function DefinedFunnel({ onStageClick }: DefinedFunnelProps = {})
                 </span>
               </span>
             </div>
+          </div>
 
-          </>
+          {aside && (
+            /* The selector column. Fixed width so the bands keep a sensible
+               shape - a funnel that reflows as the sidebar grows stops looking
+               like a funnel. Sticky so it stays put while somebody reads down
+               a long journey. */
+            <div className="mt-6 shrink-0 lg:mt-0 lg:w-64 lg:self-start lg:sticky lg:top-4">
+              {aside}
+            </div>
+          )}
+          </div>
         )}
       </Card.Body>
     </Card>

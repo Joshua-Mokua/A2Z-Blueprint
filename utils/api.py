@@ -11640,7 +11640,8 @@ def pipeline_analytics_summary(days: int = 30, start: str = "", end: str = "",
 
 
 @app.get("/api/pipeline/funnel")
-def pipeline_funnel_defined(user: dict = Depends(get_current_user)):
+def pipeline_funnel_defined(unit: str = "", segment: str = "",
+                            user: dict = Depends(get_current_user)):
     """The DEFINED journey per product flow — from admin config, not from code.
 
     Returns every configured stage of every flow in order, including the ones
@@ -11664,6 +11665,37 @@ def pipeline_funnel_defined(user: dict = Depends(get_current_user)):
     # "all deals" would silently show a caller deals outside their cascade, and
     # a scope bypass that looks like a working page is worse than an error.
     deals = _acquire_scoped_deals(user)
+    # ---- THE FUNNEL FOLLOWS THE SELECTION (2026-08-13) --------------------
+    # "Now that we have Consumer, Commercial, CIB being selected and we get
+    # their numbers, I wanted us to make it interactive."
+    #
+    # The journey showed the whole book whatever was selected, so picking
+    # Consumer changed the deal list beneath it and left the funnel above
+    # describing something else - two panels on one screen disagreeing about
+    # what is being looked at.
+    #
+    # `unit` is a WHOLE LINE - Consumer, Commercial, CIB - resolved through the
+    # same customer_segments config the deal list groups by, so a sub-segment
+    # added tomorrow is included without touching this code.
+    # `segment` is one sub-segment exactly.
+    _unit = str(unit or "").strip()
+    _seg = str(segment or "").strip()
+    if _unit or _seg:
+        _wanted = set()
+        if _seg:
+            _wanted.add(_seg.lower())
+        if _unit:
+            try:
+                _cfg = _load_json("pipeline_settings.json") or {}
+                for _k, _subs in (_cfg.get("customer_segments") or {}).items():
+                    if str(_k).strip().lower() == _unit.lower():
+                        _wanted |= {str(x).strip().lower() for x in (_subs or [])}
+                        _wanted.add(_unit.lower())
+            except Exception:
+                _wanted.add(_unit.lower())
+        if _wanted:
+            deals = [d for d in deals
+                     if str(d.get("segment", "") or "").strip().lower() in _wanted]
 
     grouped: dict = {}
     for d in deals:

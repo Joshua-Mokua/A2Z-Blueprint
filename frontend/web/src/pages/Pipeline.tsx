@@ -153,7 +153,82 @@ export function Pipeline() {
     }
     return groups;
   }, [deals, config]);
-  const singleUnit = segmentGroups.length === 1;
+
+  // ── THE BUSINESS-LINE SELECTOR, BESIDE THE FUNNEL ────────────────────────
+  // It used to sit above the deal list as a row of chips that wrapped, with
+  // sub-segments inline beside their line - so "Consumer Premier Direct
+  // Advantage Commercial SME..." ran together and the shape of the hierarchy
+  // was lost. Vertical, it reads as what it is: three lines, each with its own
+  // sub-segments underneath.
+  //
+  // It lives in the funnel's empty right-hand side, which puts the thing you
+  // filter BY next to the thing it filters - and the funnel now follows the
+  // selection, so the two panels always describe the same book.
+  const segmentAside = segmentGroups.length === 0 ? null : (
+    <div role="tablist" aria-label="Filter by segment" className="text-sm">
+      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+        Business line
+      </div>
+      <button
+        type="button"
+        onClick={() => setSegmentFilter('')}
+        className={[
+          'mb-1 w-full rounded-md px-2.5 py-1.5 text-left text-xs font-semibold transition-colors',
+          segmentFilter === '' ? 'bg-[#005B82] text-white'
+                               : 'text-gray-600 hover:bg-gray-100',
+        ].join(' ')}
+      >
+        All
+      </button>
+      {segmentGroups.map((g) => {
+        const unitKey = `unit:${g.unit}`;
+        const unitOn = segmentFilter === unitKey;
+        const total = g.subs.reduce((a, x) => a + x.count, 0);
+        return (
+          <div key={g.unit} className="mb-1">
+            <button
+              type="button"
+              onClick={() => setSegmentFilter(unitOn ? '' : unitKey)}
+              title={`All ${g.unit} deals`}
+              className={[
+                'flex w-full items-center justify-between rounded-md px-2.5 py-1.5',
+                'text-xs font-semibold transition-colors',
+                unitOn ? 'bg-[#005B82] text-white'
+                       : 'text-gray-700 hover:bg-gray-100',
+              ].join(' ')}
+            >
+              <span>{g.unit}</span>
+              <span className={unitOn ? 'text-white/70' : 'text-gray-400'}>{total}</span>
+            </button>
+            {/* Sub-segments sit UNDER their line, indented, so the hierarchy
+                is visible rather than implied by ordering. */}
+            <div className="ml-2 border-l border-gray-200 pl-2">
+              {g.subs.map((sg) => {
+                const on = segmentFilter === sg.key;
+                return (
+                  <button
+                    key={sg.key}
+                    type="button"
+                    onClick={() => setSegmentFilter(on ? '' : sg.key)}
+                    className={[
+                      'flex w-full items-center justify-between rounded-md px-2 py-1',
+                      'text-[11px] transition-colors',
+                      on ? 'bg-[var(--brand-secondary)]/10 font-semibold text-[var(--brand-secondary)]'
+                         : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800',
+                    ].join(' ')}
+                  >
+                    <span className="truncate">{sg.key}</span>
+                    <span className="ml-2 shrink-0 text-gray-400">{sg.count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   const visibleDeals = useMemo(
     () => deals.filter((d) =>
       (!slaFilter || d.sla?.state === slaFilter)
@@ -488,7 +563,13 @@ export function Pipeline() {
         </div>
 
         {/* Validated pipeline funnel */}
-        <DefinedFunnel onStageClick={onStageDrill} />
+        <DefinedFunnel
+          onStageClick={onStageDrill}
+          unit={segmentFilter.startsWith('unit:') ? segmentFilter.slice(5) : undefined}
+          segment={segmentFilter && !segmentFilter.startsWith('unit:')
+            ? segmentFilter : undefined}
+          aside={segmentAside}
+        />
 
         {/* Funnel stage-drill panel */}
         {(drillLoading || drill) && (
@@ -610,70 +691,6 @@ export function Pipeline() {
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
-              {segmentGroups.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Filter by segment">
-                  <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-1">
-                    <button
-                      type="button"
-                      onClick={() => setSegmentFilter('')}
-                      className={[
-                        'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
-                        segmentFilter === '' ? 'bg-white text-[var(--brand-secondary)] shadow-sm'
-                                             : 'text-gray-500 hover:text-gray-800',
-                      ].join(' ')}
-                    >
-                      All
-                    </button>
-                  </div>
-                  {segmentGroups.map((g) => (
-                    <div key={g.unit} className="flex items-center gap-1 rounded-lg bg-gray-100 p-1">
-                      {!singleUnit && (
-                        // THE UNIT NAME IS A BUTTON, not a label. It was inert,
-                        // so somebody wanting "Consumer as a whole" had to
-                        // click Premier, read it, click Advantage, read it, and
-                        // add up - when the whole line is the level they were
-                        // asking about. Clicking it selects every sub-segment
-                        // beneath it; clicking again clears back to All.
-                        <button
-                          type="button"
-                          onClick={() => setSegmentFilter(
-                            segmentFilter === `unit:${g.unit}` ? '' : `unit:${g.unit}`)}
-                          title={`All ${g.unit} deals`}
-                          className={[
-                            'rounded-md px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide transition-colors',
-                            segmentFilter === `unit:${g.unit}`
-                              ? 'bg-white text-[var(--brand-secondary)] shadow-sm'
-                              : 'text-gray-400 hover:text-gray-700',
-                          ].join(' ')}
-                        >
-                          {g.unit}
-                          <span className="ml-1.5 text-gray-400">
-                            {g.subs.reduce((a, x) => a + x.count, 0)}
-                          </span>
-                        </button>
-                      )}
-                      {g.subs.map((sg) => {
-                        const on = segmentFilter === sg.key;
-                        return (
-                          <button
-                            key={sg.key}
-                            type="button"
-                            onClick={() => setSegmentFilter(sg.key)}
-                            className={[
-                              'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
-                              on ? 'bg-white text-[var(--brand-secondary)] shadow-sm'
-                                 : 'text-gray-500 hover:text-gray-800',
-                            ].join(' ')}
-                          >
-                            {sg.key}
-                            <span className="ml-1.5 text-gray-400">{sg.count}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              )}
               <select
                 value={winprobFilter ?? ''}
                 onChange={(e) => setWinprobFilter(e.target.value)}

@@ -1180,8 +1180,14 @@ export async function fetchPipelineAnalyticsSummary(
   return getJson<PipelineAnalyticsSummary>(`/pipeline/analytics/summary?${q.toString()}`);
 }
 
-export async function fetchPipelineDefinedFunnel(): Promise<DefinedFunnel> {
-  return getJson<DefinedFunnel>('/pipeline/funnel');
+export async function fetchPipelineDefinedFunnel(
+  opts: { unit?: string; segment?: string } = {},
+): Promise<DefinedFunnel> {
+  const q = new URLSearchParams();
+  if (opts.unit) q.set('unit', opts.unit);
+  if (opts.segment) q.set('segment', opts.segment);
+  const qs = q.toString();
+  return getJson<DefinedFunnel>(`/pipeline/funnel${qs ? `?${qs}` : ''}`);
 }
 
 // ── Cumulative leaderboard (staff / role / branch / unit) ─────────────────
