@@ -7546,6 +7546,44 @@ def pipeline_queue_committee(user: dict = Depends(get_current_user)):
                    and not (d.get("committee_records") or {}).get(c)]
         if not pending:
             continue
+        # ── ONLY CASES THAT HAVE ACTUALLY REACHED THE COMMITTEE ─────────────
+        # RULING (2026-08-13): "should a case at Documentation appear in the
+        # committee queue at all? No, until it is submitted. At or past the
+        # committee's own stage - yes."
+        #
+        # The queue listed every deal whose journey included this committee,
+        # which for a branch committee is EVERY DEAL IN THE BRANCH from
+        # Initiation onward - forty cases of which thirty-eight are nowhere
+        # near ready to discuss. A committee that opens its queue and finds
+        # mostly noise stops opening it, so this is worse than an empty list.
+        #
+        # AT OR PAST, not exactly at: a case that has moved on without the
+        # committee deciding is precisely the one somebody needs to see.
+        try:
+            _flow = _stage_flow_for(d.get("product_type") or d.get("product", "")) or []
+            _cur = str(d.get("stage", "") or "")
+            if _flow and _cur in _flow:
+                _here = _flow.index(_cur)
+                _gate_at = -1
+                for _n, _st in enumerate(_flow):
+                    _low = _st.lower()
+                    if "committee" not in _low:
+                        continue
+                    # Which committee stage belongs to which of my committees:
+                    # a branch stage answers to a branch committee, any other
+                    # committee stage to a department one.
+                    _is_branch_stage = "branch" in _low
+                    for _cc in pending:
+                        _c = next((x for x in mine
+                                   if str(x.get("code")) == _cc), None)
+                        if not _c:
+                            continue
+                        if (str(_c.get("kind", "")).lower() == "branch") == _is_branch_stage:
+                            _gate_at = _n if _gate_at < 0 else min(_gate_at, _n)
+                if _gate_at >= 0 and _here < _gate_at:
+                    continue
+        except Exception:
+            pass
         # SCOPE STILL APPLIES. Sitting on a committee does not open every deal
         # in the bank - a member sees the cases their scope already allows,
         # which for a branch committee is their own branch.
@@ -13084,7 +13122,20 @@ def get_deal_committee_records(deal_id: str, user: dict = Depends(get_current_us
     gates = []
     for code in codes:
         c = _committee_by_code(code)
+        # VOTING PROGRESS travels with the gate. A member opening the case
+        # needs to know whether the committee is waiting on them or on
+        # somebody else - and before quorum there is no record to read it
+        # from, because nothing has been decided yet.
+        _cast = ((deal.get("committee_votes") or {}).get(str(c.get("code"))) or {})
+        _mem = c.get("members") or []
         gates.append({
+            "votes_cast": len(_cast),
+            "quorum": _committee_quorum(c),
+            "awaiting": [str(m.get("name") or m.get("staff_code"))
+                         for m in _mem if isinstance(m, dict)
+                         and str(m.get("staff_code", "") or "").strip() not in _cast
+                         and str(m.get("name", "") or "").strip() not in _cast],
+
             "code": code,
             "name": c.get("name", code),
             "recording_mode": c.get("recording_mode", "voting"),
