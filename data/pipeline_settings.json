@@ -2213,9 +2213,9 @@
   },
   "committee_routing": {
     "client_type_to_dcc": {
-      "Consumer": "DCC_CONS",
-      "Commercial": "DCC_COMM",
-      "CIB": "DCC_CIB"
+      "Consumer": "B1",
+      "Commercial": "B2",
+      "CIB": "B3"
     },
     "branch_only_codes": [
       "BCC1"
