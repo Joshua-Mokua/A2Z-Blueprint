@@ -395,9 +395,15 @@ def main():
     # twice a post-check has failed on its own prose.
     _code = "\n".join(l for l in ENDPOINT.split("\n")
                       if not l.strip().startswith("#"))
-    if "getattr(pm," in _code or "PipelineManager" in _code:
-        print("ABORT: still reading the JSON store directly - the queue would")
-        print("       disagree with the page it links to.")
+    # WHAT IS FORBIDDEN IS READING THE JSON STORE AS THE PRIMARY SOURCE.
+    # Banning the word "PipelineManager" outright was too blunt: DQ2's fallback
+    # uses it DELIBERATELY, so that a box where Postgres is not answering still
+    # shows a department committee its cases. The guard was rejecting the very
+    # thing it was meant to protect. What must not come back is the endpoint
+    # opening the JSON store and iterating it as though it were the truth.
+    if "_PM_for_api()" in _code or 'getattr(pm, "deals"' in _code:
+        print("ABORT: still reading the JSON store as the primary source - the")
+        print("       queue would disagree with the page it links to.")
         return 1
     if "_acquire_scoped_deals" not in ENDPOINT:
         print("ABORT: not using the canonical read.")

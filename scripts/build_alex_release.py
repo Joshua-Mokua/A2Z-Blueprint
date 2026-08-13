@@ -99,7 +99,6 @@ CHAIN = [
     "patch_cq1_committee_queue",
     "patch_cm1_committee_can_view",
     "patch_dq1_committee_queue_source",
-    "patch_dq2_committee_fallback",
     "patch_rc1_recommend_and_docs",
     "patch_br1_a2z_and_committee_tab",
     "patch_pf1_validate_and_gates",
@@ -120,6 +119,7 @@ NOT_FOR_RELEASE = {
     # warehouse is not to be released to Alex until I am certain it is well
     # built."
     "patch_dw1_warehouse",
+    "patch_dq2_committee_fallback",
     "patch_lb1_cancellation_labels",
     "patch_or3_origin_evidence",
     "patch_or4_origin_capture",
