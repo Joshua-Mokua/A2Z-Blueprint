@@ -96,6 +96,12 @@ CHAIN = [
     "patch_sp1_credit_spine",
     "patch_rl1_role_from_store",
     "patch_un1_unit_rollup_click",
+    "patch_cq1_committee_queue",
+    "patch_cm1_committee_can_view",
+    "patch_dq1_committee_queue_source",
+    "patch_dq2_committee_fallback",
+    "patch_rc1_recommend_and_docs",
+    "patch_br1_a2z_and_committee_tab",
     "patch_pf1_validate_and_gates",
     "patch_bl1_business_line",
 ]
