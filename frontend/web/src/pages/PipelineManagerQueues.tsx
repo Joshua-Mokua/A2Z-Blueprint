@@ -601,7 +601,7 @@ function CancellationCard({ deal, onNavigate, onResolved, onErrorToast }: {
             onClick={() => void submit(false)}
             loading={mutations.loading}
           >
-            Reject (deal continues)
+            Decline cancellation — deal continues
           </Button>
           <Button
             variant="danger"
@@ -609,7 +609,7 @@ function CancellationCard({ deal, onNavigate, onResolved, onErrorToast }: {
             onClick={() => void submit(true)}
             loading={mutations.loading}
           >
-            Approve — close as Lost
+            Approve cancellation — close as Lost
           </Button>
         </div>
       </div>
