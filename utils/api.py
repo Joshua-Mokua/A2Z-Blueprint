@@ -7365,16 +7365,28 @@ def pipeline_queue_committee(user: dict = Depends(get_current_user)):
     # cases they must decide - the fault CM1 fixed in permissions. The canonical
     # read is scoped, so anything the committee is entitled to but scope drops
     # is recovered here, and can_view still decides.
+    # RECOVERED FROM WHICHEVER STORE IS LIVE, not only from the database.
+    # Guarding this with _db_available() meant that on a box falling back to
+    # JSON a department committee saw nothing at all - the exact failure this
+    # recovery exists to prevent, reintroduced by the guard itself.
+    seen = {str(d.get("id")) for d in all_deals}
+    _extra = []
     if _db_available():
         try:
             from utils.db import db as _db2
             rows = _db2.fetch_all("SELECT * FROM pipeline_deals", tuple())
-            seen = {str(d.get("id")) for d in all_deals}
-            for d in (_normalize_db_deal_row(x) for x in _serialize(rows)):
-                if str(d.get("id")) not in seen:
-                    all_deals.append(d)
+            _extra = [_normalize_db_deal_row(x) for x in _serialize(rows)]
         except Exception:
-            pass
+            _extra = []
+    if not _extra:
+        try:
+            from utils.core import PipelineManager as _PM_fallback
+            _extra = list(getattr(_PM_fallback(), "deals", []) or [])
+        except Exception:
+            _extra = []
+    for d in _extra:
+        if str(d.get("id")) not in seen:
+            all_deals.append(d)
 
     cases = []
     for d in all_deals:
