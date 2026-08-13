@@ -102,17 +102,21 @@ W_NEW = '''                "lms_application_id":   deal.get("lms_application_id"
                 "created_at":          deal.get("created_at"),
                 "updated_at":          deal.get("updated_at"),'''
 
-R_OLD = '''        for _k in ("origin", "origin_party_code", "origin_party_name",
-                   "event_id", "mou_id", "channel_id", "warehouse_prospect_id"):
-            if not r.get(_k) and md.get(_k):
-                r[_k] = md.get(_k)'''
-R_NEW = '''        for _k in ("origin", "origin_party_code", "origin_party_name",
-                   "event_id", "mou_id", "channel_id", "warehouse_prospect_id",
-                   # ── LIFTED BACK OUT (2026-08-13) ────────────────────────
-                   # The other half of the same fix. Writing a field into
-                   # metadata and never reading it back loses it just as
-                   # completely as never writing it at all.
-                   "branch", "segment", "committee_records",
+R_OLD = '''    if isinstance(md, dict) and not r.get("lms_application_id"):
+        r["lms_application_id"] = md.get("lms_application_id")'''
+
+R_NEW = '''    if isinstance(md, dict) and not r.get("lms_application_id"):
+        r["lms_application_id"] = md.get("lms_application_id")
+    # ---- LIFTED BACK OUT (2026-08-13) -------------------------------------
+    # The other half of the same fix. Writing a field into metadata and never
+    # reading it back loses it just as completely as never writing it.
+    #
+    # ANCHORED ON THE lms_application_id LINE, because it exists on BOTH
+    # branches. The first version anchored on the origin/event_id lift loop,
+    # which belongs to the origin work and is NOT released - so the replay
+    # failed on the pilot branch with "matched 0 times".
+    if isinstance(md, dict):
+        for _k in ("branch", "segment", "committee_records",
                    "documents_required_at_stage", "documents_provided",
                    "document_files", "application_id",
                    "validated_by_name", "validated_by_code",
@@ -125,7 +129,7 @@ R_NEW = '''        for _k in ("origin", "origin_party_code", "origin_party_name"
                 r[_k] = md.get(_k)
         # BOOLEANS NEED `is not None`, not truthiness. manager_validated=False
         # and cancel_requested=False are meaningful answers; treating them as
-        # absent would leave the caller unable to tell "no" from "unknown".
+        # absent leaves a caller unable to tell "no" from "unknown".
         for _k in ("manager_validated", "cancel_requested", "cancel_approved"):
             if r.get(_k) is None and md.get(_k) is not None:
                 r[_k] = md.get(_k)'''
