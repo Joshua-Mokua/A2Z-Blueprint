@@ -7339,20 +7339,45 @@ def pipeline_queue_committee(user: dict = Depends(get_current_user)):
         return {"committees": [], "cases": [], "total": 0}
 
     my_codes = {str(c.get("code")) for c in mine}
-    # Imported locally, as every other queue in this module does - api.py has
-    # no module-level PipelineManager and adding one here would be a different
-    # convention for no reason.
-    from utils.core import PipelineManager as _PM_for_api
-    from utils.api_pipeline_scope import get_visible_staff_codes as _vis
+    # ── THE SAME DEALS EVERY OTHER SCREEN SEES ──────────────────────────────
+    # This read PipelineManager, which loads pipeline_deals.json and NOTHING
+    # ELSE - while _PIPELINE_READ_DB_FIRST is True and every other screen reads
+    # Postgres. On the pilot box that was 33 deals in one store against 2 in
+    # the other, and the symptom was a case listed in this queue whose Review
+    # button opened an empty page: the queue found it, the detail page did not.
+    #
+    # _acquire_scoped_deals is the canonical read - DB first, JSON as fallback,
+    # and cascade scope already applied. Using it means this queue can never
+    # again disagree with the page it links to.
     from utils.api_pipeline_permissions import resolve_deal_permissions as _perms
-    pm = _PM_for_api()
     try:
+        all_deals = _acquire_scoped_deals(user)
+    except Exception:
+        all_deals = []
+    try:
+        from utils.api_pipeline_scope import get_visible_staff_codes as _vis
         visible = _vis(user)
     except Exception:
         visible = set()
 
+    # A COMMITTEE MEMBER IS NOT ALWAYS IN THEIR OWN CASCADE. A department
+    # committee sits at head office, so scoped deals alone would hide the very
+    # cases they must decide - the fault CM1 fixed in permissions. The canonical
+    # read is scoped, so anything the committee is entitled to but scope drops
+    # is recovered here, and can_view still decides.
+    if _db_available():
+        try:
+            from utils.db import db as _db2
+            rows = _db2.fetch_all("SELECT * FROM pipeline_deals", tuple())
+            seen = {str(d.get("id")) for d in all_deals}
+            for d in (_normalize_db_deal_row(x) for x in _serialize(rows)):
+                if str(d.get("id")) not in seen:
+                    all_deals.append(d)
+        except Exception:
+            pass
+
     cases = []
-    for d in (getattr(pm, "deals", []) or []):
+    for d in all_deals:
         if str(d.get("stage", "")).lower().startswith("closed"):
             continue
         try:
