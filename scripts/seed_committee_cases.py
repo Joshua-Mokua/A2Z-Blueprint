@@ -55,10 +55,22 @@ def main():
 
     if clean:
         before = len(pm.deals)
+        gone = [str(d.get("id")) for d in pm.deals
+                if str(d.get("id", "")).startswith(PREFIX)]
         pm.deals[:] = [d for d in pm.deals
                        if not str(d.get("id", "")).startswith(PREFIX)]
         pm._save_deals()
-        print("removed %d simulated case(s)." % (before - len(pm.deals)))
+        # BOTH STORES. Removing from JSON alone leaves the case on screen,
+        # because the screen reads the database.
+        try:
+            import utils.api as _A
+            if _A._db_available() and gone:
+                from utils.db import db as _db
+                for did in gone:
+                    _db.execute("DELETE FROM pipeline_deals WHERE id = %s", (did,))
+        except Exception as _exc:
+            print("  (could not clear the database rows: %s)" % str(_exc)[:60])
+        print("removed %d simulated case(s)." % len(gone))
         return 0
 
     try:
@@ -173,7 +185,31 @@ def main():
             "notes": "Simulated for committee walkthrough - safe to delete.",
         })
     pm._save_deals()
-    print("\ncreated %d case(s)." % len(todo))
+
+    # ── AND INTO THE DATABASE, because that is what the app reads ───────────
+    # Writing JSON only made these cases INVISIBLE to the very queue they were
+    # meant to test: _PIPELINE_READ_DB_FIRST is True, so the committee queue
+    # and the deal detail both read Postgres. The seeder was on the wrong side
+    # of the split it was supposed to demonstrate.
+    #
+    # Through the application's own write path, never a hand-rolled INSERT - a
+    # second implementation would be a third way for the stores to diverge.
+    synced = 0
+    try:
+        import utils.api as _A
+        if _A._db_available():
+            for did, *_rest in todo:
+                _d = next((x for x in pm.deals if str(x.get("id")) == did), None)
+                if _d:
+                    _A._db_sync_pipeline_deal(_d)
+                    synced += 1
+    except Exception as _exc:
+        print("  (could not write to the database: %s)" % str(_exc)[:60])
+        print("  The cases are in JSON but every screen reads the database,")
+        print("  so they will not appear. Start Postgres and re-run.")
+
+    print("\ncreated %d case(s)%s." % (len(todo),
+          ", %d written to the database" % synced if synced else ""))
     print("Sign in as %s (%s) and open Manager Queues > Committee."
           % (member.get("name"), member.get("staff_code")))
     print("Remove them afterwards with:  python scripts\\seed_committee_cases.py --clean")
