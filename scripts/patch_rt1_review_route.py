@@ -1,4 +1,47 @@
-// Cases waiting on a committee this person sits on.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+RT1 - Review opens the case instead of a blank page.
+
+THE CONSOLE, again, named it in one line:
+
+    No routes matched location "/pipeline/deals/SIMBCC_FORTIS_03"
+
+The committee queue's Review button navigated to /pipeline/deals/{id}. That
+route does not exist. Every other page in the application links to
+/pipeline/{id} - Analytics, the deal list, the create page - and this one
+invented a path that reads more logically and matches nothing. React Router
+rendered nothing, which is what a blank page is.
+
+One line. It cost an afternoon because a blank page shows no error to the
+person looking at it, and I spent that afternoon proposing causes instead of
+asking for the console.
+
+TWO LESSONS WORTH KEEPING:
+
+  A blank React page means the console, first, always. Both faults behind this
+  one - the Rules of Hooks violation and this route - were named exactly by it,
+  in seconds, after hours of plausible theories that were wrong.
+
+  A new component linking somewhere should copy how the rest of the app links
+  there, rather than construct a path that seems right.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+Usage (from project root, .venv active):
+    python scripts\\patch_rt1_review_route.py            # dry run
+    python scripts\\patch_rt1_review_route.py --apply
+"""
+import os
+import shutil
+import sys
+
+QUEUE = os.path.join("frontend", "web", "src", "components", "CommitteeQueue.tsx")
+BACKUP_SUFFIX = ".pre_rt1"
+
+OLD = "onClick={() => nav(`/pipeline/deals/${encodeURIComponent(c.deal_id)}`)}"
+
+COMPONENT = r'''// Cases waiting on a committee this person sits on.
 //
 // RULING (2026-08-12): the branch managers were gathered and nothing moved.
 // Once the committees existed, the reason it still would not have moved is
@@ -118,3 +161,53 @@ export function CommitteeQueue({ compact = false }: { compact?: boolean }) {
     </div>
   );
 }
+'''
+
+
+NEW = COMPONENT
+
+
+def main():
+    apply = "--apply" in sys.argv
+    if not os.path.isfile(QUEUE):
+        print("ABORT: %s not found." % QUEUE)
+        return 1
+
+    cur = open(QUEUE, encoding="utf-8").read()
+    if "THE ROUTE IS /pipeline/{id}" in cur:
+        print("ABORT: RT1 looks applied.")
+        return 1
+    if OLD not in cur:
+        print("ABORT: the old navigation call is not there - has this file")
+        print("       moved on, or is CQ1 not applied?")
+        return 1
+    print("  ok  Review points at /pipeline/{id}")
+
+    # The CALL must be right; the comment may mention the old path.
+    if "nav(`/pipeline/deals/" in NEW:
+        print("ABORT: the navigation still uses the route that does not exist.")
+        return 1
+    if "nav(`/pipeline/${encodeURIComponent" not in NEW:
+        print("ABORT: the corrected navigation is missing.")
+        return 1
+    for op, cl in (("{", "}"), ("(", ")")):
+        if NEW.count(op) != NEW.count(cl):
+            print("ABORT: unbalanced %s%s." % (op, cl))
+            return 1
+    print("  ok  post-checks: the call is corrected, brackets balanced")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    shutil.copy2(QUEUE, QUEUE + BACKUP_SUFFIX)
+    open(QUEUE, "w", encoding="utf-8", newline="").write(NEW)
+    print("APPLIED %s" % QUEUE)
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && pnpm build && popd")
+    print("Then RESTART pnpm dev - Vite keeps a stale module across a change")
+    print("like this and the browser will otherwise show the old behaviour.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
