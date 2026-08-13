@@ -377,8 +377,8 @@ export function Pipeline() {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         ribbon
-        breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'EKE Sales Pro' }]}
-        title="EKE Sales Pro"
+        breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'A2Z Sales Pro' }]}
+        title="A2Z Sales Pro"
         subtitle="Your pipeline"
         actions={
           <>

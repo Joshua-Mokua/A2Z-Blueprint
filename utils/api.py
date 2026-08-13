@@ -498,6 +498,44 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "portfolio_owner_code": deal.get("portfolio_owner_code"),
                 "portfolio_owner_name": deal.get("portfolio_owner_name"),
                 "lms_application_id":   deal.get("lms_application_id"),
+                # ── FIELDS THAT WERE BEING SILENTLY DROPPED (2026-08-13) ────
+                # metadata is a HAND-LISTED set, not a catch-all: anything not
+                # named here never reached Postgres. Since deals are read
+                # DB-first, these came back EMPTY on the next read.
+                #
+                # BRANCH IS THE WORST OF THEM. Without it a deal is not
+                # branch-originated, so no branch committee is substituted into
+                # its journey and the case NEVER REACHES A COMMITTEE - very
+                # likely why the branch managers were gathered and nothing
+                # moved. Underneath the missing committees, the deals had lost
+                # the field that routes them.
+                #
+                # COMMITTEE_RECORDS is the decision itself. A committee could
+                # record a recommendation and find it gone the next morning.
+                "branch":              deal.get("branch"),
+                "segment":             deal.get("segment"),
+                "committee_records":   deal.get("committee_records"),
+                "documents_required_at_stage": deal.get("documents_required_at_stage"),
+                "documents_provided":  deal.get("documents_provided"),
+                "document_files":      deal.get("document_files"),
+                "application_id":      deal.get("application_id"),
+                "manager_validated":   deal.get("manager_validated"),
+                "validated_by_name":   deal.get("validated_by_name"),
+                "validated_by_code":   deal.get("validated_by_code"),
+                "validated_by_role":   deal.get("validated_by_role"),
+                "validated_at":        deal.get("validated_at"),
+                "cancel_requested":    deal.get("cancel_requested"),
+                "cancel_approved":     deal.get("cancel_approved"),
+                "cancel_requested_at": deal.get("cancel_requested_at"),
+                "cancel_request_reason": deal.get("cancel_request_reason"),
+                "referral_status":     deal.get("referral_status"),
+                "referred_by_name":    deal.get("referred_by_name"),
+                "referred_to_name":    deal.get("referred_to_name"),
+                "referred_by_code":    deal.get("referred_by_code"),
+                "referred_to_code":    deal.get("referred_to_code"),
+                "referred_at":         deal.get("referred_at"),
+                "created_at":          deal.get("created_at"),
+                "updated_at":          deal.get("updated_at"),
                 "mou_id":               deal.get("mou_id"),
                 "mou_title":            deal.get("mou_title"),
                 "sector":               deal.get("sector"),
@@ -611,6 +649,32 @@ def _normalize_db_deal_row(row):
         r["pipeline_category"] = md.get("pipeline_category")
     if isinstance(md, dict) and not r.get("lms_application_id"):
         r["lms_application_id"] = md.get("lms_application_id")
+    # ---- LIFTED BACK OUT (2026-08-13) -------------------------------------
+    # The other half of the same fix. Writing a field into metadata and never
+    # reading it back loses it just as completely as never writing it.
+    #
+    # ANCHORED ON THE lms_application_id LINE, because it exists on BOTH
+    # branches. The first version anchored on the origin/event_id lift loop,
+    # which belongs to the origin work and is NOT released - so the replay
+    # failed on the pilot branch with "matched 0 times".
+    if isinstance(md, dict):
+        for _k in ("branch", "segment", "committee_records",
+                   "documents_required_at_stage", "documents_provided",
+                   "document_files", "application_id",
+                   "validated_by_name", "validated_by_code",
+                   "validated_by_role", "validated_at",
+                   "cancel_requested_at", "cancel_request_reason",
+                   "referral_status", "referred_by_name", "referred_to_name",
+                   "referred_by_code", "referred_to_code", "referred_at",
+                   "created_at", "updated_at"):
+            if not r.get(_k) and md.get(_k):
+                r[_k] = md.get(_k)
+        # BOOLEANS NEED `is not None`, not truthiness. manager_validated=False
+        # and cancel_requested=False are meaningful answers; treating them as
+        # absent leaves a caller unable to tell "no" from "unknown".
+        for _k in ("manager_validated", "cancel_requested", "cancel_approved"):
+            if r.get(_k) is None and md.get(_k) is not None:
+                r[_k] = md.get(_k)
     # Lift the FX money set + client-type fields out of metadata so DB-first
     # readers (analytics, dashboard canonical path) see KES-equivalent values
     # and the currency book — matching the JSON read path. Without this,
@@ -7505,6 +7569,134 @@ def pipeline_queue_validation(user: dict = Depends(get_current_user)):
         ],
         "count":  len(deals),
         "queue":  "validation",
+    }
+
+
+@app.get("/api/pipeline/queues/committee")
+def pipeline_queue_committee(user: dict = Depends(get_current_user)):
+    """Cases waiting on a committee this person sits on.
+
+    RULING (2026-08-12): the branch managers were gathered and nothing moved -
+    and once the committees existed, the reason it still would not have moved
+    is that MEMBERS HAD NOWHERE TO LOOK. A decision could only be recorded by
+    knowing a deal id and opening it. A committee that cannot find its own
+    cases is not a committee.
+
+    MEMBERSHIP DECIDES WHAT YOU SEE, not role. A branch manager sees their own
+    branch's committee because they sit on it; somebody added to two committees
+    sees both. That is the same rule the bank would apply in a room.
+
+    A CASE APPEARS WHEN it is at a stage whose journey includes that committee
+    AND no decision has been recorded for it yet. It leaves the moment one is,
+    which is what makes the list trustworthy enough to work from.
+    """
+    me = str(user.get("staff_code", "") or "").strip()
+    me_name = str(user.get("full_name", "") or "").strip().lower()
+    if not me and not me_name:
+        return {"committees": [], "cases": [], "total": 0}
+
+    # Which committees is this person on? Chair counts - they convene it.
+    mine = []
+    for c in _read_committee_palette():
+        members = c.get("members") or []
+        codes = {str(m.get("staff_code", "") or "").strip()
+                 for m in members if isinstance(m, dict)}
+        names = {str(m.get("name", "") or "").strip().lower()
+                 for m in members if isinstance(m, dict)}
+        chair = str(c.get("chaired_by", "") or "").strip().lower()
+        if (me and me in codes) or (me_name and (me_name in names or me_name == chair)):
+            mine.append(c)
+    if not mine:
+        return {"committees": [], "cases": [], "total": 0}
+
+    my_codes = {str(c.get("code")) for c in mine}
+    # ── THE SAME DEALS EVERY OTHER SCREEN SEES ──────────────────────────────
+    # This read PipelineManager, which loads pipeline_deals.json and NOTHING
+    # ELSE - while _PIPELINE_READ_DB_FIRST is True and every other screen reads
+    # Postgres. On the pilot box that was 33 deals in one store against 2 in
+    # the other, and the symptom was a case listed in this queue whose Review
+    # button opened an empty page: the queue found it, the detail page did not.
+    #
+    # _acquire_scoped_deals is the canonical read - DB first, JSON as fallback,
+    # and cascade scope already applied. Using it means this queue can never
+    # again disagree with the page it links to.
+    from utils.api_pipeline_permissions import resolve_deal_permissions as _perms
+    try:
+        all_deals = _acquire_scoped_deals(user)
+    except Exception:
+        all_deals = []
+    try:
+        from utils.api_pipeline_scope import get_visible_staff_codes as _vis
+        visible = _vis(user)
+    except Exception:
+        visible = set()
+
+    # A COMMITTEE MEMBER IS NOT ALWAYS IN THEIR OWN CASCADE. A department
+    # committee sits at head office, so scoped deals alone would hide the very
+    # cases they must decide - the fault CM1 fixed in permissions. The canonical
+    # read is scoped, so anything the committee is entitled to but scope drops
+    # is recovered here, and can_view still decides.
+    # RECOVERED FROM WHICHEVER STORE IS LIVE, not only from the database. The
+    # first version guarded this with _db_available(), so on a box falling back
+    # to JSON a department committee saw nothing at all - the exact failure it
+    # was written to prevent, reintroduced by the guard.
+    seen = {str(d.get("id")) for d in all_deals}
+    _extra = []
+    if _db_available():
+        try:
+            from utils.db import db as _db2
+            rows = _db2.fetch_all("SELECT * FROM pipeline_deals", tuple())
+            _extra = [_normalize_db_deal_row(x) for x in _serialize(rows)]
+        except Exception:
+            _extra = []
+    if not _extra:
+        try:
+            from utils.core import PipelineManager as _PM_fallback
+            _extra = list(getattr(_PM_fallback(), "deals", []) or [])
+        except Exception:
+            _extra = []
+    for d in _extra:
+        if str(d.get("id")) not in seen:
+            all_deals.append(d)
+
+    cases = []
+    for d in all_deals:
+        if str(d.get("stage", "")).lower().startswith("closed"):
+            continue
+        try:
+            journey = _effective_committee_journey(d)
+        except Exception:
+            continue
+        pending = [c for c in journey if c in my_codes
+                   and not (d.get("committee_records") or {}).get(c)]
+        if not pending:
+            continue
+        # SCOPE STILL APPLIES. Sitting on a committee does not open every deal
+        # in the bank - a member sees the cases their scope already allows,
+        # which for a branch committee is their own branch.
+        if not _perms(d, user, visible).get("can_view"):
+            continue
+        cases.append({
+            "deal_id": d.get("id"),
+            "client_name": d.get("client_name"),
+            "product": d.get("product_type") or d.get("product"),
+            "deal_value": d.get("deal_value"),
+            "currency": d.get("currency") or "KES",
+            "branch": d.get("branch") or d.get("unit"),
+            "stage": d.get("stage"),
+            "owner": d.get("staff_name"),
+            "awaiting": pending,
+            "awaiting_names": [next((str(c.get("name")) for c in mine
+                                     if str(c.get("code")) == p), p) for p in pending],
+            "submitted_at": d.get("updated_at") or d.get("created_at"),
+        })
+
+    cases.sort(key=lambda x: str(x.get("submitted_at") or ""), reverse=True)
+    return {
+        "committees": [{"code": c.get("code"), "name": c.get("name"),
+                        "members": len(c.get("members") or [])} for c in mine],
+        "cases": cases,
+        "total": len(cases),
     }
 
 
