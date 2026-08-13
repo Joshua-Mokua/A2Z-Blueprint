@@ -13239,7 +13239,39 @@ def cast_committee_vote(deal_id: str, code: str,
     updates = {"committee_votes": all_votes}
     outcome = ""
 
-    if attended >= quorum:
+    # ── THE CHAIR MUST HAVE VOTED ───────────────────────────────────────────
+    # RULING (2026-08-13): "as a rule of law we should make the chair vote
+    # mandatory, and in the absence the operations manager."
+    #
+    # Quorum counts heads; it does not care WHOSE. A committee could reach two
+    # votes without the person who convenes it having said anything, and the
+    # decision would carry their committee's name. That is the difference
+    # between a meeting and a headcount.
+    #
+    # IN THEIR ABSENCE, THE OPERATIONS MANAGER stands in - a named deputy
+    # rather than "anybody else", so the authority is traceable to a role the
+    # bank recognises.
+    #
+    # THE VOTES ARE KEPT EITHER WAY. Nobody's view is discarded for arriving
+    # before the chair's; the decision simply is not final until the chair (or
+    # their deputy) has spoken.
+    _chair_name = str(committee.get("chaired_by", "") or "").strip().lower()
+    _chair_code = str(committee.get("chair_staff_code", "") or "").strip()
+
+    def _is_chair(v):
+        return ((_chair_code and str(v.get("staff_code", "")).strip() == _chair_code)
+                or (_chair_name and str(v.get("name", "")).strip().lower() == _chair_name)
+                or str(v.get("role", "")).strip().lower() == "chair")
+
+    def _is_deputy(v):
+        _r = str(v.get("role", "") or "").lower()
+        return "operations manager" in _r or "operations" in _r
+
+    _chair_spoke = any(_is_chair(v) for v in cast.values())
+    _deputy_spoke = any(_is_deputy(v) for v in cast.values())
+    _authority = _chair_spoke or _deputy_spoke
+
+    if attended >= quorum and _authority:
         # Enough of the committee has spoken - decide, once, from all of it.
         vlist = list(cast.values())
         outcome = _derive_outcome_from_votes(vlist, committee.get("voting_rule"),
@@ -13264,6 +13296,11 @@ def cast_committee_vote(deal_id: str, code: str,
         "your_vote": vote,
         "votes_cast": attended,
         "quorum": quorum,
+        # So the panel can say WHY a case with enough votes is still open -
+        # "waiting on the chair" is a different thing from "waiting on a body".
+        "chair_voted": _chair_spoke,
+        "deputy_voted": _deputy_spoke,
+        "awaiting_chair": bool(attended >= quorum and not _authority),
         "decided": bool(outcome),
         "outcome": outcome,
         # So the panel can show who has voted and who is still awaited, which
