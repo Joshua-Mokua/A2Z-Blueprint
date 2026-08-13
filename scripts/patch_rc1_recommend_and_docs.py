@@ -1,4 +1,66 @@
-// v10.511 Phase 4 Batch β2 — PipelineDealDetail page.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+r"""
+RC1 - a committee recommends, and can read the papers before it does.
+
+TWO RULINGS (2026-08-13).
+
+1. "WE SAID THEY RECOMMEND, OR NOT RECOMMEND." The committee's controls read
+   APPROVED / REJECTED / DEFERRED - the language of a decision. But a committee
+   RECOMMENDS; the approval comes from credit analysis. What people read now
+   matches what they are doing:
+
+       - recommendation -
+       Recommend
+       Do not recommend
+       Defer - more information needed
+
+   and a recorded outcome reads Recommended / Not recommended / Deferred.
+
+   THE STORED VALUES ARE UNCHANGED - APPROVED, REJECTED, DEFERRED. The gate,
+   the journey, the audit trail and every report read them; renaming the data
+   to fix a label would break all of that for a wording change. Only the
+   surface moved.
+
+   ONE THING THIS DOES NOT DECIDE, and it needs an answer before the wording
+   becomes wholly true: a "Do not recommend" still BLOCKS submit-to-credit
+   outright. If the committee only advises, a negative view might instead
+   travel with the case for the credit analyst to weigh. Those are different
+   systems and it is the bank's call, not a patch's.
+
+2. "THEY NEED TO BE ABLE TO VIEW DOCUMENTATION, OTHERWISE HOW DO THEY KNOW
+   WHAT THEY ARE APPROVING." A "View documentation" button now sits in the
+   header of the committee card, where the decision is actually taken. A member
+   arriving from their queue has no reason to know the papers live under a
+   different tab further up the page.
+
+   IT OPENS THE TAB rather than scrolling. The first attempt scrolled to an
+   anchor that does not exist - these are TABS, not sections, so it would have
+   done nothing at all and looked like a broken button. The shell now answers a
+   `workbench:open-tab` event, which any panel can raise without lifting tab
+   state through every page that uses it. An unknown tab id is IGNORED, so a
+   panel asking for something absent does nothing rather than blanking the
+   view.
+
+   Reading the documents already worked for committee members - CM1 gave them
+   can_view, and the document endpoints require only that. This is about
+   finding them.
+
+Verified: tsc --noEmit clean, vite build clean.
+
+Usage (from project root, .venv active):
+    python scripts\\patch_rc1_recommend_and_docs.py            # dry run
+    python scripts\\patch_rc1_recommend_and_docs.py --apply
+"""
+import os
+import shutil
+import sys
+
+DETAIL = os.path.join("frontend", "web", "src", "pages", "PipelineDealDetail.tsx")
+SHELL = os.path.join("frontend", "web", "src", "components", "WorkbenchShell.tsx")
+BACKUP_SUFFIX = ".pre_rc1"
+
+DETAIL_SRC = r'''// v10.511 Phase 4 Batch β2 — PipelineDealDetail page.
 //
 // The single-deal view at /pipeline/:dealId. Shows full deal info plus
 // per-action inline panels gated by the α7 permissions object:
@@ -1755,3 +1817,197 @@ function CommitteeJourneyCard({ dealId, canEdit }: { dealId: string; canEdit: bo
   );
 }
 
+'''
+
+SHELL_SRC = r'''// WorkbenchShell — the shared workbench chrome (Phase 2e).
+//
+// One reusable header standard for every workbench: a coloured Ecobank-blue
+// ribbon (back · title · stage · badges · cross-link · id · refresh · details
+// toggle), a collapsible "Details" slot, and a colour-coded tab strip. Extracted
+// from the deal workbench so LMS/Credit Analysis, Credit Admin, Trops, and
+// Credit Analytics can all adopt the identical look with one component.
+
+import { useEffect, useState, type ReactNode } from 'react';
+
+export interface WorkbenchTab {
+  id: string;
+  label: string;
+  /** Accent colour (hex) for the tab — active text + top border. */
+  color: string;
+  content: ReactNode;
+}
+
+export interface WorkbenchBadge {
+  label: string;
+}
+
+export interface WorkbenchShellProps {
+  title: string;
+  /** Primary status pill shown next to the title (e.g. the stage). */
+  stage?: string;
+  /** Extra pills (e.g. Locked, Validated, Draft). */
+  badges?: WorkbenchBadge[];
+  /** Small monospace id shown on the right (e.g. deal / application id). */
+  idLabel?: string;
+  onBack?: () => void;
+  onRefresh?: () => void;
+  /** Optional cross-link rendered in the ribbon (e.g. "View Credit Analysis →"). */
+  crossLink?: { label: string; onClick: () => void };
+  /** Collapsible content revealed by the "Details" toggle. */
+  details?: ReactNode;
+  /** Colour-coded tabs. Omit to render `children` directly under the ribbon. */
+  tabs?: WorkbenchTab[];
+  defaultTabId?: string;
+  /** Content rendered under the ribbon when `tabs` is not supplied (ribbon-only
+   *  adoption for pages not yet tab-converted). */
+  children?: ReactNode;
+}
+
+export function WorkbenchShell({
+  title, stage, badges, idLabel, onBack, onRefresh, crossLink, details, tabs, defaultTabId, children,
+}: WorkbenchShellProps) {
+  const tabList = tabs ?? [];
+  const [activeTab, setActiveTab] = useState(defaultTabId ?? (tabList[0]?.id ?? ''));
+
+  // ── ANY PANEL CAN ASK FOR A TAB ─────────────────────────────────────────
+  // A committee member reaching the decision card from their queue needs the
+  // documents, and has no reason to know they live under another tab. Rather
+  // than lifting this state through every page that uses the shell, a panel
+  // dispatches `workbench:open-tab` with the tab id and the shell answers.
+  //
+  // Ignored if the tab is not on this page, so a panel asking for something
+  // that is not there simply does nothing rather than blanking the view.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (id && tabList.some((t) => t.id === id)) setActiveTab(id);
+    };
+    window.addEventListener('workbench:open-tab', onOpen as EventListener);
+    return () => window.removeEventListener('workbench:open-tab', onOpen as EventListener);
+  }, [tabList]);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const active = tabList.find((t) => t.id === activeTab) ?? tabList[0];
+
+  return (
+    <div>
+      {/* Coloured ribbon — the clean top landing. */}
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-3 rounded-t-lg bg-gradient-to-r from-[#0082BB] to-[#005B82] px-6 py-3.5 text-white shadow-sm">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {onBack && (
+            <button onClick={onBack}
+              className="rounded border border-white/40 px-2 py-0.5 text-xs font-medium hover:bg-white/10">← Back</button>
+          )}
+          <h2 className="text-base font-semibold">{title || '—'}</h2>
+          {stage && <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{stage}</span>}
+          {(badges ?? []).map((b) => (
+            <span key={b.label} className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{b.label}</span>
+          ))}
+          {crossLink && (
+            <button onClick={crossLink.onClick}
+              className="text-xs font-medium text-white/90 underline hover:text-white">{crossLink.label}</button>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          {idLabel && <span className="font-mono text-xs text-white/70">{idLabel}</span>}
+          {onRefresh && (
+            <button onClick={onRefresh}
+              className="rounded border border-white/40 px-2 py-0.5 text-xs font-medium hover:bg-white/10">Refresh</button>
+          )}
+          {details != null && (
+            <button onClick={() => setDetailsOpen((v) => !v)}
+              className="rounded border border-white/40 px-2 py-0.5 text-xs font-medium hover:bg-white/10">
+              {detailsOpen ? 'Hide details ▴' : 'Details ▾'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {details != null && detailsOpen && <div className="mt-4">{details}</div>}
+
+      {tabList.length > 0 ? (
+        <div className="mt-3">
+          <div className="flex flex-wrap gap-1 rounded-t-lg border-b border-gray-200 bg-[#EAF4FA] px-2 pt-1.5 text-sm">
+            {tabList.map((t) => {
+              const isActive = active?.id === t.id;
+              return (
+                <button key={t.id} onClick={() => setActiveTab(t.id)}
+                  style={isActive ? { color: t.color, borderTopColor: t.color, borderTopWidth: 2 } : { color: t.color }}
+                  className={`-mb-px rounded-t-md px-3 py-2 font-medium transition-colors ${
+                    isActive ? 'bg-white font-semibold shadow-sm' : 'opacity-60 hover:bg-white/60 hover:opacity-100'}`}>
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="pt-4">{active?.content}</div>
+        </div>
+      ) : (
+        <div className="mt-4 space-y-4">{children}</div>
+      )}
+    </div>
+  );
+}
+'''
+
+
+def main():
+    apply = "--apply" in sys.argv
+    for p in (DETAIL, SHELL):
+        if not os.path.isfile(p):
+            print("ABORT: %s not found." % p)
+            return 1
+
+    cur_d = open(DETAIL, encoding="utf-8").read()
+    if "Do not recommend" in cur_d:
+        print("ABORT: RC1 looks applied.")
+        return 1
+
+    # WHOLE-FILE REPLACEMENT, so it must prove it takes nothing away. LB1 v1
+    # shipped a whole file captured from a tree without the committee queue and
+    # silently removed a tab somebody had just installed.
+    marks = ["Credit Committee Journey", "recordDealCommitteeDecision",
+             "CaseJourneyTab", "CreditSubmissionPanel"]
+    for m in marks:
+        if cur_d.count(m) and not DETAIL_SRC.count(m):
+            print("ABORT: %r is in the current file and NOT in this patch -" % m)
+            print("       applying it would remove working code.")
+            return 1
+    print("  ok  nothing present would be removed")
+
+    if "Do not recommend" not in DETAIL_SRC or "outcomeLabel" not in DETAIL_SRC:
+        print("ABORT: the recommendation wording is missing.")
+        return 1
+    # The stored values must survive - the gate and the reports read them.
+    for v in ('"APPROVED"', '"REJECTED"', '"DEFERRED"'):
+        if v not in DETAIL_SRC:
+            print("ABORT: %s is no longer stored - the gate would stop working." % v)
+            return 1
+    if "workbench:open-tab" not in DETAIL_SRC or "workbench:open-tab" not in SHELL_SRC:
+        print("ABORT: the documentation button is not wired to the shell.")
+        return 1
+    if "scrollIntoView" in DETAIL_SRC:
+        print("ABORT: still scrolling to an anchor that does not exist.")
+        return 1
+    for name, blob in (("detail", DETAIL_SRC), ("shell", SHELL_SRC)):
+        for op, cl in (("{", "}"), ("(", ")")):
+            if blob.count(op) != blob.count(cl):
+                print("ABORT: %s unbalanced %s%s." % (name, op, cl))
+                return 1
+    print("  ok  post-checks: values preserved, tab wired, nothing scrolls")
+
+    if not apply:
+        print("\nDRY RUN - nothing written. Re-run with --apply.")
+        return 0
+
+    for path, content in ((DETAIL, DETAIL_SRC), (SHELL, SHELL_SRC)):
+        shutil.copy2(path, path + BACKUP_SUFFIX)
+        open(path, "w", encoding="utf-8", newline="").write(content)
+        print("APPLIED %s" % path)
+    print("\nNext: pushd frontend\\web && pnpm tsc --noEmit && popd")
+    print("The committee card now reads Recommend / Do not recommend, with")
+    print("'View documentation' in its header.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

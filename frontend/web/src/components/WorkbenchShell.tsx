@@ -6,7 +6,7 @@
 // from the deal workbench so LMS/Credit Analysis, Credit Admin, Trops, and
 // Credit Analytics can all adopt the identical look with one component.
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 export interface WorkbenchTab {
   id: string;
@@ -47,6 +47,23 @@ export function WorkbenchShell({
 }: WorkbenchShellProps) {
   const tabList = tabs ?? [];
   const [activeTab, setActiveTab] = useState(defaultTabId ?? (tabList[0]?.id ?? ''));
+
+  // ── ANY PANEL CAN ASK FOR A TAB ─────────────────────────────────────────
+  // A committee member reaching the decision card from their queue needs the
+  // documents, and has no reason to know they live under another tab. Rather
+  // than lifting this state through every page that uses the shell, a panel
+  // dispatches `workbench:open-tab` with the tab id and the shell answers.
+  //
+  // Ignored if the tab is not on this page, so a panel asking for something
+  // that is not there simply does nothing rather than blanking the view.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (id && tabList.some((t) => t.id === id)) setActiveTab(id);
+    };
+    window.addEventListener('workbench:open-tab', onOpen as EventListener);
+    return () => window.removeEventListener('workbench:open-tab', onOpen as EventListener);
+  }, [tabList]);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const active = tabList.find((t) => t.id === activeTab) ?? tabList[0];
 
