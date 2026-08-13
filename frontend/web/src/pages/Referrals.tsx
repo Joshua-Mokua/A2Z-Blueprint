@@ -366,9 +366,9 @@ export default function Referrals() {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         ribbon
-        title="EKE Sales Referral"
+        title="A2Z Sales Referral"
         subtitle="Deals referred to you, returned to you, and the ones you're following."
-        breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'EKE Sales Referral' }]}
+        breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'A2Z Sales Referral' }]}
         actions={
           <Button variant="primary" size="sm" onClick={() => navigate('/pipeline/new?refer=1')}>
             New referral
