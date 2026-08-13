@@ -205,7 +205,10 @@ DELTA = [
     # Ruling 2026-08-10: PipelineDealDetail must NOT travel. The formatting
     # patcher removes three K/M abbreviations from it; harmless in itself, but
     # the file stays on Alex's side, so it is reverted below rather than staged.
-    "frontend/web/src/pages/PipelineDealDetail.tsx",
+    # PipelineDealDetail TRAVELS from 2026-08-13. It was held back because a
+    # formatting patcher removed three K/M abbreviations - neither version has
+    # any K/M formatting now, so the reason was stale, and the cost had become
+    # the entire committee voting panel, which lives in this file.
 ]
 
 # Reverted to alex-dev's version after the replay, before staging. A patcher
@@ -218,7 +221,10 @@ BRANDING_STRINGS = [
 ]
 
 REVERT_AFTER_REPLAY = [
-    "frontend/web/src/pages/PipelineDealDetail.tsx",
+    # PipelineDealDetail TRAVELS from 2026-08-13. It was held back because a
+    # formatting patcher removed three K/M abbreviations - neither version has
+    # any K/M formatting now, so the reason was stale, and the cost had become
+    # the entire committee voting panel, which lives in this file.
 ]
 
 # api.py legitimately gains new endpoints, so it cannot be in DELTA above - but
