@@ -1411,6 +1411,20 @@ export interface NextStep {
 export async function fetchNextStep(dealId: string): Promise<NextStep> {
   return getJson<NextStep>(`/pipeline/deals/${encodeURIComponent(dealId)}/next-step`);
 }
+export interface CommitteeQueueCase {
+  deal_id: string; client_name: string; product: string;
+  deal_value?: number; currency?: string; branch?: string; stage?: string;
+  owner?: string; awaiting: string[]; awaiting_names: string[];
+  submitted_at?: string;
+}
+export interface CommitteeQueueResponse {
+  committees: { code: string; name: string; members: number }[];
+  cases: CommitteeQueueCase[];
+  total: number;
+}
+export async function fetchCommitteeQueue(): Promise<CommitteeQueueResponse> {
+  return getJson<CommitteeQueueResponse>('/pipeline/queues/committee');
+}
 export async function fetchCreditChecklist(
   dealId: string,
 ): Promise<CreditChecklistResponse> {

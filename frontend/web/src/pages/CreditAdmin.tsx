@@ -101,7 +101,7 @@ export function CreditAdmin() {
       {/* Header */}
       <PageHeader
         ribbon
-        breadcrumbs={[{ label: 'EKE Credit Intelligence System (CIS)' }, { label: 'Credit Admin' }]}
+        breadcrumbs={[{ label: 'A2Z Credit Intelligence System (CIS)' }, { label: 'Credit Admin' }]}
         title="Credit Admin"
         subtitle="Approved loans in the disbursement pipeline · condition tracking."
       />

@@ -56,7 +56,7 @@ export function CommitteeConvening() {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
-        breadcrumbs={[{ label: 'EKE Credit Intelligence System (CIS)' }, { label: 'Committee Convening' }]}
+        breadcrumbs={[{ label: 'A2Z Credit Intelligence System (CIS)' }, { label: 'Committee Convening' }]}
         title="Committee Convening"
         subtitle="Cases referred to committee, grouped by tier. Convene the meeting to open the binding vote."
       />

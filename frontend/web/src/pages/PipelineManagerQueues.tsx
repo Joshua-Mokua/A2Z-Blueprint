@@ -39,6 +39,7 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
 import { PageHeader } from '@/components/PageHeader';
+import { CommitteeQueue } from '@/components/CommitteeQueue';
 import DailyLogValidation from '@/components/DailyLogValidation';
 import BranchCountersign from '@/components/BranchCountersign';
 import UnitRollup from '@/components/UnitRollup';
@@ -53,7 +54,7 @@ import {
 } from '@/types/pipeline';
 
 
-type TabKey = 'validation' | 'dailylog' | 'ranking' | 'analytics';
+type TabKey = 'validation' | 'committee' | 'dailylog' | 'ranking' | 'analytics';
 
 
 // ── Page component ──────────────────────────────────────────────────────
@@ -133,7 +134,7 @@ export function PipelineManagerQueues() {
       <div className="min-h-screen bg-gray-50">
         <PageHeader
           title="Manager Queues"
-          breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'Manager Queues' }]}
+          breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'Manager Queues' }]}
         />
         <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
         <Card>
@@ -187,7 +188,7 @@ export function PipelineManagerQueues() {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         title="Manager Queues"
-        breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'Manager Queues' }]}
+        breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'Manager Queues' }]}
       />
       <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
 
@@ -199,6 +200,16 @@ export function PipelineManagerQueues() {
           label="Pipeline validation"
           count={validationDeals.length}
           loading={loadingV}
+        />
+        {/* Committee sits beside validation because it is the same kind of
+            work - a queue of things waiting on this person's decision. No new
+            sidebar entry (ruling 2026-08-12). */}
+        <TabBtn
+          active={activeTab === 'committee'}
+          onClick={() => setActiveTab('committee')}
+          label="Committee"
+          count={0}
+          loading={false}
         />
         <TabBtn
           active={activeTab === 'dailylog'}
@@ -233,6 +244,8 @@ export function PipelineManagerQueues() {
       </div>
 
       {/* Daily-log validation owns its own loading, empty and error states. */}
+      {activeTab === 'committee' && <CommitteeQueue />}
+
       {activeTab === 'dailylog' && tier === null && (
         <Card className="mt-4"><Card.Body>
           <div className="text-sm text-gray-400">Loading…</div>
@@ -285,7 +298,7 @@ export function PipelineManagerQueues() {
       {activeTab === 'analytics' && <DailyLogAnalytics />}
 
       {/* Error panel */}
-      {!['dailylog', 'ranking', 'analytics'].includes(activeTab)
+      {!['dailylog', 'ranking', 'analytics', 'committee'].includes(activeTab)
         && !(activeTab === 'validation' && (tier === 'branch' || tier === 'rollup' || tier === 'staff'))
         && activeError && (
         <Card className="mt-4">
@@ -302,7 +315,7 @@ export function PipelineManagerQueues() {
       )}
 
       {/* Empty / loading / content */}
-      {['dailylog', 'ranking', 'analytics'].includes(activeTab)
+      {['dailylog', 'ranking', 'analytics', 'committee'].includes(activeTab)
         || (activeTab === 'validation' && (tier === 'branch' || tier === 'rollup' || tier === 'staff'))
         ? null : activeLoading && activeDeals.length === 0 ? (
         <Card className="mt-4">
