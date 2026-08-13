@@ -101,6 +101,7 @@ CHAIN = [
     "patch_dq1_committee_queue_source",
     "patch_rc1_recommend_and_docs",
     "patch_br1_a2z_and_committee_tab",
+    "patch_md1_deal_field_mapping",
     "patch_pf1_validate_and_gates",
     "patch_bl1_business_line",
 ]
