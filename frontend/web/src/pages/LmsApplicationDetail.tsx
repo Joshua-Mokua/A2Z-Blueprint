@@ -1397,7 +1397,57 @@ function DccVotePanel({ appId, toast, onDone }: {
   const [busy, setBusy] = useState(false);
   const load = () => { getDccRoster(appId).then(setRoster).catch(() => { /* none */ }); };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [appId]);
-  if (!roster || !roster.enabled || (!roster.is_dcc_case && !roster.outcome)) return null;
+  // ── SAY WHY, RATHER THAN NOTHING ─────────────────────────────────────────
+  // This returned null whenever the case was not yet before the committee, so
+  // the Department Credit Committee tab rendered BLANK - which reads as broken
+  // rather than as "not yet". A member opening it to vote had no way to tell
+  // the difference.
+  //
+  // Returning null is right where the panel is one card among many on another
+  // tab. It is wrong when the panel IS the tab.
+  if (!roster) {
+    return (
+      <Card>
+        <Card.Body>
+          <p className="py-6 text-center text-sm text-gray-400">Loading the committee…</p>
+        </Card.Body>
+      </Card>
+    );
+  }
+  if (!roster.enabled) {
+    return (
+      <Card>
+        <Card.Header>
+          <h3 className="text-sm font-semibold text-gray-900">Department Credit Committee</h3>
+        </Card.Header>
+        <Card.Body>
+          <p className="text-sm text-gray-600">
+            The department committee is not switched on for this bank. An
+            administrator enables it under Administration → Credit Committees.
+          </p>
+        </Card.Body>
+      </Card>
+    );
+  }
+  if (!roster.is_dcc_case && !roster.outcome) {
+    return (
+      <Card>
+        <Card.Header>
+          <h3 className="text-sm font-semibold text-gray-900">Department Credit Committee</h3>
+        </Card.Header>
+        <Card.Body>
+          <p className="text-sm text-gray-600">
+            This case has not been submitted to the department committee yet.
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            It arrives here once the analyst marks it ready on the Department
+            Review tab — then the committee's members vote, and the case moves
+            on by itself when they have.
+          </p>
+        </Card.Body>
+      </Card>
+    );
+  }
   const votesByMember = new Map(roster.votes.map((v) => [v.member_id, v]));
   const resolve = async () => {
     setBusy(true);

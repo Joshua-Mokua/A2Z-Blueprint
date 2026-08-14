@@ -13,7 +13,7 @@ import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
 import { useLmsApplications } from '@/hooks/useLmsApplications';
 import { useToast } from '@/components/Toast';
-import { requestLmsAssignment, fetchAssignmentRequests, assignLmsAnalyst, fetchMyAnalysts, type AssignmentRequestCase, type AssignableAnalyst } from '@/lib/api';
+import { fetchAssignmentRequests, assignLmsAnalyst, fetchMyAnalysts, type AssignmentRequestCase, type AssignableAnalyst, pickLmsApplication } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/Badge';
@@ -61,16 +61,26 @@ export function Lms() {
   const { toast } = useToast();
   const [requestBusy, setRequestBusy] = useState<string | null>(null);
   const isManagerRole = isAdmin || /chief|head|manager|officer|director|managing/.test(roleLc);
-  const doRequest = async (appId: string) => {
+  // PICKING IS IMMEDIATE. doRequest below asks a manager to allocate the case
+  // and is kept for the roles that still work that way; a department analyst
+  // takes their own segment's work without asking.
+  const doPick = async (appId: string) => {
     setRequestBusy(appId);
     try {
-      await requestLmsAssignment(appId);
-      toast({ tone: 'success', message: 'Assignment requested — the credit manager will action it.' });
+      await pickLmsApplication(appId);
+      toast({ tone: 'success', message: 'Picked — it is in My cases now.' });
       await refetch();
     } catch (e) {
-      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Request failed' });
-    } finally { setRequestBusy(null); }
+      toast({ tone: 'danger',
+        message: e instanceof Error ? e.message : 'Could not pick this case' });
+    } finally {
+      setRequestBusy(null);
+    }
   };
+
+  // doRequest removed with the button it served: a department analyst picks
+  // rather than requests. If a role that still needs manager allocation
+  // appears, request-assignment is untouched on the server.
   const [requestsCases, setRequestsCases] = useState<AssignmentRequestCase[]>([]);
   const [analystPool, setAnalystPool] = useState<AssignableAnalyst[]>([]);
   const [assignBusy, setAssignBusy] = useState<string | null>(null);
@@ -412,15 +422,22 @@ export function Lms() {
                           {app.analyst?.name
                             ? app.analyst.name
                             : (tab === 'pool' && isPureAnalyst ? (
+                              /* PICK, NOT REQUEST (ruling 2026-08-14): "this
+                                 page should now have pick and not request
+                                 assignment."
+
+                                 Requesting belongs where a manager allocates
+                                 work. A department analyst owns their
+                                 segment's cases already, so asking permission
+                                 to take one adds a person to the chain for no
+                                 decision - and leaves the case sitting in the
+                                 pool while everybody waits. */
                               <button
-                                onClick={(e) => { e.stopPropagation(); void doRequest(app.id); }}
-                                disabled={requestBusy === app.id
-                                  || (app.assignment_requests ?? []).some((r) => String(r.by_code) === myCode)}
-                                className="rounded border border-brand-primary px-2 py-0.5 text-xs text-brand-primary hover:bg-brand-primary/5 disabled:opacity-50"
+                                onClick={(e) => { e.stopPropagation(); void doPick(app.id); }}
+                                disabled={requestBusy === app.id}
+                                className="rounded border border-brand-primary px-2 py-0.5 text-xs font-medium text-brand-primary hover:bg-brand-primary/5 disabled:opacity-50"
                               >
-                                {(app.assignment_requests ?? []).some((r) => String(r.by_code) === myCode)
-                                  ? 'Requested'
-                                  : (requestBusy === app.id ? 'Requesting…' : 'Request assignment')}
+                                {requestBusy === app.id ? 'Picking…' : 'Pick'}
                               </button>
                             ) : <span className="text-gray-400">unassigned</span>)}
                         </td>
