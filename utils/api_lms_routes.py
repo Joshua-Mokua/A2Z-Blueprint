@@ -2397,6 +2397,58 @@ def lms_committee_readiness(
         "opinion": str(p.get("opinion", "") or ""),
         "reasons": p.get("reasons") if isinstance(p.get("reasons"), list) else [],
     }
+    # ── A VERDICT IS GIVEN ONCE ─────────────────────────────────────────────
+    # RULING (2026-08-14): "I was able to mark it ready twice, it should be
+    # once." A recommendation is a position on a credit decision, and being
+    # able to record it twice makes the journey read as though the analyst
+    # changed their mind - or worse, as though the system lost the first one.
+    _prev = app.get("committee_readiness") or {}
+    if isinstance(_prev, dict) and _prev.get("state") == "ready_for_committee" \
+            and decision == "ready":
+        raise HTTPException(
+            status_code=409,
+            detail=("This case was already recommended for committee by %s on "
+                    "%s. A recommendation is recorded once."
+                    % (_prev.get("by_name") or "an analyst",
+                       str(_prev.get("at", ""))[:16])))
+
+    _updates = {"committee_readiness": readiness}
+
+    # ── READY MEANS SUBMITTED ───────────────────────────────────────────────
+    # RULING (2026-08-14): "when marked ready, it did not flow to the
+    # department review ... once the analyst confirms that the case is
+    # recommended for department committee it should autosubmit."
+    #
+    # It did not, because this recorded a READINESS STATE and stopped. The case
+    # kept its status, never became a committee case, and the committee tab
+    # correctly reported that it had not been submitted - because it had not.
+    #
+    # A recommendation IS the submission. Making the analyst then find another
+    # button to send what they have just recommended is the delay the ruling
+    # was about.
+    if decision == "ready":
+        _updates.update({
+            "status": "referred_to_committee",
+            "committee_kind": "dcc",
+            "referred_to_committee_at": _dt.now().isoformat(timespec="seconds"),
+            "referred_by_name": str(user.get("full_name", "") or ""),
+        })
+
+    # ── A REWORK MUST ACTUALLY GO BACK ──────────────────────────────────────
+    # RULING (2026-08-14): "a returned case reopens back to the branch on the
+    # owner, and once they complete the reworks they resubmit - this time back
+    # to the credit analyst to continue."
+    #
+    # This endpoint recorded a READINESS STATE and nothing else: the case kept
+    # its status, stayed in the analyst's queue, and the branch was never told.
+    # An analyst could mark a case "returned for rework" and it would sit
+    # exactly where it was, which is the shape of a case quietly stalling.
+    #
+    # The state was right and the movement was missing. A rework now sets the
+    # status to `returned` and remembers WHO returned it, so
+    # resubmit-after-rework brings it back to that analyst rather than to the
+    # pool - they have the context, and re-queueing turns a two-hour correction
+    # into a two-day one.
     _updates = {"committee_readiness": readiness}
 
     # ── A REWORK MUST ACTUALLY GO BACK ──────────────────────────────────────

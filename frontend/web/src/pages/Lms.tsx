@@ -387,7 +387,7 @@ export function Lms() {
                       <th className="px-4 py-3">RM</th>
                       <th className="px-4 py-3">Analyst</th>
                       <th className="px-4 py-3">SLA</th>
-                      <th className="px-4 py-3">Applied</th>
+                      <th className="px-4 py-3">Review</th>
                       {isManagerRole && <th className="px-4 py-3">Assign</th>}
                     </tr>
                   </thead>
@@ -467,8 +467,32 @@ export function Lms() {
                             </div>
                           ) : <span className="text-gray-300">—</span>}
                         </td>
-                        <td className="px-4 py-3 text-gray-600 text-xs">
-                          {formatDate(app.application_date)}
+                        {/* WHAT THE REVIEW SAYS, not when it was applied for
+                            (ruling 2026-08-14): "once the analyst recommends or
+                            returns it records here as reviewed and returned."
+
+                            The application date was the same for every DRYRUN
+                            case and told nobody whether their queue had moved.
+                            What an analyst scanning this list wants is which
+                            cases they have dealt with. The date is still on
+                            the case itself. */}
+                        <td className="px-4 py-3 text-xs">
+                          {(() => {
+                            const r = (app as unknown as {
+                              committee_readiness?: { state?: string; by_name?: string };
+                            }).committee_readiness;
+                            const st = String(app.status || '').toLowerCase();
+                            if (r?.state === 'ready_for_committee') {
+                              return <span className="font-medium text-[#005B82]">Reviewed · recommended</span>;
+                            }
+                            if (r?.state === 'returned_for_rework' || st === 'returned') {
+                              return <span className="font-medium text-amber-700">Reviewed · returned</span>;
+                            }
+                            if (st === 'assigned') {
+                              return <span className="text-gray-500">In review</span>;
+                            }
+                            return <span className="text-gray-400">{formatDate(app.application_date)}</span>;
+                          })()}
                         </td>
                         {isManagerRole && (
                           <td className="px-4 py-3 text-xs relative" onClick={(e) => e.stopPropagation()}>

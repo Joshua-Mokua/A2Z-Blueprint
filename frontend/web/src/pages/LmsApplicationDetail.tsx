@@ -414,7 +414,7 @@ export function LmsApplicationDetail() {
             application.assignment_purpose === 'correctness'
               ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-800'}`}>
             {application.assignment_purpose === 'correctness'
-              ? 'Assigned for correctness check — confirm the case is well-packaged (Transaction Memo complete, docs attached) and mark it ready for committee, or return it for rework.'
+              ? 'Read the papers, then either recommend the case to the department committee or return it to the branch with what needs fixing.'
               : 'Assigned for decisioning — analyse the case and record the credit decision.'}
           </div>
         )}
@@ -423,7 +423,7 @@ export function LmsApplicationDetail() {
             application.committee_readiness.state === 'ready_for_committee'
               ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
             {application.committee_readiness.state === 'ready_for_committee'
-              ? `Ready for committee — checked by ${application.committee_readiness.by_name}`
+              ? `Recommended to committee by ${application.committee_readiness.by_name}`
               : `Returned for rework — by ${application.committee_readiness.by_name}`}
             {application.committee_readiness.opinion
               && <div className="mt-1 italic">Opinion: {application.committee_readiness.opinion}</div>}
@@ -2208,7 +2208,9 @@ function CorrectnessPanel({ appId, onDone, toast }: {
     try {
       await setCommitteeReadiness(appId, decision, opinion.trim() || undefined,
         decision === 'rework' ? reasons : undefined);
-      toast({ tone: 'success', message: decision === 'ready' ? 'Marked ready for committee.' : 'Returned for rework.' });
+      toast({ tone: 'success', message: decision === 'ready'
+        ? 'Recommended — the case is now with the department committee.'
+        : 'Returned to the branch for rework.' });
       await onDone();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Action failed' });
@@ -2240,7 +2242,13 @@ function CorrectnessPanel({ appId, onDone, toast }: {
           rows={3}
         />
         <div className="flex gap-2">
-          <Button variant="primary" onClick={() => void act('ready')} disabled={busy}>Mark ready for committee</Button>
+          {/* "MAYBE READY RECOMMENDED" (ruling 2026-08-14). "Mark ready" reads
+              like a housekeeping flag; what the analyst is doing is
+              RECOMMENDING the case, and that recommendation now sends it to
+              the committee in the same act. The label should say so, because
+              somebody who thinks they are ticking a box will press it more
+              casually than somebody who knows they are submitting. */}
+          <Button variant="primary" onClick={() => void act('ready')} disabled={busy}>Recommend to committee</Button>
           <Button variant="ghost" onClick={() => void act('rework')} disabled={busy}>Return for rework</Button>
         </div>
       </Card.Body>
