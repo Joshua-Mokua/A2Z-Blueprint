@@ -290,6 +290,25 @@ def _events_from_deal(deal: Dict[str, Any],
                     "note": "%s · %s" % (_code, _note),
                 })
 
+    # ── A STAGE THAT MOVED ITSELF SAYS SO ───────────────────────────────────
+    # "I do hope every autosubmit records in the case journey as well."
+    #
+    # It must. A stage that changes with nobody at a keyboard is the one entry
+    # a reader is most likely to question later - "who moved this, and why is
+    # there no name against it?" - so it names the committee whose decision
+    # moved it rather than leaving a silent jump between two stages.
+    _auto = str(deal.get("auto_advanced_by", "") or "")
+    if _auto:
+        _why = _auto.split(":", 1)[1] if ":" in _auto else _auto
+        events.append({
+            "event": "auto_advanced",
+            "by": "", "by_name": None,
+            "at": _iso(deal.get("updated_at")),
+            "note": ("advanced automatically to %s — %s had recommended it, so "
+                     "the case did not wait to be submitted"
+                     % (deal.get("stage") or "the next stage", _why)),
+        })
+
     # Manager validation. The fields are already written by the validate
     # endpoint (Item 5) - nothing new is recorded, it was simply never read.
     if deal.get("manager_validated"):

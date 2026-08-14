@@ -61,7 +61,12 @@ JOURNEY = os.path.join("utils", "api_lms_journey.py")
 BACKUP_SUFFIX = ".pre_vf1"
 
 JR_ANCHOR = "    # Manager validation. The fields are already written by the validate"
-ONCE_ANCHOR = "    quorum = _committee_quorum(committee)"
+# ANCHORED ON THE LINE THAT READS THE EXISTING VOTES, so the check runs BEFORE
+# this vote joins them. The first version anchored on the quorum line, which
+# sits AFTER `cast[key] = {...}` - so it checked for a vote the code had just
+# added two lines above, and refused every FIRST vote with a 409. The check was
+# correct; it was simply in the wrong place.
+ONCE_ANCHOR = '    cast = dict(all_votes.get(code) or {})'
 YOU_ANCHOR = "        cases.append({"
 
 # The two fields are appended AFTER the anchor, not carried inside YOU_BLOCK.
@@ -117,7 +122,8 @@ JOURNEY_BLOCK = r'''    # ── EACH VOTE IS A TOUCH POINT (pilot, 2026-08-14) 
 
 '''
 
-ONCE_BLOCK = r'''    # ── ONE VOTE PER MEMBER, AND IT STANDS ──────────────────────────────────
+ONCE_BLOCK = r'''
+    # ── ONE VOTE PER MEMBER, AND IT STANDS ──────────────────────────────────
     # RULING (2026-08-14): "I was able to go back and submit ... I can only
     # vote once."
     #
@@ -138,17 +144,6 @@ ONCE_BLOCK = r'''    # ── ONE VOTE PER MEMBER, AND IT STANDS ─────
                        str(_prev.get("vote", "")).title(),
                        " on %s" % str(_prev.get("at", ""))[:16]
                        if _prev.get("at") else "")))
-    cast[key] = {
-        "name": (mine or {}).get("name") or myname,
-        "role": (mine or {}).get("role") or ("Chair" if is_chair else ""),
-        "staff_code": me,
-        "vote": vote,
-        "documents_validated": docs_ok,
-        "comment": str(payload.get("comment", "") or "").strip(),
-        "at": datetime.now().isoformat(timespec="seconds"),
-    }
-    all_votes[code] = cast
-
 '''
 
 YOU_BLOCK = r'''        # ── HAVE *YOU* ALREADY VOTED ON THIS ONE ────────────────────────────
@@ -206,7 +201,7 @@ def main():
             print("ABORT: the quorum anchor matched %d times." % api.count(ONCE_ANCHOR))
             print("       VT1 must be applied first.")
             return 1
-        api = api.replace(ONCE_ANCHOR, ONCE_BLOCK + ONCE_ANCHOR, 1)
+        api = api.replace(ONCE_ANCHOR, ONCE_ANCHOR + "\n" + ONCE_BLOCK, 1)
         todo.append("a member votes once")
     else:
         print("  already  a member votes once")
@@ -228,6 +223,13 @@ def main():
 
     if "committee_votes" not in JOURNEY_BLOCK:
         print("ABORT: the journey still cannot see individual votes.")
+        return 1
+    # THE CHECK MUST PRECEDE THE RECORDING. If the block carries its own
+    # `cast[key] = ` it will land after the vote is added and refuse every
+    # first vote - which is exactly what the first version did.
+    if "cast[key] = {" in ONCE_BLOCK:
+        print("ABORT: the block records the vote itself, so the check would run")
+        print("       after it and refuse every FIRST vote with a 409.")
         return 1
     if "409" not in ONCE_BLOCK:
         print("ABORT: a second vote would be accepted, so somebody could revise")
