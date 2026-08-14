@@ -424,177 +424,544 @@
       {
         "code": "BCC_BRN002",
         "name": "Westlands Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "Hellen Wangui Gathii",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Westlands",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE96",
+            "name": "MWANGI Joyce  [EKE-Operations]",
+            "role": "Customer Service Manager"
+          },
+          {
+            "staff_code": "KE792",
+            "name": "Esther Wangari Mathenge",
+            "role": "Assistant Branch Service & Operations Manager"
+          },
+          {
+            "staff_code": "KE1153",
+            "name": "RUBIA Grace [EKE-Operations]",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1228",
+            "name": "CHISAKANE James [EKE-Consumer Banking]",
+            "role": "Relationship Manager"
+          },
+          {
+            "staff_code": "KE1341",
+            "name": "Vincent Gitonga Maina",
+            "role": "Relationship Manager"
+          }
+        ],
+        "chair_staff_code": "KE356"
       },
       {
         "code": "BCC_BRN003",
         "name": "Upper Hill Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "MURAYA Martha  [EKE-commercial Banking]",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Upper Hill",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE968",
+            "name": "ATIBU Honest [EKE-Operations]",
+            "role": "Customer Service Manager"
+          },
+          {
+            "staff_code": "KE1026",
+            "name": "WAMBUA Rene [EKE-Operations]",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE827",
+            "name": "LALARARI Veronica [EKE-Consumer Banking]",
+            "role": "Relationship Manager, Premier Banking"
+          }
+        ],
+        "chair_staff_code": "KE150"
       },
       {
         "code": "BCC_BRN004",
         "name": "Karen Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "THAIRU Ruth  [EKE-commercial Banking]",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Karen",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE814",
+            "name": "RIBUTHI Loise [EKE-Operations]",
+            "role": "Customer Service Manager"
+          },
+          {
+            "staff_code": "KE1090",
+            "name": "OMOLO David [EKE-Operations]",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1301",
+            "name": "ODHIAMBO Susan [EKE-Consumer Banking]",
+            "role": "Relationship Officer"
+          }
+        ],
+        "chair_staff_code": "KE332"
       },
       {
         "code": "BCC_BRN005",
         "name": "Kisumu Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "OKWARO Thaddeus  [EKE-commercial Banking]",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Kisumu",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE801",
+            "name": "Hilda Nyaboke Osoro",
+            "role": "Assistant Branch Service & Operations Manager"
+          },
+          {
+            "staff_code": "KE1352",
+            "name": "Eric Odhiambo Onyango",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1244",
+            "name": "AJOCK Jackline [EKE-Commercial]",
+            "role": "Relationship Manager, SME"
+          },
+          {
+            "staff_code": "KE1285",
+            "name": "Jackson Nyakang'o",
+            "role": "Relationship Officer"
+          },
+          {
+            "staff_code": "KE1335",
+            "name": "Geoffrey Kerandi Onywoki",
+            "role": "Relationship Manager, SME"
+          }
+        ],
+        "chair_staff_code": "KE322"
       },
       {
         "code": "BCC_BRN006",
         "name": "Ecobank Towers Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "MONARI Violet  [EKE-commercial Banking]",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Ecobank Towers",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE484",
+            "name": "Mbuthia Florence [EKE-Operations]",
+            "role": "Customer Service Manager"
+          },
+          {
+            "staff_code": "KE852",
+            "name": "BUSOLO Faith [EKE-Commercial Banking]",
+            "role": "Assistant Branch Service & Operations Manager"
+          },
+          {
+            "staff_code": "KE1048",
+            "name": "SIMIYU Maryanne [EKE-Operations]",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1204",
+            "name": "NGUGI Michael [EKE-Commercial Banking]",
+            "role": "Relationship Manager, SME"
+          },
+          {
+            "staff_code": "KE1330",
+            "name": "DOLA Jenipher",
+            "role": "Relationship Manager"
+          },
+          {
+            "staff_code": "KE1340",
+            "name": "MUTISYA Mathew",
+            "role": "Relationship Manager"
+          },
+          {
+            "staff_code": "KE539",
+            "name": "Lidahuli Lucy [EKE-Consumer Banking]",
+            "role": "Relationship Manager, Premier Banking"
+          },
+          {
+            "staff_code": "KE949",
+            "name": "Gikonyo Monica [EKE-Consumer Banking]",
+            "role": "Relationship Officer"
+          }
+        ],
+        "chair_staff_code": "KE395"
       },
       {
         "code": "BCC_BRN007",
         "name": "Fortis Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "MEEME Joyce [EKE-Operations]",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Fortis",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE708",
+            "name": "Maryanne Njeri Chege",
+            "role": "Customer Service Manager"
+          },
+          {
+            "staff_code": "KE662",
+            "name": "KOECH Faith [EKE-Operations]",
+            "role": "Assistant Branch Service & Operations Manager"
+          },
+          {
+            "staff_code": "KE1039",
+            "name": "ALLI Sharleen [EKE-Operations]",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1189",
+            "name": "Edward Mwenda",
+            "role": "Relationship Manager, Premier Banking"
+          },
+          {
+            "staff_code": "KE1310",
+            "name": "MUSYOKI Lydiah [EKE-commercial Banking]",
+            "role": "Relationship Manager, SME"
+          },
+          {
+            "staff_code": "KE343",
+            "name": "OYWER Nancy  [EKE-Consumer Banking]",
+            "role": "Relationship Officer"
+          }
+        ],
+        "chair_staff_code": "KE632"
       },
       {
         "code": "BCC_BRN008",
         "name": "Nakuru Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "WANJALA Geoffrey [EKE-Commercial]",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Nakuru",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE345",
+            "name": "Josephine Gakii Gituma",
+            "role": "Customer Service Manager"
+          },
+          {
+            "staff_code": "KE1031",
+            "name": "KARIARA Lazaro [EKE-Operations]",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1187",
+            "name": "Betty Chelagat Keter",
+            "role": "Relationship Officer"
+          },
+          {
+            "staff_code": "KE1224",
+            "name": "Simon Kamau Gatonye",
+            "role": "Relationship Manager"
+          }
+        ],
+        "chair_staff_code": "KE1289"
       },
       {
         "code": "BCC_BRN009",
         "name": "Eldoret Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "MINING Ludy [EKE-Operations]",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Eldoret",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE1170",
+            "name": "Pauline Wangari Wacheru",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1316",
+            "name": "NGETICH Philip [EKE-Commercial]",
+            "role": "Relationship Manager, SME"
+          },
+          {
+            "staff_code": "KE1343",
+            "name": "SANG Joan",
+            "role": "Relationship Officer"
+          }
+        ],
+        "chair_staff_code": "KE439"
       },
       {
         "code": "BCC_BRN010",
         "name": "Mombasa Moi Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "ADAM Amina [EKE-Operations]",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Mombasa Moi",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE807",
+            "name": "Fenella Mwamburi",
+            "role": "Assistant Branch Service & Operations Manager"
+          },
+          {
+            "staff_code": "KE1174",
+            "name": "Msellem Ali Omar",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1288",
+            "name": "Griffin Muendo William",
+            "role": "Relationship Manager, Local Corporate"
+          },
+          {
+            "staff_code": "KE445",
+            "name": "MACHARIA Jennifer [EKE-Consumer Banking]",
+            "role": "Relationship Officer"
+          }
+        ],
+        "chair_staff_code": "KE526"
       },
       {
         "code": "BCC_BRN011",
         "name": "Nyeri Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "Betty Wachera Waiguru",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Nyeri",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE1124",
+            "name": "GITONGA Brenda [EKE-Operations]",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1286",
+            "name": "WAWERU Viginia",
+            "role": "Relationship Officer"
+          }
+        ],
+        "chair_staff_code": "KE461"
       },
       {
         "code": "BCC_BRN012",
         "name": "Industrial Area Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "Carolyne Nashipae Adewunmi",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Industrial Area",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE519",
+            "name": "Wairimu Margaret [EKE-Operations]",
+            "role": "Customer Service Manager"
+          },
+          {
+            "staff_code": "KE573",
+            "name": "ONDIMU Divinah [EKE-Consumer Banking]",
+            "role": "Assistant Branch Service & Operations Manager"
+          },
+          {
+            "staff_code": "KE1129",
+            "name": "ODUOR Tobias [EKE-Operations]",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1229",
+            "name": "OUMA Eric [EKE-Consumer Banking]",
+            "role": "Relationship Officer"
+          },
+          {
+            "staff_code": "KE1334",
+            "name": "Ian Odiwuor Were",
+            "role": "Relationship Manager"
+          }
+        ],
+        "chair_staff_code": "KE1342"
       },
       {
         "code": "BCC_BRN013",
         "name": "Valley Arcade Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "Richard Nzioka",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Valley Arcade",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE408",
+            "name": "Mary Chepkemboi Lagat",
+            "role": "Customer Service Manager"
+          },
+          {
+            "staff_code": "KE1131",
+            "name": "Dennis Onyango Ndonji",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1296",
+            "name": "NYAWIRA Jane [EKE-Consumer Banking]",
+            "role": "Relationship Manager"
+          }
+        ],
+        "chair_staff_code": "KE1317"
       },
       {
         "code": "BCC_BRN014",
         "name": "Karatina Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "MIANO ELIZABETH [EKE-Operations]",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Karatina",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE1044",
+            "name": "MWIRIGI Esther [EKE-Operations]",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1262",
+            "name": "KENDI Glory [EKE-Consumer]",
+            "role": "Relationship Officer"
+          }
+        ],
+        "chair_staff_code": "KE546"
       },
       {
         "code": "BCC_BRN015",
         "name": "Thika Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "RONO Brenda [EKE-Operations]",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Thika",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE1032",
+            "name": "Ursula Wanjira Muthee",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1344",
+            "name": "Kennedy Luseno Voreza",
+            "role": "Relationship Manager"
+          },
+          {
+            "staff_code": "KE887",
+            "name": "John Njogu Waithaka",
+            "role": "Relationship Officer"
+          }
+        ],
+        "chair_staff_code": "KE637"
       },
       {
         "code": "BCC_BRN016",
         "name": "Kisii Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "OJIAMBO Dennis [EKE-Commercial Banking]",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Kisii",
         "kind": "branch",
-        "members": []
+        "members": [
+          {
+            "staff_code": "KE859",
+            "name": "Jackline Nyakerario Mainye",
+            "role": "Customer Service Manager"
+          },
+          {
+            "staff_code": "KE668",
+            "name": "Billy Calary Arika",
+            "role": "Assistant Branch Service & Operations Manager"
+          },
+          {
+            "staff_code": "KE1206",
+            "name": "Caroline Njoki Nyoro",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1238",
+            "name": "OGENDO Amon [EKE-Commercial]",
+            "role": "Relationship Manager, SME"
+          },
+          {
+            "staff_code": "KE1318",
+            "name": "ARAKA Edwin [EKE-Consumer Banking]",
+            "role": "Relationship Officer"
+          }
+        ],
+        "chair_staff_code": "KE1218"
       },
       {
         "code": "BCC_BRN017",
         "name": "Plaza 2000 Branch Credit Committee",
-        "chaired_by": "",
+        "chaired_by": "YEGO Faith",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "branch": "Plaza 2000",
         "kind": "branch",
+        "members": [
+          {
+            "staff_code": "KE955",
+            "name": "MULUMIA Bertha [EKE-Operations]",
+            "role": "Customer Service Manager"
+          },
+          {
+            "staff_code": "KE1134",
+            "name": "BUTT Roselyn [EKE-Operations]",
+            "role": "Branch Operations Officer"
+          },
+          {
+            "staff_code": "KE1307",
+            "name": "Marieanne Ebby Kadatz Wanzare",
+            "role": "Relationship Manager, Local Corporate"
+          },
+          {
+            "staff_code": "KE1350",
+            "name": "NZUVE Beatrice",
+            "role": "Relationship Manager"
+          }
+        ],
+        "chair_staff_code": "KE1349"
+      },
+      {
+        "code": "BCC1",
+        "name": "Branch Credit Committee (routes to the deal's branch)",
+        "chaired_by": "",
+        "recording_mode": "voting",
+        "voting_rule": "SIMPLE_MAJORITY",
+        "amount_threshold_kes": 0.0,
+        "kind": "branch_placeholder",
         "members": []
       }
     ]
