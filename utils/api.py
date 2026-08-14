@@ -13265,17 +13265,6 @@ def cast_committee_vote(deal_id: str, code: str,
     key = me or myname
     all_votes = dict(deal.get("committee_votes") or {})
     cast = dict(all_votes.get(code) or {})
-    cast[key] = {
-        "name": (mine or {}).get("name") or myname,
-        "role": (mine or {}).get("role") or ("Chair" if is_chair else ""),
-        "staff_code": me,
-        "vote": vote,
-        "documents_validated": docs_ok,
-        "comment": str(payload.get("comment", "") or "").strip(),
-        "at": datetime.now().isoformat(timespec="seconds"),
-    }
-    all_votes[code] = cast
-
     # ── ONE VOTE PER MEMBER, AND IT STANDS ──────────────────────────────────
     # RULING (2026-08-14): "I was able to go back and submit ... I can only
     # vote once."
@@ -13392,7 +13381,6 @@ def cast_committee_vote(deal_id: str, code: str,
             except Exception as _exc:
                 logger.warning("could not auto-advance %s after %s: %s",
                                deal_id, code, _exc)
-
 
 
     _pm.update_deal(deal_id, updates, str(user.get("username", "") or ""))
