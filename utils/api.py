@@ -13358,6 +13358,42 @@ def cast_committee_vote(deal_id: str, code: str,
             "recorded_at": datetime.now().isoformat(timespec="seconds"),
         }
         updates["committee_records"] = records
+        # ── A DECIDED CASE MOVES ITSELF ─────────────────────────────────────
+        # RULING (2026-08-14): "once the branch committee vote is met there is
+        # no need for the owner to log in to submit - it should automatically
+        # submit to the department analyst ... this is to avoid delays waiting
+        # for someone to log in."
+        #
+        # The committee has spoken; making the case wait for its owner to
+        # notice adds a day to every deal for no decision anybody still needs
+        # to take. A gate that has answered should not also be a queue.
+        #
+        # ONLY ON A RECOMMENDATION. A rejected or deferred case stays exactly
+        # where it is - it needs a person, and moving it would bury the very
+        # cases that need attention.
+        #
+        # BEST EFFORT, AND AUDITED. If the flow cannot be resolved the case
+        # simply stays put and somebody advances it by hand, which is the
+        # behaviour that existed before this. A committee decision must never
+        # fail to record because the case could not be moved afterwards.
+        if outcome == "APPROVED":
+            try:
+                _flow = _stage_flow_for(deal.get("product_type")
+                                        or deal.get("product", "")) or []
+                _cur = str(deal.get("stage", "") or "")
+                if _flow and _cur in _flow:
+                    _at = _flow.index(_cur)
+                    _next = _flow[_at + 1] if _at + 1 < len(_flow) else ""
+                    if _next and not _next.lower().startswith("closed"):
+                        updates["stage"] = _next
+                        updates["auto_advanced_by"] = "committee:%s" % code
+                        _audit("API_COMMITTEE_AUTO_ADVANCE", user,
+                               "deal=%s|%s|%s -> %s" % (deal_id, code, _cur, _next))
+            except Exception as _exc:
+                logger.warning("could not auto-advance %s after %s: %s",
+                               deal_id, code, _exc)
+
+
 
     _pm.update_deal(deal_id, updates, str(user.get("username", "") or ""))
     _audit("API_COMMITTEE_VOTE", user,
