@@ -262,83 +262,35 @@ export function LmsApplicationDetail() {
           </div>
         )}
 
-        {/* ─────────── Documentation card ─────────── */}
-        <Card>
-          <Card.Header>
-            <h2 className="text-base font-semibold text-gray-900">Documentation</h2>
-            {application.completeness_score !== undefined && (
-              <span className="text-xs text-gray-500">
-                {application.completeness_score}% complete
-              </span>
-            )}
-          </Card.Header>
-          <Card.Body>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* PENDING, NOT "REQUIRED" (ruling 2026-08-12). Documents can now
-                  travel with a case rather than blocking it, so a list headed
-                  "Required" beside a case that is already in analysis states
-                  something that is no longer true - and "Required (0) / No
-                  documents required" on a case carrying five documents reads as
-                  a fault.
+        {/* THE DOCUMENTATION HEADER CARD IS GONE (ruling 2026-08-14): "we can
+                  remove entirely the top part written Documentation and the
+                  contents."
 
-                  What an analyst needs is what is STILL OUTSTANDING. When
-                  nothing is, the panel says so rather than showing an empty
-                  heading. */}
-              <div>
-                {(() => {
-                  const req = application.docs_required ?? [];
-                  const have = application.docs_submitted ?? [];
-                  const pending = req.filter((d) => !have.includes(d));
-                  return (
-                    <>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
-                        {pending.length > 0
-                          ? `Pending submission (${pending.length})`
-                          : 'Documentation'}
-                      </div>
-                      {pending.length > 0 ? (
-                        <ul className="text-sm text-gray-700 space-y-1">
-                          {pending.map((d, i) => (
-                            <li key={i} className="flex items-center gap-2 text-gray-600">
-                              <span className="text-[#E0A02B]">○</span>
-                              <span>{d}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <div className="text-xs text-gray-500">
-                          {have.length > 0
-                            ? `Nothing outstanding — ${have.length} document${have.length === 1 ? '' : 's'} on file.`
-                            : 'Nothing outstanding.'}
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-              <div>
-                <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
-                  Underwriting flags
-                </div>
-                <ul className="text-sm text-gray-700 space-y-1">
-                  <li>Repeat borrower: <span className="font-medium">{application.is_repeat_borrower ? 'yes' : 'no'}</span></li>
-                  <li>Clean repayment history: <span className="font-medium">{application.clean_repayment_history ? 'yes' : 'no'}</span></li>
-                  <li>Compliance flag: <span className="font-medium">{application.compliance_flag ? `yes (${application.compliance_type || 'unspecified'})` : 'no'}</span></li>
-                </ul>
-              </div>
-            </div>
-            {application.appraisal_notes && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                  Appraisal notes
-                </div>
-                <div className="text-sm text-gray-700 whitespace-pre-line">
-                  {application.appraisal_notes}
-                </div>
-              </div>
-            )}
-          </Card.Body>
-        </Card>
+                  A completeness percentage that reads 0%, "Nothing
+                  outstanding", and three underwriting flags all reading "no"
+                  told the analyst nothing they could act on - and pushed the
+                  papers and the decision below the fold. What is left is the
+                  documents themselves and the verdict. */}
+
+        {/* ─────────── The analyst's verdict ───────────
+            RULING (2026-08-14): "it is here that we need to see the
+            recommendation from the consumer analyst ... if it returns for
+            reworks with specifics, or recommend for department credit review
+            which we defined as should be able to auto advance including
+            stage."
+
+            CorrectnessPanel already carries both - a reason list for a rework
+            and a "ready for committee" verdict. It was on another tab, so the
+            analyst read the papers on one screen and recorded the verdict on
+            another. It belongs with the evidence it is a verdict about. */}
+        {/* THE ASSIGNED ANALYST RECORDS IT, not anybody who can edit the
+            case. This is the gate the panel already had on the Actions tab and
+            it is the right one - a verdict carries a name, so the person
+            giving it must be the person the case is with. */}
+        {String(application.analyst?.code ?? '') === String(user?.staff_code ?? '')
+          && !!application.analyst?.code && (
+          <CorrectnessPanel appId={application.id} onDone={refetch} toast={toast} />
+        )}
 
         <LmsTravelledDocuments appId={application.id} canDownload={!!permissions.can_update}
           // Whoever is WORKING the case may attach: the analyst who can send it
@@ -477,11 +429,8 @@ export function LmsApplicationDetail() {
               && <div className="mt-1 italic">Opinion: {application.committee_readiness.opinion}</div>}
           </div>
         )}
-        {application.assignment_purpose === 'correctness'
-          && String(application.analyst?.code ?? '') === String(user?.staff_code ?? '')
-          && (
-          <CorrectnessPanel appId={application.id} onDone={refetch} toast={toast} />
-        )}
+        {/* CorrectnessPanel moved to Department Review, where the papers
+            it judges are. Removed here so it does not render twice. */}
 
         {/* ─────────── ACTION: Edit Application (if can_update) ─────────── */}
         {permissions.can_update && (
