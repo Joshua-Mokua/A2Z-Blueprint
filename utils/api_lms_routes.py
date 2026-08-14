@@ -1567,7 +1567,47 @@ def lms_dcc_resolve(
                             detail=f"Cannot return to the analyst from '{app.get('status')}'")
     # Return to the Department Analyst (status -> assigned); clear committee_kind
     # so the case is no longer 'before the DCC'. dcc_outcome carries the advice.
-    lam.update(app_id, {"dcc_outcome": outcome, "status": "assigned", "committee_kind": ""})
+    # ── AN APPROVAL GOES ON; ANYTHING ELSE COMES BACK ───────────────────────
+    # RULING (2026-08-14): "since it also has the simple majority, once the
+    # vote reaches that it should now autosubmit to the bank credit analysis
+    # pool."
+    #
+    # Every outcome used to return the case to the department analyst. That is
+    # right for a rejection or a deferral - somebody must act on it - and wrong
+    # for an approval, which is finished business at this level: the committee
+    # has recommended it, and making the analyst re-submit what a committee has
+    # just approved is the delay the auto-advance rulings were about.
+    #
+    # AN APPROVED CASE IS RELEASED TO THE CREDIT POOL: status back to
+    # submitted, the analyst cleared, awaiting_credit_analyst set - which is
+    # exactly what hand-to-credit-analyst does, so a bank credit analyst
+    # self-picks it in the ordinary way rather than through a special path.
+    # outcome is a DICT - recommendation, tally, who and when - so the verdict
+    # is outcome["recommendation"], not the dict stringified. Reading it wrongly
+    # made every case take the "not approved" branch and go back to the
+    # analyst, which is the behaviour this was meant to change.
+    # THE COMMITTEE'S OWN WORDS. recommendation is derived from the votes -
+    # "support" when yes beats no, "oppose" when no beats yes, "split" when
+    # they tie - not from anything the caller sends. Matching on "approved"
+    # here found nothing, so every case took the not-approved branch: the fix
+    # looked applied and changed nothing.
+    #
+    # SPLIT IS NOT SUPPORT. A tied committee has not recommended anything, so
+    # the case goes back to the analyst like a rejection.
+    _verdict = str((outcome or {}).get("recommendation", "")).lower()
+    _approved = _verdict == "support"
+    if _approved:
+        _next = {
+            "dcc_outcome": outcome,
+            "committee_kind": "",
+            "status": "submitted",
+            "analyst": None,
+            "awaiting_credit_analyst": True,
+            "dcc_cleared_at": _dt.datetime.now().isoformat(timespec="seconds"),
+        }
+    else:
+        _next = {"dcc_outcome": outcome, "status": "assigned", "committee_kind": ""}
+    lam.update(app_id, _next)
     audit_log("LMS_DCC_RESOLVED", str(user.get("username", "") or ""),
               f"{app_id}|{recommendation}|{yes}-{no}-{abstain}")
     return {"application": lam.get(app_id), "dcc_outcome": outcome}
