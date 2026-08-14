@@ -3678,6 +3678,48 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
     records = deal.get("committee_records", {}) or {}
     committee_pending = []
     committee_rejected = []
+    # ── ONLY THE COMMITTEES THIS CASE HAS REACHED ───────────────────────────
+    # PILOT BLOCKER (2026-08-14): a deal sitting at Documentation was refused
+    # with "Committee decision outstanding: B1" - the DEPARTMENT committee,
+    # which sits three stages further on. It cannot possibly have decided yet,
+    # so the case could never be submitted to the BRANCH committee in front of
+    # it. The gate demanded a decision that only submitting could produce.
+    #
+    # A committee blocks only once the case has arrived at its stage. Ones
+    # ahead of the current stage are simply not its turn.
+    #
+    # Position is worked out from the deal's own stage flow: the committee's
+    # stage index against the current stage's. A committee whose stage cannot
+    # be located is treated as PENDING, because failing open on a credit gate
+    # is the wrong direction to guess in.
+    _flow = [str(x) for x in (_stage_flow_for(deal.get("product_type")
+                                              or deal.get("product", "")) or [])]
+    try:
+        _here = _flow.index(str(current_stage)) if str(current_stage) in _flow else -1
+    except Exception:
+        _here = -1
+
+    def _reached(_code):
+        """Has this case arrived at the stage this committee sits on?"""
+        if _here < 0 or not _flow:
+            return True          # no flow to reason with - keep the old behaviour
+        try:
+            _c = _committee_by_code(_code) or {}
+        except Exception:
+            return True
+        _stage = str(_c.get("stage", "") or "").strip()
+        if not _stage:
+            # No stage on the committee: fall back to the name. A branch
+            # committee belongs to the branch stage, a department one to the
+            # department stage.
+            _kind = str(_c.get("kind", "") or "").lower()
+            _want = "branch credit committee" if _kind == "branch" \
+                else "department credit committee"
+            _stage = next((x for x in _flow if _want in x.lower()), "")
+        if not _stage or _stage not in _flow:
+            return True          # cannot place it - do not fail open silently
+        return _flow.index(_stage) <= _here
+
     for code in journey_codes:
         rec = records.get(code) or {}
         outcome = str(rec.get("outcome", "")).upper()
@@ -3685,7 +3727,7 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
             continue
         if outcome == "REJECTED":
             committee_rejected.append(code)
-        else:
+        elif _reached(code):
             committee_pending.append(code)
     committee_ok = (len(committee_pending) == 0 and len(committee_rejected) == 0)
     return {
