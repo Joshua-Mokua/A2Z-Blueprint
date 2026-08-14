@@ -191,6 +191,21 @@ def _app_segment(app: Dict[str, Any]) -> str:
     ct = str(app.get("client_type", "") or "").strip().lower()
     if not ct:
         return ""
+    # ── THE FLEXCUBE WORDS, NOT JUST THE SEGMENT WORDS (2026-08-14) ─────────
+    # This recognised only "consumer", "commercial" and "cib". The cases
+    # actually carry the CBS client types - Individual, Business, Retail - so
+    # nearly every one resolved to "", the filter treats "" as "do not hide",
+    # and a Consumer analyst was shown all 271 cases instead of hers.
+    #
+    # INDIVIDUAL IS CONSUMER: a natural person borrowing is retail banking,
+    # which is not a judgement call.
+    #
+    # BUSINESS IS DELIBERATELY NOT MAPPED. A business customer may be
+    # Commercial or CIB depending on size, and guessing would put a corporate
+    # case in front of a consumer analyst - worse than showing too much. Those
+    # fall through to "" and are handled by the caller's unknown policy.
+    if ct in ("individual", "personal", "retail") or "individual" in ct:
+        return "consumer"
     if "consumer" in ct:
         return "consumer"
     if "commercial" in ct:
@@ -263,7 +278,21 @@ def filter_apps_by_visibility(
                 # segment is unknown (legacy, no client_type) are not hidden.
                 if caller_segment:
                     seg = _app_segment(a)
-                    if seg and seg != caller_segment:
+                    # ── AN UNKNOWN SEGMENT IS NOT YOURS ─────────────────────
+                    # RULING (2026-08-14): "this analyst and the other
+                    # department analysts view what is only consumer."
+                    #
+                    # The old rule kept unknown-segment cases visible so a
+                    # legacy case would not vanish. Sound intent, and the
+                    # consequence was that EVERY case with a CBS client type
+                    # was unknown, nothing was hidden, and the pool was the
+                    # whole book.
+                    #
+                    # A case whose segment cannot be established is not
+                    # evidence that it belongs to this analyst. It stays
+                    # visible to everybody WITHOUT a segment - managers, credit
+                    # risk, admin - so it is not lost, merely not theirs.
+                    if seg != caller_segment:
                         continue
                 visible.append(a)
                 continue
