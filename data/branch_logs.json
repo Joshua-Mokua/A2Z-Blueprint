@@ -17832,7 +17832,7 @@
     "unit": "Ecobank Towers",
     "role": "Branch Operations Officer",
     "submitted_at": "",
-    "updated_at": "2026-08-14T14:03:01.981311",
+    "updated_at": "2026-08-14T14:50:21.849185",
     "validated": false,
     "validated_by": "",
     "validated_at": "",
@@ -17876,11 +17876,18 @@
           "customer_visits": 5.0
         },
         "meetings": []
+      },
+      "14": {
+        "counts": {
+          "transactions_count": 1.0,
+          "customer_visits": 1.0
+        },
+        "meetings": []
       }
     },
     "accounts_opened": 0.0,
     "accounts_activated": 0.0,
-    "transactions_count": 41.0,
+    "transactions_count": 42.0,
     "cards_issued": 0.0,
     "dfs_registrations": 0.0,
     "loans_referred": 0.0,
@@ -17893,9 +17900,9 @@
     "new_leads": 0.0,
     "cross_sell_success": 0.0,
     "teller_errors": 0.0,
-    "customer_visits": 22.0,
+    "customer_visits": 23.0,
     "nps_collected": 0.0,
-    "index": 17.8,
+    "index": 18.3,
     "remarks": ""
   },
   {

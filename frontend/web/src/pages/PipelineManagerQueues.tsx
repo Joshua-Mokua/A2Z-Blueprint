@@ -40,6 +40,7 @@ import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
 import { PageHeader } from '@/components/PageHeader';
 import { CommitteeQueue } from '@/components/CommitteeQueue';
+import { fetchCommitteeQueue } from '@/lib/api';
 import DailyLogValidation from '@/components/DailyLogValidation';
 import BranchCountersign from '@/components/BranchCountersign';
 import UnitRollup from '@/components/UnitRollup';
@@ -70,6 +71,22 @@ export function PipelineManagerQueues() {
   // ── Page-local state ──────────────────────────────────────────────────
 
   const [activeTab, setActiveTab] = useState<TabKey>('validation');
+  // Fetched once for the badge; the panel loads its own copy when opened.
+  const [committeeCount, setCommitteeCount] = useState(0);
+  useEffect(() => {
+    void (async () => {
+      try {
+        // COUNT WHAT IS WAITING ON YOU, not what the committee has not
+        // finished. Three cases with your vote already on two of them is one
+        // outstanding task, not three - and a badge that will not go down as
+        // you work is a badge people stop reading.
+        const q = await fetchCommitteeQueue();
+        setCommitteeCount(q.cases.filter((c) => !c.you_voted).length);
+      } catch {
+        setCommitteeCount(0);
+      }
+    })();
+  }, []);
   const [validationDeals, setValidationDeals] = useState<PipelineDeal[]>([]);
   const [loadingV, setLoadingV] = useState(false);
   const [errorV,   setErrorV]   = useState<string | null>(null);
@@ -208,7 +225,10 @@ export function PipelineManagerQueues() {
           active={activeTab === 'committee'}
           onClick={() => setActiveTab('committee')}
           label="Committee"
-          count={0}
+          // The real number, not a hardcoded zero. A tab that always reads 0
+          // tells somebody there is nothing to do, which is the opposite of
+          // what this queue exists to say.
+          count={committeeCount}
           loading={false}
         />
         <TabBtn
@@ -601,7 +621,7 @@ function CancellationCard({ deal, onNavigate, onResolved, onErrorToast }: {
             onClick={() => void submit(false)}
             loading={mutations.loading}
           >
-            Reject (deal continues)
+            Decline cancellation — deal continues
           </Button>
           <Button
             variant="danger"
@@ -609,7 +629,7 @@ function CancellationCard({ deal, onNavigate, onResolved, onErrorToast }: {
             onClick={() => void submit(true)}
             loading={mutations.loading}
           >
-            Approve — close as Lost
+            Approve cancellation — close as Lost
           </Button>
         </div>
       </div>

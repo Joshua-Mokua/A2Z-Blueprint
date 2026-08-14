@@ -39,7 +39,8 @@ from __future__ import annotations
 
 from typing import Dict, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime
+from fastapi import APIRouter, Body, Depends, HTTPException
 from pydantic import BaseModel
 
 from utils.auth_jwt import get_current_user, require_config_admin
@@ -1566,10 +1567,157 @@ def lms_dcc_resolve(
                             detail=f"Cannot return to the analyst from '{app.get('status')}'")
     # Return to the Department Analyst (status -> assigned); clear committee_kind
     # so the case is no longer 'before the DCC'. dcc_outcome carries the advice.
-    lam.update(app_id, {"dcc_outcome": outcome, "status": "assigned", "committee_kind": ""})
+    # ── AN APPROVAL GOES ON; ANYTHING ELSE COMES BACK ───────────────────────
+    # RULING (2026-08-14): "since it also has the simple majority, once the
+    # vote reaches that it should now autosubmit to the bank credit analysis
+    # pool."
+    #
+    # Every outcome used to return the case to the department analyst. That is
+    # right for a rejection or a deferral - somebody must act on it - and wrong
+    # for an approval, which is finished business at this level: the committee
+    # has recommended it, and making the analyst re-submit what a committee has
+    # just approved is the delay the auto-advance rulings were about.
+    #
+    # AN APPROVED CASE IS RELEASED TO THE CREDIT POOL: status back to
+    # submitted, the analyst cleared, awaiting_credit_analyst set - which is
+    # exactly what hand-to-credit-analyst does, so a bank credit analyst
+    # self-picks it in the ordinary way rather than through a special path.
+    # outcome is a DICT - recommendation, tally, who and when - so the verdict
+    # is outcome["recommendation"], not the dict stringified. Reading it wrongly
+    # made every case take the "not approved" branch and go back to the
+    # analyst, which is the behaviour this was meant to change.
+    # THE COMMITTEE'S OWN WORDS. recommendation is derived from the votes -
+    # "support" when yes beats no, "oppose" when no beats yes, "split" when
+    # they tie - not from anything the caller sends. Matching on "approved"
+    # here found nothing, so every case took the not-approved branch: the fix
+    # looked applied and changed nothing.
+    #
+    # SPLIT IS NOT SUPPORT. A tied committee has not recommended anything, so
+    # the case goes back to the analyst like a rejection.
+    _verdict = str((outcome or {}).get("recommendation", "")).lower()
+    _approved = _verdict == "support"
+    if _approved:
+        _next = {
+            "dcc_outcome": outcome,
+            "committee_kind": "",
+            "status": "submitted",
+            "analyst": None,
+            "awaiting_credit_analyst": True,
+            "dcc_cleared_at": _dt.datetime.now().isoformat(timespec="seconds"),
+        }
+    else:
+        _next = {"dcc_outcome": outcome, "status": "assigned", "committee_kind": ""}
+    lam.update(app_id, _next)
     audit_log("LMS_DCC_RESOLVED", str(user.get("username", "") or ""),
               f"{app_id}|{recommendation}|{yes}-{no}-{abstain}")
     return {"application": lam.get(app_id), "dcc_outcome": outcome}
+
+
+@router.post("/applications/{app_id}/return-for-rework")
+def lms_return_for_rework(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """Send a case back to its owner with what needs doing.
+
+    RULING (2026-08-14): "if it is returned for reworks, a window to detail the
+    nature of reworks comes up and once filled they press return. A returned
+    case reopens back to the branch on the owner, and once they complete the
+    reworks they resubmit - this time back to the credit analyst to continue."
+
+    THE REASON IS MANDATORY. A case returned without one sends somebody back to
+    a branch to guess what was wrong, and they will guess wrong. The endpoint
+    refuses an empty reason rather than accepting a blank field that costs a
+    day at the other end.
+
+    IT REMEMBERS WHO RETURNED IT. When the owner resubmits, the case goes back
+    to that analyst rather than into the pool to be picked up by somebody with
+    no memory of the conversation - which is the difference between a rework
+    and starting again.
+    """
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+
+    reason = str(payload.get("reason", "") or "").strip()
+    if not reason:
+        raise HTTPException(
+            status_code=400,
+            detail=("Say what needs reworking. A case returned without a reason "
+                    "sends somebody back to the branch to guess."))
+
+    me = str(user.get("staff_code", "") or "").strip()
+    myname = str(user.get("full_name", "") or "").strip()
+    history = list(app.get("rework_history") or [])
+    history.append({
+        "reason": reason,
+        "items": [str(x) for x in (payload.get("items") or []) if str(x).strip()],
+        "by": me, "by_name": myname,
+        "at": datetime.now().isoformat(timespec="seconds"),
+    })
+
+    lam.update(app_id, {
+        "status": "returned",
+        "rework_history": history,
+        "rework_reasons": reason,
+        # WHO TO COME BACK TO. Cleared when the owner resubmits.
+        "returned_by_code": me,
+        "returned_by_name": myname,
+        "returned_at": datetime.now().isoformat(timespec="seconds"),
+    })
+    audit_log("LMS_RETURNED_FOR_REWORK", str(user.get("username", "") or ""),
+              "%s|%s" % (app_id, reason[:80]))
+    return {"application": lam.get(app_id), "status": "returned",
+            "returned_to_owner": True}
+
+
+@router.post("/applications/{app_id}/resubmit-after-rework")
+def lms_resubmit_after_rework(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """The owner has done the rework; the case goes BACK to the same analyst.
+
+    Not into the pool. The analyst who returned it has the context, and making
+    the case queue again behind everything else is how a two-hour correction
+    becomes a two-day one.
+
+    If that analyst cannot be identified the case falls back to the pool rather
+    than being stranded - a case with nowhere to go is worse than one in the
+    wrong queue.
+    """
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if str(app.get("status", "")) != "returned":
+        raise HTTPException(
+            status_code=400,
+            detail="This case is not out for rework (status is %r)." % app.get("status"))
+
+    back_to = str(app.get("returned_by_code", "") or "").strip()
+    back_name = str(app.get("returned_by_name", "") or "").strip()
+    note = str(payload.get("note", "") or "").strip()
+
+    updates = {
+        "status": "assigned" if back_to else "submitted",
+        "rework_completed_at": datetime.now().isoformat(timespec="seconds"),
+        "rework_completed_by": str(user.get("full_name", "") or ""),
+        "rework_note": note,
+        "returned_by_code": "",
+        "returned_by_name": "",
+    }
+    if back_to:
+        updates["analyst"] = {"code": back_to, "name": back_name, "role": ""}
+    lam.update(app_id, updates)
+    audit_log("LMS_REWORK_RESUBMITTED", str(user.get("username", "") or ""),
+              "%s|back to %s" % (app_id, back_to or "the pool"))
+    return {"application": lam.get(app_id),
+            "status": updates["status"],
+            "back_to": back_name or "the pool"}
 
 
 @router.post("/applications/{app_id}/hand-to-credit-analyst")
@@ -2289,7 +2437,97 @@ def lms_committee_readiness(
         "opinion": str(p.get("opinion", "") or ""),
         "reasons": p.get("reasons") if isinstance(p.get("reasons"), list) else [],
     }
-    lam.update(app_id, {"committee_readiness": readiness})
+    # ── A VERDICT IS GIVEN ONCE ─────────────────────────────────────────────
+    # RULING (2026-08-14): "I was able to mark it ready twice, it should be
+    # once." A recommendation is a position on a credit decision, and being
+    # able to record it twice makes the journey read as though the analyst
+    # changed their mind - or worse, as though the system lost the first one.
+    _prev = app.get("committee_readiness") or {}
+    if isinstance(_prev, dict) and _prev.get("state") == "ready_for_committee" \
+            and decision == "ready":
+        raise HTTPException(
+            status_code=409,
+            detail=("This case was already recommended for committee by %s on "
+                    "%s. A recommendation is recorded once."
+                    % (_prev.get("by_name") or "an analyst",
+                       str(_prev.get("at", ""))[:16])))
+
+    _updates = {"committee_readiness": readiness}
+
+    # ── READY MEANS SUBMITTED ───────────────────────────────────────────────
+    # RULING (2026-08-14): "when marked ready, it did not flow to the
+    # department review ... once the analyst confirms that the case is
+    # recommended for department committee it should autosubmit."
+    #
+    # It did not, because this recorded a READINESS STATE and stopped. The case
+    # kept its status, never became a committee case, and the committee tab
+    # correctly reported that it had not been submitted - because it had not.
+    #
+    # A recommendation IS the submission. Making the analyst then find another
+    # button to send what they have just recommended is the delay the ruling
+    # was about.
+    if decision == "ready":
+        _updates.update({
+            "status": "referred_to_committee",
+            "committee_kind": "dcc",
+            "referred_to_committee_at": _dt.now().isoformat(timespec="seconds"),
+            "referred_by_name": str(user.get("full_name", "") or ""),
+        })
+
+    # ── A REWORK MUST ACTUALLY GO BACK ──────────────────────────────────────
+    # RULING (2026-08-14): "a returned case reopens back to the branch on the
+    # owner, and once they complete the reworks they resubmit - this time back
+    # to the credit analyst to continue."
+    #
+    # This endpoint recorded a READINESS STATE and nothing else: the case kept
+    # its status, stayed in the analyst's queue, and the branch was never told.
+    # An analyst could mark a case "returned for rework" and it would sit
+    # exactly where it was, which is the shape of a case quietly stalling.
+    #
+    # The state was right and the movement was missing. A rework now sets the
+    # status to `returned` and remembers WHO returned it, so
+    # resubmit-after-rework brings it back to that analyst rather than to the
+    # pool - they have the context, and re-queueing turns a two-hour correction
+    # into a two-day one.
+    _updates = {"committee_readiness": readiness}
+
+    # ── A REWORK MUST ACTUALLY GO BACK ──────────────────────────────────────
+    # RULING (2026-08-14): "a returned case reopens back to the branch on the
+    # owner, and once they complete the reworks they resubmit - this time back
+    # to the credit analyst to continue."
+    #
+    # This endpoint recorded a READINESS STATE and nothing else: the case kept
+    # its status, stayed in the analyst's queue, and the branch was never told.
+    # An analyst could mark a case "returned for rework" and it would sit
+    # exactly where it was, which is the shape of a case quietly stalling.
+    #
+    # The state was right and the movement was missing. A rework now sets the
+    # status to `returned` and remembers WHO returned it, so
+    # resubmit-after-rework brings it back to that analyst rather than to the
+    # pool - they have the context, and re-queueing turns a two-hour correction
+    # into a two-day one.
+    if decision == "rework":
+        _me = str(user.get("staff_code", "") or "").strip()
+        _myname = str(user.get("full_name", "") or "").strip()
+        _reason = str(p.get("opinion", "") or "").strip()
+        _items = [str(x) for x in (p.get("reasons") or []) if str(x).strip()]
+        _history = list(app.get("rework_history") or [])
+        _history.append({
+            "reason": _reason or "; ".join(_items) or "Returned for rework",
+            "items": _items,
+            "by": _me, "by_name": _myname,
+            "at": datetime.now().isoformat(timespec="seconds"),
+        })
+        _updates.update({
+            "status": "returned",
+            "rework_history": _history,
+            "rework_reasons": _reason or "; ".join(_items),
+            "returned_by_code": _me,
+            "returned_by_name": _myname,
+            "returned_at": datetime.now().isoformat(timespec="seconds"),
+        })
+
+    lam.update(app_id, _updates)
     # Phase C part 3: record the correctness reviewer's verdict on the journey
     # (ready_for_committee | returned_for_rework) with their name/role + reason,
     # so the travelling document shows the rework loop, not just the outcome.

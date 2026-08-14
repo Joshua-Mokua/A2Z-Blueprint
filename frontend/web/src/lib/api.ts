@@ -1648,6 +1648,11 @@ export async function fetchNextStep(dealId: string): Promise<NextStep> {
   return getJson<NextStep>(`/pipeline/deals/${encodeURIComponent(dealId)}/next-step`);
 }
 export interface CommitteeQueueCase {
+  /** Whether THIS member has already voted on every committee still pending
+   *  for this case. Without it the list said "Review" beside cases somebody
+   *  had already dealt with, and they could not tell which. */
+  you_voted?: boolean;
+  your_vote?: string;
   deal_id: string; client_name: string; product: string;
   deal_value?: number; currency?: string; branch?: string; stage?: string;
   owner?: string; awaiting: string[]; awaiting_names: string[];
@@ -2117,6 +2122,17 @@ export async function resolveDcc(
     body,
   );
 }
+/** The rework is done - send the case back to the analyst who returned it.
+ *  Not into the pool: they have the context, and re-queueing turns a two-hour
+ *  correction into a two-day one. */
+export async function resubmitAfterRework(
+  appId: string,
+  body: { note?: string } = {},
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse>(
+    `/lms/applications/${encodeURIComponent(appId)}/resubmit-after-rework`, body);
+}
+
 export async function handToCreditAnalyst(appId: string): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, Record<string, never>>(
     `/lms/applications/${encodeURIComponent(appId)}/hand-to-credit-analyst`,
@@ -2955,14 +2971,13 @@ export interface CommitteeGate {
   code: string; name: string; recording_mode: string; voting_rule: string;
   members: { name: string; role: string }[];
   record: CommitteeRecord | null;
-  /** Whether THIS viewer may vote on this gate. The panel used to ask
-   *  canEdit - "owner or admin" - which is the wrong question: a committee
-   *  member is neither, and was shown a read-only panel with nothing to vote
-   *  with. The server answers it from the roster. */
-  can_vote?: boolean;
   /** Progress BEFORE a decision exists. Without these a member cannot tell
    *  whether the committee is waiting on them or on somebody else, which is
    *  the question they opened the case to answer. */
+  /** Whether THIS viewer may vote on this gate. canEdit means owner or
+   *  admin, which a committee member is not - they were shown a read-only
+   *  panel with nothing to vote with. The server answers from the roster. */
+  can_vote?: boolean;
   votes_cast?: number;
   quorum?: number;
   awaiting?: string[];

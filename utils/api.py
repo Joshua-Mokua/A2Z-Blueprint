@@ -515,6 +515,13 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "branch":              deal.get("branch"),
                 "segment":             deal.get("segment"),
                 "committee_records":   deal.get("committee_records"),
+                # ---- THE VOTES THEMSELVES (2026-08-14) --------------------
+                # MD1 carried committee_records; committee_VOTES did not exist
+                # yet. So each member's vote was written to JSON and never
+                # reached Postgres, and since deals are read DB-first it was
+                # gone on the next read - which is why quorum never
+                # accumulated and no vote ever showed in the journey.
+                "committee_votes":     deal.get("committee_votes"),
                 "documents_required_at_stage": deal.get("documents_required_at_stage"),
                 "documents_provided":  deal.get("documents_provided"),
                 "document_files":      deal.get("document_files"),
@@ -627,6 +634,45 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
         raise
 
 
+def _write_deal(pm, deal_id: str, updates: dict, actor: str = "") -> None:
+    """Write a deal change to BOTH stores. Use this, never update_deal alone.
+
+    RULING, stated repeatedly and finally obeyed (2026-08-14): "this is a bank
+    system ... it will purely run on PostgreSQL. Anything we are doing on JSON
+    is costing us."
+
+    It has cost us four separate mornings. PipelineManager.update_deal writes
+    the JSON store and nothing else, while deals are READ DB-first - so a
+    change written through it lands somewhere nothing reads. Each time the
+    symptom looked like a different bug:
+
+        branch lost              a case never reached its committee
+        a seeded case invisible  the queue read a store the seeder had not
+        a vote that vanished     no journey entry, no quorum, "Review" for ever
+
+    Of 23 update_deal call sites in this module, 11 had no sync. That is not a
+    bug to fix eleven times; it is a missing function.
+
+    THE PROPER FIX is a DB-backed PipelineManager - but core.py is a delta file
+    that never travels to the pilot, so a fix there would help nobody at the
+    bank. This lives in api.py, which does travel.
+
+    The whole deal is re-read and synced, not the updates alone, so anything
+    else set in the same request travels with it. If the database write fails
+    the JSON write still stands and a warning is logged: a recorded decision
+    must not be lost because the copy failed.
+    """
+    pm.update_deal(deal_id, updates, actor)
+    try:
+        if _db_available():
+            fresh = pm.get_deal(deal_id)
+            if fresh:
+                _db_sync_pipeline_deal(fresh)
+    except Exception as exc:
+        logger.warning("deal %s written to JSON but not synced to the "
+                       "database: %s", deal_id, exc)
+
+
 def _normalize_db_deal_row(row):
     """Map pipeline_deals DB columns to the field names the React frontend
     expects (amount->deal_value, product->product_type, metadata->
@@ -658,7 +704,7 @@ def _normalize_db_deal_row(row):
     # which belongs to the origin work and is NOT released - so the replay
     # failed on the pilot branch with "matched 0 times".
     if isinstance(md, dict):
-        for _k in ("branch", "segment", "committee_records",
+        for _k in ("branch", "segment", "committee_records", "committee_votes",
                    "documents_required_at_stage", "documents_provided",
                    "document_files", "application_id",
                    "validated_by_name", "validated_by_code",
@@ -4091,7 +4137,7 @@ def pipeline_submit_to_credit(
         # Recorded, not waved through. The next person to open this deal sees
         # exactly what is still owed and by whom.
         try:
-            pm.update_deal(deal_id, {
+            _write_deal(pm, deal_id, {
                 "documents_outstanding": outstanding,
                 "documents_outstanding_at": datetime.now().isoformat(timespec="seconds"),
             }, str(user.get("username", "") or ""))
@@ -4116,7 +4162,7 @@ def pipeline_submit_to_credit(
     if not app_id:
         raise HTTPException(status_code=500,
             detail="Could not create the loan application from this deal.")
-    pm.update_deal(deal_id, {
+    _write_deal(pm, deal_id, {
         "documents_provided": provided,
         "lms_application_id": app_id,
         "submitted_to_credit": True,
@@ -7803,7 +7849,26 @@ def pipeline_queue_committee(user: dict = Depends(get_current_user)):
         # which for a branch committee is their own branch.
         if not _perms(d, user, visible).get("can_view"):
             continue
+        # ── HAVE *YOU* ALREADY VOTED ON THIS ONE ────────────────────────────
+        # RULING (2026-08-14): "even after voting, on the manager's queue it
+        # still indicated 3 and all are asking for Review - it should be
+        # indicating my vote reviewed, then recommended if that is the case."
+        #
+        # The queue listed anything the committee had not FINISHED, so a member
+        # who had already spoken still saw "Review" beside every case and no
+        # way to tell which they had dealt with. The list has to distinguish
+        # "waiting on the committee" from "waiting on YOU".
+        _my_votes = {}
+        for _cc in pending:
+            _v = ((d.get("committee_votes") or {}).get(_cc) or {})
+            _mine_v = _v.get(me) or (_v.get(me_name) if me_name else None)
+            if _mine_v:
+                _my_votes[_cc] = str(_mine_v.get("vote", "")).upper()
+        _voted = len(_my_votes) == len(pending) and bool(pending)
+
         cases.append({
+            "you_voted": _voted,
+            "your_vote": (list(_my_votes.values())[0] if _my_votes else ""),
             "deal_id": d.get("id"),
             "client_name": d.get("client_name"),
             "product": d.get("product_type") or d.get("product"),
@@ -7933,7 +7998,7 @@ def pipeline_deal_validate(
         _vname = str(user.get("full_name", "") or user.get("username", "") or "")
         _vrole = str(user.get("role", "") or "")
         _vcode = str(user.get("staff_code", "") or "")
-        pm.update_deal(deal_id, {
+        _write_deal(pm, deal_id, {
             "validated_by_name": _vname,
             "validated_by_role": _vrole,
             "validated_by_code": _vcode,
@@ -12785,7 +12850,7 @@ def save_deal_cr(deal_id: str, payload: dict = Body(default_factory=dict),
         "updated_by": str(user.get("username", "") or ""),
         "updated_at": _dt.now().isoformat(timespec="seconds"),
     }
-    pm.update_deal(deal_id, {"cr": cr}, str(user.get("username", "") or ""))
+    _write_deal(pm, deal_id, {"cr": cr}, str(user.get("username", "") or ""))
     # update_deal writes the JSON store. Reads are Postgres-FIRST (see
     # _get_or_hydrate_deal, Phase B2), so without this mirror the CR is written to
     # JSON, never reaches PG, and every later read loses it: the deal saves with a
@@ -13023,6 +13088,29 @@ def cast_committee_vote(deal_id: str, code: str,
     key = me or myname
     all_votes = dict(deal.get("committee_votes") or {})
     cast = dict(all_votes.get(code) or {})
+
+    # ── ONE VOTE PER MEMBER, AND IT STANDS ──────────────────────────────────
+    # RULING (2026-08-14): "I was able to go back and submit ... I can only
+    # vote once."
+    #
+    # The first version deliberately let somebody change their mind before the
+    # meeting closed. That is defensible in the abstract and wrong here: a
+    # recorded vote is a person's position on a credit decision, and being able
+    # to revise it quietly - after seeing how others voted - is exactly what a
+    # committee record exists to prevent.
+    #
+    # Refused with the vote they gave, so it is clear what already stands.
+    if key in cast:
+        _prev = cast[key]
+        raise HTTPException(
+            status_code=409,
+            detail=("You have already voted on %s — recorded as %s%s. A vote "
+                    "cannot be changed once cast."
+                    % (committee.get("name") or code,
+                       str(_prev.get("vote", "")).title(),
+                       " on %s" % str(_prev.get("at", ""))[:16]
+                       if _prev.get("at") else "")))
+
     cast[key] = {
         "name": (mine or {}).get("name") or myname,
         "role": (mine or {}).get("role") or ("Chair" if is_chair else ""),
@@ -13064,8 +13152,26 @@ def cast_committee_vote(deal_id: str, code: str,
                 or str(v.get("role", "")).strip().lower() == "chair")
 
     def _is_deputy(v):
+        # ── TWO WAYS TO DEPUTISE ────────────────────────────────────────────
+        # BY ROLE, for branch committees: every branch has an operations
+        # manager, so the deputy is the post rather than a person.
+        #
+        # BY NAME, for department committees (ruling 2026-08-14: "Jane being
+        # chair, but when away Annet or Fiona should then be the mandatory").
+        # A department committee has no equivalent post, so its deputies are
+        # named on the roster with deputy_chair: true.
         _r = str(v.get("role", "") or "").lower()
-        return "operations manager" in _r or "operations" in _r
+        if "operations manager" in _r or "operations" in _r:
+            return True
+        _code = str(v.get("staff_code", "") or "").strip()
+        _name = str(v.get("name", "") or "").strip().lower()
+        for _m in (committee.get("members") or []):
+            if not isinstance(_m, dict) or not _m.get("deputy_chair"):
+                continue
+            if (_code and str(_m.get("staff_code", "")).strip() == _code) \
+                    or (_name and str(_m.get("name", "")).strip().lower() == _name):
+                return True
+        return False
 
     _chair_spoke = any(_is_chair(v) for v in cast.values())
     _deputy_spoke = any(_is_deputy(v) for v in cast.values())
@@ -13084,8 +13190,65 @@ def cast_committee_vote(deal_id: str, code: str,
             "recorded_at": datetime.now().isoformat(timespec="seconds"),
         }
         updates["committee_records"] = records
+        # ── A DECIDED CASE MOVES ITSELF ─────────────────────────────────────
+        # RULING (2026-08-14): "once the branch committee vote is met there is
+        # no need for the owner to log in to submit - it should automatically
+        # submit to the department analyst ... this is to avoid delays waiting
+        # for someone to log in."
+        #
+        # The committee has spoken; making the case wait for its owner to
+        # notice adds a day to every deal for no decision anybody still needs
+        # to take. A gate that has answered should not also be a queue.
+        #
+        # ONLY ON A RECOMMENDATION. A rejected or deferred case stays exactly
+        # where it is - it needs a person, and moving it would bury the very
+        # cases that need attention.
+        #
+        # BEST EFFORT, AND AUDITED. If the flow cannot be resolved the case
+        # simply stays put and somebody advances it by hand, which is the
+        # behaviour that existed before this. A committee decision must never
+        # fail to record because the case could not be moved afterwards.
+        if outcome == "APPROVED":
+            try:
+                _flow = _stage_flow_for(deal.get("product_type")
+                                        or deal.get("product", "")) or []
+                _cur = str(deal.get("stage", "") or "")
+                if _flow and _cur in _flow:
+                    _at = _flow.index(_cur)
+                    _next = _flow[_at + 1] if _at + 1 < len(_flow) else ""
+                    if _next and not _next.lower().startswith("closed"):
+                        updates["stage"] = _next
+                        updates["auto_advanced_by"] = "committee:%s" % code
+                        _audit("API_COMMITTEE_AUTO_ADVANCE", user,
+                               "deal=%s|%s|%s -> %s" % (deal_id, code, _cur, _next))
+            except Exception as _exc:
+                logger.warning("could not auto-advance %s after %s: %s",
+                               deal_id, code, _exc)
+
+
 
     _pm.update_deal(deal_id, updates, str(user.get("username", "") or ""))
+    # ── AND INTO THE DATABASE, OR THE VOTE DID NOT HAPPEN ───────────────────
+    # update_deal writes the JSON store and NOTHING ELSE. Deals are read
+    # DB-first, so a vote recorded here was invisible to every screen that
+    # looked afterwards: the journey showed nothing, the queue still said
+    # "Review", and quorum never accumulated.
+    #
+    # MV1 taught the mapping to CARRY committee_votes; it did not make anything
+    # CALL that mapping after a vote. A field the mapping knows about is not
+    # persisted until something asks it to persist.
+    #
+    # Sync the whole deal, not the votes alone, so the stage set by an
+    # automatic advance travels in the same write.
+    try:
+        if _db_available():
+            _fresh = _pm.get_deal(deal_id)
+            if _fresh:
+                _db_sync_pipeline_deal(_fresh)
+    except Exception as _exc:
+        logger.warning("vote recorded in JSON but not synced to the database "
+                       "for %s: %s", deal_id, _exc)
+
     _audit("API_COMMITTEE_VOTE", user,
            f"deal={deal_id}|committee={code}|vote={vote}|"
            f"{attended}/{quorum}|outcome={outcome or 'pending'}")

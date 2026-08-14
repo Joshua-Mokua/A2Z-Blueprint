@@ -95,6 +95,17 @@ export function CommitteeQueue({ compact = false }: { compact?: boolean }) {
                     {(c.awaiting_names ?? []).join(', ')}
                   </td>
                   <td className="px-3 py-2 text-right">
+                    {/* SAY WHAT YOU DID, rather than "Review" for ever. A case
+                        stays listed because the COMMITTEE has not finished,
+                        which is a different thing from waiting on YOU. */}
+                    {c.you_voted && (
+                      <span className="mr-2 text-[11px] font-medium text-[#005B82]">
+                        You: {c.your_vote === 'YES' ? 'recommended'
+                          : c.your_vote === 'NO' ? 'not recommended'
+                          : c.your_vote === 'ABSTAIN' ? 'abstained'
+                          : c.your_vote === 'RECUSED' ? 'recused' : 'voted'}
+                      </span>
+                    )}
                     <button
                       type="button"
                       // THE ROUTE IS /pipeline/{id}, not /pipeline/deals/{id}. The wrong path
@@ -104,9 +115,14 @@ export function CommitteeQueue({ compact = false }: { compact?: boolean }) {
                       // Every other page in the app links this way; this one invented
                       // a path that reads more logically and does not exist.
                       onClick={() => nav(`/pipeline/${encodeURIComponent(c.deal_id)}`)}
-                      className="rounded-md bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+                      className={[
+                        'rounded-md px-3 py-1.5 text-xs font-semibold',
+                        c.you_voted
+                          ? 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                          : 'bg-brand-primary text-white hover:opacity-90',
+                      ].join(' ')}
                     >
-                      Review
+                      {c.you_voted ? 'View' : 'Review'}
                     </button>
                   </td>
                 </tr>
