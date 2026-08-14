@@ -515,6 +515,13 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
                 "branch":              deal.get("branch"),
                 "segment":             deal.get("segment"),
                 "committee_records":   deal.get("committee_records"),
+                # ---- THE VOTES THEMSELVES (2026-08-14) --------------------
+                # MD1 carried committee_records; committee_VOTES did not exist
+                # yet. So each member's vote was written to JSON and never
+                # reached Postgres, and since deals are read DB-first it was
+                # gone on the next read - which is why quorum never
+                # accumulated and no vote ever showed in the journey.
+                "committee_votes":     deal.get("committee_votes"),
                 "documents_required_at_stage": deal.get("documents_required_at_stage"),
                 "documents_provided":  deal.get("documents_provided"),
                 "document_files":      deal.get("document_files"),
@@ -672,7 +679,7 @@ def _normalize_db_deal_row(row):
                    # The other half of the same fix. Writing a field into
                    # metadata and never reading it back loses it just as
                    # completely as never writing it at all.
-                   "branch", "segment", "committee_records",
+                   "branch", "segment", "committee_records", "committee_votes",
                    "documents_required_at_stage", "documents_provided",
                    "document_files", "application_id",
                    "validated_by_name", "validated_by_code",
