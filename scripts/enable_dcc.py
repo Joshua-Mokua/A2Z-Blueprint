@@ -51,11 +51,44 @@ def main():
               % ", ".join(str(c.get("code")) for c in pal[:10]))
         return 1
 
-    members = [m for m in (src.get("members") or []) if isinstance(m, dict)]
+    raw = [m for m in (src.get("members") or []) if isinstance(m, dict)]
+
+    # ── EMPTY PLACEHOLDER ROWS ARE NOT MEMBERS ──────────────────────────────
+    # B1 shipped with four blank rows - name, role and staff_code all "" - so
+    # the panel rendered "0/4 voted" above four nameless lines and an empty
+    # dropdown. Faithful to the config and useless to the person looking at it.
+    #
+    # A committee of four blanks is worse than a committee of none: it looks
+    # configured, so nobody goes to fix it.
+    members = []
+    blanks = 0
+    for m in raw:
+        code = str(m.get("staff_code", "") or "").strip()
+        name = str(m.get("name", "") or "").strip()
+        if not code and not name:
+            blanks += 1
+            continue
+        # THE PANEL KEYS ON `id`. The palette stores staff_code, so it is
+        # carried across under both names - without it the dropdown has
+        # nothing to select and a vote cannot be attributed.
+        members.append({
+            "id": code or name,
+            "member_id": code or name,
+            "staff_code": code,
+            "name": name or code,
+            "role": str(m.get("role", "") or ""),
+        })
+
+    if blanks:
+        print("  (skipped %d empty placeholder row(s) in %s)" % (blanks, src_code))
     if not members:
-        print("ABORT: %s has no members, so the committee could not sit."
-              % src_code)
-        print("       Name them in Administration > Credit Committees first.")
+        print("ABORT: %s has no REAL members - %d blank row(s) and nothing else."
+              % (src_code, blanks))
+        print("")
+        print("       Name them in Administration > Credit Committees, or seed")
+        print("       them from the staff register the way the branch")
+        print("       committees were:")
+        print("         python scripts\\seed_committee_members.py --apply")
         return 1
 
     dcc = dict(cw.get("dcc") or {})

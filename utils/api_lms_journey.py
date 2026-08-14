@@ -345,6 +345,48 @@ def _events_from_deal(deal: Dict[str, Any],
                         if deal.get("rework_note") else "")),
         })
 
+    # ── THE DEPARTMENT COMMITTEE'S VOTES ────────────────────────────────────
+    # The branch committee's votes reach the journey and the department's did
+    # not - the same gap, found the same way. A committee that decides a case
+    # without leaving who said what is not a record anybody can rely on later,
+    # and it is the department committee whose decision releases the case to
+    # the bank credit pool.
+    for _v in (deal.get("dcc_votes") or []):
+        if not isinstance(_v, dict):
+            continue
+        _vote = str(_v.get("vote", "") or "").upper()
+        _said = {"YES": "supported", "NO": "opposed",
+                 "ABSTAIN": "abstained"}.get(_vote, _vote.lower())
+        _who = _v.get("member_name") or _v.get("name") or _v.get("member_id") or "a member"
+        _note = "%s %s" % (_who, _said)
+        if _v.get("rationale"):
+            _note += " — %s" % _v.get("rationale")
+        events.append({
+            "event": "dcc_vote",
+            "by": str(_v.get("member_id", "") or ""),
+            "by_name": _v.get("member_name") or _v.get("name") or None,
+            "at": _iso(_v.get("at")),
+            "note": _note,
+        })
+
+    _out = deal.get("dcc_outcome")
+    if isinstance(_out, dict) and _out.get("recommendation"):
+        _t = _out.get("tally") or {}
+        _rec = str(_out.get("recommendation"))
+        _plain = {"support": "supported the case",
+                  "oppose": "did not support the case",
+                  "split": "was split"}.get(_rec, _rec)
+        events.append({
+            "event": "dcc_%s" % _rec,
+            "by": str(_out.get("by", "") or ""),
+            "by_name": _out.get("by_name") or None,
+            "at": _iso(_out.get("at")),
+            "note": ("the department committee %s — %s yes, %s no, %s abstain"
+                     % (_plain, _t.get("yes", 0), _t.get("no", 0),
+                        _t.get("abstain", 0))
+                     + (" · %s" % _out.get("note") if _out.get("note") else "")),
+        })
+
     # Manager validation. The fields are already written by the validate
     # endpoint (Item 5) - nothing new is recorded, it was simply never read.
     if deal.get("manager_validated"):
