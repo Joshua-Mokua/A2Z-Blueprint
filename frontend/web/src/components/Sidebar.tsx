@@ -52,6 +52,29 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    // ── DEPARTMENT REVIEW, ITS OWN SECTION (ruling 2026-08-14) ────────────
+    // "For the department gate we have a sidebar dedicated to the department
+    // which we could name Department Review ... this can also be the place
+    // where the head-office team, especially those voting, can get in and see
+    // the committee as can also vote, but it be restricted to selected voters
+    // only."
+    //
+    // Credit Analysis is the BANK credit analyst's module - Julius Korir's
+    // work. The department analyst and the committee members were borrowing it
+    // and seeing a screen built for somebody else's job. They now have their
+    // own way in.
+    //
+    // RESTRICTED TO CREDIT STAFF, which is the same gate Credit Analysis uses.
+    // A tighter one - only named committee members - belongs on the SERVER,
+    // where it already is: the vote endpoint refuses a non-member with a 403.
+    // Hiding a menu entry is not a permission, and treating it as one is how
+    // people end up believing a screen is safe because it is hard to find.
+    label: 'Department Review',
+    items: [
+      { path: '/lms',                 label: 'Department Review',   matchActive: (p) => p === '/lms' || p.startsWith('/lms/'), visibleFor: (_m, _a, _c, _md, credit) => credit },
+    ],
+  },
+  {
     label: 'Credit Intelligence (CIS)',
     items: [
       { path: '/lms',                 label: 'Credit Analysis',     matchActive: (p) => p === '/lms' || p.startsWith('/lms/'), visibleFor: (_m, _a, _c, _md, credit) => credit },

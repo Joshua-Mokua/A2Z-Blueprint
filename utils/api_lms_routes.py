@@ -2449,8 +2449,6 @@ def lms_committee_readiness(
     # resubmit-after-rework brings it back to that analyst rather than to the
     # pool - they have the context, and re-queueing turns a two-hour correction
     # into a two-day one.
-    _updates = {"committee_readiness": readiness}
-
     # ── A REWORK MUST ACTUALLY GO BACK ──────────────────────────────────────
     # RULING (2026-08-14): "a returned case reopens back to the branch on the
     # owner, and once they complete the reworks they resubmit - this time back
@@ -2505,7 +2503,6 @@ def lms_committee_readiness(
               str(user.get('username', '') or ''), f"{app_id}|{readiness['state']}")
     return {"application": lam.get(app_id), "status": readiness["state"]}
 # === END C2: CORRECTNESS STAGING ===
-
 
 # === C3a: COMMITTEE PRE-READ ===
 _PREREAD_VIEWS = ("leaning_approve", "leaning_decline", "questions")
