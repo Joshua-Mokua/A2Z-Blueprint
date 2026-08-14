@@ -182,23 +182,49 @@ def main():
     api = open(API, encoding="utf-8").read()
     jr = open(JOURNEY, encoding="utf-8").read()
 
-    if "EACH VOTE IS A TOUCH POINT" in jr:
-        print("ABORT: VF1 looks applied.")
-        return 1
-    if jr.count(JR_ANCHOR) != 1:
-        print("ABORT: the journey anchor matched %d times." % jr.count(JR_ANCHOR))
-        print("       JR1 must be applied first.")
-        return 1
-    if api.count(ONCE_ANCHOR) != 1 or api.count(YOU_ANCHOR) != 1:
-        print("ABORT: the vote anchors matched %d / %d times."
-              % (api.count(ONCE_ANCHOR), api.count(YOU_ANCHOR)))
-        print("       VT1 and CQ1 must be applied first.")
-        return 1
+    # ── EACH EDIT IS CHECKED ON ITS OWN ─────────────────────────────────────
+    # The first version asked one question - "is the marker in the journey
+    # file?" - and answered "applied" for the whole patch. When api.py was
+    # restored from before this patch and the journey file was not, the check
+    # passed while TWO OF THE THREE EDITS WERE MISSING. The pilot then voted,
+    # saw nothing recorded, and reasonably concluded the fix had not worked.
+    #
+    # A patch that touches three files must ask three questions.
+    todo = []
+    if "EACH VOTE IS A TOUCH POINT" not in jr:
+        if jr.count(JR_ANCHOR) != 1:
+            print("ABORT: the journey anchor matched %d times." % jr.count(JR_ANCHOR))
+            print("       JR1 must be applied first.")
+            return 1
+        jr = jr.replace(JR_ANCHOR, JOURNEY_BLOCK + JR_ANCHOR, 1)
+        todo.append("journey records each vote")
+    else:
+        print("  already  the journey records each vote")
 
-    jr = jr.replace(JR_ANCHOR, JOURNEY_BLOCK + JR_ANCHOR, 1)
-    api = api.replace(ONCE_ANCHOR, ONCE_BLOCK + ONCE_ANCHOR, 1)
-    api = api.replace(YOU_ANCHOR, YOU_BLOCK + YOU_ANCHOR + FIELDS, 1)
-    print("  ok  vote in the journey, one vote per member, queue shows it")
+    if "ONE VOTE PER MEMBER, AND IT STANDS" not in api:
+        if api.count(ONCE_ANCHOR) != 1:
+            print("ABORT: the quorum anchor matched %d times." % api.count(ONCE_ANCHOR))
+            print("       VT1 must be applied first.")
+            return 1
+        api = api.replace(ONCE_ANCHOR, ONCE_BLOCK + ONCE_ANCHOR, 1)
+        todo.append("a member votes once")
+    else:
+        print("  already  a member votes once")
+
+    if "HAVE *YOU* ALREADY VOTED ON THIS ONE" not in api:
+        if api.count(YOU_ANCHOR) != 1:
+            print("ABORT: the queue anchor matched %d times." % api.count(YOU_ANCHOR))
+            print("       CQ1 must be applied first.")
+            return 1
+        api = api.replace(YOU_ANCHOR, YOU_BLOCK + YOU_ANCHOR + FIELDS, 1)
+        todo.append("queue shows your own vote")
+    else:
+        print("  already  queue shows your own vote")
+
+    if not todo:
+        print("ABORT: nothing to do - all three edits are already in place.")
+        return 1
+    print("  ok  applying: %s" % ", ".join(todo))
 
     if "committee_votes" not in JOURNEY_BLOCK:
         print("ABORT: the journey still cannot see individual votes.")
@@ -237,6 +263,21 @@ def main():
     if not apply:
         print("\nDRY RUN - nothing written. Re-run with --apply.")
         return 0
+
+    # PARSE BEFORE WRITING. The first version of this patch left a dict
+    # unclosed in api.py and took a running login down with it. Checking
+    # strings inside a block does not tell you whether the RESULT is valid
+    # Python; only parsing it does.
+    import ast as _ast
+    for _name, _src in (("utils/api.py", api), ("utils/api_lms_journey.py", jr)):
+        try:
+            _ast.parse(_src)
+        except SyntaxError as _exc:
+            print("ABORT: the result would not parse - %s line %s: %s"
+                  % (_name, _exc.lineno, _exc.msg))
+            print("       Nothing has been written.")
+            return 1
+    print("  ok  the result parses as valid Python")
 
     for path, content in ((API, api), (JOURNEY, jr)):
         shutil.copy2(path, path + BACKUP_SUFFIX)
