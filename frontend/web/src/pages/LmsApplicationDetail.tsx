@@ -234,8 +234,34 @@ export function LmsApplicationDetail() {
 
             </>
           ) },
-          { id: 'documents', label: 'Department Analysis', color: '#0097A7', content: (
+          { id: 'documents', label: 'Department Review', color: '#0097A7', content: (
             <>
+              {/* PICKING BELONGS WHERE THE WORK IS (ruling 2026-08-14):
+                  "this should not have come on the Actions but on the
+                  analysis." An analyst opening a case to work it should not
+                  have to find another tab to claim it first - and Actions said
+                  only "no actions available for your role", which reads as a
+                  dead end rather than a case waiting to be picked up. */}
+        {/* ─────────── ACTION: Self-pick (if can_self_pick) ─────────── */}
+        {permissions.can_self_pick && (
+          <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-blue-900">
+                This case is unallocated and in your segment. Pick it to start working it.
+              </div>
+              <Button onClick={async () => {
+                try {
+                  await pickLmsApplication(application.id);
+                  await refetch();
+                  toast({ tone: 'success', message: 'Case picked — assigned to you.' });
+                } catch (e) {
+                  toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Pick failed.' });
+                }
+              }}>Pick this case</Button>
+            </div>
+          </div>
+        )}
+
         {/* ─────────── Documentation card ─────────── */}
         <Card>
           <Card.Header>
@@ -408,26 +434,6 @@ export function LmsApplicationDetail() {
           </Card>
         )}
 
-
-        {/* ─────────── ACTION: Self-pick (if can_self_pick) ─────────── */}
-        {permissions.can_self_pick && (
-          <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-sm text-blue-900">
-                This case is unallocated and in your segment. Pick it to start working it.
-              </div>
-              <Button onClick={async () => {
-                try {
-                  await pickLmsApplication(application.id);
-                  await refetch();
-                  toast({ tone: 'success', message: 'Case picked — assigned to you.' });
-                } catch (e) {
-                  toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Pick failed.' });
-                }
-              }}>Pick this case</Button>
-            </div>
-          </div>
-        )}
 
         {/* ─────────── ACTION: Hand to Credit Analyst (if can_hand_to_credit_analyst) ─────────── */}
         {permissions.can_hand_to_credit_analyst && (

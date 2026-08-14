@@ -21,7 +21,6 @@ import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
 import {
   statusTone,
-  APPLICATION_STATUSES,
   type LoanApplication,
 } from '@/types/lms';
 
@@ -126,15 +125,10 @@ export function Lms() {
   const pagedApps = filteredApps.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
   // ── Status counts for the filter chips ──
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: applications.length };
-    for (const status of APPLICATION_STATUSES) counts[status] = 0;
-    for (const a of applications) {
-      const s = (a.status || '').toLowerCase();
-      counts[s] = (counts[s] || 0) + 1;
-    }
-    return counts;
-  }, [applications]);
+  // statusCounts is gone with the filter row it fed. statusFilter itself
+  // stays and remains 'all' - it is the mechanism the search box and the tabs
+  // narrow through, and removing it would mean rewriting a working filter to
+  // delete a row of buttons.
 
   const tabCounts = useMemo(() => ({
     mine: applications.filter((a) => String(a.analyst?.code ?? '') === myCode).length,
@@ -245,7 +239,17 @@ export function Lms() {
           <Card.Body>
             {/* B1: workload tabs */}
             <div className="flex items-center gap-2 mb-3 border-b border-gray-100 pb-3">
-              {([['mine', 'My cases'], ['pool', 'Pool'], ['all', 'All']] as const).map(([key, label]) => (
+              {/* TWO TABS (ruling 2026-08-14): "this should be My cases and
+                  the Pool. It is the pool that will contain all the cases
+                  submitted from the branch, and from here is where they select
+                  and it comes to My cases - once selected it moves out of the
+                  pool. This is for a department especially with 2 analysts to
+                  all pick from the pool."
+
+                  "All" was a third view of the same cases that answered no
+                  question an analyst asks. What is waiting for anyone, and
+                  what is mine - those are the two. */}
+              {([['mine', 'My cases'], ['pool', 'Pool']] as const).map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
@@ -257,36 +261,17 @@ export function Lms() {
                 </button>
               ))}
               {tab === 'pool' && (
-                <span className="ml-2 text-xs text-gray-400">Read-only — request assignment from a case to work it.</span>
+                <span className="ml-2 text-xs text-gray-500">Everything waiting for this department. Open a case and pick it — it moves to My cases and out of the pool.</span>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <button
-                onClick={() => setStatusFilter('all')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                  statusFilter === 'all'
-                    ? 'bg-brand-primary text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                All ({statusCounts.all})
-              </button>
-              {APPLICATION_STATUSES.map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                    statusFilter === status
-                      ? 'bg-brand-primary text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                  disabled={statusCounts[status] === 0}
-                >
-                  {status} ({statusCounts[status] || 0})
-                </button>
-              ))}
-            </div>
+            {/* THE STATUS FILTER ROW IS GONE (ruling 2026-08-14): "we can
+                remove the rest of the items since they can still view that
+                from the Sales Pro."
 
+                Thirteen status buttons - approved, declined, offer_signed,
+                analyst_confirmed - are the shape of the workflow, not a
+                question anybody opens this page to ask. My cases and the Pool
+                are. The full picture is a click away in Sales Pro. */}
             <div className="flex items-center gap-2">
               <input
                 type="text"
