@@ -2199,6 +2199,20 @@ function CorrectnessPanel({ appId, onDone, toast }: {
   }, []);
   const toggleReason = (r: string) =>
     setReasons((p) => (p.includes(r) ? p.filter((x) => x !== r) : [...p, r]));
+  // ── ASK BEFORE SUBMITTING ────────────────────────────────────────────────
+  // RULING (2026-08-14): "it submitted without asking if there are documents
+  // required for her to attach ... it can allow without, but the question
+  // where she selects Yes or No should come up for confirmation on her side."
+  //
+  // Recommending now SENDS the case, and a click that sends something should
+  // ask once. The question is the useful one - is anything still to attach -
+  // rather than a bare "are you sure", which people learn to click through.
+  //
+  // ANSWERING "yes, something is missing" does not block: it closes the
+  // dialogue and leaves her on the page with the attach control, because the
+  // remedy for a missing paper is to attach it, not to be told off.
+  const [confirmReady, setConfirmReady] = useState(false);
+
   const act = async (decision: 'ready' | 'rework') => {
     if (decision === 'rework' && reasons.length === 0) {
       toast({ tone: 'danger', message: 'Select at least one rework reason before returning the case.' });
@@ -2248,7 +2262,28 @@ function CorrectnessPanel({ appId, onDone, toast }: {
               the committee in the same act. The label should say so, because
               somebody who thinks they are ticking a box will press it more
               casually than somebody who knows they are submitting. */}
-          <Button variant="primary" onClick={() => void act('ready')} disabled={busy}>Recommend to committee</Button>
+          {confirmReady && (
+            <div className="mb-3 w-full rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5">
+              <p className="text-sm font-medium text-amber-900">
+                Is there any document still to be attached to this case?
+              </p>
+              <p className="mt-1 text-xs text-amber-800">
+                Recommending sends it straight to the department committee — they
+                will vote on the papers as they stand.
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                <Button size="sm" variant="secondary"
+                  onClick={() => setConfirmReady(false)}>
+                  Yes — let me attach it first
+                </Button>
+                <Button size="sm" disabled={busy}
+                  onClick={() => { setConfirmReady(false); void act('ready'); }}>
+                  No — recommend it now
+                </Button>
+              </div>
+            </div>
+          )}
+          <Button variant="primary" onClick={() => setConfirmReady(true)} disabled={busy}>Recommend to committee</Button>
           <Button variant="ghost" onClick={() => void act('rework')} disabled={busy}>Return for rework</Button>
         </div>
       </Card.Body>
