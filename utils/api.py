@@ -7589,6 +7589,26 @@ def pipeline_queue_committee(user: dict = Depends(get_current_user)):
         # which for a branch committee is their own branch.
         if not _perms(d, user, visible).get("can_view"):
             continue
+        # ── HAVE *YOU* ALREADY VOTED ON THIS ONE ────────────────────────────
+        # RULING (2026-08-14): "even after voting, on the manager's queue it
+        # still indicated 3 and all are asking for Review - it should be
+        # indicating my vote reviewed, then recommended if that is the case."
+        #
+        # The queue listed anything the committee had not FINISHED, so a member
+        # who had already spoken still saw "Review" beside every case and no
+        # way to tell which they had dealt with. The list has to distinguish
+        # "waiting on the committee" from "waiting on YOU".
+        _my_votes = {}
+        for _cc in pending:
+            _v = ((d.get("committee_votes") or {}).get(_cc) or {})
+            _mine_v = _v.get(me) or (_v.get(me_name) if me_name else None)
+            if _mine_v:
+                _my_votes[_cc] = str(_mine_v.get("vote", "")).upper()
+        _voted = len(_my_votes) == len(pending) and bool(pending)
+
+        cases.append({
+            "you_voted": _voted,
+            "your_vote": (list(_my_votes.values())[0] if _my_votes else ""),
         cases.append({
             "deal_id": d.get("id"),
             "client_name": d.get("client_name"),
@@ -13239,6 +13259,38 @@ def cast_committee_vote(deal_id: str, code: str,
     key = me or myname
     all_votes = dict(deal.get("committee_votes") or {})
     cast = dict(all_votes.get(code) or {})
+    cast[key] = {
+        "name": (mine or {}).get("name") or myname,
+        "role": (mine or {}).get("role") or ("Chair" if is_chair else ""),
+        "staff_code": me,
+        "vote": vote,
+        "documents_validated": docs_ok,
+        "comment": str(payload.get("comment", "") or "").strip(),
+        "at": datetime.now().isoformat(timespec="seconds"),
+    }
+    all_votes[code] = cast
+
+    # ── ONE VOTE PER MEMBER, AND IT STANDS ──────────────────────────────────
+    # RULING (2026-08-14): "I was able to go back and submit ... I can only
+    # vote once."
+    #
+    # The first version deliberately let somebody change their mind before the
+    # meeting closed. That is defensible in the abstract and wrong here: a
+    # recorded vote is a person's position on a credit decision, and being able
+    # to revise it quietly - after seeing how others voted - is exactly what a
+    # committee record exists to prevent.
+    #
+    # Refused with the vote they gave, so it is clear what already stands.
+    if key in cast:
+        _prev = cast[key]
+        raise HTTPException(
+            status_code=409,
+            detail=("You have already voted on %s — recorded as %s%s. A vote "
+                    "cannot be changed once cast."
+                    % (committee.get("name") or code,
+                       str(_prev.get("vote", "")).title(),
+                       " on %s" % str(_prev.get("at", ""))[:16]
+                       if _prev.get("at") else "")))
     cast[key] = {
         "name": (mine or {}).get("name") or myname,
         "role": (mine or {}).get("role") or ("Chair" if is_chair else ""),

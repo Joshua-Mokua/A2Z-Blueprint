@@ -253,6 +253,43 @@ def _events_from_deal(deal: Dict[str, Any],
     # A case journey missing those cannot answer "who let this through", which
     # is the first question anybody asks of a credit file after the fact.
 
+    # ── EACH VOTE IS A TOUCH POINT (pilot, 2026-08-14) ──────────────────────
+    # "The submission did confirm but it did not record to the case journey ...
+    # each vote needs to write to the case journey."
+    #
+    # The journey read committee_records, which is written only when quorum is
+    # reached. So every individual vote - the act of a named person deciding -
+    # was invisible until the committee finished, and if it never finished,
+    # invisible for ever. A case journey that cannot show who has spoken is not
+    # a record of the committee's work.
+    #
+    # The final decision still appears as its own event, so the journey reads:
+    # each member voting, then the committee deciding.
+    votes_by_cttee = deal.get("committee_votes")
+    if isinstance(votes_by_cttee, dict):
+        for _code, _cast in votes_by_cttee.items():
+            if not isinstance(_cast, dict):
+                continue
+            for _who, _v in _cast.items():
+                if not isinstance(_v, dict):
+                    continue
+                _vote = str(_v.get("vote", "") or "").upper()
+                _said = {"YES": "recommended", "NO": "did not recommend",
+                         "ABSTAIN": "abstained", "RECUSED": "recused themselves"
+                         }.get(_vote, _vote.lower())
+                _note = "%s %s" % (_v.get("name") or _who, _said)
+                if _v.get("role"):
+                    _note += " (%s)" % _v.get("role")
+                if _v.get("comment"):
+                    _note += " — %s" % _v.get("comment")
+                events.append({
+                    "event": "committee_vote",
+                    "by": str(_v.get("staff_code", "") or ""),
+                    "by_name": _v.get("name") or None,
+                    "at": _iso(_v.get("at")),
+                    "note": "%s · %s" % (_code, _note),
+                })
+
     # Manager validation. The fields are already written by the validate
     # endpoint (Item 5) - nothing new is recorded, it was simply never read.
     if deal.get("manager_validated"):

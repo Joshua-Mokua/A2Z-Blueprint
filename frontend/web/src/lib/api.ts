@@ -1648,6 +1648,11 @@ export async function fetchNextStep(dealId: string): Promise<NextStep> {
   return getJson<NextStep>(`/pipeline/deals/${encodeURIComponent(dealId)}/next-step`);
 }
 export interface CommitteeQueueCase {
+  /** Whether THIS member has already voted on every committee still pending
+   *  for this case. Without it the list said "Review" beside cases somebody
+   *  had already dealt with, and they could not tell which. */
+  you_voted?: boolean;
+  your_vote?: string;
   deal_id: string; client_name: string; product: string;
   deal_value?: number; currency?: string; branch?: string; stage?: string;
   owner?: string; awaiting: string[]; awaiting_names: string[];
