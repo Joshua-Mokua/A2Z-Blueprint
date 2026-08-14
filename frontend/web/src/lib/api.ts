@@ -2122,6 +2122,17 @@ export async function resolveDcc(
     body,
   );
 }
+/** The rework is done - send the case back to the analyst who returned it.
+ *  Not into the pool: they have the context, and re-queueing turns a two-hour
+ *  correction into a two-day one. */
+export async function resubmitAfterRework(
+  appId: string,
+  body: { note?: string } = {},
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse>(
+    `/lms/applications/${encodeURIComponent(appId)}/resubmit-after-rework`, body);
+}
+
 export async function handToCreditAnalyst(appId: string): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, Record<string, never>>(
     `/lms/applications/${encodeURIComponent(appId)}/hand-to-credit-analyst`,

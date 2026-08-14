@@ -13366,8 +13366,26 @@ def cast_committee_vote(deal_id: str, code: str,
                 or str(v.get("role", "")).strip().lower() == "chair")
 
     def _is_deputy(v):
+        # ── TWO WAYS TO DEPUTISE ────────────────────────────────────────────
+        # BY ROLE, for branch committees: every branch has an operations
+        # manager, so the deputy is the post rather than a person.
+        #
+        # BY NAME, for department committees (ruling 2026-08-14: "Jane being
+        # chair, but when away Annet or Fiona should then be the mandatory").
+        # A department committee has no equivalent post, so its deputies are
+        # named on the roster with deputy_chair: true.
         _r = str(v.get("role", "") or "").lower()
-        return "operations manager" in _r or "operations" in _r
+        if "operations manager" in _r or "operations" in _r:
+            return True
+        _code = str(v.get("staff_code", "") or "").strip()
+        _name = str(v.get("name", "") or "").strip().lower()
+        for _m in (committee.get("members") or []):
+            if not isinstance(_m, dict) or not _m.get("deputy_chair"):
+                continue
+            if (_code and str(_m.get("staff_code", "")).strip() == _code) \
+                    or (_name and str(_m.get("name", "")).strip().lower() == _name):
+                return True
+        return False
 
     _chair_spoke = any(_is_chair(v) for v in cast.values())
     _deputy_spoke = any(_is_deputy(v) for v in cast.values())

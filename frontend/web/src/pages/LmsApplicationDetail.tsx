@@ -20,7 +20,7 @@ import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesT
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, resubmitAfterRework, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -79,6 +79,9 @@ export function LmsApplicationDetail() {
   // Panel toggles
   const [assignOpen,   setAssignOpen]   = useState(false);
   const [updateOpen,   setUpdateOpen]   = useState(false);
+  // The rework button lives on the Department Review tab, which renders inside
+  // THIS component - so its state belongs here, above every early return.
+  const [reworkBusy, setReworkBusy] = useState(false);
   const [decisionOpen, setDecisionOpen] = useState(false);
 
   const currencySymbol = branding?.currency_symbol ?? 'KES';
@@ -236,7 +239,69 @@ export function LmsApplicationDetail() {
           ) },
           { id: 'documents', label: 'Department Review', color: '#0097A7', content: (
             <>
-              {/* PICKING BELONGS WHERE THE WORK IS (ruling 2026-08-14):
+              {/* ─────────── The rework is done ───────────
+            RULING (2026-08-14): "it is extremely important to have the rework
+            submit, and it should send it right back. The rework submit should
+            also be on the department analyst side."
+
+            RB1 sends a case back to the branch with what needs fixing, and
+            nothing sent it on again - so a returned case could only move by
+            API. That is the half of a loop that makes the other half useless.
+
+            SHOWN TO WHOEVER OPENS A RETURNED CASE. The owner at the branch
+            does the work; the analyst may also send it back once they can see
+            it is done. Both need the same button, because a case waiting on
+            "who is allowed to press this" is a case not moving.
+
+            THE SERVER DECIDES WHERE IT GOES - back to the analyst who returned
+            it, or to the pool if that person cannot be identified. */}
+        {String(application.status || '') === 'returned' && (
+          <Card stripe="accent">
+            <Card.Header>
+              <h3 className="text-sm font-semibold text-gray-900">Returned for rework</h3>
+            </Card.Header>
+            <Card.Body>
+              <p className="mb-2 text-sm text-gray-800">
+                {String((application as unknown as Record<string, unknown>).rework_reasons ?? '')
+                  || 'This case was returned for correction.'}
+              </p>
+              {(() => {
+                const back = String((application as unknown as
+                  { returned_by_name?: string }).returned_by_name ?? '');
+                return back ? (
+                  <p className="mb-2 text-xs text-gray-500">
+                    Returned by {back} — it goes back to them when you send it.
+                  </p>
+                ) : null;
+              })()}
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  disabled={reworkBusy}
+                  onClick={() => {
+                    void (async () => {
+                      setReworkBusy(true);
+                      try {
+                        const r = await resubmitAfterRework(appId ?? '', {});
+                        const to = (r as unknown as { back_to?: string }).back_to;
+                        toast({ tone: 'success',
+                          message: `Sent back to ${to || 'credit'}.` });
+                        await refetch();
+                      } catch (e) {
+                        toast({ tone: 'danger',
+                          message: e instanceof Error ? e.message : 'Could not send it back' });
+                      } finally { setReworkBusy(false); }
+                    })();
+                  }}
+                >
+                  {reworkBusy ? 'Sending…' : 'Rework done — send it back'}
+                </Button>
+              </div>
+            </Card.Body>
+          </Card>
+        )}
+
+        {/* PICKING BELONGS WHERE THE WORK IS (ruling 2026-08-14):
                   "this should not have come on the Actions but on the
                   analysis." An analyst opening a case to work it should not
                   have to find another tab to claim it first - and Actions said

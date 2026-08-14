@@ -51,8 +51,10 @@ WRITE_NEW = '''                "committee_records":   deal.get("committee_record
                 # accumulated and no vote ever showed in the journey.
                 "committee_votes":     deal.get("committee_votes"),'''
 
-READ_OLD = '                   "branch", "segment", "committee_records",'
-READ_NEW = '                   "branch", "segment", "committee_records", "committee_votes",'
+# MD1 v2 writes this list with a different indent from MD1 v1, so the anchor
+# is taken from the shortest distinctive run rather than a whole line.
+READ_OLD = '"branch", "segment", "committee_records",'
+READ_NEW = '"branch", "segment", "committee_records", "committee_votes",'
 
 
 

@@ -45,7 +45,6 @@ const NAV_GROUPS: NavGroup[] = [
       // Standalone, NOT a channel: a shelf with claim mechanics and no budget,
       // so grouping it with the invested channels would imply a return question
       // it cannot answer.
-      { path: '/pipeline/warehouse', label: 'Deals Warehouse',    matchActive: (p) => p.startsWith('/pipeline/warehouse') },
       { path: '/referrals',       label: 'A2Z Sales Referral Analytics', matchActive: (p) => p.startsWith('/referrals') },
       { path: '/branch-log',      label: 'Daily Log',     matchActive: (p) => p.startsWith('/branch-log') },
       { path: '/portfolio',       label: 'Portfolio',            matchActive: (p) => p.startsWith('/portfolio') },
