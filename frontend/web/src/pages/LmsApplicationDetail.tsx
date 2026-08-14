@@ -234,10 +234,7 @@ export function LmsApplicationDetail() {
 
             </>
           ) },
-          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: (
-            <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
-          ) },
-          { id: 'documents', label: 'Documentation', color: '#0097A7', content: (
+          { id: 'documents', label: 'Department Analysis', color: '#0097A7', content: (
             <>
         {/* ─────────── Documentation card ─────────── */}
         <Card>
@@ -329,7 +326,6 @@ export function LmsApplicationDetail() {
           canAttach={!!(permissions.can_view ?? true)}
           onAttached={refetch} />
 
-        <DccVotePanel appId={application.id} toast={toast} onDone={refetch} />
 
         {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
@@ -339,6 +335,35 @@ export function LmsApplicationDetail() {
 
 
             </>
+          ) },
+          // ── DEPARTMENT CREDIT COMMITTEE ──────────────────────────────
+          // RULING (2026-08-14): "we embed a Department Credit Committee where
+          // we will have a similar page like that of the branch credit
+          // committee ... the same flow as the branch manager clicking on
+          // review and getting to that page to vote should be the same for the
+          // department committee."
+          //
+          // THE PANELS ALREADY EXISTED - DccVotePanel and SubmitToDccPanel -
+          // buried inside the journey and actions tabs, several screens apart.
+          // A member arriving to vote had to know where to look. They are the
+          // same two panels; what was missing was somewhere obvious to put
+          // them.
+          //
+          // Sits directly after Department Analysis, because that is the order
+          // the work happens: read the case, analyse it, take it to committee.
+          { id: 'dcc', label: 'Department Credit Committee', color: '#005B82', content: (
+            <div className="space-y-4">
+              <DccVotePanel appId={application.id} toast={toast} onDone={refetch} />
+              {permissions.can_submit_to_dcc && (
+                <SubmitToDccPanel appId={application.id} onDone={refetch} toast={toast} />
+              )}
+              {/* The branch committee's decision stays on the journey tab,
+                  where it is context for the whole case rather than only for
+                  voting - so it is not repeated here. */}
+            </div>
+          ) },
+          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: (
+            <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
           ) },
           { id: 'affordability', label: 'Affordability', color: '#00A65A', content: (
             <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} embedded canEdit={!!permissions.can_update} />
@@ -402,11 +427,6 @@ export function LmsApplicationDetail() {
               }}>Pick this case</Button>
             </div>
           </div>
-        )}
-
-        {/* ─────────── ACTION: Submit to DCC (if can_submit_to_dcc) ─────────── */}
-        {permissions.can_submit_to_dcc && (
-          <SubmitToDccPanel appId={application.id} onDone={refetch} toast={toast} />
         )}
 
         {/* ─────────── ACTION: Hand to Credit Analyst (if can_hand_to_credit_analyst) ─────────── */}
