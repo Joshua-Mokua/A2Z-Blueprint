@@ -13384,6 +13384,27 @@ def cast_committee_vote(deal_id: str, code: str,
 
 
     _pm.update_deal(deal_id, updates, str(user.get("username", "") or ""))
+    # ── AND INTO THE DATABASE, OR THE VOTE DID NOT HAPPEN ───────────────────
+    # update_deal writes the JSON store and NOTHING ELSE. Deals are read
+    # DB-first, so a vote recorded here was invisible to every screen that
+    # looked afterwards: the journey showed nothing, the queue still said
+    # "Review", and quorum never accumulated.
+    #
+    # MV1 taught the mapping to CARRY committee_votes; it did not make anything
+    # CALL that mapping after a vote. A field the mapping knows about is not
+    # persisted until something asks it to persist.
+    #
+    # Sync the whole deal, not the votes alone, so the stage set by an
+    # automatic advance travels in the same write.
+    try:
+        if _db_available():
+            _fresh = _pm.get_deal(deal_id)
+            if _fresh:
+                _db_sync_pipeline_deal(_fresh)
+    except Exception as _exc:
+        logger.warning("vote recorded in JSON but not synced to the database "
+                       "for %s: %s", deal_id, _exc)
+
     _audit("API_COMMITTEE_VOTE", user,
            f"deal={deal_id}|committee={code}|vote={vote}|"
            f"{attended}/{quorum}|outcome={outcome or 'pending'}")
