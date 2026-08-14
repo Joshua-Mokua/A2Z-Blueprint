@@ -76,7 +76,12 @@ export function PipelineManagerQueues() {
   useEffect(() => {
     void (async () => {
       try {
-        setCommitteeCount((await fetchCommitteeQueue()).total);
+        // COUNT WHAT IS WAITING ON YOU, not what the committee has not
+        // finished. Three cases with your vote already on two of them is one
+        // outstanding task, not three - and a badge that will not go down as
+        // you work is a badge people stop reading.
+        const q = await fetchCommitteeQueue();
+        setCommitteeCount(q.cases.filter((c) => !c.you_voted).length);
       } catch {
         setCommitteeCount(0);
       }

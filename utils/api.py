@@ -647,6 +647,45 @@ def _db_sync_pipeline_deal(deal: Optional[dict], conflict: str = "update") -> No
         raise
 
 
+def _write_deal(pm, deal_id: str, updates: dict, actor: str = "") -> None:
+    """Write a deal change to BOTH stores. Use this, never update_deal alone.
+
+    RULING, stated repeatedly and finally obeyed (2026-08-14): "this is a bank
+    system ... it will purely run on PostgreSQL. Anything we are doing on JSON
+    is costing us."
+
+    It has cost us four separate mornings. PipelineManager.update_deal writes
+    the JSON store and nothing else, while deals are READ DB-first - so a
+    change written through it lands somewhere nothing reads. Each time the
+    symptom looked like a different bug:
+
+        branch lost              a case never reached its committee
+        a seeded case invisible  the queue read a store the seeder had not
+        a vote that vanished     no journey entry, no quorum, "Review" for ever
+
+    Of 23 update_deal call sites in this module, 11 had no sync. That is not a
+    bug to fix eleven times; it is a missing function.
+
+    THE PROPER FIX is a DB-backed PipelineManager - but core.py is a delta file
+    that never travels to the pilot, so a fix there would help nobody at the
+    bank. This lives in api.py, which does travel.
+
+    The whole deal is re-read and synced, not the updates alone, so anything
+    else set in the same request travels with it. If the database write fails
+    the JSON write still stands and a warning is logged: a recorded decision
+    must not be lost because the copy failed.
+    """
+    pm.update_deal(deal_id, updates, actor)
+    try:
+        if _db_available():
+            fresh = pm.get_deal(deal_id)
+            if fresh:
+                _db_sync_pipeline_deal(fresh)
+    except Exception as exc:
+        logger.warning("deal %s written to JSON but not synced to the "
+                       "database: %s", deal_id, exc)
+
+
 def _normalize_db_deal_row(row):
     """Map pipeline_deals DB columns to the field names the React frontend
     expects (amount->deal_value, product->product_type, metadata->
@@ -3247,7 +3286,7 @@ def create_validation_request(deal_id: str, payload: dict = Body(default_factory
         "validated_by": None, "validated_by_name": None, "validated_at": None, "note": None,
     }
     reqs = _vr_list(deal) + [req]
-    pm.update_deal(deal_id, {"validation_requests": reqs}, str(user.get("username", "") or ""))
+    _write_deal(pm, deal_id, {"validation_requests": reqs}, str(user.get("username", "") or ""))
     try:
         from utils.core_audit import audit_log
         audit_log("VALIDATION_REQUEST_CREATED", str(user.get("username", "") or ""),
@@ -3336,7 +3375,7 @@ def resolve_validation_request(deal_id: str, req_id: str, payload: dict = Body(d
             except Exception:
                 pass
 
-    pm.update_deal(deal_id, _deal_updates, str(user.get("username", "") or ""))
+    _write_deal(pm, deal_id, _deal_updates, str(user.get("username", "") or ""))
     try:
         from utils.core_audit import audit_log
         audit_log(f"VALIDATION_REQUEST_{decision.upper()}", str(user.get("username", "") or ""),
@@ -3383,7 +3422,7 @@ def lift_deal_hold(deal_id: str, payload: dict = Body(default_factory=dict),
                            by_role=str(user.get("role", "") or ""))
         except Exception:
             pass
-    pm.update_deal(deal_id, updates, str(user.get("username", "") or ""))
+    _write_deal(pm, deal_id, updates, str(user.get("username", "") or ""))
     try:
         from utils.core_audit import audit_log
         audit_log("DEAL_HOLD_LIFTED", str(user.get("username", "") or ""), f"deal={deal_id}")
@@ -3862,7 +3901,7 @@ def pipeline_submit_to_credit(
         # Recorded, not waved through. The next person to open this deal sees
         # exactly what is still owed and by whom.
         try:
-            pm.update_deal(deal_id, {
+            _write_deal(pm, deal_id, {
                 "documents_outstanding": outstanding,
                 "documents_outstanding_at": datetime.now().isoformat(timespec="seconds"),
             }, str(user.get("username", "") or ""))
@@ -3887,7 +3926,7 @@ def pipeline_submit_to_credit(
     if not app_id:
         raise HTTPException(status_code=500,
             detail="Could not create the loan application from this deal.")
-    pm.update_deal(deal_id, {
+    _write_deal(pm, deal_id, {
         "documents_provided": provided,
         "lms_application_id": app_id,
         "submitted_to_credit": True,
@@ -7745,7 +7784,7 @@ def pipeline_deal_validate(
         _vname = str(user.get("full_name", "") or user.get("username", "") or "")
         _vrole = str(user.get("role", "") or "")
         _vcode = str(user.get("staff_code", "") or "")
-        pm.update_deal(deal_id, {
+        _write_deal(pm, deal_id, {
             "validated_by_name": _vname,
             "validated_by_role": _vrole,
             "validated_by_code": _vcode,
@@ -13027,7 +13066,7 @@ def save_deal_cr(deal_id: str, payload: dict = Body(default_factory=dict),
         "updated_by": str(user.get("username", "") or ""),
         "updated_at": _dt.now().isoformat(timespec="seconds"),
     }
-    pm.update_deal(deal_id, {"cr": cr}, str(user.get("username", "") or ""))
+    _write_deal(pm, deal_id, {"cr": cr}, str(user.get("username", "") or ""))
     # update_deal writes the JSON store. Reads are Postgres-FIRST (see
     # _get_or_hydrate_deal, Phase B2), so without this mirror the CR is written to
     # JSON, never reaches PG, and every later read loses it: the deal saves with a
@@ -13501,7 +13540,7 @@ def record_deal_committee_decision(deal_id: str, payload: dict = Body(default_fa
 
     records = dict(deal.get("committee_records", {}) or {})
     records[code] = record
-    pm.update_deal(deal_id, {"committee_records": records}, str(user.get("username", "") or ""))
+    _write_deal(pm, deal_id, {"committee_records": records}, str(user.get("username", "") or ""))
     _audit("API_DEAL_COMMITTEE_RECORD", user, f"deal={deal_id}|code={code}|outcome={record['outcome']}")
     return {"status": "recorded", "code": code, "record": record}
 # === END COMMITTEE DECISION CAPTURE ===
@@ -13555,7 +13594,7 @@ def appeal_committee_decision(deal_id: str, payload: dict = Body(default_factory
     })
     # clear the rejected record so the gate re-opens for a fresh decision
     records.pop(code, None)
-    pm.update_deal(deal_id, {"committee_records": records, "appeals": appeals},
+    _write_deal(pm, deal_id, {"committee_records": records, "appeals": appeals},
                    str(user.get("username", "") or ""))
     _audit("API_DEAL_COMMITTEE_APPEAL", user, f"deal={deal_id}|code={code}")
     return {"status": "appealed", "code": code,
@@ -13583,7 +13622,7 @@ def close_deal_as_lost(deal_id: str, payload: dict = Body(default_factory=dict),
     if not (is_owner or is_admin_like):
         raise HTTPException(status_code=403, detail="Only the deal owner (or admin) can close the deal.")
     reason = str(payload.get("reason", "") or "").strip()
-    pm.update_deal(deal_id, {"stage": "Closed Lost", "close_reason": reason},
+    _write_deal(pm, deal_id, {"stage": "Closed Lost", "close_reason": reason},
                    str(user.get("username", "") or ""))
     _audit("API_DEAL_CLOSE_LOST", user, f"deal={deal_id}|reason={reason[:60]}")
     return {"status": "closed_lost", "deal_id": deal_id}
@@ -13964,7 +14003,7 @@ def save_deal_appraisal(deal_id: str, payload: dict = Body(default_factory=dict)
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
     _enforce_deal_lock(deal, user, "appraisal")  # Phase L
     appr = _appraisal_stamp(payload, user)
-    pm.update_deal(deal_id, {"appraisal": appr}, str(user.get("username", "") or ""))
+    _write_deal(pm, deal_id, {"appraisal": appr}, str(user.get("username", "") or ""))
     return appr
 
 
