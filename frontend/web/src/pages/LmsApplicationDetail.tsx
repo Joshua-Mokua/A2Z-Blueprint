@@ -20,7 +20,7 @@ import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesT
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, resubmitAfterRework, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -79,6 +79,9 @@ export function LmsApplicationDetail() {
   // Panel toggles
   const [assignOpen,   setAssignOpen]   = useState(false);
   const [updateOpen,   setUpdateOpen]   = useState(false);
+  // The rework button lives on the Department Review tab, which renders inside
+  // THIS component - so its state belongs here, above every early return.
+  const [reworkBusy, setReworkBusy] = useState(false);
   const [decisionOpen, setDecisionOpen] = useState(false);
 
   const currencySymbol = branding?.currency_symbol ?? 'KES';
@@ -234,88 +237,125 @@ export function LmsApplicationDetail() {
 
             </>
           ) },
-          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: (
-            <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
-          ) },
-          { id: 'documents', label: 'Documentation', color: '#0097A7', content: (
+          { id: 'documents', label: 'Department Review', color: '#0097A7', content: (
             <>
-        {/* ─────────── Documentation card ─────────── */}
-        <Card>
-          <Card.Header>
-            <h2 className="text-base font-semibold text-gray-900">Documentation</h2>
-            {application.completeness_score !== undefined && (
-              <span className="text-xs text-gray-500">
-                {application.completeness_score}% complete
-              </span>
-            )}
-          </Card.Header>
-          <Card.Body>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* PENDING, NOT "REQUIRED" (ruling 2026-08-12). Documents can now
-                  travel with a case rather than blocking it, so a list headed
-                  "Required" beside a case that is already in analysis states
-                  something that is no longer true - and "Required (0) / No
-                  documents required" on a case carrying five documents reads as
-                  a fault.
+              {/* ─────────── The rework is done ───────────
+            RULING (2026-08-14): "it is extremely important to have the rework
+            submit, and it should send it right back. The rework submit should
+            also be on the department analyst side."
 
-                  What an analyst needs is what is STILL OUTSTANDING. When
-                  nothing is, the panel says so rather than showing an empty
-                  heading. */}
-              <div>
-                {(() => {
-                  const req = application.docs_required ?? [];
-                  const have = application.docs_submitted ?? [];
-                  const pending = req.filter((d) => !have.includes(d));
-                  return (
-                    <>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
-                        {pending.length > 0
-                          ? `Pending submission (${pending.length})`
-                          : 'Documentation'}
-                      </div>
-                      {pending.length > 0 ? (
-                        <ul className="text-sm text-gray-700 space-y-1">
-                          {pending.map((d, i) => (
-                            <li key={i} className="flex items-center gap-2 text-gray-600">
-                              <span className="text-[#E0A02B]">○</span>
-                              <span>{d}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <div className="text-xs text-gray-500">
-                          {have.length > 0
-                            ? `Nothing outstanding — ${have.length} document${have.length === 1 ? '' : 's'} on file.`
-                            : 'Nothing outstanding.'}
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
+            RB1 sends a case back to the branch with what needs fixing, and
+            nothing sent it on again - so a returned case could only move by
+            API. That is the half of a loop that makes the other half useless.
+
+            SHOWN TO WHOEVER OPENS A RETURNED CASE. The owner at the branch
+            does the work; the analyst may also send it back once they can see
+            it is done. Both need the same button, because a case waiting on
+            "who is allowed to press this" is a case not moving.
+
+            THE SERVER DECIDES WHERE IT GOES - back to the analyst who returned
+            it, or to the pool if that person cannot be identified. */}
+        {String(application.status || '') === 'returned' && (
+          <Card stripe="accent">
+            <Card.Header>
+              <h3 className="text-sm font-semibold text-gray-900">Returned for rework</h3>
+            </Card.Header>
+            <Card.Body>
+              <p className="mb-2 text-sm text-gray-800">
+                {String((application as unknown as Record<string, unknown>).rework_reasons ?? '')
+                  || 'This case was returned for correction.'}
+              </p>
+              {(() => {
+                const back = String((application as unknown as
+                  { returned_by_name?: string }).returned_by_name ?? '');
+                return back ? (
+                  <p className="mb-2 text-xs text-gray-500">
+                    Returned by {back} — it goes back to them when you send it.
+                  </p>
+                ) : null;
+              })()}
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  disabled={reworkBusy}
+                  onClick={() => {
+                    void (async () => {
+                      setReworkBusy(true);
+                      try {
+                        const r = await resubmitAfterRework(appId ?? '', {});
+                        const to = (r as unknown as { back_to?: string }).back_to;
+                        toast({ tone: 'success',
+                          message: `Sent back to ${to || 'credit'}.` });
+                        await refetch();
+                      } catch (e) {
+                        toast({ tone: 'danger',
+                          message: e instanceof Error ? e.message : 'Could not send it back' });
+                      } finally { setReworkBusy(false); }
+                    })();
+                  }}
+                >
+                  {reworkBusy ? 'Sending…' : 'Rework done — send it back'}
+                </Button>
               </div>
-              <div>
-                <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
-                  Underwriting flags
-                </div>
-                <ul className="text-sm text-gray-700 space-y-1">
-                  <li>Repeat borrower: <span className="font-medium">{application.is_repeat_borrower ? 'yes' : 'no'}</span></li>
-                  <li>Clean repayment history: <span className="font-medium">{application.clean_repayment_history ? 'yes' : 'no'}</span></li>
-                  <li>Compliance flag: <span className="font-medium">{application.compliance_flag ? `yes (${application.compliance_type || 'unspecified'})` : 'no'}</span></li>
-                </ul>
+            </Card.Body>
+          </Card>
+        )}
+
+        {/* PICKING BELONGS WHERE THE WORK IS (ruling 2026-08-14):
+                  "this should not have come on the Actions but on the
+                  analysis." An analyst opening a case to work it should not
+                  have to find another tab to claim it first - and Actions said
+                  only "no actions available for your role", which reads as a
+                  dead end rather than a case waiting to be picked up. */}
+        {/* ─────────── ACTION: Self-pick (if can_self_pick) ─────────── */}
+        {permissions.can_self_pick && (
+          <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-blue-900">
+                This case is unallocated and in your segment. Pick it to start working it.
               </div>
+              <Button onClick={async () => {
+                try {
+                  await pickLmsApplication(application.id);
+                  await refetch();
+                  toast({ tone: 'success', message: 'Case picked — assigned to you.' });
+                } catch (e) {
+                  toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Pick failed.' });
+                }
+              }}>Pick this case</Button>
             </div>
-            {application.appraisal_notes && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                  Appraisal notes
-                </div>
-                <div className="text-sm text-gray-700 whitespace-pre-line">
-                  {application.appraisal_notes}
-                </div>
-              </div>
-            )}
-          </Card.Body>
-        </Card>
+          </div>
+        )}
+
+        {/* THE DOCUMENTATION HEADER CARD IS GONE (ruling 2026-08-14): "we can
+                  remove entirely the top part written Documentation and the
+                  contents."
+
+                  A completeness percentage that reads 0%, "Nothing
+                  outstanding", and three underwriting flags all reading "no"
+                  told the analyst nothing they could act on - and pushed the
+                  papers and the decision below the fold. What is left is the
+                  documents themselves and the verdict. */}
+
+        {/* ─────────── The analyst's verdict ───────────
+            RULING (2026-08-14): "it is here that we need to see the
+            recommendation from the consumer analyst ... if it returns for
+            reworks with specifics, or recommend for department credit review
+            which we defined as should be able to auto advance including
+            stage."
+
+            CorrectnessPanel already carries both - a reason list for a rework
+            and a "ready for committee" verdict. It was on another tab, so the
+            analyst read the papers on one screen and recorded the verdict on
+            another. It belongs with the evidence it is a verdict about. */}
+        {/* THE ASSIGNED ANALYST RECORDS IT, not anybody who can edit the
+            case. This is the gate the panel already had on the Actions tab and
+            it is the right one - a verdict carries a name, so the person
+            giving it must be the person the case is with. */}
+        {String(application.analyst?.code ?? '') === String(user?.staff_code ?? '')
+          && !!application.analyst?.code && (
+          <CorrectnessPanel appId={application.id} onDone={refetch} toast={toast} />
+        )}
 
         <LmsTravelledDocuments appId={application.id} canDownload={!!permissions.can_update}
           // Whoever is WORKING the case may attach: the analyst who can send it
@@ -329,7 +369,6 @@ export function LmsApplicationDetail() {
           canAttach={!!(permissions.can_view ?? true)}
           onAttached={refetch} />
 
-        <DccVotePanel appId={application.id} toast={toast} onDone={refetch} />
 
         {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
@@ -339,6 +378,35 @@ export function LmsApplicationDetail() {
 
 
             </>
+          ) },
+          // ── DEPARTMENT CREDIT COMMITTEE ──────────────────────────────
+          // RULING (2026-08-14): "we embed a Department Credit Committee where
+          // we will have a similar page like that of the branch credit
+          // committee ... the same flow as the branch manager clicking on
+          // review and getting to that page to vote should be the same for the
+          // department committee."
+          //
+          // THE PANELS ALREADY EXISTED - DccVotePanel and SubmitToDccPanel -
+          // buried inside the journey and actions tabs, several screens apart.
+          // A member arriving to vote had to know where to look. They are the
+          // same two panels; what was missing was somewhere obvious to put
+          // them.
+          //
+          // Sits directly after Department Analysis, because that is the order
+          // the work happens: read the case, analyse it, take it to committee.
+          { id: 'dcc', label: 'Department Credit Committee', color: '#005B82', content: (
+            <div className="space-y-4">
+              <DccVotePanel appId={application.id} toast={toast} onDone={refetch} />
+              {permissions.can_submit_to_dcc && (
+                <SubmitToDccPanel appId={application.id} onDone={refetch} toast={toast} />
+              )}
+              {/* The branch committee's decision stays on the journey tab,
+                  where it is context for the whole case rather than only for
+                  voting - so it is not repeated here. */}
+            </div>
+          ) },
+          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: (
+            <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
           ) },
           { id: 'affordability', label: 'Affordability', color: '#00A65A', content: (
             <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} embedded canEdit={!!permissions.can_update} />
@@ -384,31 +452,6 @@ export function LmsApplicationDetail() {
         )}
 
 
-        {/* ─────────── ACTION: Self-pick (if can_self_pick) ─────────── */}
-        {permissions.can_self_pick && (
-          <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-sm text-blue-900">
-                This case is unallocated and in your segment. Pick it to start working it.
-              </div>
-              <Button onClick={async () => {
-                try {
-                  await pickLmsApplication(application.id);
-                  await refetch();
-                  toast({ tone: 'success', message: 'Case picked — assigned to you.' });
-                } catch (e) {
-                  toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Pick failed.' });
-                }
-              }}>Pick this case</Button>
-            </div>
-          </div>
-        )}
-
-        {/* ─────────── ACTION: Submit to DCC (if can_submit_to_dcc) ─────────── */}
-        {permissions.can_submit_to_dcc && (
-          <SubmitToDccPanel appId={application.id} onDone={refetch} toast={toast} />
-        )}
-
         {/* ─────────── ACTION: Hand to Credit Analyst (if can_hand_to_credit_analyst) ─────────── */}
         {permissions.can_hand_to_credit_analyst && (
           <HandToCreditAnalystPanel appId={application.id} onDone={refetch} toast={toast} />
@@ -436,7 +479,7 @@ export function LmsApplicationDetail() {
             application.assignment_purpose === 'correctness'
               ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-800'}`}>
             {application.assignment_purpose === 'correctness'
-              ? 'Assigned for correctness check — confirm the case is well-packaged (Transaction Memo complete, docs attached) and mark it ready for committee, or return it for rework.'
+              ? 'Read the papers, then either recommend the case to the department committee or return it to the branch with what needs fixing.'
               : 'Assigned for decisioning — analyse the case and record the credit decision.'}
           </div>
         )}
@@ -445,17 +488,14 @@ export function LmsApplicationDetail() {
             application.committee_readiness.state === 'ready_for_committee'
               ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
             {application.committee_readiness.state === 'ready_for_committee'
-              ? `Ready for committee — checked by ${application.committee_readiness.by_name}`
+              ? `Recommended to committee by ${application.committee_readiness.by_name}`
               : `Returned for rework — by ${application.committee_readiness.by_name}`}
             {application.committee_readiness.opinion
               && <div className="mt-1 italic">Opinion: {application.committee_readiness.opinion}</div>}
           </div>
         )}
-        {application.assignment_purpose === 'correctness'
-          && String(application.analyst?.code ?? '') === String(user?.staff_code ?? '')
-          && (
-          <CorrectnessPanel appId={application.id} onDone={refetch} toast={toast} />
-        )}
+        {/* CorrectnessPanel moved to Department Review, where the papers
+            it judges are. Removed here so it does not render twice. */}
 
         {/* ─────────── ACTION: Edit Application (if can_update) ─────────── */}
         {permissions.can_update && (
@@ -1371,7 +1411,57 @@ function DccVotePanel({ appId, toast, onDone }: {
   const [busy, setBusy] = useState(false);
   const load = () => { getDccRoster(appId).then(setRoster).catch(() => { /* none */ }); };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [appId]);
-  if (!roster || !roster.enabled || (!roster.is_dcc_case && !roster.outcome)) return null;
+  // ── SAY WHY, RATHER THAN NOTHING ─────────────────────────────────────────
+  // This returned null whenever the case was not yet before the committee, so
+  // the Department Credit Committee tab rendered BLANK - which reads as broken
+  // rather than as "not yet". A member opening it to vote had no way to tell
+  // the difference.
+  //
+  // Returning null is right where the panel is one card among many on another
+  // tab. It is wrong when the panel IS the tab.
+  if (!roster) {
+    return (
+      <Card>
+        <Card.Body>
+          <p className="py-6 text-center text-sm text-gray-400">Loading the committee…</p>
+        </Card.Body>
+      </Card>
+    );
+  }
+  if (!roster.enabled) {
+    return (
+      <Card>
+        <Card.Header>
+          <h3 className="text-sm font-semibold text-gray-900">Department Credit Committee</h3>
+        </Card.Header>
+        <Card.Body>
+          <p className="text-sm text-gray-600">
+            The department committee is not switched on for this bank. An
+            administrator enables it under Administration → Credit Committees.
+          </p>
+        </Card.Body>
+      </Card>
+    );
+  }
+  if (!roster.is_dcc_case && !roster.outcome) {
+    return (
+      <Card>
+        <Card.Header>
+          <h3 className="text-sm font-semibold text-gray-900">Department Credit Committee</h3>
+        </Card.Header>
+        <Card.Body>
+          <p className="text-sm text-gray-600">
+            This case has not been submitted to the department committee yet.
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            It arrives here once the analyst marks it ready on the Department
+            Review tab — then the committee's members vote, and the case moves
+            on by itself when they have.
+          </p>
+        </Card.Body>
+      </Card>
+    );
+  }
   const votesByMember = new Map(roster.votes.map((v) => [v.member_id, v]));
   const resolve = async () => {
     setBusy(true);
@@ -2174,6 +2264,20 @@ function CorrectnessPanel({ appId, onDone, toast }: {
   }, []);
   const toggleReason = (r: string) =>
     setReasons((p) => (p.includes(r) ? p.filter((x) => x !== r) : [...p, r]));
+  // ── ASK BEFORE SUBMITTING ────────────────────────────────────────────────
+  // RULING (2026-08-14): "it submitted without asking if there are documents
+  // required for her to attach ... it can allow without, but the question
+  // where she selects Yes or No should come up for confirmation on her side."
+  //
+  // Recommending now SENDS the case, and a click that sends something should
+  // ask once. The question is the useful one - is anything still to attach -
+  // rather than a bare "are you sure", which people learn to click through.
+  //
+  // ANSWERING "yes, something is missing" does not block: it closes the
+  // dialogue and leaves her on the page with the attach control, because the
+  // remedy for a missing paper is to attach it, not to be told off.
+  const [confirmReady, setConfirmReady] = useState(false);
+
   const act = async (decision: 'ready' | 'rework') => {
     if (decision === 'rework' && reasons.length === 0) {
       toast({ tone: 'danger', message: 'Select at least one rework reason before returning the case.' });
@@ -2183,7 +2287,9 @@ function CorrectnessPanel({ appId, onDone, toast }: {
     try {
       await setCommitteeReadiness(appId, decision, opinion.trim() || undefined,
         decision === 'rework' ? reasons : undefined);
-      toast({ tone: 'success', message: decision === 'ready' ? 'Marked ready for committee.' : 'Returned for rework.' });
+      toast({ tone: 'success', message: decision === 'ready'
+        ? 'Recommended — the case is now with the department committee.'
+        : 'Returned to the branch for rework.' });
       await onDone();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Action failed' });
@@ -2215,7 +2321,34 @@ function CorrectnessPanel({ appId, onDone, toast }: {
           rows={3}
         />
         <div className="flex gap-2">
-          <Button variant="primary" onClick={() => void act('ready')} disabled={busy}>Mark ready for committee</Button>
+          {/* "MAYBE READY RECOMMENDED" (ruling 2026-08-14). "Mark ready" reads
+              like a housekeeping flag; what the analyst is doing is
+              RECOMMENDING the case, and that recommendation now sends it to
+              the committee in the same act. The label should say so, because
+              somebody who thinks they are ticking a box will press it more
+              casually than somebody who knows they are submitting. */}
+          {confirmReady && (
+            <div className="mb-3 w-full rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5">
+              <p className="text-sm font-medium text-amber-900">
+                Is there any document still to be attached to this case?
+              </p>
+              <p className="mt-1 text-xs text-amber-800">
+                Recommending sends it straight to the department committee — they
+                will vote on the papers as they stand.
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                <Button size="sm" variant="secondary"
+                  onClick={() => setConfirmReady(false)}>
+                  Yes — let me attach it first
+                </Button>
+                <Button size="sm" disabled={busy}
+                  onClick={() => { setConfirmReady(false); void act('ready'); }}>
+                  No — recommend it now
+                </Button>
+              </div>
+            </div>
+          )}
+          <Button variant="primary" onClick={() => setConfirmReady(true)} disabled={busy}>Recommend to committee</Button>
           <Button variant="ghost" onClick={() => void act('rework')} disabled={busy}>Return for rework</Button>
         </div>
       </Card.Body>

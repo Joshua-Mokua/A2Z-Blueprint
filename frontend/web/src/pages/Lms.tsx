@@ -13,7 +13,7 @@ import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
 import { useLmsApplications } from '@/hooks/useLmsApplications';
 import { useToast } from '@/components/Toast';
-import { requestLmsAssignment, fetchAssignmentRequests, assignLmsAnalyst, fetchMyAnalysts, type AssignmentRequestCase, type AssignableAnalyst } from '@/lib/api';
+import { fetchAssignmentRequests, assignLmsAnalyst, fetchMyAnalysts, type AssignmentRequestCase, type AssignableAnalyst, pickLmsApplication } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/Badge';
@@ -21,7 +21,6 @@ import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
 import {
   statusTone,
-  APPLICATION_STATUSES,
   type LoanApplication,
 } from '@/types/lms';
 
@@ -62,16 +61,26 @@ export function Lms() {
   const { toast } = useToast();
   const [requestBusy, setRequestBusy] = useState<string | null>(null);
   const isManagerRole = isAdmin || /chief|head|manager|officer|director|managing/.test(roleLc);
-  const doRequest = async (appId: string) => {
+  // PICKING IS IMMEDIATE. doRequest below asks a manager to allocate the case
+  // and is kept for the roles that still work that way; a department analyst
+  // takes their own segment's work without asking.
+  const doPick = async (appId: string) => {
     setRequestBusy(appId);
     try {
-      await requestLmsAssignment(appId);
-      toast({ tone: 'success', message: 'Assignment requested — the credit manager will action it.' });
+      await pickLmsApplication(appId);
+      toast({ tone: 'success', message: 'Picked — it is in My cases now.' });
       await refetch();
     } catch (e) {
-      toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Request failed' });
-    } finally { setRequestBusy(null); }
+      toast({ tone: 'danger',
+        message: e instanceof Error ? e.message : 'Could not pick this case' });
+    } finally {
+      setRequestBusy(null);
+    }
   };
+
+  // doRequest removed with the button it served: a department analyst picks
+  // rather than requests. If a role that still needs manager allocation
+  // appears, request-assignment is untouched on the server.
   const [requestsCases, setRequestsCases] = useState<AssignmentRequestCase[]>([]);
   const [analystPool, setAnalystPool] = useState<AssignableAnalyst[]>([]);
   const [assignBusy, setAssignBusy] = useState<string | null>(null);
@@ -126,15 +135,10 @@ export function Lms() {
   const pagedApps = filteredApps.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
   // ── Status counts for the filter chips ──
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: applications.length };
-    for (const status of APPLICATION_STATUSES) counts[status] = 0;
-    for (const a of applications) {
-      const s = (a.status || '').toLowerCase();
-      counts[s] = (counts[s] || 0) + 1;
-    }
-    return counts;
-  }, [applications]);
+  // statusCounts is gone with the filter row it fed. statusFilter itself
+  // stays and remains 'all' - it is the mechanism the search box and the tabs
+  // narrow through, and removing it would mean rewriting a working filter to
+  // delete a row of buttons.
 
   const tabCounts = useMemo(() => ({
     mine: applications.filter((a) => String(a.analyst?.code ?? '') === myCode).length,
@@ -150,7 +154,7 @@ export function Lms() {
       {/* Header strip — same brand-navy as Pipeline pages */}
       <PageHeader
         ribbon
-        breadcrumbs={[{ label: 'EKE Credit Intelligence System (CIS)' }, { label: 'Credit Analysis' }]}
+        breadcrumbs={[{ label: 'A2Z Credit Intelligence System (CIS)' }, { label: 'Credit Analysis' }]}
         title="Credit Analysis"
         subtitle="Submitted, assigned, and decided applications in your cascade."
       />
@@ -245,7 +249,17 @@ export function Lms() {
           <Card.Body>
             {/* B1: workload tabs */}
             <div className="flex items-center gap-2 mb-3 border-b border-gray-100 pb-3">
-              {([['mine', 'My cases'], ['pool', 'Pool'], ['all', 'All']] as const).map(([key, label]) => (
+              {/* TWO TABS (ruling 2026-08-14): "this should be My cases and
+                  the Pool. It is the pool that will contain all the cases
+                  submitted from the branch, and from here is where they select
+                  and it comes to My cases - once selected it moves out of the
+                  pool. This is for a department especially with 2 analysts to
+                  all pick from the pool."
+
+                  "All" was a third view of the same cases that answered no
+                  question an analyst asks. What is waiting for anyone, and
+                  what is mine - those are the two. */}
+              {([['mine', 'My cases'], ['pool', 'Pool']] as const).map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
@@ -257,36 +271,17 @@ export function Lms() {
                 </button>
               ))}
               {tab === 'pool' && (
-                <span className="ml-2 text-xs text-gray-400">Read-only — request assignment from a case to work it.</span>
+                <span className="ml-2 text-xs text-gray-500">Everything waiting for this department. Open a case and pick it — it moves to My cases and out of the pool.</span>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <button
-                onClick={() => setStatusFilter('all')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                  statusFilter === 'all'
-                    ? 'bg-brand-primary text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                All ({statusCounts.all})
-              </button>
-              {APPLICATION_STATUSES.map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                    statusFilter === status
-                      ? 'bg-brand-primary text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                  disabled={statusCounts[status] === 0}
-                >
-                  {status} ({statusCounts[status] || 0})
-                </button>
-              ))}
-            </div>
+            {/* THE STATUS FILTER ROW IS GONE (ruling 2026-08-14): "we can
+                remove the rest of the items since they can still view that
+                from the Sales Pro."
 
+                Thirteen status buttons - approved, declined, offer_signed,
+                analyst_confirmed - are the shape of the workflow, not a
+                question anybody opens this page to ask. My cases and the Pool
+                are. The full picture is a click away in Sales Pro. */}
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -392,7 +387,7 @@ export function Lms() {
                       <th className="px-4 py-3">RM</th>
                       <th className="px-4 py-3">Analyst</th>
                       <th className="px-4 py-3">SLA</th>
-                      <th className="px-4 py-3">Applied</th>
+                      <th className="px-4 py-3">Review</th>
                       {isManagerRole && <th className="px-4 py-3">Assign</th>}
                     </tr>
                   </thead>
@@ -427,15 +422,22 @@ export function Lms() {
                           {app.analyst?.name
                             ? app.analyst.name
                             : (tab === 'pool' && isPureAnalyst ? (
+                              /* PICK, NOT REQUEST (ruling 2026-08-14): "this
+                                 page should now have pick and not request
+                                 assignment."
+
+                                 Requesting belongs where a manager allocates
+                                 work. A department analyst owns their
+                                 segment's cases already, so asking permission
+                                 to take one adds a person to the chain for no
+                                 decision - and leaves the case sitting in the
+                                 pool while everybody waits. */
                               <button
-                                onClick={(e) => { e.stopPropagation(); void doRequest(app.id); }}
-                                disabled={requestBusy === app.id
-                                  || (app.assignment_requests ?? []).some((r) => String(r.by_code) === myCode)}
-                                className="rounded border border-brand-primary px-2 py-0.5 text-xs text-brand-primary hover:bg-brand-primary/5 disabled:opacity-50"
+                                onClick={(e) => { e.stopPropagation(); void doPick(app.id); }}
+                                disabled={requestBusy === app.id}
+                                className="rounded border border-brand-primary px-2 py-0.5 text-xs font-medium text-brand-primary hover:bg-brand-primary/5 disabled:opacity-50"
                               >
-                                {(app.assignment_requests ?? []).some((r) => String(r.by_code) === myCode)
-                                  ? 'Requested'
-                                  : (requestBusy === app.id ? 'Requesting…' : 'Request assignment')}
+                                {requestBusy === app.id ? 'Picking…' : 'Pick'}
                               </button>
                             ) : <span className="text-gray-400">unassigned</span>)}
                         </td>
@@ -465,8 +467,32 @@ export function Lms() {
                             </div>
                           ) : <span className="text-gray-300">—</span>}
                         </td>
-                        <td className="px-4 py-3 text-gray-600 text-xs">
-                          {formatDate(app.application_date)}
+                        {/* WHAT THE REVIEW SAYS, not when it was applied for
+                            (ruling 2026-08-14): "once the analyst recommends or
+                            returns it records here as reviewed and returned."
+
+                            The application date was the same for every DRYRUN
+                            case and told nobody whether their queue had moved.
+                            What an analyst scanning this list wants is which
+                            cases they have dealt with. The date is still on
+                            the case itself. */}
+                        <td className="px-4 py-3 text-xs">
+                          {(() => {
+                            const r = (app as unknown as {
+                              committee_readiness?: { state?: string; by_name?: string };
+                            }).committee_readiness;
+                            const st = String(app.status || '').toLowerCase();
+                            if (r?.state === 'ready_for_committee') {
+                              return <span className="font-medium text-[#005B82]">Reviewed · recommended</span>;
+                            }
+                            if (r?.state === 'returned_for_rework' || st === 'returned') {
+                              return <span className="font-medium text-amber-700">Reviewed · returned</span>;
+                            }
+                            if (st === 'assigned') {
+                              return <span className="text-gray-500">In review</span>;
+                            }
+                            return <span className="text-gray-400">{formatDate(app.application_date)}</span>;
+                          })()}
                         </td>
                         {isManagerRole && (
                           <td className="px-4 py-3 text-xs relative" onClick={(e) => e.stopPropagation()}>

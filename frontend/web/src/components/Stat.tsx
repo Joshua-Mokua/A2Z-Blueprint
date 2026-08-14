@@ -23,6 +23,9 @@ import { cn } from '@/lib/cn';
 export interface StatProps {
   label: ReactNode;
   value: ReactNode;
+  /** The exact figure, shown on hover. A compact headline must never be the
+   *  only place a number exists. */
+  titleText?: string;
   sub?: ReactNode;
   delta?: number;
   invertDelta?: boolean;
@@ -52,7 +55,7 @@ function formatDelta(delta: number): string {
 }
 
 export function Stat({
-  label, value, sub, delta, invertDelta = false,
+  label, value, sub, delta, invertDelta = false, titleText,
   loading = false, stripe = 'primary', tone, onClick, className,
 }: StatProps) {
   // When invertDelta is true (e.g. NPL ratio), down is good.
@@ -87,7 +90,11 @@ export function Stat({
           <span className="inline-block h-9 w-24 rounded
                             bg-gray-100 animate-pulse" />
         ) : (
-          <span className="text-3xl font-bold text-brand-secondary">
+          // min-w-0 + truncate: without both, a long figure pushes the card
+          // wider than its grid cell and the row stops lining up. The exact
+          // number is on hover.
+          <span title={titleText}
+                className="block min-w-0 truncate text-3xl font-bold text-brand-secondary">
             {value}
           </span>
         )}
