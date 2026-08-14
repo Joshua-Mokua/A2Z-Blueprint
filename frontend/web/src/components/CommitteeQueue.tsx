@@ -97,7 +97,13 @@ export function CommitteeQueue({ compact = false }: { compact?: boolean }) {
                   <td className="px-3 py-2 text-right">
                     <button
                       type="button"
-                      onClick={() => nav(`/pipeline/deals/${encodeURIComponent(c.deal_id)}`)}
+                      // THE ROUTE IS /pipeline/{id}, not /pipeline/deals/{id}. The wrong path
+                      // matched no route at all, so React Router rendered nothing and
+                      // Review opened a blank page:
+                      //     No routes matched location "/pipeline/deals/SIMBCC_FORTIS_03"
+                      // Every other page in the app links this way; this one invented
+                      // a path that reads more logically and does not exist.
+                      onClick={() => nav(`/pipeline/${encodeURIComponent(c.deal_id)}`)}
                       className="rounded-md bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
                     >
                       Review
