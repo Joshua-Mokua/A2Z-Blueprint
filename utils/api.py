@@ -3798,7 +3798,29 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
     # Batch 4b-5: CR + committee journey gating.
     journey_codes = _effective_committee_journey(deal)
     cr = deal.get("cr", {}) if isinstance(deal.get("cr"), dict) else {}
-    cr_required = True  # CR is the baseline artifact (Josh: "a CR should suffice")
+    # ── THE MEMO IS NEEDED LATER, NOT AT THE FIRST GATE ─────────────────────
+    # RULING (2026-08-14): "why are we going to Transaction Memo when on this
+    # we just said it is the attachments and submit should work to the
+    # department."
+    #
+    # cr_required was flat True, from a time when Documentation submitted
+    # straight to credit and the memo was the analytical artifact that went
+    # with it. The flow has a branch committee in front of that now, and the
+    # memo is written AFTER the committee gives its input - the Forwarding Memo
+    # card says exactly that. So the gate was asking for a document that does
+    # not exist yet, and the button sat disabled with nothing naming the cause.
+    #
+    # The memo is required to reach CREDIT ANALYSIS. Getting to a committee
+    # needs the papers, which is what the committee reads.
+    _flow_cr = [str(x) for x in (_stage_flow_for(deal.get("product_type")
+                                                 or deal.get("product", "")) or [])]
+    _at = _flow_cr.index(str(current_stage)) if str(current_stage) in _flow_cr else -1
+    _next_stage = _flow_cr[_at + 1] if 0 <= _at < len(_flow_cr) - 1 else ""
+    # Required only when the very next step is the analysis itself - or when
+    # there is no flow to reason with, which keeps the old behaviour rather
+    # than quietly dropping a requirement.
+    cr_required = (not _flow_cr) or ("credit analysis" in _next_stage.lower()
+                                     and "committee" not in _next_stage.lower())
     cr_ok = bool(cr.get("completed"))
     manager_validated = bool(deal.get("manager_validated"))
     records = deal.get("committee_records", {}) or {}
