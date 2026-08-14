@@ -39,7 +39,8 @@ from __future__ import annotations
 
 from typing import Dict, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime
+from fastapi import APIRouter, Body, Depends, HTTPException
 from pydantic import BaseModel
 
 from utils.auth_jwt import get_current_user, require_config_admin
@@ -1570,6 +1571,113 @@ def lms_dcc_resolve(
     audit_log("LMS_DCC_RESOLVED", str(user.get("username", "") or ""),
               f"{app_id}|{recommendation}|{yes}-{no}-{abstain}")
     return {"application": lam.get(app_id), "dcc_outcome": outcome}
+
+
+@router.post("/applications/{app_id}/return-for-rework")
+def lms_return_for_rework(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """Send a case back to its owner with what needs doing.
+
+    RULING (2026-08-14): "if it is returned for reworks, a window to detail the
+    nature of reworks comes up and once filled they press return. A returned
+    case reopens back to the branch on the owner, and once they complete the
+    reworks they resubmit - this time back to the credit analyst to continue."
+
+    THE REASON IS MANDATORY. A case returned without one sends somebody back to
+    a branch to guess what was wrong, and they will guess wrong. The endpoint
+    refuses an empty reason rather than accepting a blank field that costs a
+    day at the other end.
+
+    IT REMEMBERS WHO RETURNED IT. When the owner resubmits, the case goes back
+    to that analyst rather than into the pool to be picked up by somebody with
+    no memory of the conversation - which is the difference between a rework
+    and starting again.
+    """
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+
+    reason = str(payload.get("reason", "") or "").strip()
+    if not reason:
+        raise HTTPException(
+            status_code=400,
+            detail=("Say what needs reworking. A case returned without a reason "
+                    "sends somebody back to the branch to guess."))
+
+    me = str(user.get("staff_code", "") or "").strip()
+    myname = str(user.get("full_name", "") or "").strip()
+    history = list(app.get("rework_history") or [])
+    history.append({
+        "reason": reason,
+        "items": [str(x) for x in (payload.get("items") or []) if str(x).strip()],
+        "by": me, "by_name": myname,
+        "at": datetime.now().isoformat(timespec="seconds"),
+    })
+
+    lam.update(app_id, {
+        "status": "returned",
+        "rework_history": history,
+        "rework_reasons": reason,
+        # WHO TO COME BACK TO. Cleared when the owner resubmits.
+        "returned_by_code": me,
+        "returned_by_name": myname,
+        "returned_at": datetime.now().isoformat(timespec="seconds"),
+    })
+    audit_log("LMS_RETURNED_FOR_REWORK", str(user.get("username", "") or ""),
+              "%s|%s" % (app_id, reason[:80]))
+    return {"application": lam.get(app_id), "status": "returned",
+            "returned_to_owner": True}
+
+
+@router.post("/applications/{app_id}/resubmit-after-rework")
+def lms_resubmit_after_rework(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """The owner has done the rework; the case goes BACK to the same analyst.
+
+    Not into the pool. The analyst who returned it has the context, and making
+    the case queue again behind everything else is how a two-hour correction
+    becomes a two-day one.
+
+    If that analyst cannot be identified the case falls back to the pool rather
+    than being stranded - a case with nowhere to go is worse than one in the
+    wrong queue.
+    """
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if str(app.get("status", "")) != "returned":
+        raise HTTPException(
+            status_code=400,
+            detail="This case is not out for rework (status is %r)." % app.get("status"))
+
+    back_to = str(app.get("returned_by_code", "") or "").strip()
+    back_name = str(app.get("returned_by_name", "") or "").strip()
+    note = str(payload.get("note", "") or "").strip()
+
+    updates = {
+        "status": "assigned" if back_to else "submitted",
+        "rework_completed_at": datetime.now().isoformat(timespec="seconds"),
+        "rework_completed_by": str(user.get("full_name", "") or ""),
+        "rework_note": note,
+        "returned_by_code": "",
+        "returned_by_name": "",
+    }
+    if back_to:
+        updates["analyst"] = {"code": back_to, "name": back_name, "role": ""}
+    lam.update(app_id, updates)
+    audit_log("LMS_REWORK_RESUBMITTED", str(user.get("username", "") or ""),
+              "%s|back to %s" % (app_id, back_to or "the pool"))
+    return {"application": lam.get(app_id),
+            "status": updates["status"],
+            "back_to": back_name or "the pool"}
 
 
 @router.post("/applications/{app_id}/hand-to-credit-analyst")
