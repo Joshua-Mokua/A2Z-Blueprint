@@ -309,6 +309,42 @@ def _events_from_deal(deal: Dict[str, Any],
                      % (deal.get("stage") or "the next stage", _why)),
         })
 
+    # ── A RETURN FOR REWORK, AND THE WORK COMING BACK ───────────────────────
+    # The simulation caught this: every other touch point was recorded and a
+    # rework was not. A case sent back to a branch left no trace of who
+    # returned it or why - which is the first entry an auditor asks about,
+    # because it is the point where a case stopped moving.
+    #
+    # EVERY return is shown, not just the last. A case returned three times is
+    # a different conversation from one returned once, and rework_history keeps
+    # them all.
+    for _rw in (deal.get("rework_history") or []):
+        if not isinstance(_rw, dict):
+            continue
+        _note = str(_rw.get("reason", "") or "").strip() or "returned for rework"
+        _items = [str(x) for x in (_rw.get("items") or []) if str(x).strip()]
+        if _items:
+            _note += " — " + ", ".join(_items)
+        events.append({
+            "event": "returned_for_rework",
+            "by": str(_rw.get("by", "") or ""),
+            "by_name": _rw.get("by_name") or None,
+            "at": _iso(_rw.get("at")),
+            "note": _note,
+        })
+
+    # And the branch sending it back, which closes the loop: without it the
+    # journey shows a case leaving and never returning.
+    if deal.get("rework_completed_at"):
+        events.append({
+            "event": "rework_completed",
+            "by": "", "by_name": deal.get("rework_completed_by") or None,
+            "at": _iso(deal.get("rework_completed_at")),
+            "note": ("reworked and sent back to credit"
+                     + (" — %s" % deal.get("rework_note")
+                        if deal.get("rework_note") else "")),
+        })
+
     # Manager validation. The fields are already written by the validate
     # endpoint (Item 5) - nothing new is recorded, it was simply never read.
     if deal.get("manager_validated"):
