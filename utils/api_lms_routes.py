@@ -2397,7 +2397,45 @@ def lms_committee_readiness(
         "opinion": str(p.get("opinion", "") or ""),
         "reasons": p.get("reasons") if isinstance(p.get("reasons"), list) else [],
     }
-    lam.update(app_id, {"committee_readiness": readiness})
+    _updates = {"committee_readiness": readiness}
+
+    # ── A REWORK MUST ACTUALLY GO BACK ──────────────────────────────────────
+    # RULING (2026-08-14): "a returned case reopens back to the branch on the
+    # owner, and once they complete the reworks they resubmit - this time back
+    # to the credit analyst to continue."
+    #
+    # This endpoint recorded a READINESS STATE and nothing else: the case kept
+    # its status, stayed in the analyst's queue, and the branch was never told.
+    # An analyst could mark a case "returned for rework" and it would sit
+    # exactly where it was, which is the shape of a case quietly stalling.
+    #
+    # The state was right and the movement was missing. A rework now sets the
+    # status to `returned` and remembers WHO returned it, so
+    # resubmit-after-rework brings it back to that analyst rather than to the
+    # pool - they have the context, and re-queueing turns a two-hour correction
+    # into a two-day one.
+    if decision == "rework":
+        _me = str(user.get("staff_code", "") or "").strip()
+        _myname = str(user.get("full_name", "") or "").strip()
+        _reason = str(p.get("opinion", "") or "").strip()
+        _items = [str(x) for x in (p.get("reasons") or []) if str(x).strip()]
+        _history = list(app.get("rework_history") or [])
+        _history.append({
+            "reason": _reason or "; ".join(_items) or "Returned for rework",
+            "items": _items,
+            "by": _me, "by_name": _myname,
+            "at": datetime.now().isoformat(timespec="seconds"),
+        })
+        _updates.update({
+            "status": "returned",
+            "rework_history": _history,
+            "rework_reasons": _reason or "; ".join(_items),
+            "returned_by_code": _me,
+            "returned_by_name": _myname,
+            "returned_at": datetime.now().isoformat(timespec="seconds"),
+        })
+
+    lam.update(app_id, _updates)
     # Phase C part 3: record the correctness reviewer's verdict on the journey
     # (ready_for_committee | returned_for_rework) with their name/role + reason,
     # so the travelling document shows the rework loop, not just the outcome.
