@@ -184,6 +184,10 @@ export interface LoanApplication {
 
   // Product
   product?:               string;
+  /** The segment this case belongs to. The server has always sent it - the
+   *  scope filter reads it - but it was never typed here, so the list could
+   *  not narrow by it. */
+  client_type?:           string;
   swim_lane?:             string;
 
   // Status / lifecycle
