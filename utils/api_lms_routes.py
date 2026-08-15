@@ -782,14 +782,30 @@ def lms_application_decision(
     # NameError this codebase already carried once.
     try:
         if verdict_normalized == "approved":
-            _conds = list(getattr(payload, "conditions", None) or [])
+            # PRE-APPROVAL falls back to the plain `conditions` list, because
+            # that is what every decision recorded before today used it for.
+            # Reading only the new field would make historic approvals look
+            # unconditional.
+            _pre = list(getattr(payload, "pre_approval_conditions", None)
+                        or getattr(payload, "conditions", None) or [])
+            _dis = list(getattr(payload, "pre_disbursement_conditions", None) or [])
             lam.update(app_id, {
                 "status": "credit_admin",
                 "awaiting_credit_admin": True,
                 "approved_at": datetime.now().isoformat(timespec="seconds"),
                 "approved_by_name": str(user.get("full_name", "") or ""),
-                "decision_conditions": _conds,
+                "decision_conditions": _pre,
+                # Each condition is an object, not a string, so a tick can be
+                # recorded against it with who and when. A bare string has
+                # nowhere to put that.
+                "pre_approval_conditions": [
+                    {"text": c, "met": False, "kind": "pre_approval"}
+                    for c in _pre],
+                "pre_disbursement_conditions": [
+                    {"text": c, "met": False, "kind": "pre_disbursement"}
+                    for c in _dis],
             })
+            _conds = _pre + _dis
             audit_log("LMS_APPROVED_TO_CREDIT_ADMIN",
                       str(user.get("username", "") or ""),
                       "%s|%d condition(s)" % (app_id, len(_conds)))
@@ -1777,6 +1793,96 @@ def lms_resubmit_after_rework(
     return {"application": lam.get(app_id),
             "status": updates["status"],
             "back_to": back_name or "the pool"}
+
+
+@router.post("/applications/{app_id}/conditions/tick")
+def lms_tick_condition(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """Tick one condition, and release the case when the last one is met.
+
+    RULING (2026-08-15): "they will tick against all the conditions and when
+    they click on all conditions met, it should automatically flow to Trops for
+    disbursement ... the admin can also have pre-disbursement conditions which
+    Trops will tick against, and if met tick disbursed and that should
+    automatically close the case as won."
+
+    So a tick is not bookkeeping - it is the thing that moves the case. The
+    LAST pre-approval tick releases to Trops; the last pre-disbursement tick
+    leaves nothing standing between the case and disbursement.
+
+    WHO TICKED IT, AND WHEN, is recorded against the condition. A condition
+    that says only `met: true` cannot answer the question an auditor asks
+    first.
+
+    Body: {"kind": "pre_approval"|"pre_disbursement", "index": 0, "met": true}
+    """
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_update"):
+        raise HTTPException(status_code=403,
+                            detail="You cannot change conditions on this case.")
+
+    kind = str(payload.get("kind", "pre_approval") or "pre_approval").strip()
+    if kind not in ("pre_approval", "pre_disbursement"):
+        raise HTTPException(status_code=400,
+                            detail="kind must be pre_approval or pre_disbursement")
+    field = "%s_conditions" % kind
+    conds = list(app.get(field) or [])
+    if not conds:
+        raise HTTPException(
+            status_code=400,
+            detail="This case has no %s conditions to tick." % kind.replace("_", "-"))
+
+    try:
+        idx = int(payload.get("index"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="index must be a number")
+    if not 0 <= idx < len(conds):
+        raise HTTPException(status_code=400,
+                            detail="There is no condition %d on this case." % idx)
+
+    met = bool(payload.get("met", True))
+    c = dict(conds[idx] if isinstance(conds[idx], dict) else {"text": str(conds[idx])})
+    c["met"] = met
+    c["met_by_name"] = str(user.get("full_name", "") or "") if met else ""
+    c["met_by_code"] = str(user.get("staff_code", "") or "") if met else ""
+    c["met_at"] = datetime.now().isoformat(timespec="seconds") if met else ""
+    conds[idx] = c
+
+    updates = {field: conds}
+    all_met = all(bool(x.get("met")) for x in conds if isinstance(x, dict))
+
+    # ── THE LAST TICK MOVES THE CASE ────────────────────────────────────────
+    # Nobody presses a separate button. The condition being satisfied IS the
+    # event; making somebody then announce it is the delay every ruling this
+    # week has been about.
+    released = ""
+    if all_met and kind == "pre_approval":
+        updates.update({
+            "status": "trops",
+            "awaiting_credit_admin": False,
+            "awaiting_disbursement": True,
+            "conditions_cleared_at": datetime.now().isoformat(timespec="seconds"),
+            "conditions_cleared_by": str(user.get("full_name", "") or ""),
+        })
+        released = "trops"
+    elif all_met and kind == "pre_disbursement":
+        updates["ready_to_disburse"] = True
+        released = "disbursement"
+
+    lam.update(app_id, updates)
+    audit_log("LMS_CONDITION_TICKED", str(user.get("username", "") or ""),
+              "%s|%s[%d]=%s%s" % (app_id, kind, idx, met,
+                                  "|released to %s" % released if released else ""))
+    return {"application": lam.get(app_id), "all_met": all_met,
+            "released_to": released,
+            "remaining": sum(1 for x in conds
+                             if isinstance(x, dict) and not x.get("met"))}
 
 
 @router.post("/applications/{app_id}/hand-to-credit-analyst")
