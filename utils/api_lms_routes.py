@@ -1529,6 +1529,61 @@ def lms_application_document_download(
         headers={"Content-Disposition": f'attachment; filename="{meta.get("filename", "file")}"'})
 
 
+def _dcc_for_app(app: dict) -> dict:
+    """The department committee THIS case belongs to.
+
+    credit_workflow.dcc is ONE COPY of ONE committee - whichever was last
+    enabled. Three endpoints read it: the roster the panel renders, the vote,
+    and the resolution. So a Commercial case would show CONSUMER's voters, be
+    judged against Consumer's quorum, and require Consumer's chair - while the
+    people actually entitled to decide it appeared nowhere.
+
+    The palette already knows which committee a case belongs to. Resolve from
+    the CASE, and fall back to the single copy only when nothing matches - so a
+    bank with one department committee behaves exactly as before.
+    """
+    cfg = get_credit_workflow_config() or {}
+    dcc = dict(cfg.get("dcc") or {})
+
+    seg = str((app or {}).get("client_type", "") or "").strip().lower()
+    want = ""
+    if "commercial" in seg:
+        want = "commercial"
+    elif seg == "cib" or "corporate" in seg or "investment" in seg:
+        want = "corporate"
+    elif ("consumer" in seg or "individual" in seg
+          or seg in ("personal", "retail")):
+        want = "consumer"
+    if not want:
+        return dcc
+
+    for c in (cfg.get("committee_palette") or []):
+        if str(c.get("kind", "")).lower() == "branch":
+            continue
+        if want not in str(c.get("name", "") or "").lower():
+            continue
+        members = [m for m in (c.get("members") or [])
+                   if isinstance(m, dict)
+                   and (str(m.get("staff_code", "")).strip()
+                        or str(m.get("name", "")).strip())]
+        if not members:
+            # Named but unstaffed: keep the fallback rather than hand back a
+            # committee nobody sits on.
+            break
+        return {
+            "enabled": bool(dcc.get("enabled")),
+            "name": c.get("name") or dcc.get("name"),
+            "members": members,
+            "chaired_by": c.get("chaired_by", ""),
+            "chair_staff_code": c.get("chair_staff_code", ""),
+            "voting_rule": c.get("voting_rule",
+                                 dcc.get("voting_rule", "SIMPLE_MAJORITY")),
+            "min_quorum_count": c.get("min_quorum_count"),
+            "source_committee": c.get("code"),
+        }
+    return dcc
+
+
 @router.get("/applications/{app_id}/dcc/roster")
 def lms_dcc_roster(
     app_id: str,
@@ -1544,7 +1599,7 @@ def lms_dcc_roster(
     if not resolve_application_permissions(user, app).get("can_view"):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     from utils.api_lms_mutations import get_credit_workflow_config
-    dcc = (get_credit_workflow_config() or {}).get("dcc") or {}
+    dcc = _dcc_for_app(app)
     return {
         "enabled": bool(dcc.get("enabled")),
         "name": str(dcc.get("name", "Department Credit Committee")),
@@ -1572,7 +1627,7 @@ def lms_dcc_vote(
     if not resolve_application_permissions(user, app).get("can_view"):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     from utils.api_lms_mutations import get_credit_workflow_config
-    dcc = (get_credit_workflow_config() or {}).get("dcc") or {}
+    dcc = _dcc_for_app(app)
     if not dcc.get("enabled"):
         raise HTTPException(status_code=400, detail="The Department Credit Committee is not enabled.")
     if str(app.get("committee_kind", "")) != "dcc":
@@ -1620,7 +1675,7 @@ def lms_dcc_resolve(
         raise HTTPException(status_code=403,
                             detail="Only a manager or the assigned analyst can close the DCC.")
     from utils.api_lms_mutations import get_credit_workflow_config
-    dcc = (get_credit_workflow_config() or {}).get("dcc") or {}
+    dcc = _dcc_for_app(app)
     if not dcc.get("enabled"):
         raise HTTPException(status_code=400, detail="The Department Credit Committee is not enabled.")
     if str(app.get("committee_kind", "")) != "dcc":
