@@ -758,6 +758,65 @@ def lms_application_decision(
         except Exception:
             pass
 
+    # ── A DECISION MOVES THE CASE ───────────────────────────────────────────
+    # RULING (2026-08-15). Until now a decision recorded a verdict and the case
+    # sat where it was, waiting for somebody to find a separate button. That is
+    # the same fault the committee had, one gate further on: the state changed
+    # and the case did not move.
+    #
+    # APPROVED goes to credit admin, carrying its conditions so they can be
+    # ticked there. Nobody re-submits what has just been approved.
+    #
+    # DECLINED GOES BACK TO THE OWNER, NOT TO CLOSED LOST. The ruling is
+    # explicit: "it should probably go back to the owner who is to click on
+    # appeal or accept the decision - if they accept it closes as lost."
+    #
+    # So a decline is not the end of the case; it is a question put to the
+    # person who raised it. Closing it here would take that choice away, and
+    # an appeal would then have to reopen a closed deal.
+    # `datetime`, NOT `_dt`. _dt is imported locally inside two other
+    # functions here and means different things in each - the module in one,
+    # the class in the other. This function has neither, so datetime.now() raised a
+    # NameError that my own except swallowed: the decision recorded, the case
+    # did not move, and nothing said why. Exactly the shape of the two-year
+    # NameError this codebase already carried once.
+    try:
+        if verdict_normalized == "approved":
+            _conds = list(getattr(payload, "conditions", None) or [])
+            lam.update(app_id, {
+                "status": "credit_admin",
+                "awaiting_credit_admin": True,
+                "approved_at": datetime.now().isoformat(timespec="seconds"),
+                "approved_by_name": str(user.get("full_name", "") or ""),
+                "decision_conditions": _conds,
+            })
+            audit_log("LMS_APPROVED_TO_CREDIT_ADMIN",
+                      str(user.get("username", "") or ""),
+                      "%s|%d condition(s)" % (app_id, len(_conds)))
+        elif verdict_normalized == "declined":
+            lam.update(app_id, {
+                "status": "declined",
+                "awaiting_owner_response": True,
+                "declined_at": datetime.now().isoformat(timespec="seconds"),
+                "declined_by_name": str(user.get("full_name", "") or ""),
+                "decline_reason": str(getattr(payload, "reason", "") or ""),
+                # The owner chooses: appeal, or accept and close as lost.
+                "appeal_window_open": True,
+            })
+            audit_log("LMS_DECLINED_TO_OWNER",
+                      str(user.get("username", "") or ""), app_id)
+    except Exception as _exc:
+        # THIS MODULE HAS NO LOGGER. Calling one inside an except would raise a
+        # NameError from the handler and lose the decision entirely - which is
+        # exactly how a silent `except: pass` hid a NameError here for two
+        # years. The audit trail is what this module has, so use it.
+        try:
+            audit_log("LMS_DECISION_MOVE_FAILED",
+                      str(user.get("username", "") or ""),
+                      "%s|%s: %s" % (app_id, type(_exc).__name__, str(_exc)[:80]))
+        except Exception:
+            pass
+
     updated = lam.get(app_id)
     return {
         "application": updated,
