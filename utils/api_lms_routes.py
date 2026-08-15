@@ -1795,94 +1795,13 @@ def lms_resubmit_after_rework(
             "back_to": back_name or "the pool"}
 
 
-@router.post("/applications/{app_id}/conditions/tick")
-def lms_tick_condition(
-    app_id: str,
-    payload: dict = Body(default_factory=dict),
-    user: dict = Depends(get_current_user),
-):
-    """Tick one condition, and release the case when the last one is met.
-
-    RULING (2026-08-15): "they will tick against all the conditions and when
-    they click on all conditions met, it should automatically flow to Trops for
-    disbursement ... the admin can also have pre-disbursement conditions which
-    Trops will tick against, and if met tick disbursed and that should
-    automatically close the case as won."
-
-    So a tick is not bookkeeping - it is the thing that moves the case. The
-    LAST pre-approval tick releases to Trops; the last pre-disbursement tick
-    leaves nothing standing between the case and disbursement.
-
-    WHO TICKED IT, AND WHEN, is recorded against the condition. A condition
-    that says only `met: true` cannot answer the question an auditor asks
-    first.
-
-    Body: {"kind": "pre_approval"|"pre_disbursement", "index": 0, "met": true}
-    """
-    lam = _lam()
-    app = lam.get(app_id)
-    if not app:
-        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
-    if not resolve_application_permissions(user, app).get("can_update"):
-        raise HTTPException(status_code=403,
-                            detail="You cannot change conditions on this case.")
-
-    kind = str(payload.get("kind", "pre_approval") or "pre_approval").strip()
-    if kind not in ("pre_approval", "pre_disbursement"):
-        raise HTTPException(status_code=400,
-                            detail="kind must be pre_approval or pre_disbursement")
-    field = "%s_conditions" % kind
-    conds = list(app.get(field) or [])
-    if not conds:
-        raise HTTPException(
-            status_code=400,
-            detail="This case has no %s conditions to tick." % kind.replace("_", "-"))
-
-    try:
-        idx = int(payload.get("index"))
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=400, detail="index must be a number")
-    if not 0 <= idx < len(conds):
-        raise HTTPException(status_code=400,
-                            detail="There is no condition %d on this case." % idx)
-
-    met = bool(payload.get("met", True))
-    c = dict(conds[idx] if isinstance(conds[idx], dict) else {"text": str(conds[idx])})
-    c["met"] = met
-    c["met_by_name"] = str(user.get("full_name", "") or "") if met else ""
-    c["met_by_code"] = str(user.get("staff_code", "") or "") if met else ""
-    c["met_at"] = datetime.now().isoformat(timespec="seconds") if met else ""
-    conds[idx] = c
-
-    updates = {field: conds}
-    all_met = all(bool(x.get("met")) for x in conds if isinstance(x, dict))
-
-    # ── THE LAST TICK MOVES THE CASE ────────────────────────────────────────
-    # Nobody presses a separate button. The condition being satisfied IS the
-    # event; making somebody then announce it is the delay every ruling this
-    # week has been about.
-    released = ""
-    if all_met and kind == "pre_approval":
-        updates.update({
-            "status": "trops",
-            "awaiting_credit_admin": False,
-            "awaiting_disbursement": True,
-            "conditions_cleared_at": datetime.now().isoformat(timespec="seconds"),
-            "conditions_cleared_by": str(user.get("full_name", "") or ""),
-        })
-        released = "trops"
-    elif all_met and kind == "pre_disbursement":
-        updates["ready_to_disburse"] = True
-        released = "disbursement"
-
-    lam.update(app_id, updates)
-    audit_log("LMS_CONDITION_TICKED", str(user.get("username", "") or ""),
-              "%s|%s[%d]=%s%s" % (app_id, kind, idx, met,
-                                  "|released to %s" % released if released else ""))
-    return {"application": lam.get(app_id), "all_met": all_met,
-            "released_to": released,
-            "remaining": sum(1 for x in conds
-                             if isinstance(x, dict) and not x.get("met"))}
+# The tick endpoint that stood here is gone. utils/api_credit_admin_routes.py
+# already carries `conditions/fulfill` alongside the disbursement gate,
+# collateral, insurance and legal - credit admin ticks there. Two ways to tick
+# one condition is worse than either: the gate watches one of them, so a case
+# ticked in the wrong place looks satisfied and never moves.
+#
+# The two KINDS on the decision remain - see the approved branch above.
 
 
 @router.post("/applications/{app_id}/hand-to-credit-analyst")
@@ -2452,6 +2371,94 @@ def lms_committee_set_require_mcc(
 
 
 # === DECLINE APPEAL ===
+@router.post("/applications/{app_id}/accept-decline")
+def lms_accept_decline(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """The owner accepts a decline, and the case closes as Lost.
+
+    RULING (2026-08-15): "it should go back to the owner who is to click on
+    appeal or accept the decision - if they accept it closes as lost."
+
+    The appeal half already existed. This is the other half, and without it a
+    declined case had one exit and no other: appeal, or sit there. Cases that
+    sit are how a pipeline stops meaning anything.
+
+    THE OWNER DECIDES, not credit. A decline is credit's answer; whether to
+    contest it belongs to the person who raised the case. So this refuses
+    anybody who is not the owner or their manager - accepting on somebody
+    else's behalf closes their deal for them.
+
+    IT CLOSES THE PIPELINE DEAL TOO. Leaving it open means the branch still
+    sees work in progress and the funnel still counts it. Best effort, and
+    audited if it fails: the acceptance stands either way, because the decision
+    is the fact and the stage is bookkeeping about it.
+    """
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+
+    status = str(app.get("status", "") or "").lower()
+    if status != "declined":
+        raise HTTPException(
+            status_code=400,
+            detail="This case is not declined (it is %r), so there is nothing "
+                   "to accept." % app.get("status"))
+    if bool(app.get("appeal_pending")):
+        raise HTTPException(
+            status_code=400,
+            detail="An appeal is already pending on this case. It cannot be "
+                   "accepted until that is answered.")
+
+    me = str(user.get("staff_code", "") or "").strip()
+    owner = str(app.get("rm_code", "") or "").strip()
+    visible = get_visible_staff_codes(user)
+    if not (user.get("is_admin") or me == owner or owner in visible):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the case owner or their manager can accept a decline.")
+
+    note = str(payload.get("note", "") or "").strip()
+    lam.update(app_id, {
+        "status": "declined_accepted",
+        "appeal_window_open": False,
+        "awaiting_owner_response": False,
+        "decline_accepted_at": datetime.now().isoformat(timespec="seconds"),
+        "decline_accepted_by": str(user.get("full_name", "") or ""),
+        "decline_accepted_note": note,
+    })
+
+    closed = ""
+    try:
+        deal_id = str(app.get("pipeline_deal_id") or "")
+        if deal_id:
+            from utils.api import _write_deal as _wd
+            from utils.core import PipelineManager as _PM
+            pm = _PM()
+            d = pm.get_deal(deal_id)
+            if d and not str(d.get("stage", "")).lower().startswith("closed"):
+                _wd(pm, deal_id, {
+                    "stage": "Closed Lost",
+                    "closed_reason": str(app.get("decline_reason", "")
+                                         or "Credit declined"),
+                    "closed_at": datetime.now().isoformat(timespec="seconds"),
+                    "closed_by_name": str(user.get("full_name", "") or ""),
+                }, str(user.get("username", "") or ""))
+                closed = deal_id
+    except Exception as exc:
+        audit_log("PIPELINE_CLOSE_ON_ACCEPT_FAILED",
+                  str(user.get("username", "") or ""),
+                  "%s|%s: %s" % (app_id, type(exc).__name__, str(exc)[:70]))
+
+    audit_log("LMS_DECLINE_ACCEPTED", str(user.get("username", "") or ""),
+              "%s%s" % (app_id, "|closed %s" % closed if closed else ""))
+    return {"application": lam.get(app_id), "status": "declined_accepted",
+            "deal_closed": closed or None}
+
+
 @router.post("/applications/{app_id}/appeal")
 def lms_application_appeal(
     app_id: str,

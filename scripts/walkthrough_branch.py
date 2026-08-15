@@ -24,10 +24,25 @@ import sys
 sys.path.insert(0, os.getcwd())
 
 
-def pwd_for(code):
-    """The pilot's convention: EcoStaff + the last four of the staff code."""
+def pwd_for(code, users=None, login=None):
+    """The password as STORED, falling back to the convention.
+
+    The first version computed EcoStaff + the last four digits and printed it
+    as fact. Where a record was created differently - a different padding, a
+    rotated password, a bcrypt envelope - the walkthrough handed out a
+    credential that does not work, and the tester blames the login page.
+
+    So: read the record. Only guess when there is nothing to read, and SAY it
+    is a guess.
+    """
+    rec = (users or {}).get(login or "") or {}
+    stored = rec.get("password")
+    if isinstance(stored, str) and stored and not stored.startswith("$2"):
+        return stored
+    if isinstance(stored, str) and stored.startswith("$2"):
+        return "(hashed - use the convention or reset it)"
     digits = "".join(ch for ch in str(code) if ch.isdigit())
-    return "EcoStaff%s" % (digits[-4:].zfill(4) if digits else "0000")
+    return "EcoStaff%s?" % (digits[-4:].zfill(4) if digits else "0000")
 
 
 def main():
@@ -85,7 +100,7 @@ def main():
     for p in sorted(here, key=lambda x: x["role"]):
         lg = login_by_code.get(p["code"])
         if lg:
-            cred = "%s / %s" % (lg, pwd_for(p["code"]))
+            cred = "%s / %s" % (lg, pwd_for(p["code"], users, lg))
         else:
             cred = "NO LOGIN"
             no_login.append(p)
@@ -121,7 +136,7 @@ def main():
         lg = login_by_code.get(c)
         print("     %-10s %-26s %-24s %s"
               % (c or "—", str(m.get("name"))[:26], str(m.get("role"))[:24],
-                 ("%s / %s" % (lg, pwd_for(c))) if lg else "NO LOGIN"))
+                 ("%s / %s" % (lg, pwd_for(c, users, lg))) if lg else "NO LOGIN"))
 
     problems = []
     if not chair and not members:
@@ -176,13 +191,13 @@ def main():
      "credit analysis" the label fix has not been applied.
 
   3. SIGN IN AS EACH COMMITTEE MEMBER AND VOTE""" % (
-        o_login, pwd_for(owner["code"]), owner["name"], owner["role"],
+        o_login, pwd_for(owner["code"], users, o_login), owner["name"], owner["role"],
         prod, bcc or "the committee", bcc or "the next stage"))
     for m in members:
         c = str(m.get("staff_code", "") or "")
         lg = login_by_code.get(c)
         print("       %-22s %s" % (str(m.get("name"))[:22],
-                                   ("%s / %s" % (lg, pwd_for(c))) if lg else "NO LOGIN"))
+                                   ("%s / %s" % (lg, pwd_for(c, users, lg))) if lg else "NO LOGIN"))
     print("""     Each opens Manager Queues > Committee, or the Daily Log if they are
      not a manager. The case should be listed. Press Review, and the voting
      bench is on the Branch Credit Committee tab.
