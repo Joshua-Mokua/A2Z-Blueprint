@@ -2204,6 +2204,16 @@ export async function requestLmsInfo(appId: string, body: RequestInfoRequest): P
 export async function provideLmsInfo(appId: string, body: ProvideInfoRequest): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, ProvideInfoRequest>(lmsAction(appId, 'provide-info'), body);
 }
+/** Push a case up to the Chief Credit Risk for their approval. The Chief is
+ *  resolved server-side from config - the caller does not name a person. */
+export async function escalateToChief(
+  appId: string,
+  body: { reason: string },
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse>(
+    `/lms/applications/${encodeURIComponent(appId)}/escalate-to-chief`, body);
+}
+
 export async function escalateLmsApplication(appId: string, body: { reason: string; to_manager?: string }): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, { reason: string; to_manager?: string }>(lmsAction(appId, 'escalate'), body);
 }

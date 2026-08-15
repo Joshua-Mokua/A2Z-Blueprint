@@ -184,10 +184,6 @@ export interface LoanApplication {
 
   // Product
   product?:               string;
-  /** The segment this case belongs to. The server has always sent it - the
-   *  scope filter reads it - but it was never typed here, so the list could
-   *  not narrow by it. */
-  client_type?:           string;
   swim_lane?:             string;
 
   // Status / lifecycle
@@ -309,7 +305,14 @@ export interface RecordDecisionRequest {
   verdict:                string;       // 'approved' | 'declined' | 'returned' (case-insensitive)
   authority:              string;
   reason?:                string;
+  /** Kept and unchanged: every decision recorded before 2026-08-15 used
+   *  this for what is now called pre-approval. Re-typing it would strand
+   *  them, and the server still reads it as the fallback. */
   conditions?:            string[];
+  /** Cleared by credit admin. The last tick releases the case to Trops. */
+  pre_approval_conditions?:     string[];
+  /** Cleared by Trops before money moves. */
+  pre_disbursement_conditions?: string[];
   comments?:              string;
 }
 
