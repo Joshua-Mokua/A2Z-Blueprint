@@ -20,7 +20,7 @@ import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesT
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, resubmitAfterRework, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, resubmitAfterRework, escalateToChief, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -914,6 +914,17 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
   const [authority, setAuthority] = useState<string>(COMMON_AUTHORITIES[0]);
   const [reason, setReason]       = useState<string>('');
   const [conditions, setConditions] = useState<string>('');
+  // ── TWO KINDS, BECAUSE DIFFERENT PEOPLE TICK THEM ───────────────────────
+  // RULING (2026-08-15): approve "with pre-approval conditions, pre-
+  // disbursement conditions". Credit admin clears the first; Trops clears the
+  // second before money moves. One box cannot say which is which, and the
+  // person ticking would have to guess.
+  //
+  // `conditions` above stays as the pre-approval box - every decision recorded
+  // before today used it that way, and renaming it would strand them.
+  const [preDisb, setPreDisb] = useState<string>('');
+  const [escalateOpen, setEscalateOpen] = useState(false);
+  const [escalateReason, setEscalateReason] = useState('');
   const [comments, setComments]   = useState<string>('');
   const [error, setError]         = useState<string | null>(null);
 
@@ -951,6 +962,9 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
       authority: authority.trim(),
       reason: reason.trim() || undefined,
       conditions: conditionsList.length > 0 ? conditionsList : undefined,
+      pre_approval_conditions: conditionsList.length > 0 ? conditionsList : undefined,
+      pre_disbursement_conditions: preDisb
+        .split('\n').map((c) => c.trim()).filter((c) => c.length > 0),
       comments: comments.trim() || undefined,
     });
 
@@ -1013,7 +1027,7 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
         </div>
         {verdict === 'approved' && (
           <div className="mt-3">
-            <label className="text-sm font-medium text-gray-700">Conditions (one per line)</label>
+            <label className="text-sm font-medium text-gray-700">Pre-approval conditions (one per line)</label>
             <textarea
               value={conditions}
               onChange={(e) => setConditions(e.target.value)}
@@ -1023,10 +1037,97 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
               className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
             />
             <p className="text-xs text-gray-500 mt-1">
-              For conditional approvals. Each line becomes one condition on the credit-admin case.
+              Cleared by credit admin before the case moves on. The last one
+              ticked releases it to Trops.
             </p>
           </div>
         )}
+        {verdict === 'approved' && (
+          <div className="mt-3">
+            <label className="text-sm font-medium text-gray-700">Pre-disbursement conditions (one per line)</label>
+            <textarea
+              value={preDisb}
+              onChange={(e) => setPreDisb(e.target.value)}
+              disabled={mutations.loading}
+              rows={3}
+              placeholder="Charge registered&#10;Insurance assigned&#10;Valuation within 90 days"
+              className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Cleared by Trops before money moves. Leave blank if there are none.
+            </p>
+          </div>
+        )}
+
+        {/* ─────────── Push it to the Chief ───────────
+            RULING (2026-08-15): the analyst may "push to the Chief Credit Risk
+            for their approval as well."
+
+            The Chief is resolved SERVER-SIDE from config - this does not name a
+            person, because a bank changes its people more often than its
+            software.
+
+            The case does not change hands: escalation asks a question of
+            somebody senior, and the analyst still owns it. */}
+        <div className="mt-4 border-t border-gray-100 pt-3">
+          {!escalateOpen ? (
+            <button
+              type="button"
+              onClick={() => setEscalateOpen(true)}
+              disabled={mutations.loading}
+              className="text-xs font-medium text-[#005B82] hover:underline disabled:opacity-50"
+            >
+              Above my authority — push to the Chief Credit Risk
+            </button>
+          ) : (
+            <div className="rounded-md border border-[#005B82]/30 bg-[#005B82]/5 p-3">
+              <label className="text-sm font-medium text-gray-800">
+                Why does this need the Chief?
+              </label>
+              <textarea
+                value={escalateReason}
+                onChange={(e) => setEscalateReason(e.target.value)}
+                rows={2}
+                placeholder="Exposure above my limit; concentration in one sector…"
+                className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary resize-y"
+              />
+              <p className="mt-1 text-xs text-gray-600">
+                A case arriving with no question attached wastes the trip.
+              </p>
+              <div className="mt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setEscalateOpen(false); setEscalateReason(''); }}
+                  className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={mutations.loading || !escalateReason.trim()}
+                  onClick={() => {
+                    void (async () => {
+                      try {
+                        const r = await escalateToChief(appId, { reason: escalateReason.trim() });
+                        const to = (r as unknown as { escalated_to?: string }).escalated_to;
+                        setError(null);
+                        setEscalateOpen(false);
+                        setEscalateReason('');
+                        toast({ tone: 'success',
+                          message: `Sent to ${to || 'the Chief Credit Risk'}. The case stays with you.` });
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : 'Could not escalate');
+                      }
+                    })();
+                  }}
+                  className="rounded-md bg-[#005B82] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  Push to the Chief
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         <div className="mt-3">
           <label className="text-sm font-medium text-gray-700">Comments</label>
           <textarea

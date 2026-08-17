@@ -49,6 +49,14 @@ export function Lms() {
 
   // ── Filter state (client-side; server always returns all in-scope) ──
   const [statusFilter, setStatusFilter] = useState<string | 'all'>('all');
+  // ── NARROW BY SEGMENT (ruling 2026-08-15) ───────────────────────────────
+  // "for my pool at these levels, they should have buttons inside for
+  //  Consumer, Commercial and CIB as well."
+  //
+  // A DEPARTMENT analyst is restricted to one segment by the server and needs
+  // no such control. A BANK credit analyst sees all three, so a pool of
+  // everything is a pool nobody can work through. The filter is theirs.
+  const [segFilter, setSegFilter] = useState<'all' | 'consumer' | 'commercial' | 'cib'>('all');
   const [searchTerm,   setSearchTerm]   = useState<string>('');
   // B1: workload tabs. Analysts default to their own cases; managers to All.
   const myCode = String(user?.staff_code ?? '');
@@ -108,6 +116,22 @@ export function Lms() {
   // ── Filtered apps ──
   const filteredApps = useMemo<LoanApplication[]>(() => {
     let result = applications;
+    if (segFilter !== 'all') {
+      // The same mapping the server uses, so the buttons agree with the
+      // scope filter rather than inventing a second opinion: Individual,
+      // Personal and Retail are all Consumer.
+      result = result.filter((a) => {
+        const ct = String((a as unknown as { client_type?: string }).client_type ?? '')
+          .trim().toLowerCase();
+        if (!ct) return false;
+        if (segFilter === 'consumer') {
+          return ct.includes('consumer') || ct.includes('individual')
+            || ct === 'personal' || ct === 'retail';
+        }
+        if (segFilter === 'commercial') return ct.includes('commercial');
+        return ct === 'cib' || ct.includes('corporate') || ct.includes('investment');
+      });
+    }
     if (statusFilter !== 'all') {
       result = result.filter((a) => (a.status || '').toLowerCase() === statusFilter);
     }
@@ -128,7 +152,7 @@ export function Lms() {
         && ['submitted'].includes((a.status || '').toLowerCase()));
     }
     return result;
-  }, [applications, statusFilter, searchTerm, tab, myCode]);
+  }, [applications, statusFilter, segFilter, searchTerm, tab, myCode]);
   // Keep the current page in range when the filtered set shrinks.
   const pageCount = Math.max(1, Math.ceil(filteredApps.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount - 1);
@@ -274,10 +298,36 @@ export function Lms() {
                 <span className="ml-2 text-xs text-gray-500">Everything waiting for this department. Open a case and pick it — it moves to My cases and out of the pool.</span>
               )}
             </div>
+            {/* Segment. Shown to whoever can see more than one - a department
+                analyst is already restricted by the server and would see the
+                same list whichever they pressed. */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="text-xs text-gray-500">Segment</span>
+              {([['all', 'All'], ['consumer', 'Consumer'],
+                 ['commercial', 'Commercial'], ['cib', 'CIB']] as const)
+                .map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setSegFilter(key)}
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+                    segFilter === key
+                      ? 'bg-brand-primary text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+              {segFilter !== 'all' && (
+                <span className="text-xs text-gray-400">
+                  cases with no segment recorded are not shown
+                </span>
+              )}
+            </div>
+
             {/* THE STATUS FILTER ROW IS GONE (ruling 2026-08-14): "we can
                 remove the rest of the items since they can still view that
                 from the Sales Pro."
-
                 Thirteen status buttons - approved, declined, offer_signed,
                 analyst_confirmed - are the shape of the workflow, not a
                 question anybody opens this page to ask. My cases and the Pool

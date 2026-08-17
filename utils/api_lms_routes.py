@@ -758,6 +758,81 @@ def lms_application_decision(
         except Exception:
             pass
 
+    # ── A DECISION MOVES THE CASE ───────────────────────────────────────────
+    # RULING (2026-08-15). Until now a decision recorded a verdict and the case
+    # sat where it was, waiting for somebody to find a separate button. That is
+    # the same fault the committee had, one gate further on: the state changed
+    # and the case did not move.
+    #
+    # APPROVED goes to credit admin, carrying its conditions so they can be
+    # ticked there. Nobody re-submits what has just been approved.
+    #
+    # DECLINED GOES BACK TO THE OWNER, NOT TO CLOSED LOST. The ruling is
+    # explicit: "it should probably go back to the owner who is to click on
+    # appeal or accept the decision - if they accept it closes as lost."
+    #
+    # So a decline is not the end of the case; it is a question put to the
+    # person who raised it. Closing it here would take that choice away, and
+    # an appeal would then have to reopen a closed deal.
+    # `datetime`, NOT `_dt`. _dt is imported locally inside two other
+    # functions here and means different things in each - the module in one,
+    # the class in the other. This function has neither, so datetime.now() raised a
+    # NameError that my own except swallowed: the decision recorded, the case
+    # did not move, and nothing said why. Exactly the shape of the two-year
+    # NameError this codebase already carried once.
+    try:
+        if verdict_normalized == "approved":
+            # PRE-APPROVAL falls back to the plain `conditions` list, because
+            # that is what every decision recorded before today used it for.
+            # Reading only the new field would make historic approvals look
+            # unconditional.
+            _pre = list(getattr(payload, "pre_approval_conditions", None)
+                        or getattr(payload, "conditions", None) or [])
+            _dis = list(getattr(payload, "pre_disbursement_conditions", None) or [])
+            lam.update(app_id, {
+                "status": "credit_admin",
+                "awaiting_credit_admin": True,
+                "approved_at": datetime.now().isoformat(timespec="seconds"),
+                "approved_by_name": str(user.get("full_name", "") or ""),
+                "decision_conditions": _pre,
+                # Each condition is an object, not a string, so a tick can be
+                # recorded against it with who and when. A bare string has
+                # nowhere to put that.
+                "pre_approval_conditions": [
+                    {"text": c, "met": False, "kind": "pre_approval"}
+                    for c in _pre],
+                "pre_disbursement_conditions": [
+                    {"text": c, "met": False, "kind": "pre_disbursement"}
+                    for c in _dis],
+            })
+            _conds = _pre + _dis
+            audit_log("LMS_APPROVED_TO_CREDIT_ADMIN",
+                      str(user.get("username", "") or ""),
+                      "%s|%d condition(s)" % (app_id, len(_conds)))
+        elif verdict_normalized == "declined":
+            lam.update(app_id, {
+                "status": "declined",
+                "awaiting_owner_response": True,
+                "declined_at": datetime.now().isoformat(timespec="seconds"),
+                "declined_by_name": str(user.get("full_name", "") or ""),
+                "decline_reason": str(getattr(payload, "reason", "") or ""),
+                # The owner chooses: appeal, or accept and close as lost.
+                "appeal_window_open": True,
+            })
+            audit_log("LMS_DECLINED_TO_OWNER",
+                      str(user.get("username", "") or ""), app_id)
+    except Exception as _exc:
+        # THIS MODULE HAS NO LOGGER. Calling one inside an except would raise a
+        # NameError from the handler and lose the decision entirely - which is
+        # exactly how a silent `except: pass` hid a NameError here for two
+        # years. The audit trail is what this module has, so use it.
+        try:
+            audit_log("LMS_DECISION_MOVE_FAILED",
+                      str(user.get("username", "") or ""),
+                      "%s|%s: %s" % (app_id, type(_exc).__name__, str(_exc)[:80]))
+        except Exception:
+            pass
+
     updated = lam.get(app_id)
     return {
         "application": updated,
@@ -1454,6 +1529,61 @@ def lms_application_document_download(
         headers={"Content-Disposition": f'attachment; filename="{meta.get("filename", "file")}"'})
 
 
+def _dcc_for_app(app: dict) -> dict:
+    """The department committee THIS case belongs to.
+
+    credit_workflow.dcc is ONE COPY of ONE committee - whichever was last
+    enabled. Three endpoints read it: the roster the panel renders, the vote,
+    and the resolution. So a Commercial case would show CONSUMER's voters, be
+    judged against Consumer's quorum, and require Consumer's chair - while the
+    people actually entitled to decide it appeared nowhere.
+
+    The palette already knows which committee a case belongs to. Resolve from
+    the CASE, and fall back to the single copy only when nothing matches - so a
+    bank with one department committee behaves exactly as before.
+    """
+    cfg = get_credit_workflow_config() or {}
+    dcc = dict(cfg.get("dcc") or {})
+
+    seg = str((app or {}).get("client_type", "") or "").strip().lower()
+    want = ""
+    if "commercial" in seg:
+        want = "commercial"
+    elif seg == "cib" or "corporate" in seg or "investment" in seg:
+        want = "corporate"
+    elif ("consumer" in seg or "individual" in seg
+          or seg in ("personal", "retail")):
+        want = "consumer"
+    if not want:
+        return dcc
+
+    for c in (cfg.get("committee_palette") or []):
+        if str(c.get("kind", "")).lower() == "branch":
+            continue
+        if want not in str(c.get("name", "") or "").lower():
+            continue
+        members = [m for m in (c.get("members") or [])
+                   if isinstance(m, dict)
+                   and (str(m.get("staff_code", "")).strip()
+                        or str(m.get("name", "")).strip())]
+        if not members:
+            # Named but unstaffed: keep the fallback rather than hand back a
+            # committee nobody sits on.
+            break
+        return {
+            "enabled": bool(dcc.get("enabled")),
+            "name": c.get("name") or dcc.get("name"),
+            "members": members,
+            "chaired_by": c.get("chaired_by", ""),
+            "chair_staff_code": c.get("chair_staff_code", ""),
+            "voting_rule": c.get("voting_rule",
+                                 dcc.get("voting_rule", "SIMPLE_MAJORITY")),
+            "min_quorum_count": c.get("min_quorum_count"),
+            "source_committee": c.get("code"),
+        }
+    return dcc
+
+
 @router.get("/applications/{app_id}/dcc/roster")
 def lms_dcc_roster(
     app_id: str,
@@ -1469,7 +1599,7 @@ def lms_dcc_roster(
     if not resolve_application_permissions(user, app).get("can_view"):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     from utils.api_lms_mutations import get_credit_workflow_config
-    dcc = (get_credit_workflow_config() or {}).get("dcc") or {}
+    dcc = _dcc_for_app(app)
     return {
         "enabled": bool(dcc.get("enabled")),
         "name": str(dcc.get("name", "Department Credit Committee")),
@@ -1497,7 +1627,7 @@ def lms_dcc_vote(
     if not resolve_application_permissions(user, app).get("can_view"):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     from utils.api_lms_mutations import get_credit_workflow_config
-    dcc = (get_credit_workflow_config() or {}).get("dcc") or {}
+    dcc = _dcc_for_app(app)
     if not dcc.get("enabled"):
         raise HTTPException(status_code=400, detail="The Department Credit Committee is not enabled.")
     if str(app.get("committee_kind", "")) != "dcc":
@@ -1545,7 +1675,7 @@ def lms_dcc_resolve(
         raise HTTPException(status_code=403,
                             detail="Only a manager or the assigned analyst can close the DCC.")
     from utils.api_lms_mutations import get_credit_workflow_config
-    dcc = (get_credit_workflow_config() or {}).get("dcc") or {}
+    dcc = _dcc_for_app(app)
     if not dcc.get("enabled"):
         raise HTTPException(status_code=400, detail="The Department Credit Committee is not enabled.")
     if str(app.get("committee_kind", "")) != "dcc":
@@ -1718,6 +1848,15 @@ def lms_resubmit_after_rework(
     return {"application": lam.get(app_id),
             "status": updates["status"],
             "back_to": back_name or "the pool"}
+
+
+# The tick endpoint that stood here is gone. utils/api_credit_admin_routes.py
+# already carries `conditions/fulfill` alongside the disbursement gate,
+# collateral, insurance and legal - credit admin ticks there. Two ways to tick
+# one condition is worse than either: the gate watches one of them, so a case
+# ticked in the wrong place looks satisfied and never moves.
+#
+# The two KINDS on the decision remain - see the approved branch above.
 
 
 @router.post("/applications/{app_id}/hand-to-credit-analyst")
@@ -2287,6 +2426,197 @@ def lms_committee_set_require_mcc(
 
 
 # === DECLINE APPEAL ===
+@router.post("/applications/{app_id}/escalate-to-chief")
+def lms_escalate_to_chief(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """Send a case up to the Chief Credit Risk for their approval.
+
+    RULING (2026-08-15): the bank credit analyst may "approve with pre-approval
+    conditions, pre-disbursement conditions, return for additional
+    documentation or information, or push to the Chief Credit Risk for their
+    approval as well."
+
+    THE CHIEF IS A PERSON, RESOLVED FROM CONFIG, NOT A HARDCODED NAME. A bank
+    changes its people more often than its software, and a name in the code is
+    a name somebody has to find and edit later - so not even this comment names
+    the current holder. Resolution order:
+
+        credit_workflow.chief_credit_risk        an explicit setting
+        the chair of committee B4                where the authority already sits
+        a register role matching director/head of credit risk
+
+    If none resolves, the escalation is REFUSED and says so. Sending a case to
+    nobody is the Eldoret fault: it leaves the queue and arrives nowhere.
+
+    THE CASE STAYS WHERE IT IS. Escalation asks a question of somebody senior;
+    it does not hand the case over. The analyst still owns it, and the answer
+    comes back to them.
+    """
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_update"):
+        raise HTTPException(status_code=403,
+                            detail="You cannot escalate this case.")
+
+    reason = str(payload.get("reason", "") or "").strip()
+    if not reason:
+        raise HTTPException(
+            status_code=400,
+            detail="Say why this needs the Chief's approval. A case arriving "
+                   "with no question attached wastes the trip.")
+
+    # ── WHO IS THE CHIEF ────────────────────────────────────────────────────
+    chief = {}
+    try:
+        cfg = get_credit_workflow_config() or {}
+    except Exception:
+        cfg = {}
+    explicit = cfg.get("chief_credit_risk") or {}
+    if isinstance(explicit, dict) and (explicit.get("staff_code") or explicit.get("name")):
+        chief = {"code": str(explicit.get("staff_code", "") or ""),
+                 "name": str(explicit.get("name", "") or "")}
+    if not chief:
+        for c in (cfg.get("committee_palette") or []):
+            if str(c.get("code")) == "B4" and str(c.get("chaired_by", "") or "").strip():
+                chief = {"code": str(c.get("chair_staff_code", "") or ""),
+                         "name": str(c.get("chaired_by"))}
+                break
+    if not chief:
+        try:
+            from utils.api_pipeline_scope import get_staff_roster
+            df = get_staff_roster()
+            for _i, r in df.iterrows():
+                role = str(r.get("Role") or "").lower()
+                if ("credit risk" in role
+                        and ("director" in role or "head" in role or "chief" in role)):
+                    chief = {"code": str(r.get("Staff Code") or ""),
+                             "name": str(r.get("Staff Name") or "")}
+                    break
+        except Exception:
+            pass
+    if not chief or not (chief.get("code") or chief.get("name")):
+        raise HTTPException(
+            status_code=400,
+            detail="No Chief Credit Risk is configured, so this case would be "
+                   "sent to nobody. Set credit_workflow.chief_credit_risk, or "
+                   "name a chair on committee B4.")
+
+    escalations = list(app.get("escalations") or [])
+    escalations.append({
+        "reason": reason,
+        "by": str(user.get("staff_code", "") or ""),
+        "by_name": str(user.get("full_name", "") or ""),
+        "to": chief.get("code"),
+        "to_name": chief.get("name"),
+        "at": datetime.now().isoformat(timespec="seconds"),
+        "outcome": "",
+    })
+    lam.update(app_id, {
+        "escalations": escalations,
+        "escalated_pending": True,
+        "escalated_to_code": chief.get("code"),
+        "escalated_to_name": chief.get("name"),
+        "escalated_at": datetime.now().isoformat(timespec="seconds"),
+    })
+    audit_log("LMS_ESCALATED_TO_CHIEF", str(user.get("username", "") or ""),
+              "%s|to %s" % (app_id, chief.get("name") or chief.get("code")))
+    return {"application": lam.get(app_id), "escalated_to": chief.get("name"),
+            "status": "escalated"}
+
+
+@router.post("/applications/{app_id}/accept-decline")
+def lms_accept_decline(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """The owner accepts a decline, and the case closes as Lost.
+
+    RULING (2026-08-15): "it should go back to the owner who is to click on
+    appeal or accept the decision - if they accept it closes as lost."
+
+    The appeal half already existed. This is the other half, and without it a
+    declined case had one exit and no other: appeal, or sit there. Cases that
+    sit are how a pipeline stops meaning anything.
+
+    THE OWNER DECIDES, not credit. A decline is credit's answer; whether to
+    contest it belongs to the person who raised the case. So this refuses
+    anybody who is not the owner or their manager - accepting on somebody
+    else's behalf closes their deal for them.
+
+    IT CLOSES THE PIPELINE DEAL TOO. Leaving it open means the branch still
+    sees work in progress and the funnel still counts it. Best effort, and
+    audited if it fails: the acceptance stands either way, because the decision
+    is the fact and the stage is bookkeeping about it.
+    """
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+
+    status = str(app.get("status", "") or "").lower()
+    if status != "declined":
+        raise HTTPException(
+            status_code=400,
+            detail="This case is not declined (it is %r), so there is nothing "
+                   "to accept." % app.get("status"))
+    if bool(app.get("appeal_pending")):
+        raise HTTPException(
+            status_code=400,
+            detail="An appeal is already pending on this case. It cannot be "
+                   "accepted until that is answered.")
+
+    me = str(user.get("staff_code", "") or "").strip()
+    owner = str(app.get("rm_code", "") or "").strip()
+    visible = get_visible_staff_codes(user)
+    if not (user.get("is_admin") or me == owner or owner in visible):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the case owner or their manager can accept a decline.")
+
+    note = str(payload.get("note", "") or "").strip()
+    lam.update(app_id, {
+        "status": "declined_accepted",
+        "appeal_window_open": False,
+        "awaiting_owner_response": False,
+        "decline_accepted_at": datetime.now().isoformat(timespec="seconds"),
+        "decline_accepted_by": str(user.get("full_name", "") or ""),
+        "decline_accepted_note": note,
+    })
+
+    closed = ""
+    try:
+        deal_id = str(app.get("pipeline_deal_id") or "")
+        if deal_id:
+            from utils.api import _write_deal as _wd
+            from utils.core import PipelineManager as _PM
+            pm = _PM()
+            d = pm.get_deal(deal_id)
+            if d and not str(d.get("stage", "")).lower().startswith("closed"):
+                _wd(pm, deal_id, {
+                    "stage": "Closed Lost",
+                    "closed_reason": str(app.get("decline_reason", "")
+                                         or "Credit declined"),
+                    "closed_at": datetime.now().isoformat(timespec="seconds"),
+                    "closed_by_name": str(user.get("full_name", "") or ""),
+                }, str(user.get("username", "") or ""))
+                closed = deal_id
+    except Exception as exc:
+        audit_log("PIPELINE_CLOSE_ON_ACCEPT_FAILED",
+                  str(user.get("username", "") or ""),
+                  "%s|%s: %s" % (app_id, type(exc).__name__, str(exc)[:70]))
+
+    audit_log("LMS_DECLINE_ACCEPTED", str(user.get("username", "") or ""),
+              "%s%s" % (app_id, "|closed %s" % closed if closed else ""))
+    return {"application": lam.get(app_id), "status": "declined_accepted",
+            "deal_closed": closed or None}
+
+
 @router.post("/applications/{app_id}/appeal")
 def lms_application_appeal(
     app_id: str,
@@ -2489,8 +2819,6 @@ def lms_committee_readiness(
     # resubmit-after-rework brings it back to that analyst rather than to the
     # pool - they have the context, and re-queueing turns a two-hour correction
     # into a two-day one.
-    _updates = {"committee_readiness": readiness}
-
     # ── A REWORK MUST ACTUALLY GO BACK ──────────────────────────────────────
     # RULING (2026-08-14): "a returned case reopens back to the branch on the
     # owner, and once they complete the reworks they resubmit - this time back
@@ -2545,7 +2873,6 @@ def lms_committee_readiness(
               str(user.get('username', '') or ''), f"{app_id}|{readiness['state']}")
     return {"application": lam.get(app_id), "status": readiness["state"]}
 # === END C2: CORRECTNESS STAGING ===
-
 
 # === C3a: COMMITTEE PRE-READ ===
 _PREREAD_VIEWS = ("leaning_approve", "leaning_decline", "questions")

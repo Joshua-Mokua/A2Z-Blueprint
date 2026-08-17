@@ -341,6 +341,26 @@ class RecordDecisionRequest(BaseModel):
                     "Typically used with approved verdict for "
                     "conditional approvals."
     )
+    # ── TWO KINDS OF CONDITION (2026-08-15) ────────────────────────────────
+    # RULING: an approval may carry PRE-APPROVAL conditions - things to satisfy
+    # before the offer stands - and PRE-DISBURSEMENT conditions, which credit
+    # admin and Trops tick before money moves. They are ticked by different
+    # people at different stages, so one flat list cannot say who owes what.
+    #
+    # `conditions` above is KEPT AND UNCHANGED. Every existing decision carries
+    # it, and re-typing it would strand them. It continues to mean
+    # pre-approval, which is what it has always been used for; these two are
+    # additive.
+    pre_approval_conditions: Optional[List[str]] = Field(
+        default=None,
+        description="Conditions to satisfy before the approval stands. "
+                    "Ticked by credit admin."
+    )
+    pre_disbursement_conditions: Optional[List[str]] = Field(
+        default=None,
+        description="Conditions to satisfy before money moves. Ticked by "
+                    "Trops at disbursement."
+    )
     comments: Optional[str] = Field(
         default="",
         description="Manager comments visible to RM/analyst on returns "
