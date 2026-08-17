@@ -39,6 +39,8 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Skeleton } from '@/components/Skeleton';
 import { PageHeader } from '@/components/PageHeader';
+import { CommitteeQueue } from '@/components/CommitteeQueue';
+import { fetchCommitteeQueue } from '@/lib/api';
 import DailyLogValidation from '@/components/DailyLogValidation';
 import BranchCountersign from '@/components/BranchCountersign';
 import UnitRollup from '@/components/UnitRollup';
@@ -53,7 +55,7 @@ import {
 } from '@/types/pipeline';
 
 
-type TabKey = 'validation' | 'dailylog' | 'ranking' | 'analytics';
+type TabKey = 'validation' | 'committee' | 'dailylog' | 'ranking' | 'analytics';
 
 
 // ── Page component ──────────────────────────────────────────────────────
@@ -69,6 +71,22 @@ export function PipelineManagerQueues() {
   // ── Page-local state ──────────────────────────────────────────────────
 
   const [activeTab, setActiveTab] = useState<TabKey>('validation');
+  // Fetched once for the badge; the panel loads its own copy when opened.
+  const [committeeCount, setCommitteeCount] = useState(0);
+  useEffect(() => {
+    void (async () => {
+      try {
+        // COUNT WHAT IS WAITING ON YOU, not what the committee has not
+        // finished. Three cases with your vote already on two of them is one
+        // outstanding task, not three - and a badge that will not go down as
+        // you work is a badge people stop reading.
+        const q = await fetchCommitteeQueue();
+        setCommitteeCount(q.cases.filter((c) => !c.you_voted).length);
+      } catch {
+        setCommitteeCount(0);
+      }
+    })();
+  }, []);
   const [validationDeals, setValidationDeals] = useState<PipelineDeal[]>([]);
   const [loadingV, setLoadingV] = useState(false);
   const [errorV,   setErrorV]   = useState<string | null>(null);
@@ -133,7 +151,7 @@ export function PipelineManagerQueues() {
       <div className="min-h-screen bg-gray-50">
         <PageHeader
           title="Manager Queues"
-          breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'Manager Queues' }]}
+          breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'Manager Queues' }]}
         />
         <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
         <Card>
@@ -187,7 +205,7 @@ export function PipelineManagerQueues() {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         title="Manager Queues"
-        breadcrumbs={[{ label: 'EKE Pipeline Intelligence System (PIS)' }, { label: 'Manager Queues' }]}
+        breadcrumbs={[{ label: 'A2Z Pipeline Intelligence System (PIS)' }, { label: 'Manager Queues' }]}
       />
       <div className="max-w-7xl 2xl:max-w-[1680px] mx-auto px-6 py-6">
 
@@ -199,6 +217,19 @@ export function PipelineManagerQueues() {
           label="Pipeline validation"
           count={validationDeals.length}
           loading={loadingV}
+        />
+        {/* Committee sits beside validation because it is the same kind of
+            work - a queue of things waiting on this person's decision. No new
+            sidebar entry (ruling 2026-08-12). */}
+        <TabBtn
+          active={activeTab === 'committee'}
+          onClick={() => setActiveTab('committee')}
+          label="Committee"
+          // The real number, not a hardcoded zero. A tab that always reads 0
+          // tells somebody there is nothing to do, which is the opposite of
+          // what this queue exists to say.
+          count={committeeCount}
+          loading={false}
         />
         <TabBtn
           active={activeTab === 'dailylog'}
@@ -233,6 +264,8 @@ export function PipelineManagerQueues() {
       </div>
 
       {/* Daily-log validation owns its own loading, empty and error states. */}
+      {activeTab === 'committee' && <CommitteeQueue />}
+
       {activeTab === 'dailylog' && tier === null && (
         <Card className="mt-4"><Card.Body>
           <div className="text-sm text-gray-400">Loading…</div>
@@ -285,7 +318,7 @@ export function PipelineManagerQueues() {
       {activeTab === 'analytics' && <DailyLogAnalytics />}
 
       {/* Error panel */}
-      {!['dailylog', 'ranking', 'analytics'].includes(activeTab)
+      {!['dailylog', 'ranking', 'analytics', 'committee'].includes(activeTab)
         && !(activeTab === 'validation' && (tier === 'branch' || tier === 'rollup' || tier === 'staff'))
         && activeError && (
         <Card className="mt-4">
@@ -302,7 +335,7 @@ export function PipelineManagerQueues() {
       )}
 
       {/* Empty / loading / content */}
-      {['dailylog', 'ranking', 'analytics'].includes(activeTab)
+      {['dailylog', 'ranking', 'analytics', 'committee'].includes(activeTab)
         || (activeTab === 'validation' && (tier === 'branch' || tier === 'rollup' || tier === 'staff'))
         ? null : activeLoading && activeDeals.length === 0 ? (
         <Card className="mt-4">
@@ -588,7 +621,7 @@ function CancellationCard({ deal, onNavigate, onResolved, onErrorToast }: {
             onClick={() => void submit(false)}
             loading={mutations.loading}
           >
-            Reject (deal continues)
+            Decline cancellation — deal continues
           </Button>
           <Button
             variant="danger"
@@ -596,7 +629,7 @@ function CancellationCard({ deal, onNavigate, onResolved, onErrorToast }: {
             onClick={() => void submit(true)}
             loading={mutations.loading}
           >
-            Approve — close as Lost
+            Approve cancellation — close as Lost
           </Button>
         </div>
       </div>

@@ -13,7 +13,19 @@ sub-lines as separate rows and had to add them up before comparing Consumer
 against Commercial. A roll-up is the level people reason in, which is why it
 goes FIRST in the dimension list. Departments stays for the step after.
 
-DERIVED BY WALKING THE ORG CHART, not from a second list to maintain:
+FROM client_type, THE COMPULSORY FIELD. The first version walked the org chart
+up from the owner's ROLE - which answers "who owns this deal" rather than "what
+kind of deal is it", and left anyone missing from the chart as Unassigned. The
+pilot saw far too many of those, and they were material.
+
+client_type is captured at deal creation and already carries exactly the three
+values. It is the deal's own answer, given at the point somebody knew it, and
+no derivation beats that. Spellings fold together - Individual and Retail to
+Consumer, SME to Commercial, Corporate and Institution to CIB - so one line
+cannot appear twice in a report.
+
+THE ORG WALK REMAINS AS A FALLBACK for deals captured before the field was
+compulsory, so nothing existing vanishes:
 
     Relationship Manager, Premier Banking -> Head Premier Banking
                                           -> Head of Consumer
@@ -65,19 +77,37 @@ PAYLOAD_NEW = '''        "by_segment": _by_segment,
         "by_business_line": _by_business_line,'''
 
 RESOLVER = r'''def _business_line_of(deal: dict) -> str:
-    """The business line a deal belongs to - Consumer, SME, Corporate.
+    """The business line a deal belongs to - Consumer, Commercial, CIB.
 
-    Walks functional_hierarchy up from the owner's role until it reaches a
-    "Head of / Head," role, and reports that. Nothing to maintain: a new
-    sub-unit inherits its line the day somebody puts it in the org chart.
+    CLIENT TYPE FIRST, and this is a correction. The first version walked the
+    org chart up from the OWNER'S ROLE, which answers "who owns this deal"
+    rather than "what kind of deal is it" - and anyone missing from the chart
+    fell through to Unassigned, which is why the pilot saw so many.
 
-    Falls back to the deal's client_type, so a deal whose owner is not in the
-    chart still lands somewhere rather than vanishing from the roll-up.
+    client_type is COMPULSORY AT DEAL CREATION and already carries exactly the
+    three values wanted. It is the deal's own answer, given at the point
+    somebody knew it, and no derivation can beat that.
+
+    The org walk stays as a FALLBACK for older deals captured before the field
+    was compulsory, so nothing existing vanishes from the roll-up.
     """
-    # BOTH CHARTS. functional_hierarchy carries the RM-to-unit-head links;
-    # hierarchy carries the head-to-head ones. Consulting only the first
-    # stopped the walk at "Head Premier Banking" and reported Premier Banking -
-    # the sub-line the MD already sees, and exactly not the roll-up wanted.
+    ct = str(deal.get("client_type") or deal.get("segment") or "").strip()
+    if ct:
+        # Normalise the spellings that reach the field, so one line does not
+        # appear twice in a report.
+        low = ct.lower()
+        if low.startswith("consumer") or low in ("individual", "personal", "retail"):
+            return "Consumer"
+        if low.startswith("commercial") or low in ("sme", "business"):
+            return "Commercial"
+        if low.startswith("cib") or low.startswith("corporate") or low == "institution":
+            return "CIB"
+        return ct
+
+    # ── FALLBACK: walk the org chart ────────────────────────────────────────
+    # Only for a deal with no client_type - captured before the field was
+    # compulsory. Both charts are consulted: functional_hierarchy carries the
+    # RM-to-unit-head links, hierarchy the head-to-head ones.
     try:
         from utils.core import get_org_config
         _org = get_org_config() or {}
@@ -98,19 +128,9 @@ RESOLVER = r'''def _business_line_of(deal: dict) -> str:
         except Exception:
             pass
 
-    # WALK TO THE TOP, not to the first head. Stopping at the first "Head..."
-    # gave "Relationship Manager, Premier Banking" -> "Premier Banking", which
-    # is the sub-line the MD already sees and precisely NOT the roll-up asked
-    # for. Premier reports to Head of Consumer, so the walk has to continue.
-    #
-    # The line is the LAST head before the executive tier - Director, Chief,
-    # Managing - because above that everything converges on the MD and the
-    # distinction disappears.
     _EXEC = ("director", "chief", "managing", "ceo")
-    seen = set()
-    cur = role
-    last_head = ""
-    for _ in range(8):                      # the chart is shallow; this is a guard
+    seen, cur, last_head = set(), role, ""
+    for _ in range(8):
         if not cur or cur in seen:
             break
         seen.add(cur)
@@ -123,12 +143,11 @@ RESOLVER = r'''def _business_line_of(deal: dict) -> str:
         cur = (nxt[0] if isinstance(nxt, list) and nxt else
                nxt if isinstance(nxt, str) else "")
     if last_head:
-        # "Head of Consumer" -> "Consumer"; "Head, SME" -> "SME"
         out = last_head.split(",", 1)[-1] if "," in last_head else last_head
         for tok in ("Head of", "Head"):
             out = out.replace(tok, "")
         return out.strip() or last_head
-    return str(deal.get("client_type") or "").strip()
+    return ""
 
 '''
 
@@ -1591,9 +1610,19 @@ def main():
     api = api.replace(PAYLOAD_OLD, PAYLOAD_NEW, 1)
     print("  ok  resolver, aggregation, payload, dimension")
 
+    # CLIENT TYPE MUST WIN. The org walk answers "who owns this deal", not
+    # "what kind of deal is it" - and anyone missing from the chart falls to
+    # Unassigned, which is what the pilot saw.
+    if 'deal.get("client_type")' not in RESOLVER:
+        print("ABORT: the roll-up does not use client_type, which is the")
+        print("       compulsory field that already carries the answer.")
+        return 1
+    if RESOLVER.index('client_type') > RESOLVER.index("get_org_config"):
+        print("ABORT: the org walk is consulted before client_type.")
+        return 1
     if "last_head" not in RESOLVER:
-        print("ABORT: the walk stops at the first head, so Premier Banking")
-        print("       would report as itself instead of Consumer.")
+        print("ABORT: the fallback walk stops at the first head, so an older")
+        print("       Premier deal would report as Premier, not Consumer.")
         return 1
     if "_EXEC" not in RESOLVER:
         print("ABORT: the walk does not stop below the executive tier - every")

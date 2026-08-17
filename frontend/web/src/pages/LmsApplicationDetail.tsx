@@ -20,7 +20,7 @@ import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesT
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, escalateToChief, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -234,88 +234,63 @@ export function LmsApplicationDetail() {
 
             </>
           ) },
-          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: (
-            <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
-          ) },
-          { id: 'documents', label: 'Documentation', color: '#0097A7', content: (
+          { id: 'documents', label: 'Department Review', color: '#0097A7', content: (
             <>
-        {/* ─────────── Documentation card ─────────── */}
-        <Card>
-          <Card.Header>
-            <h2 className="text-base font-semibold text-gray-900">Documentation</h2>
-            {application.completeness_score !== undefined && (
-              <span className="text-xs text-gray-500">
-                {application.completeness_score}% complete
-              </span>
-            )}
-          </Card.Header>
-          <Card.Body>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* PENDING, NOT "REQUIRED" (ruling 2026-08-12). Documents can now
-                  travel with a case rather than blocking it, so a list headed
-                  "Required" beside a case that is already in analysis states
-                  something that is no longer true - and "Required (0) / No
-                  documents required" on a case carrying five documents reads as
-                  a fault.
-
-                  What an analyst needs is what is STILL OUTSTANDING. When
-                  nothing is, the panel says so rather than showing an empty
-                  heading. */}
-              <div>
-                {(() => {
-                  const req = application.docs_required ?? [];
-                  const have = application.docs_submitted ?? [];
-                  const pending = req.filter((d) => !have.includes(d));
-                  return (
-                    <>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
-                        {pending.length > 0
-                          ? `Pending submission (${pending.length})`
-                          : 'Documentation'}
-                      </div>
-                      {pending.length > 0 ? (
-                        <ul className="text-sm text-gray-700 space-y-1">
-                          {pending.map((d, i) => (
-                            <li key={i} className="flex items-center gap-2 text-gray-600">
-                              <span className="text-[#E0A02B]">○</span>
-                              <span>{d}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <div className="text-xs text-gray-500">
-                          {have.length > 0
-                            ? `Nothing outstanding — ${have.length} document${have.length === 1 ? '' : 's'} on file.`
-                            : 'Nothing outstanding.'}
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
+              {/* PICKING BELONGS WHERE THE WORK IS (ruling 2026-08-14):
+                  "this should not have come on the Actions but on the
+                  analysis." An analyst opening a case to work it should not
+                  have to find another tab to claim it first - and Actions said
+                  only "no actions available for your role", which reads as a
+                  dead end rather than a case waiting to be picked up. */}
+        {/* ─────────── ACTION: Self-pick (if can_self_pick) ─────────── */}
+        {permissions.can_self_pick && (
+          <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-blue-900">
+                This case is unallocated and in your segment. Pick it to start working it.
               </div>
-              <div>
-                <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
-                  Underwriting flags
-                </div>
-                <ul className="text-sm text-gray-700 space-y-1">
-                  <li>Repeat borrower: <span className="font-medium">{application.is_repeat_borrower ? 'yes' : 'no'}</span></li>
-                  <li>Clean repayment history: <span className="font-medium">{application.clean_repayment_history ? 'yes' : 'no'}</span></li>
-                  <li>Compliance flag: <span className="font-medium">{application.compliance_flag ? `yes (${application.compliance_type || 'unspecified'})` : 'no'}</span></li>
-                </ul>
-              </div>
+              <Button onClick={async () => {
+                try {
+                  await pickLmsApplication(application.id);
+                  await refetch();
+                  toast({ tone: 'success', message: 'Case picked — assigned to you.' });
+                } catch (e) {
+                  toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Pick failed.' });
+                }
+              }}>Pick this case</Button>
             </div>
-            {application.appraisal_notes && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                  Appraisal notes
-                </div>
-                <div className="text-sm text-gray-700 whitespace-pre-line">
-                  {application.appraisal_notes}
-                </div>
-              </div>
-            )}
-          </Card.Body>
-        </Card>
+          </div>
+        )}
+
+        {/* THE DOCUMENTATION HEADER CARD IS GONE (ruling 2026-08-14): "we can
+                  remove entirely the top part written Documentation and the
+                  contents."
+
+                  A completeness percentage that reads 0%, "Nothing
+                  outstanding", and three underwriting flags all reading "no"
+                  told the analyst nothing they could act on - and pushed the
+                  papers and the decision below the fold. What is left is the
+                  documents themselves and the verdict. */}
+
+        {/* ─────────── The analyst's verdict ───────────
+            RULING (2026-08-14): "it is here that we need to see the
+            recommendation from the consumer analyst ... if it returns for
+            reworks with specifics, or recommend for department credit review
+            which we defined as should be able to auto advance including
+            stage."
+
+            CorrectnessPanel already carries both - a reason list for a rework
+            and a "ready for committee" verdict. It was on another tab, so the
+            analyst read the papers on one screen and recorded the verdict on
+            another. It belongs with the evidence it is a verdict about. */}
+        {/* THE ASSIGNED ANALYST RECORDS IT, not anybody who can edit the
+            case. This is the gate the panel already had on the Actions tab and
+            it is the right one - a verdict carries a name, so the person
+            giving it must be the person the case is with. */}
+        {String(application.analyst?.code ?? '') === String(user?.staff_code ?? '')
+          && !!application.analyst?.code && (
+          <CorrectnessPanel appId={application.id} onDone={refetch} toast={toast} />
+        )}
 
         <LmsTravelledDocuments appId={application.id} canDownload={!!permissions.can_update}
           // Whoever is WORKING the case may attach: the analyst who can send it
@@ -329,7 +304,6 @@ export function LmsApplicationDetail() {
           canAttach={!!(permissions.can_view ?? true)}
           onAttached={refetch} />
 
-        <DccVotePanel appId={application.id} toast={toast} onDone={refetch} />
 
         {/* ─────────── Credit Report moved into the Assessment tabs below ─────────── */}
         <BranchCommitteeDecisionsCard appId={application.id} />
@@ -339,6 +313,35 @@ export function LmsApplicationDetail() {
 
 
             </>
+          ) },
+          // ── DEPARTMENT CREDIT COMMITTEE ──────────────────────────────
+          // RULING (2026-08-14): "we embed a Department Credit Committee where
+          // we will have a similar page like that of the branch credit
+          // committee ... the same flow as the branch manager clicking on
+          // review and getting to that page to vote should be the same for the
+          // department committee."
+          //
+          // THE PANELS ALREADY EXISTED - DccVotePanel and SubmitToDccPanel -
+          // buried inside the journey and actions tabs, several screens apart.
+          // A member arriving to vote had to know where to look. They are the
+          // same two panels; what was missing was somewhere obvious to put
+          // them.
+          //
+          // Sits directly after Department Analysis, because that is the order
+          // the work happens: read the case, analyse it, take it to committee.
+          { id: 'dcc', label: 'Department Credit Committee', color: '#005B82', content: (
+            <div className="space-y-4">
+              <DccVotePanel appId={application.id} toast={toast} onDone={refetch} />
+              {permissions.can_submit_to_dcc && (
+                <SubmitToDccPanel appId={application.id} onDone={refetch} toast={toast} />
+              )}
+              {/* The branch committee's decision stays on the journey tab,
+                  where it is context for the whole case rather than only for
+                  voting - so it is not repeated here. */}
+            </div>
+          ) },
+          { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: (
+            <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
           ) },
           { id: 'affordability', label: 'Affordability', color: '#00A65A', content: (
             <AffordabilityAppraisal defaultCif={application.client_cif} appId={application.id} embedded canEdit={!!permissions.can_update} />
@@ -384,31 +387,6 @@ export function LmsApplicationDetail() {
         )}
 
 
-        {/* ─────────── ACTION: Self-pick (if can_self_pick) ─────────── */}
-        {permissions.can_self_pick && (
-          <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-sm text-blue-900">
-                This case is unallocated and in your segment. Pick it to start working it.
-              </div>
-              <Button onClick={async () => {
-                try {
-                  await pickLmsApplication(application.id);
-                  await refetch();
-                  toast({ tone: 'success', message: 'Case picked — assigned to you.' });
-                } catch (e) {
-                  toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Pick failed.' });
-                }
-              }}>Pick this case</Button>
-            </div>
-          </div>
-        )}
-
-        {/* ─────────── ACTION: Submit to DCC (if can_submit_to_dcc) ─────────── */}
-        {permissions.can_submit_to_dcc && (
-          <SubmitToDccPanel appId={application.id} onDone={refetch} toast={toast} />
-        )}
-
         {/* ─────────── ACTION: Hand to Credit Analyst (if can_hand_to_credit_analyst) ─────────── */}
         {permissions.can_hand_to_credit_analyst && (
           <HandToCreditAnalystPanel appId={application.id} onDone={refetch} toast={toast} />
@@ -436,7 +414,7 @@ export function LmsApplicationDetail() {
             application.assignment_purpose === 'correctness'
               ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-800'}`}>
             {application.assignment_purpose === 'correctness'
-              ? 'Assigned for correctness check — confirm the case is well-packaged (Transaction Memo complete, docs attached) and mark it ready for committee, or return it for rework.'
+              ? 'Read the papers, then either recommend the case to the department committee or return it to the branch with what needs fixing.'
               : 'Assigned for decisioning — analyse the case and record the credit decision.'}
           </div>
         )}
@@ -445,17 +423,14 @@ export function LmsApplicationDetail() {
             application.committee_readiness.state === 'ready_for_committee'
               ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
             {application.committee_readiness.state === 'ready_for_committee'
-              ? `Ready for committee — checked by ${application.committee_readiness.by_name}`
+              ? `Recommended to committee by ${application.committee_readiness.by_name}`
               : `Returned for rework — by ${application.committee_readiness.by_name}`}
             {application.committee_readiness.opinion
               && <div className="mt-1 italic">Opinion: {application.committee_readiness.opinion}</div>}
           </div>
         )}
-        {application.assignment_purpose === 'correctness'
-          && String(application.analyst?.code ?? '') === String(user?.staff_code ?? '')
-          && (
-          <CorrectnessPanel appId={application.id} onDone={refetch} toast={toast} />
-        )}
+        {/* CorrectnessPanel moved to Department Review, where the papers
+            it judges are. Removed here so it does not render twice. */}
 
         {/* ─────────── ACTION: Edit Application (if can_update) ─────────── */}
         {permissions.can_update && (
@@ -874,6 +849,17 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
   const [authority, setAuthority] = useState<string>(COMMON_AUTHORITIES[0]);
   const [reason, setReason]       = useState<string>('');
   const [conditions, setConditions] = useState<string>('');
+  // ── TWO KINDS, BECAUSE DIFFERENT PEOPLE TICK THEM ───────────────────────
+  // RULING (2026-08-15): approve "with pre-approval conditions, pre-
+  // disbursement conditions". Credit admin clears the first; Trops clears the
+  // second before money moves. One box cannot say which is which, and the
+  // person ticking would have to guess.
+  //
+  // `conditions` above stays as the pre-approval box - every decision recorded
+  // before today used it that way, and renaming it would strand them.
+  const [preDisb, setPreDisb] = useState<string>('');
+  const [escalateOpen, setEscalateOpen] = useState(false);
+  const [escalateReason, setEscalateReason] = useState('');
   const [comments, setComments]   = useState<string>('');
   const [error, setError]         = useState<string | null>(null);
 
@@ -911,6 +897,9 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
       authority: authority.trim(),
       reason: reason.trim() || undefined,
       conditions: conditionsList.length > 0 ? conditionsList : undefined,
+      pre_approval_conditions: conditionsList.length > 0 ? conditionsList : undefined,
+      pre_disbursement_conditions: preDisb
+        .split('\n').map((c) => c.trim()).filter((c) => c.length > 0),
       comments: comments.trim() || undefined,
     });
 
@@ -973,7 +962,7 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
         </div>
         {verdict === 'approved' && (
           <div className="mt-3">
-            <label className="text-sm font-medium text-gray-700">Conditions (one per line)</label>
+            <label className="text-sm font-medium text-gray-700">Pre-approval conditions (one per line)</label>
             <textarea
               value={conditions}
               onChange={(e) => setConditions(e.target.value)}
@@ -983,10 +972,97 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
               className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
             />
             <p className="text-xs text-gray-500 mt-1">
-              For conditional approvals. Each line becomes one condition on the credit-admin case.
+              Cleared by credit admin before the case moves on. The last one
+              ticked releases it to Trops.
             </p>
           </div>
         )}
+        {verdict === 'approved' && (
+          <div className="mt-3">
+            <label className="text-sm font-medium text-gray-700">Pre-disbursement conditions (one per line)</label>
+            <textarea
+              value={preDisb}
+              onChange={(e) => setPreDisb(e.target.value)}
+              disabled={mutations.loading}
+              rows={3}
+              placeholder="Charge registered&#10;Insurance assigned&#10;Valuation within 90 days"
+              className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Cleared by Trops before money moves. Leave blank if there are none.
+            </p>
+          </div>
+        )}
+
+        {/* ─────────── Push it to the Chief ───────────
+            RULING (2026-08-15): the analyst may "push to the Chief Credit Risk
+            for their approval as well."
+
+            The Chief is resolved SERVER-SIDE from config - this does not name a
+            person, because a bank changes its people more often than its
+            software.
+
+            The case does not change hands: escalation asks a question of
+            somebody senior, and the analyst still owns it. */}
+        <div className="mt-4 border-t border-gray-100 pt-3">
+          {!escalateOpen ? (
+            <button
+              type="button"
+              onClick={() => setEscalateOpen(true)}
+              disabled={mutations.loading}
+              className="text-xs font-medium text-[#005B82] hover:underline disabled:opacity-50"
+            >
+              Above my authority — push to the Chief Credit Risk
+            </button>
+          ) : (
+            <div className="rounded-md border border-[#005B82]/30 bg-[#005B82]/5 p-3">
+              <label className="text-sm font-medium text-gray-800">
+                Why does this need the Chief?
+              </label>
+              <textarea
+                value={escalateReason}
+                onChange={(e) => setEscalateReason(e.target.value)}
+                rows={2}
+                placeholder="Exposure above my limit; concentration in one sector…"
+                className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary resize-y"
+              />
+              <p className="mt-1 text-xs text-gray-600">
+                A case arriving with no question attached wastes the trip.
+              </p>
+              <div className="mt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setEscalateOpen(false); setEscalateReason(''); }}
+                  className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={mutations.loading || !escalateReason.trim()}
+                  onClick={() => {
+                    void (async () => {
+                      try {
+                        const r = await escalateToChief(appId, { reason: escalateReason.trim() });
+                        const to = (r as unknown as { escalated_to?: string }).escalated_to;
+                        setError(null);
+                        setEscalateOpen(false);
+                        setEscalateReason('');
+                        toast({ tone: 'success',
+                          message: `Sent to ${to || 'the Chief Credit Risk'}. The case stays with you.` });
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : 'Could not escalate');
+                      }
+                    })();
+                  }}
+                  className="rounded-md bg-[#005B82] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  Push to the Chief
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         <div className="mt-3">
           <label className="text-sm font-medium text-gray-700">Comments</label>
           <textarea
@@ -1371,7 +1447,57 @@ function DccVotePanel({ appId, toast, onDone }: {
   const [busy, setBusy] = useState(false);
   const load = () => { getDccRoster(appId).then(setRoster).catch(() => { /* none */ }); };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [appId]);
-  if (!roster || !roster.enabled || (!roster.is_dcc_case && !roster.outcome)) return null;
+  // ── SAY WHY, RATHER THAN NOTHING ─────────────────────────────────────────
+  // This returned null whenever the case was not yet before the committee, so
+  // the Department Credit Committee tab rendered BLANK - which reads as broken
+  // rather than as "not yet". A member opening it to vote had no way to tell
+  // the difference.
+  //
+  // Returning null is right where the panel is one card among many on another
+  // tab. It is wrong when the panel IS the tab.
+  if (!roster) {
+    return (
+      <Card>
+        <Card.Body>
+          <p className="py-6 text-center text-sm text-gray-400">Loading the committee…</p>
+        </Card.Body>
+      </Card>
+    );
+  }
+  if (!roster.enabled) {
+    return (
+      <Card>
+        <Card.Header>
+          <h3 className="text-sm font-semibold text-gray-900">Department Credit Committee</h3>
+        </Card.Header>
+        <Card.Body>
+          <p className="text-sm text-gray-600">
+            The department committee is not switched on for this bank. An
+            administrator enables it under Administration → Credit Committees.
+          </p>
+        </Card.Body>
+      </Card>
+    );
+  }
+  if (!roster.is_dcc_case && !roster.outcome) {
+    return (
+      <Card>
+        <Card.Header>
+          <h3 className="text-sm font-semibold text-gray-900">Department Credit Committee</h3>
+        </Card.Header>
+        <Card.Body>
+          <p className="text-sm text-gray-600">
+            This case has not been submitted to the department committee yet.
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            It arrives here once the analyst marks it ready on the Department
+            Review tab — then the committee's members vote, and the case moves
+            on by itself when they have.
+          </p>
+        </Card.Body>
+      </Card>
+    );
+  }
   const votesByMember = new Map(roster.votes.map((v) => [v.member_id, v]));
   const resolve = async () => {
     setBusy(true);
@@ -2183,7 +2309,9 @@ function CorrectnessPanel({ appId, onDone, toast }: {
     try {
       await setCommitteeReadiness(appId, decision, opinion.trim() || undefined,
         decision === 'rework' ? reasons : undefined);
-      toast({ tone: 'success', message: decision === 'ready' ? 'Marked ready for committee.' : 'Returned for rework.' });
+      toast({ tone: 'success', message: decision === 'ready'
+        ? 'Recommended — the case is now with the department committee.'
+        : 'Returned to the branch for rework.' });
       await onDone();
     } catch (e) {
       toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Action failed' });
@@ -2215,7 +2343,13 @@ function CorrectnessPanel({ appId, onDone, toast }: {
           rows={3}
         />
         <div className="flex gap-2">
-          <Button variant="primary" onClick={() => void act('ready')} disabled={busy}>Mark ready for committee</Button>
+          {/* "MAYBE READY RECOMMENDED" (ruling 2026-08-14). "Mark ready" reads
+              like a housekeeping flag; what the analyst is doing is
+              RECOMMENDING the case, and that recommendation now sends it to
+              the committee in the same act. The label should say so, because
+              somebody who thinks they are ticking a box will press it more
+              casually than somebody who knows they are submitting. */}
+          <Button variant="primary" onClick={() => void act('ready')} disabled={busy}>Recommend to committee</Button>
           <Button variant="ghost" onClick={() => void act('rework')} disabled={busy}>Return for rework</Button>
         </div>
       </Card.Body>

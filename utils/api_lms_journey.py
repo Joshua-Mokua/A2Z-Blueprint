@@ -253,6 +253,140 @@ def _events_from_deal(deal: Dict[str, Any],
     # A case journey missing those cannot answer "who let this through", which
     # is the first question anybody asks of a credit file after the fact.
 
+    # ── EACH VOTE IS A TOUCH POINT (pilot, 2026-08-14) ──────────────────────
+    # "The submission did confirm but it did not record to the case journey ...
+    # each vote needs to write to the case journey."
+    #
+    # The journey read committee_records, which is written only when quorum is
+    # reached. So every individual vote - the act of a named person deciding -
+    # was invisible until the committee finished, and if it never finished,
+    # invisible for ever. A case journey that cannot show who has spoken is not
+    # a record of the committee's work.
+    #
+    # The final decision still appears as its own event, so the journey reads:
+    # each member voting, then the committee deciding.
+    votes_by_cttee = deal.get("committee_votes")
+    if isinstance(votes_by_cttee, dict):
+        for _code, _cast in votes_by_cttee.items():
+            if not isinstance(_cast, dict):
+                continue
+            for _who, _v in _cast.items():
+                if not isinstance(_v, dict):
+                    continue
+                _vote = str(_v.get("vote", "") or "").upper()
+                _said = {"YES": "recommended", "NO": "did not recommend",
+                         "ABSTAIN": "abstained", "RECUSED": "recused themselves"
+                         }.get(_vote, _vote.lower())
+                _note = "%s %s" % (_v.get("name") or _who, _said)
+                if _v.get("role"):
+                    _note += " (%s)" % _v.get("role")
+                if _v.get("comment"):
+                    _note += " — %s" % _v.get("comment")
+                events.append({
+                    "event": "committee_vote",
+                    "by": str(_v.get("staff_code", "") or ""),
+                    "by_name": _v.get("name") or None,
+                    "at": _iso(_v.get("at")),
+                    "note": "%s · %s" % (_code, _note),
+                })
+
+    # ── A STAGE THAT MOVED ITSELF SAYS SO ───────────────────────────────────
+    # "I do hope every autosubmit records in the case journey as well."
+    #
+    # It must. A stage that changes with nobody at a keyboard is the one entry
+    # a reader is most likely to question later - "who moved this, and why is
+    # there no name against it?" - so it names the committee whose decision
+    # moved it rather than leaving a silent jump between two stages.
+    _auto = str(deal.get("auto_advanced_by", "") or "")
+    if _auto:
+        _why = _auto.split(":", 1)[1] if ":" in _auto else _auto
+        events.append({
+            "event": "auto_advanced",
+            "by": "", "by_name": None,
+            "at": _iso(deal.get("updated_at")),
+            "note": ("advanced automatically to %s — %s had recommended it, so "
+                     "the case did not wait to be submitted"
+                     % (deal.get("stage") or "the next stage", _why)),
+        })
+
+    # ── A RETURN FOR REWORK, AND THE WORK COMING BACK ───────────────────────
+    # The simulation caught this: every other touch point was recorded and a
+    # rework was not. A case sent back to a branch left no trace of who
+    # returned it or why - which is the first entry an auditor asks about,
+    # because it is the point where a case stopped moving.
+    #
+    # EVERY return is shown, not just the last. A case returned three times is
+    # a different conversation from one returned once, and rework_history keeps
+    # them all.
+    for _rw in (deal.get("rework_history") or []):
+        if not isinstance(_rw, dict):
+            continue
+        _note = str(_rw.get("reason", "") or "").strip() or "returned for rework"
+        _items = [str(x) for x in (_rw.get("items") or []) if str(x).strip()]
+        if _items:
+            _note += " — " + ", ".join(_items)
+        events.append({
+            "event": "returned_for_rework",
+            "by": str(_rw.get("by", "") or ""),
+            "by_name": _rw.get("by_name") or None,
+            "at": _iso(_rw.get("at")),
+            "note": _note,
+        })
+
+    # And the branch sending it back, which closes the loop: without it the
+    # journey shows a case leaving and never returning.
+    if deal.get("rework_completed_at"):
+        events.append({
+            "event": "rework_completed",
+            "by": "", "by_name": deal.get("rework_completed_by") or None,
+            "at": _iso(deal.get("rework_completed_at")),
+            "note": ("reworked and sent back to credit"
+                     + (" — %s" % deal.get("rework_note")
+                        if deal.get("rework_note") else "")),
+        })
+
+    # ── THE DEPARTMENT COMMITTEE'S VOTES ────────────────────────────────────
+    # The branch committee's votes reach the journey and the department's did
+    # not - the same gap, found the same way. A committee that decides a case
+    # without leaving who said what is not a record anybody can rely on later,
+    # and it is the department committee whose decision releases the case to
+    # the bank credit pool.
+    for _v in (deal.get("dcc_votes") or []):
+        if not isinstance(_v, dict):
+            continue
+        _vote = str(_v.get("vote", "") or "").upper()
+        _said = {"YES": "supported", "NO": "opposed",
+                 "ABSTAIN": "abstained"}.get(_vote, _vote.lower())
+        _who = _v.get("member_name") or _v.get("name") or _v.get("member_id") or "a member"
+        _note = "%s %s" % (_who, _said)
+        if _v.get("rationale"):
+            _note += " — %s" % _v.get("rationale")
+        events.append({
+            "event": "dcc_vote",
+            "by": str(_v.get("member_id", "") or ""),
+            "by_name": _v.get("member_name") or _v.get("name") or None,
+            "at": _iso(_v.get("at")),
+            "note": _note,
+        })
+
+    _out = deal.get("dcc_outcome")
+    if isinstance(_out, dict) and _out.get("recommendation"):
+        _t = _out.get("tally") or {}
+        _rec = str(_out.get("recommendation"))
+        _plain = {"support": "supported the case",
+                  "oppose": "did not support the case",
+                  "split": "was split"}.get(_rec, _rec)
+        events.append({
+            "event": "dcc_%s" % _rec,
+            "by": str(_out.get("by", "") or ""),
+            "by_name": _out.get("by_name") or None,
+            "at": _iso(_out.get("at")),
+            "note": ("the department committee %s — %s yes, %s no, %s abstain"
+                     % (_plain, _t.get("yes", 0), _t.get("no", 0),
+                        _t.get("abstain", 0))
+                     + (" · %s" % _out.get("note") if _out.get("note") else "")),
+        })
+
     # Manager validation. The fields are already written by the validate
     # endpoint (Item 5) - nothing new is recorded, it was simply never read.
     if deal.get("manager_validated"):
