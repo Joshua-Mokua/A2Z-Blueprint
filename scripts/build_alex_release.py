@@ -480,9 +480,21 @@ def main():
 
     # Data files carry OPERATIONAL state. Config the new features need may go;
     # simulated logs and deals must never overwrite the pilot's own records.
+    # lms_config.json is THE BANK'S OWN committee membership - who chairs
+    # each committee, who sits on it, who may vote. It is tracked on alex-dev
+    # and was never blocked, so a release could carry OUR copy over THEIRS and
+    # unstaff every committee at once. A release branch with 5 of 21 staffed
+    # was sitting on two branches when this was found.
+    #
+    # It is also why `del data\lms_config.json` was needed before every build:
+    # tracked on one branch, ignored on the other, colliding every time.
+    #
+    # users.json and the register are blocked for the same reason. This is the
+    # bank's data, not ours, and no release should write it.
     DATA_BLOCK = ("data/branch_logs.json", "data/pipeline_deals.json",
                   "data/branch_days.json", "data/daily_log_exceptions.json",
-                  "data/users.json", "data/staff_register.xlsx")
+                  "data/users.json", "data/staff_register.xlsx",
+                  "data/lms_config.json")
     blocked = [f for f in staged if f in DATA_BLOCK or "backup" in f.lower()]
     staged = [f for f in staged if f not in blocked]
 

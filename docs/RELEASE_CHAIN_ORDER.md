@@ -1,23 +1,16 @@
 # The release chain, verified against the pilot's tree
 
-**2026-08-14.** Every patcher below was replayed against a clean copy of
-`origin/alex-dev` in this exact order. Result: **24 applied, 0 failed**,
-`py_compile` clean, `tsc --noEmit` clean.
-
-This is the check that was missing all week. Three broken releases came from
-building first and discovering the failure during the replay; two minutes of
-replaying against the target would have caught each one.
+**2026-08-15.** All 34 patchers below were replayed against a clean copy of
+`origin/alex-dev` in this exact order. Result: **34 applied, 0 failed**,
+`py_compile` clean on seven modules, `tsc --noEmit` clean.
 
 ## The order
 
-Add these to `CHAIN` in `build_alex_release.py`, in this order, after the
-existing entries:
-
 ```
-patch_md1_deal_field_mapping          # v2 - anchored where the pilot has it
+patch_md1_deal_field_mapping          # v2
 patch_cq1_committee_queue
 patch_cm1_committee_can_view
-patch_dq1_committee_queue_source      # v3 - the guard that rejected its own fallback
+patch_dq1_committee_queue_source      # v3
 patch_qf1_committee_queue_stage
 patch_vt1_member_voting
 patch_ch1_chair_mandatory
@@ -35,83 +28,89 @@ patch_rw1_return_for_rework
 patch_rb1_rework_returns_case
 patch_rj1_rework_in_journey
 patch_rd1_recommend_once_and_submit
+   fix_readiness_overwrite            # RUN IMMEDIATELY AFTER RD1
 patch_dc1_supported_case_goes_on
 patch_dj1_dcc_votes_in_journey
-patch_ui1_credit_frontend             # LAST - the whole front end, one patch
+patch_gt1_committee_gate_position
+patch_cr1_memo_before_analysis
+patch_dm1_decision_moves_case
+patch_cd1_conditions_and_tick
+   remove_cd1_tick                    # RUN IMMEDIATELY AFTER CD1
+patch_ac1_accept_decline
+patch_ec1_escalate_to_chief
+patch_dr2_committee_per_case
+patch_wn1_disbursed_closes_won
+patch_ui1_credit_frontend             # frontend, whole files
+patch_sf1_pool_segment_filter
+patch_ap1_approval_panel              # LAST
 ```
 
-## Why the order matters
+## Two that are not patchers
 
-**MD1 before MV1.** MV1 adds `committee_votes` to a field list MD1 creates.
+`fix_readiness_overwrite` and `remove_cd1_tick` REPAIR rather than add. They
+must run at the points marked, not at the end:
 
-**CQ1 before DQ1 before QF1.** Each amends the committee queue the previous
-one built.
+**fix_readiness_overwrite** removes a second `_updates = {...}` that discards
+the first. Without it, recommending a case records the referral and throws it
+away one line later - the fault that had the pilot unable to submit.
 
-**VT1 before CH1 before DP1.** The chair rule amends the vote endpoint; the
-named-deputy rule amends the chair rule.
+**remove_cd1_tick** removes a tick endpoint that duplicates
+`credit-admin/conditions/fulfill`. Two ways to tick one condition is worse than
+either: the disbursement gate watches one of them.
 
-**RB1 before RD1.** RD1 anchors on the `_updates` line RB1 introduces. Getting
-this backwards produced two assignments, the second discarding the first, and a
-recommendation that recorded itself and went nowhere.
+## THE COMMITTEE FIX IS CONFIG, NOT CODE
 
-**UI1 LAST, and alone.** The frontend patchers each carried a whole file
-captured after the previous had been applied, so replaying them in sequence
-made the later ones report "already applied" over work that was mostly
-missing - seven aborts in the first run. UI1 replaces all of them with one
-patch carrying the final state of twelve files.
+Merging this will NOT fix Eldoret. The chair was never on their own committee's
+roster, and membership is matched by staff code - so the chair's mandatory vote
+could never be cast. That lives in `lms_config.json`, on the bank's box.
 
-## Superseded - do NOT add these
-
-```
-patch_vu1_voting_panel          folded into UI1
-patch_vu2_api_client_anchored   folded into UI1
-patch_hk1_hooks_before_return   folded into UI1
-patch_rt1_review_route          folded into UI1
-patch_cv1_voting_bench          folded into UI1
-patch_fp1_funnel_polish         folded into UI1
-patch_tb1_analyst_tabs          folded into UI1
-patch_dr1_department_review     folded into UI1
-patch_pk1_pool_pick_and_dcc_empty  folded into UI1
-patch_dv1_analyst_verdict       folded into UI1
-patch_cf1_confirm_before_recommend folded into UI1
-patch_sb1_department_review_nav folded into UI1
-patch_br1_a2z_and_committee_tab folded into UI1
-```
-
-Add them to `NOT_FOR_RELEASE` so the builder stops warning that they exist
-outside the chain.
-
-## What does NOT travel, and is correct
-
-**The Deals Warehouse menu entry.** UI1's sidebar has it removed, and the
-patcher aborts if it would add one - that mistake reached the pilot once before
-through a whole-file sidebar patch.
-
-**Origin Channels.** Its 15 patchers remain in `NOT_FOR_RELEASE`. If the bank
-should have it, they need their own replay check first: they touch
-`PipelineCreate.tsx`, which is where the `fetchOriginSources` failure came from.
-
-## Config the pilot must run after merging
-
-Code alone will not make the committee work. On his box:
+After merging, on the pilot box:
 
 ```
-python scripts\pilot_apply.py --apply --hide-modules
-python scripts\name_dcc_members.py --committee B1 --members <names> --deputies <names> --apply
-python scripts\enable_dcc.py --apply
-python scripts\diag_dcc_members.py
-python scripts\preflight_credit.py
+python scripts\seat_the_chairs.py                 # read it first
+python scripts\seat_the_chairs.py --apply
+python scripts\audit_readiness.py                 # the gate
+python scripts\walkthrough_branch.py --branch Eldoret
 ```
 
-`preflight_credit.py` is the gate: it drives the real endpoints and reports what
-a person would see. Zero failures means the path works on his box, not just
-ours.
+`audit_readiness.py` answers the only question that matters: could each
+committee, as configured, actually finish a case. It reads the real config and
+the real logins - no fixtures - and names which of five reasons it could not.
 
-## One gap, stated plainly
+## The config must stop travelling
 
-**The owner has no button to send a reworked case back.** RB1 returns the case
-to the branch and records why; `resubmit-after-rework` exists and works, but
-nothing on the branch side calls it yet. Until that button is built, a returned
-case comes back only through the API.
+`data/lms_config.json` is the bank's own committee membership and was NOT in
+the builder's block list, so a release could carry our copy over theirs and
+unstaff every committee. A release branch with 5 of 21 staffed was found sitting
+on two branches.
 
-Worth building before the branches use rework in anger.
+`patch_cfgblock_release.py` adds it to `DATA_BLOCK`, beside `users.json` and the
+staff register. **Apply this before building.**
+
+## The gate before pushing
+
+```
+python scripts\audit_readiness.py      # can the people act
+python scripts\preflight_credit.py     # does the credit path behave
+python scripts\walk_all_flows.py       # every product, initiation to close
+python scripts\audit_200.py            # the wide sweep
+python scripts\rehearse_pilot.py --per-staff 3
+```
+
+Nothing pushes with a failure in any of them.
+
+## Scripts the pilot needs, which the chain does not carry
+
+The builder stages only files the replay touched, so these must be copied onto
+the release branch by hand before pushing:
+
+```
+git checkout main -- scripts/seat_the_chairs.py scripts/seed_committee_members.py ^
+    scripts/name_dcc_members.py scripts/find_unstaffed_committees.py ^
+    scripts/audit_readiness.py scripts/walkthrough_branch.py ^
+    scripts/diag_dcc_members.py scripts/diag_committee_queue.py ^
+    scripts/diag_analyst_segment.py scripts/verify_login.py ^
+    scripts/preflight_credit.py scripts/audit_200.py scripts/walk_all_flows.py
+```
+
+Without them the pilot can merge the code and still not fix its committees.
