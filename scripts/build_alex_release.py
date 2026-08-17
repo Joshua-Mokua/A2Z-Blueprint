@@ -120,9 +120,21 @@ CHAIN = [
     "patch_rb1_rework_returns_case",
     "patch_rj1_rework_in_journey",
     "patch_rd1_recommend_once_and_submit",
+    "fix_readiness_overwrite",
     "patch_dc1_supported_case_goes_on",
     "patch_dj1_dcc_votes_in_journey",
     "patch_ui1_credit_frontend",
+    "patch_gt1_committee_gate_position",
+    "patch_cr1_memo_before_analysis",
+    "patch_dm1_decision_moves_case",
+    "patch_cd1_conditions_and_tick",
+    "remove_cd1_tick",
+    "patch_ac1_accept_decline",
+    "patch_ec1_escalate_to_chief",
+    "patch_dr2_committee_per_case",
+    "patch_wn1_disbursed_closes_won",
+    "patch_sf1_pool_segment_filter",
+    "patch_ap1_approval_panel",
 ]
 
 # Patchers that deliberately do NOT ship to the pilot. Anything in scripts/ that
@@ -199,6 +211,7 @@ NOT_FOR_RELEASE = {
     "patch_br1_a2z_and_committee_tab",
     "patch_lb1_cancellation_labels",
     "patch_dq2_committee_fallback",
+    "patch_cfgblock_release",
 }
 
 # Must be IDENTICAL to alex-dev when this finishes.
