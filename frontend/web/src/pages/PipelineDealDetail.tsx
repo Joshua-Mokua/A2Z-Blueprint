@@ -211,7 +211,14 @@ export function PipelineDealDetail() {
           <div className="flex items-start gap-2">
             <span className="text-amber-600" aria-hidden>🔒</span>
             <div className="text-sm text-amber-800">
-              <span className="font-semibold">Locked — with Credit.</span>{' '}
+              {/* "Locked - with Credit" is wrong at a committee stage: the
+                  case is with the COMMITTEE, and the branch reading this
+                  concluded it had gone to credit. Name where it actually is. */}
+              <span className="font-semibold">
+                Locked — with {String(deal.stage || '').toLowerCase().includes('committee')
+                  ? (deal.stage || 'the committee')
+                  : 'Credit'}.
+              </span>{' '}
               {deal.lock_reason || 'Editing and stage changes are disabled until the case is returned for rework or information is requested.'}
             </div>
           </div>
@@ -806,7 +813,15 @@ function CreditSubmissionPanel({ deal, onChanged, stageFlow, canEdit = true }: C
         <Card.Body>
           <CreditJourneyStepper checklist={checklist} stageFlow={stageFlow} />
           <p className="text-sm text-gray-700">
-            This deal has been submitted to credit analysis. The case is now with
+            {/* NAME THE STAGE IT IS ACTUALLY AT (ruling 2026-08-14, and again
+                2026-08-17 from the pilot). This read "submitted to credit
+                analysis" on a deal sitting at the BRANCH COMMITTEE - three
+                stages before credit analysis - so the screen told the branch
+                its case had left them when it had not.
+
+                The stage is on the deal. Use it. */}
+            This deal has moved on to{' '}
+            <span className="font-medium">{deal.stage || 'the next stage'}</span>. It is now with
             Credit; you can follow its progress in the Case Journey.
           </p>
         </Card.Body>
@@ -886,7 +901,7 @@ function CreditSubmissionPanel({ deal, onChanged, stageFlow, canEdit = true }: C
         )}
         <p className="text-xs text-gray-500 mb-3">
           {canEdit
-            ? 'Upload each required document. All required documents must be attached before the deal can be submitted to credit analysis.'
+            ? `Upload each required document. All required documents must be attached before the deal can be submitted${nextStep?.next_stage ? ` to ${nextStep.next_stage}` : ''}.`
             : 'Documents for this deal (managed by the owner). You have view access — open any attached document below.'}
         </p>
         <div className="space-y-2">
