@@ -584,19 +584,8 @@
       ],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2,
-          "win_probability": 1
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2,
-          "win_probability": 2
-        },
-        {
-          "stage": "Qualified",
-          "target_days": 5,
-          "win_probability": 10
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -684,13 +673,7 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3,
-          "win_probability": null
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 1,
-          "win_probability": null
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -752,19 +735,8 @@
       ],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2,
-          "win_probability": 1
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 1,
-          "win_probability": 2
-        },
-        {
-          "stage": "Qualified",
-          "target_days": 5,
-          "win_probability": 10
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -846,19 +818,8 @@
       ],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2,
-          "win_probability": 1
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2,
-          "win_probability": 2
-        },
-        {
-          "stage": "Qualified",
-          "target_days": 5,
-          "win_probability": 10
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -946,13 +907,7 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3,
-          "win_probability": null
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 1,
-          "win_probability": null
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1012,13 +967,7 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3,
-          "win_probability": null
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 1,
-          "win_probability": null
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1078,13 +1027,7 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3,
-          "win_probability": null
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 1,
-          "win_probability": null
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1144,9 +1087,8 @@
       ],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 0.5,
-          "win_probability": 50
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1182,9 +1124,8 @@
       ],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 1,
-          "win_probability": 50
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1241,20 +1182,8 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Proposal",
-          "target_days": 3
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 3
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1274,20 +1203,8 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Proposal",
-          "target_days": 3
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 3
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1307,20 +1224,8 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Proposal",
-          "target_days": 3
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 3
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1473,13 +1378,7 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 1,
-          "win_probability": null
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 1,
-          "win_probability": null
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1573,20 +1472,8 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Proposal",
-          "target_days": 3
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 3
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1606,20 +1493,8 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Proposal",
-          "target_days": 3
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 3
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1639,20 +1514,8 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Proposal",
-          "target_days": 3
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 3
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1672,20 +1535,8 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Proposal",
-          "target_days": 3
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 3
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1705,20 +1556,8 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Proposal",
-          "target_days": 3
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 3
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1738,20 +1577,8 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Proposal",
-          "target_days": 3
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 3
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1771,20 +1598,8 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
-          "target_days": 2
-        },
-        {
-          "stage": "Contacted",
-          "target_days": 2
-        },
-        {
-          "stage": "Proposal",
-          "target_days": 3
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 3
+          "stage": "Initiation",
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -1982,13 +1797,7 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 1,
-          "win_probability": 2
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 1,
-          "win_probability": 5
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -2058,13 +1867,7 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3,
-          "win_probability": null
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 1,
-          "win_probability": null
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -2124,13 +1927,7 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3,
-          "win_probability": null
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 1,
-          "win_probability": null
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -2189,13 +1986,7 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3,
-          "win_probability": 2
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 1,
-          "win_probability": 5
+          "target_days": 0
         },
         {
           "stage": "Documentation",
@@ -2266,13 +2057,7 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3,
-          "win_probability": null
-        },
-        {
-          "stage": "Negotiation",
-          "target_days": 1,
-          "win_probability": null
+          "target_days": 0
         },
         {
           "stage": "Documentation",
