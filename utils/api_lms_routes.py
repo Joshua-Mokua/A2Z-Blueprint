@@ -1826,6 +1826,41 @@ def lms_dcc_resolve(
     if str(app.get("committee_kind", "")) not in ("dcc", "mcc"):
         raise HTTPException(status_code=400, detail="This case is not before a credit committee.")
     votes = app.get("dcc_votes", []) or []
+    # ── A CREDIT VOICE MUST BE IN THE ROOM ──────────────────────────────────
+    # RULING (2026-08-18): "at least for a case there should be a credit risk
+    # voice." And: "as long as the MD is there, and at least a rep from credit
+    # - who would be Korir in case Thomas is absent - it should be okay."
+    #
+    # The chair rule already covers the MD: her vote is mandatory, and Thomas
+    # or Korir stands in when she is away. It did NOT cover the other half. A
+    # sitting with the MD, both business directors and treasury could complete
+    # a decision with nobody from credit having spoken - which is the one voice
+    # a credit committee cannot do without.
+    #
+    # So: a member whose ROLE carries credit or risk must have voted. Abstaining
+    # counts - being present and declining to take a side is a position, and
+    # forcing a yes or no would be worse.
+    #
+    # It applies to the BUSINESS committee only. A department committee is
+    # already made of credit people; requiring it there would be a rule that
+    # can never fail, which teaches everyone to ignore it.
+    if str(app.get("committee_kind", "") or "").lower() == "mcc":
+        _credit_ids = {
+            str(m.get("id") or m.get("member_id") or m.get("staff_code") or "").strip()
+            for m in (dcc.get("members") or [])
+            if isinstance(m, dict)
+            and any(w in str(m.get("role", "") or "").lower()
+                    for w in ("credit", "risk"))}
+        if _credit_ids:
+            _spoke = any(str(v.get("member_id", "")).strip() in _credit_ids
+                         for v in votes)
+            if not _spoke:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No one from credit has voted. This committee "
+                           "cannot decide a case without a credit voice in "
+                           "the room - an abstention counts.")
+
     yes = sum(1 for v in votes if str(v.get("vote", "")).upper() == "YES")
     no = sum(1 for v in votes if str(v.get("vote", "")).upper() == "NO")
     abstain = sum(1 for v in votes if str(v.get("vote", "")).upper() == "ABSTAIN")
