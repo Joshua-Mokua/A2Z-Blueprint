@@ -5,7 +5,7 @@ Set the release chain to the order verified against the pilot's own tree.
 
 VERIFIED 2026-08-18 against a clean copy of origin/alex-dev:
 
-    44 applied, 0 failed
+    45 applied, 0 failed (44 verified + MP1)
     py_compile clean on seven modules
     tsc --noEmit clean, vite build clean
     every one of fifteen markers present on the built tree
@@ -95,6 +95,10 @@ ORDER = [
     'patch_rq1_required_documents',
     'patch_mc1_management_credit_committee',
     'patch_bc1_business_credit_committee',
+    # MP1 sits straight after BC1: BC1 makes the business committee decide,
+    # MP1 makes its members able to press the button. Apart, the MD can see the
+    # case and find nothing to vote with.
+    'patch_mp1_business_committee_panel',
     'patch_vp1_vote_is_personal',
     'patch_bv1_committee_vote_integrity',
     'patch_cv1_credit_voice',

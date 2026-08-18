@@ -137,6 +137,7 @@ CHAIN = [
     "patch_rq1_required_documents",
     "patch_mc1_management_credit_committee",
     "patch_bc1_business_credit_committee",
+    "patch_mp1_business_committee_panel",
     "patch_vp1_vote_is_personal",
     "patch_bv1_committee_vote_integrity",
     "patch_cv1_credit_voice",
