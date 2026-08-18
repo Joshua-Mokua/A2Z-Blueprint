@@ -13,6 +13,14 @@ interface NavItem {
 }
 interface NavGroup { label: string; items: NavItem[]; }
 
+// A hardcoded hide list already existed and was empty. Rather than add a second
+// mechanism beside it, the same filter now also reads `hidden_modules` from
+// BRANDING - which comes from org_config.json, a file each deployment owns.
+//
+// So the pilot hides a module by listing its route in ITS config, and this side
+// keeps it, with no divergent code and nothing to remember at release time.
+// Keyed on ROUTE, not label: "EKE Sales Pro" and "A2Z Sales Pro" are the same
+// module, and a list keyed on the words would stop matching after a rebrand.
 const DEMO_HIDE = new Set<string>([]);
 
 const NAV_GROUPS: NavGroup[] = [
@@ -30,12 +38,46 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Pipeline Intelligence (PIS)',
     items: [
-      { path: '/pipeline',        label: 'EKE Sales Pro',        matchActive: (p) => p === '/pipeline' || (p.startsWith('/pipeline/') && !p.startsWith('/pipeline/queues')) },
+      { path: '/pipeline',        label: 'EKE Sales Pro',        matchActive: (p) => p === '/pipeline' || (p.startsWith('/pipeline/') && !p.startsWith('/pipeline/queues') && !p.startsWith('/pipeline/events') && !p.startsWith('/pipeline/channels') && !p.startsWith('/pipeline/warehouse')) },
       { path: '/analytics',       label: 'Sales Pro Analytics',  matchActive: (p) => p.startsWith('/analytics') },
       { path: '/pipeline/queues', label: 'Manager Queues',       matchActive: (p) => p.startsWith('/pipeline/queues'), visibleFor: (m) => m },
+      { path: '/pipeline/channels', label: 'Origin Channels',    matchActive: (p) => p.startsWith('/pipeline/channels') || p.startsWith('/pipeline/events') },
+      // Standalone, NOT a channel: a shelf with claim mechanics and no budget,
+      // so grouping it with the invested channels would imply a return question
+      // it cannot answer.
       { path: '/referrals',       label: 'A2Z Sales Referral Analytics', matchActive: (p) => p.startsWith('/referrals') },
       { path: '/branch-log',      label: 'Daily Log',     matchActive: (p) => p.startsWith('/branch-log') },
       { path: '/portfolio',       label: 'Portfolio',            matchActive: (p) => p.startsWith('/portfolio') },
+    ],
+  },
+  {
+    // ── DEPARTMENT REVIEW, ITS OWN SECTION (ruling 2026-08-14) ────────────
+    // "For the department gate we have a sidebar dedicated to the department
+    // which we could name Department Review ... this can also be the place
+    // where the head-office team, especially those voting, can get in and see
+    // the committee as can also vote, but it be restricted to selected voters
+    // only."
+    //
+    // Credit Analysis is the BANK credit analyst's module - Julius Korir's
+    // work. The department analyst and the committee members were borrowing it
+    // and seeing a screen built for somebody else's job. They now have their
+    // own way in.
+    //
+    // RESTRICTED TO CREDIT STAFF, which is the same gate Credit Analysis uses.
+    // A tighter one - only named committee members - belongs on the SERVER,
+    // where it already is: the vote endpoint refuses a non-member with a 403.
+    // Hiding a menu entry is not a permission, and treating it as one is how
+    // people end up believing a screen is safe because it is hard to find.
+    label: 'Department Review',
+    items: [
+      // NOT FOR CREDIT RISK (ruling 2026-08-18): "I want his sidebar not to
+      // have the Department Review, since that one does not really concern
+      // them - the CIS is their main workbench."
+      //
+      // Department Review is the segment analyst's desk. Credit risk arrives
+      // after that work is finished, and an entry leading to somebody else's
+      // queue is an invitation to duplicate it.
+      { path: '/lms',                 label: 'Department Review',   matchActive: (p) => p === '/lms' || p.startsWith('/lms/'), visibleFor: (_m, _a, _c, _md, credit) => credit },
     ],
   },
   {
@@ -67,8 +109,8 @@ interface SidebarProps { onNavigate?: () => void; }
 export function Sidebar({ onNavigate }: SidebarProps) {
   const { pathname } = useLocation();
   const { branding } = useBranding();
-  // Absent config hides nothing, so this can only ever take a module away
-  // deliberately, never by omission.
+  // Absent config hides nothing, so this cannot take a module away from
+  // somebody who never asked for it.
   const hidden = new Set<string>(branding?.hidden_modules ?? []);
   const { user } = useRole();
   const { logout } = useAuth();
@@ -81,6 +123,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   // Credit Intelligence modules belong to credit staff (analysts, credit admin,
   // treasury/disbursement, recovery) + admin/MD. Front-line RMs/branch see the
   // pipeline instead, and track their own cases there.
+  // Credit risk works at the credit stage, not the department stage.
   const isCreditStaff = isAdminOrMd || /credit|analys|underwrit|recover|collection|treasur|disburs/i.test(user?.role ?? '');
 
   return (
@@ -98,7 +141,9 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           const items = group.items.filter(
             (item) => !DEMO_HIDE.has(item.path)
               && !hidden.has(item.path)
-              && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff)),
+              && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff))
+              && !(/credit risk|credit admin|remedial|recover/i.test(user?.role ?? '')
+                   && item.label === 'Department Review'),
           );
           if (!items.length) return null;
           return (

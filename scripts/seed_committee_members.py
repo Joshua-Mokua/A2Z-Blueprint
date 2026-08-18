@@ -137,10 +137,34 @@ def main():
     print("  minimum         %d (the default quorum)" % wanted)
 
     planned, short, untouched = [], [], []
+    def _has_real_members(_c):
+        """Blank placeholder rows are NOT members.
+
+        A committee created from the palette arrives with empty rows - name,
+        role and staff_code all "". `if c.get("members")` reads that list of
+        four empty dicts as truthy and skips the committee, so it is never
+        populated and never can be: it looks staffed to this script and is
+        staffed by nobody.
+
+        That is the Eldoret fault (2026-08-14). The committee showed in admin,
+        the case routed to it correctly, and it appeared in no queue because
+        there was no one on it. Managers gathered twice and touched nothing.
+        """
+        for _m in (_c.get("members") or []):
+            if not isinstance(_m, dict):
+                continue
+            if str(_m.get("staff_code", "") or "").strip() \
+                    or str(_m.get("name", "") or "").strip():
+                return True
+        return False
+
     for c in branch_cttees:
-        if c.get("members"):
+        if _has_real_members(c):
             untouched.append(c)
             continue
+        # Drop the blank rows before refilling, or they travel alongside the
+        # real people and render as nameless lines in the voting panel.
+        c["members"] = []
         branch = str(c.get("branch") or "").strip().lower()
         people = by_branch.get(branch, [])
 
@@ -226,6 +250,19 @@ def main():
         if chair:
             c["chaired_by"] = chair["name"]
             c["chair_staff_code"] = chair["code"]
+        # ── THE CHAIR SITS ON THEIR OWN COMMITTEE ───────────────────────────
+        # THE ELDORET FAULT (2026-08-14). The chair was written to chaired_by
+        # and never added to members. Membership is matched by STAFF CODE, so
+        # the chair was not recognised as a member at all - and their vote is
+        # MANDATORY, which means the committee could reach quorum and still
+        # never complete. Managers gathered twice and could not finish a case.
+        #
+        # A chair who cannot vote is not a chair. They go on the roster.
+        if chair and not any(str(m.get("staff_code", "")).strip() == chair["code"]
+                             for m in members):
+            members = [{"staff_code": chair["code"], "name": chair["name"],
+                        "role": chair["role"], "id": chair["code"],
+                        "member_id": chair["code"]}] + members
         c["members"] = members
     cw["committee_palette"] = palette
     cfg["credit_workflow"] = cw
