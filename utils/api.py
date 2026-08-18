@@ -13033,15 +13033,44 @@ def get_deal_committee_records(deal_id: str, user: dict = Depends(get_current_us
     codes = _effective_committee_journey(deal)
     records = deal.get("committee_records", {}) or {}
     gates = []
+    _me = str(user.get("staff_code", "") or "").strip()
+    _myname = str(user.get("full_name", "") or "").strip().lower()
+    _all_votes = deal.get("committee_votes") or {}
     for code in codes:
         c = _committee_by_code(code)
+        # ---- WHETHER *THIS* VIEWER MAY VOTE ------------------------------
+        # The panel draws the voting bench on this. Without it, it falls back
+        # to canEdit - "owner or admin" - so a committee member who is neither
+        # sees a read-only card and nothing to vote with. That is what left a
+        # branch chair unable to act on a case that was waiting for her.
+        #
+        # Membership is matched the same three ways it is matched everywhere
+        # else: staff code, name, or being the chair.
+        _members = c.get("members", []) or []
+        _codes = {str(m.get("staff_code", "") or "").strip()
+                  for m in _members if isinstance(m, dict)}
+        _names = {str(m.get("name", "") or "").strip().lower()
+                  for m in _members if isinstance(m, dict)}
+        _chair = str(c.get("chaired_by", "") or "").strip().lower()
+        _chair_code = str(c.get("chair_staff_code", "") or "").strip()
+        _can_vote = bool(
+            (_me and (_me in _codes or _me == _chair_code))
+            or (_myname and (_myname in _names or _myname == _chair)))
+        _cast = (_all_votes.get(code) or {}) if isinstance(_all_votes, dict) else {}
+        try:
+            _quorum = _committee_quorum(c)
+        except Exception:
+            _quorum = c.get("min_quorum_count") or 2
         gates.append({
             "code": code,
             "name": c.get("name", code),
             "recording_mode": c.get("recording_mode", "voting"),
             "voting_rule": c.get("voting_rule", "SIMPLE_MAJORITY"),
-            "members": c.get("members", []),
+            "members": _members,
             "record": records.get(code),
+            "can_vote": _can_vote,
+            "votes_cast": len(_cast),
+            "quorum": _quorum,
         })
     return {"gates": gates, "cr_only": len(codes) == 0}
 
