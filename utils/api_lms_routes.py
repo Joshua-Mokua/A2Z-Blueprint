@@ -1586,6 +1586,29 @@ def _dcc_for_app(app: dict) -> dict:
     cfg = get_credit_workflow_config() or {}
     dcc = dict(cfg.get("dcc") or {})
 
+    # A case referred to the BUSINESS CREDIT COMMITTEE resolves to it,
+    # whatever the client type - it is a tier above the segment committees, not
+    # one of them.
+    if str((app or {}).get("committee_kind", "") or "").lower() == "mcc":
+        for c in (cfg.get("committee_palette") or []):
+            nm = str(c.get("name", "") or "").lower()
+            if "management" in nm or "business credit" in nm or str(c.get("code")) == "B4":
+                mem = [m for m in (c.get("members") or [])
+                       if isinstance(m, dict)
+                       and (str(m.get("staff_code", "")).strip()
+                            or str(m.get("name", "")).strip())]
+                if mem:
+                    return {
+                        "enabled": True,
+                        "name": c.get("name") or "Business Credit Committee",
+                        "members": mem,
+                        "chaired_by": c.get("chaired_by", ""),
+                        "chair_staff_code": c.get("chair_staff_code", ""),
+                        "voting_rule": c.get("voting_rule", "SIMPLE_MAJORITY"),
+                        "min_quorum_count": c.get("min_quorum_count"),
+                        "source_committee": c.get("code"),
+                    }
+
     seg = str((app or {}).get("client_type", "") or "").strip().lower()
     want = ""
     if "commercial" in seg:
@@ -1671,8 +1694,11 @@ def lms_dcc_vote(
     dcc = _dcc_for_app(app)
     if not dcc.get("enabled"):
         raise HTTPException(status_code=400, detail="The Department Credit Committee is not enabled.")
-    if str(app.get("committee_kind", "")) != "dcc":
-        raise HTTPException(status_code=400, detail="This case is not before the Department Credit Committee.")
+    # The BUSINESS CREDIT COMMITTEE sits on the same machinery - it votes,
+    # reaches quorum and records an outcome exactly as a department committee
+    # does. What differs is only where its answer goes, handled below.
+    if str(app.get("committee_kind", "")) not in ("dcc", "mcc"):
+        raise HTTPException(status_code=400, detail="This case is not before a credit committee.")
     payload = payload if isinstance(payload, dict) else {}
     member_id = str(payload.get("member_id", "") or "").strip()
     vote = str(payload.get("vote", "") or "").strip().upper()
@@ -1719,8 +1745,11 @@ def lms_dcc_resolve(
     dcc = _dcc_for_app(app)
     if not dcc.get("enabled"):
         raise HTTPException(status_code=400, detail="The Department Credit Committee is not enabled.")
-    if str(app.get("committee_kind", "")) != "dcc":
-        raise HTTPException(status_code=400, detail="This case is not before the Department Credit Committee.")
+    # The BUSINESS CREDIT COMMITTEE sits on the same machinery - it votes,
+    # reaches quorum and records an outcome exactly as a department committee
+    # does. What differs is only where its answer goes, handled below.
+    if str(app.get("committee_kind", "")) not in ("dcc", "mcc"):
+        raise HTTPException(status_code=400, detail="This case is not before a credit committee.")
     votes = app.get("dcc_votes", []) or []
     yes = sum(1 for v in votes if str(v.get("vote", "")).upper() == "YES")
     no = sum(1 for v in votes if str(v.get("vote", "")).upper() == "NO")
@@ -1778,6 +1807,54 @@ def lms_dcc_resolve(
         }
     else:
         _next = {"dcc_outcome": outcome, "status": "assigned", "committee_kind": ""}
+    # ── THE BUSINESS CREDIT COMMITTEE ANSWERS TO CREDIT RISK ────────────────
+    # RULING (2026-08-18): "when they refer to the Management Credit Committee,
+    # internally also called the Business Credit Committee ... once they
+    # convene they also give their recommendation, and once the recommendation
+    # is made it should still go back to the credit risk pool for progression
+    # to credit admin. The approval for BCC-approved cases should be ticked as
+    # approved by BCC and then progress to credit admin, but the conditions are
+    # still to be ticked by the analyst."
+    #
+    # A DEPARTMENT committee recommending a case releases it to the credit
+    # pool, where a bank analyst picks it up fresh. THE BCC IS DIFFERENT: it
+    # was asked a question BY credit risk, or circulated a packaged case, and
+    # its answer belongs back with whoever asked - not with the pool at large.
+    #
+    # AND IT DOES NOT SET CONDITIONS. The committee says yes; the analyst
+    # writes the conditions and sends the case to credit admin. Keeping those
+    # two acts separate is what keeps one person accountable for the terms.
+    if str(app.get("committee_kind", "") or "").lower() == "mcc":
+        _bcc = {
+            "bcc_outcome": recommendation,
+            "bcc_recommendation": recommendation,
+            "bcc_resolved_at": datetime.now().isoformat(timespec="seconds"),
+            "bcc_resolved_by": str(user.get("full_name", "") or ""),
+            "bcc_tally": {"yes": yes, "no": no, "abstain": abstain},
+            "escalated_pending": False,
+            "committee_kind": "",
+        }
+        if recommendation == "support":
+            # Back to credit risk, marked as carrying the committee's approval.
+            _bcc.update({
+                "status": "submitted",
+                "awaiting_credit_analyst": True,
+                "approved_by_bcc": True,
+            })
+        else:
+            # Opposed or split: still back to credit risk, but without it. They
+            # asked the question; they get the answer either way.
+            _bcc.update({
+                "status": "submitted",
+                "awaiting_credit_analyst": True,
+                "approved_by_bcc": False,
+            })
+        lam.update(app_id, _bcc)
+        audit_log("LMS_BCC_RESOLVED", str(user.get("username", "") or ""),
+                  f"{app_id}|{recommendation}|{yes}-{no}-{abstain}")
+        return {"application": lam.get(app_id),
+                "dcc_outcome": outcome, "bcc": True}
+
     lam.update(app_id, _next)
     audit_log("LMS_DCC_RESOLVED", str(user.get("username", "") or ""),
               f"{app_id}|{recommendation}|{yes}-{no}-{abstain}")
@@ -2546,6 +2623,8 @@ def lms_escalate_to_chief(
             "to": str(_mcc.get("code")),
             "to_name": str(_mcc.get("name")),
             "kind": "committee",
+            # CIRCULATION NOTES: the committee reads the note before it sits.
+            "note": str(payload.get("note", "") or "").strip(),
             "at": datetime.now().isoformat(timespec="seconds"),
             "outcome": "",
         })
@@ -2556,6 +2635,8 @@ def lms_escalate_to_chief(
             "committee_kind": "mcc",
             "escalated_to_name": str(_mcc.get("name")),
             "escalated_at": datetime.now().isoformat(timespec="seconds"),
+            "circulation_note": str(payload.get("note", "") or "").strip(),
+            "circulated_by_name": str(user.get("full_name", "") or ""),
         })
         audit_log("LMS_ESCALATED_TO_MCC", str(user.get("username", "") or ""),
                   "%s|%s" % (app_id, _mcc.get("code")))
