@@ -155,7 +155,17 @@ data/_reset_backup_*/
 # Ignore the delivery artifacts (the real change is the patched source file,
 # which you stage explicitly — never the patcher).
 scripts/apply_*.py
-scripts/diag_*.py
+# Diagnostics are TOOLS, not delivery artifacts, and they must be sendable.
+#
+# This line used to read `scripts/diag_*.py`, alongside the patch-kit
+# artifacts below. That made sense when a diagnostic was throwaway. It stopped
+# making sense when diagnostics became the way a fault on the bank's box gets
+# understood from here: three were written, tested and "sent" on 2026-08-18 and
+# none arrived, because git could not see them.
+#
+# A diagnostic that turns out to be throwaway can be deleted. One that is
+# needed and invisible cannot be sent, and nobody finds out until the person at
+# the other end says "no such file".
 scripts/http_source_probe.py
 scripts/storage_readiness_probe.py
 README_*.md
