@@ -14227,8 +14227,27 @@ def get_my_legal_officers(user: dict = Depends(get_current_user)):
     from utils.api_pipeline_scope import get_visible_staff_codes, get_staff_roster
     roster = get_staff_roster()
     role_l = str(user.get("role", "") or "").lower()
-    full = bool(user.get("is_admin")) or ("legal" in role_l and (
-        "chief" in role_l or "head" in role_l or "manager" in role_l)) or is_manager(user)
+    # `is_manager` is not defined at module level here - every other caller in
+    # this file imports it locally, and this one did not. So the endpoint
+    # raised a NameError for EVERY user, and the legal-assignment dropdown was
+    # empty for everybody, always.
+    #
+    # It never surfaced because nothing had asked for the list until credit
+    # admin needed it to assign a case for charging.
+    try:
+        from utils.api_pipeline_manager_actions import is_manager as _is_mgr
+        _mgr = bool(_is_mgr(user))
+    except Exception:
+        _mgr = False
+    # CREDIT ADMIN SEES THE LEGAL POOL. Assigning a case for charging IS the
+    # credit administrator's job, and the list was restricted to legal chiefs
+    # and managers - so the one person who needs the dropdown got an empty one.
+    _credit_admin = any(w in role_l for w in
+                        ("credit administration", "credit admin", "cad"))
+    full = (bool(user.get("is_admin")) or _credit_admin
+            or ("legal" in role_l and ("chief" in role_l or "head" in role_l
+                                       or "manager" in role_l))
+            or _mgr)
     visible = set() if full else get_visible_staff_codes(user)
     officers = []
     try:
