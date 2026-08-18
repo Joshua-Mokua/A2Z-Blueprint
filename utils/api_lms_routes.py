@@ -2467,6 +2467,160 @@ def lms_committee_set_require_mcc(
 
 
 # === DECLINE APPEAL ===
+@router.post("/applications/{app_id}/escalate-to-chief")
+def lms_escalate_to_chief(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """Send a case up to the Chief Credit Risk for their approval.
+
+    RULING (2026-08-15): the bank credit analyst may "approve with pre-approval
+    conditions, pre-disbursement conditions, return for additional
+    documentation or information, or push to the Chief Credit Risk for their
+    approval as well."
+
+    THE CHIEF IS A PERSON, RESOLVED FROM CONFIG, NOT A HARDCODED NAME. A bank
+    changes its people more often than its software, and a name in the code is
+    a name somebody has to find and edit later - so not even this comment names
+    the current holder. Resolution order:
+
+        credit_workflow.chief_credit_risk        an explicit setting
+        the chair of committee B4                where the authority already sits
+        a register role matching director/head of credit risk
+
+    If none resolves, the escalation is REFUSED and says so. Sending a case to
+    nobody is the Eldoret fault: it leaves the queue and arrives nowhere.
+
+    THE CASE STAYS WHERE IT IS. Escalation asks a question of somebody senior;
+    it does not hand the case over. The analyst still owns it, and the answer
+    comes back to them.
+    """
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_update"):
+        raise HTTPException(status_code=403,
+                            detail="You cannot escalate this case.")
+
+    reason = str(payload.get("reason", "") or "").strip()
+    if not reason:
+        raise HTTPException(
+            status_code=400,
+            detail="Say why this needs a higher authority. A case arriving "
+                   "with no question attached wastes the trip.")
+    # ── UP TO A PERSON, OR UP TO A COMMITTEE ────────────────────────────────
+    # RULING (2026-08-18): "another item is the Management Credit Committee, so
+    # credit risk can also forward to the Management Credit Committee as well."
+    #
+    # Two different escalations: one asks an individual for their approval, the
+    # other puts the case to a committee that will sit and vote on it. Same
+    # endpoint, because from the analyst's side the act is identical - this is
+    # above my authority, here is why - and the difference is only who answers.
+    _target = str(payload.get("to", "chief") or "chief").strip().lower()
+    if _target in ("mcc", "management", "management credit committee", "committee"):
+        _cfg2 = get_credit_workflow_config() or {}
+        _mcc = None
+        for _c in (_cfg2.get("committee_palette") or []):
+            _nm = str(_c.get("name", "") or "").lower()
+            if "management" in _nm or str(_c.get("code")) == "B4":
+                _members = [m for m in (_c.get("members") or [])
+                            if isinstance(m, dict)
+                            and (str(m.get("staff_code", "")).strip()
+                                 or str(m.get("name", "")).strip())]
+                if _members:
+                    _mcc = _c
+                    break
+        if not _mcc:
+            raise HTTPException(
+                status_code=400,
+                detail="No Management Credit Committee is configured with "
+                       "members, so this case would be sent to nobody. Name "
+                       "them in Administration > Credit Committees.")
+        _esc = list(app.get("escalations") or [])
+        _esc.append({
+            "reason": reason,
+            "by": str(user.get("staff_code", "") or ""),
+            "by_name": str(user.get("full_name", "") or ""),
+            "to": str(_mcc.get("code")),
+            "to_name": str(_mcc.get("name")),
+            "kind": "committee",
+            "at": datetime.now().isoformat(timespec="seconds"),
+            "outcome": "",
+        })
+        lam.update(app_id, {
+            "escalations": _esc,
+            "escalated_pending": True,
+            "status": "referred_to_committee",
+            "committee_kind": "mcc",
+            "escalated_to_name": str(_mcc.get("name")),
+            "escalated_at": datetime.now().isoformat(timespec="seconds"),
+        })
+        audit_log("LMS_ESCALATED_TO_MCC", str(user.get("username", "") or ""),
+                  "%s|%s" % (app_id, _mcc.get("code")))
+        return {"application": lam.get(app_id),
+                "escalated_to": str(_mcc.get("name")), "status": "escalated"}
+
+    # ── WHO IS THE CHIEF ────────────────────────────────────────────────────
+    chief = {}
+    try:
+        cfg = get_credit_workflow_config() or {}
+    except Exception:
+        cfg = {}
+    explicit = cfg.get("chief_credit_risk") or {}
+    if isinstance(explicit, dict) and (explicit.get("staff_code") or explicit.get("name")):
+        chief = {"code": str(explicit.get("staff_code", "") or ""),
+                 "name": str(explicit.get("name", "") or "")}
+    if not chief:
+        for c in (cfg.get("committee_palette") or []):
+            if str(c.get("code")) == "B4" and str(c.get("chaired_by", "") or "").strip():
+                chief = {"code": str(c.get("chair_staff_code", "") or ""),
+                         "name": str(c.get("chaired_by"))}
+                break
+    if not chief:
+        try:
+            from utils.api_pipeline_scope import get_staff_roster
+            df = get_staff_roster()
+            for _i, r in df.iterrows():
+                role = str(r.get("Role") or "").lower()
+                if ("credit risk" in role
+                        and ("director" in role or "head" in role or "chief" in role)):
+                    chief = {"code": str(r.get("Staff Code") or ""),
+                             "name": str(r.get("Staff Name") or "")}
+                    break
+        except Exception:
+            pass
+    if not chief or not (chief.get("code") or chief.get("name")):
+        raise HTTPException(
+            status_code=400,
+            detail="No Chief Credit Risk is configured, so this case would be "
+                   "sent to nobody. Set credit_workflow.chief_credit_risk, or "
+                   "name a chair on committee B4.")
+
+    escalations = list(app.get("escalations") or [])
+    escalations.append({
+        "reason": reason,
+        "by": str(user.get("staff_code", "") or ""),
+        "by_name": str(user.get("full_name", "") or ""),
+        "to": chief.get("code"),
+        "to_name": chief.get("name"),
+        "at": datetime.now().isoformat(timespec="seconds"),
+        "outcome": "",
+    })
+    lam.update(app_id, {
+        "escalations": escalations,
+        "escalated_pending": True,
+        "escalated_to_code": chief.get("code"),
+        "escalated_to_name": chief.get("name"),
+        "escalated_at": datetime.now().isoformat(timespec="seconds"),
+    })
+    audit_log("LMS_ESCALATED_TO_CHIEF", str(user.get("username", "") or ""),
+              "%s|to %s" % (app_id, chief.get("name") or chief.get("code")))
+    return {"application": lam.get(app_id), "escalated_to": chief.get("name"),
+            "status": "escalated"}
+
+
 @router.post("/applications/{app_id}/accept-decline")
 def lms_accept_decline(
     app_id: str,

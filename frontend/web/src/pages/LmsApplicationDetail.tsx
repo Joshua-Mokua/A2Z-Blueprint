@@ -177,7 +177,12 @@ export function LmsApplicationDetail() {
   // buries the one step that is not done.
   const _viewerRole = String(user?.role ?? '').toLowerCase();
   const isCreditRisk = /credit risk|credit admin|remedial|recover/.test(_viewerRole);
-  const HIDE_FOR_CREDIT_RISK = ['documents', 'dcc', 'cr', 'affordability', 'engines', 'actions'];
+  // Affordability is BACK (ruling 2026-08-18): "one button I want to
+  // reintroduce is the Affordability, since I believe we can build on this -
+  // reading from the statements being uploaded and the payslips to calculate
+  // affordability." It is the analyst's own arithmetic, not another
+  // department's finished work, so it belongs on their page.
+  const HIDE_FOR_CREDIT_RISK = ['documents', 'dcc', 'cr', 'engines', 'actions'];
 
 
   // Panel toggles
@@ -476,6 +481,93 @@ export function LmsApplicationDetail() {
                     Somebody arriving on a tab called Credit Risk Review knows
                     what it is for, and prose above a form is read once and
                     scrolled past for ever after. */}
+                {/* ─────────── The decision that stands, and any appeal ───────────
+                    RULING (2026-08-18): "on the appealed cases the first
+                    resolution is fully maintained, but there should now be an
+                    appeal section below listing the grounds for appeal and any
+                    additional appeal documents, then the analysts can give
+                    another decision."
+
+                    THE FIRST DECISION IS NOT REPLACED OR HIDDEN. An appeal is
+                    a second look at the same case, and a reviewer who cannot
+                    see what was decided before - and on what grounds it is
+                    being contested - is not reviewing an appeal, they are
+                    deciding blind. */}
+                {application.decision?.verdict && (
+                  <Card stripe="accent">
+                    <Card.Header>
+                      <h3 className="text-sm font-semibold text-gray-900">
+                        Decision on record
+                      </h3>
+                    </Card.Header>
+                    <Card.Body>
+                      <p className="text-sm">
+                        <span className="font-semibold uppercase">
+                          {application.decision.verdict}
+                        </span>
+                        {application.decision.authority
+                          ? <span className="text-gray-600"> — {application.decision.authority}</span>
+                          : null}
+                        {application.decision.date
+                          ? <span className="text-gray-500"> · {application.decision.date}</span>
+                          : null}
+                      </p>
+                      {application.decision.reason && (
+                        <p className="mt-1 text-xs text-gray-700">
+                          {application.decision.reason}
+                        </p>
+                      )}
+                      {(application.decision.conditions ?? []).length > 0 && (
+                        <ul className="mt-2 list-disc pl-5 text-xs text-gray-700">
+                          {(application.decision.conditions ?? []).map((c, i) => (
+                            <li key={i}>{c}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </Card.Body>
+                  </Card>
+                )}
+
+                {(application.appeals ?? []).length > 0 && (
+                  <Card stripe="primary">
+                    <Card.Header>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          Appeal{(application.appeals ?? []).length > 1 ? 's' : ''}
+                        </h3>
+                        {application.appeal_pending && (
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                            awaiting your decision
+                          </span>
+                        )}
+                      </div>
+                    </Card.Header>
+                    <Card.Body>
+                      {(application.appeals ?? []).map((a, i) => (
+                        <div key={i} className="mb-3 border-l-2 border-gray-200 pl-3 last:mb-0">
+                          <p className="text-xs text-gray-500">
+                            {a.by_name || 'the owner'}
+                            {a.at ? ` · ${String(a.at).slice(0, 16)}` : ''}
+                          </p>
+                          <p className="mt-0.5 text-sm text-gray-800">{a.reason}</p>
+                          {a.outcome && (
+                            <p className="mt-1 text-xs text-gray-600">
+                              Answered: <span className="font-medium">{a.outcome}</span>
+                              {a.reviewed_by_name ? ` by ${a.reviewed_by_name}` : ''}
+                              {a.review_note ? ` — ${a.review_note}` : ''}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                      <p className="mt-2 text-xs text-gray-500">
+                        Any documents attached since the decision are listed below.
+                        Record a fresh decision underneath — the one above stays on
+                        record.
+                      </p>
+                    </Card.Body>
+                  </Card>
+                )}
+
                 <LmsTravelledDocuments
                   appId={application.id}
                   canDownload={!!permissions.can_update}
@@ -1045,6 +1137,8 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
   const [preDisb, setPreDisb] = useState<string>('');
   const [escalateOpen, setEscalateOpen] = useState(false);
   const [escalateReason, setEscalateReason] = useState('');
+  // Who answers: an individual, or a committee that will sit on it.
+  const [escalateTarget, setEscalateTarget] = useState<'chief' | 'mcc'>('chief');
   const [comments, setComments]   = useState<string>('');
   const [error, setError]         = useState<string | null>(null);
 
@@ -1228,18 +1322,30 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
             somebody senior, and the analyst still owns it. */}
         <div className="mt-4 border-t border-gray-100 pt-3">
           {!escalateOpen ? (
-            <button
-              type="button"
-              onClick={() => setEscalateOpen(true)}
-              disabled={mutations.loading}
-              className="text-xs font-medium text-[#005B82] hover:underline disabled:opacity-50"
-            >
-              Above my authority — push to the Chief Credit Risk
-            </button>
+            <div className="flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                onClick={() => { setEscalateTarget('chief'); setEscalateOpen(true); }}
+                disabled={mutations.loading}
+                className="text-xs font-medium text-[#005B82] hover:underline disabled:opacity-50"
+              >
+                Above my authority — push to the Chief Credit Risk
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEscalateTarget('mcc'); setEscalateOpen(true); }}
+                disabled={mutations.loading}
+                className="text-xs font-medium text-[#005B82] hover:underline disabled:opacity-50"
+              >
+                Refer to the Management Credit Committee
+              </button>
+            </div>
           ) : (
             <div className="rounded-md border border-[#005B82]/30 bg-[#005B82]/5 p-3">
               <label className="text-sm font-medium text-gray-800">
-                Why does this need the Chief?
+                {escalateTarget === 'mcc'
+                  ? 'Why does this need the Management Credit Committee?'
+                  : 'Why does this need the Chief?'}
               </label>
               <textarea
                 value={escalateReason}
@@ -1265,11 +1371,12 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
                   onClick={() => {
                     void (async () => {
                       try {
-                        const r = await escalateToChief(appId, { reason: escalateReason.trim() });
+                        const r = await escalateToChief(appId, { reason: escalateReason.trim(), to: escalateTarget });
                         const to = (r as unknown as { escalated_to?: string }).escalated_to;
                         setError(null);
                         setEscalateOpen(false);
                         setEscalateReason('');
+                        setEscalateTarget('chief');
                         toast({ tone: 'success',
                           message: `Sent to ${to || 'the Chief Credit Risk'}. The case stays with you.` });
                       } catch (e) {
@@ -1279,7 +1386,7 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
                   }}
                   className="rounded-md bg-[#005B82] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
                 >
-                  Push to the Chief
+                  {escalateTarget === 'mcc' ? 'Refer to the committee' : 'Push to the Chief'}
                 </button>
               </div>
             </div>

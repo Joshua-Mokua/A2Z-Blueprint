@@ -547,6 +547,14 @@ export function Lms() {
                               committee_readiness?: { state?: string; by_name?: string };
                             }).committee_readiness;
                             const st = String(app.status || '').toLowerCase();
+                            // AN APPEAL OUTRANKS EVERYTHING ELSE IN THIS
+                            // COLUMN (ruling 2026-08-18): "in the listing we
+                            // should have cases indicating appeals." A case
+                            // under appeal is waiting on a person, and that is
+                            // more urgent than what it was reviewed as before.
+                            if ((app as unknown as { appeal_pending?: boolean }).appeal_pending) {
+                              return <span className="font-semibold text-amber-700">Under appeal</span>;
+                            }
                             if (r?.state === 'ready_for_committee') {
                               return <span className="font-medium text-[#005B82]">Reviewed · recommended</span>;
                             }

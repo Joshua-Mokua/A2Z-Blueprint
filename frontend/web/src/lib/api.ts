@@ -2218,7 +2218,10 @@ export async function setPoolVisibility(body: Partial<PoolVisibility>): Promise<
 
 export async function escalateToChief(
   appId: string,
-  body: { reason: string },
+  /** `to` picks who answers: the Chief Credit Risk, or the Management Credit
+   *  Committee, which sits and votes. From the analyst's side the act is the
+   *  same - above my authority, here is why. */
+  body: { reason: string; to?: 'chief' | 'mcc' },
 ): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse>(
     `/lms/applications/${encodeURIComponent(appId)}/escalate-to-chief`, body);
