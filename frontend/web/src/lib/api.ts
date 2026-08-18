@@ -2892,6 +2892,9 @@ export async function downloadDealDocument(dealId: string, docName: string): Pro
 // pipeline deal, served under LMS view permission (the credit side has no deal
 // scope). Used by the analyst / DCC / BCC / Chief Credit to read every file.
 export interface LmsDocumentsResponse {
+  /** What this case NEEDS, from the same tiered checklist the submission gate
+   *  enforces - so the screen and the gate cannot disagree. */
+  required?: string[];
   files: Record<string, DealDocumentMeta>;
   provided: string[];
   /** Documents an analyst has asked for on THIS case - separate from the

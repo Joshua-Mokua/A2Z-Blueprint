@@ -119,7 +119,7 @@ export function LmsApplicationDetail() {
   // buries the one step that is not done.
   const _viewerRole = String(user?.role ?? '').toLowerCase();
   const isCreditRisk = /credit risk|credit admin|remedial|recover/.test(_viewerRole);
-  const HIDE_FOR_CREDIT_RISK = ['documents', 'dcc', 'cr', 'affordability', 'engines'];
+  const HIDE_FOR_CREDIT_RISK = ['documents', 'dcc', 'cr', 'affordability', 'engines', 'actions'];
 
 
   // Panel toggles
@@ -1782,11 +1782,13 @@ function LmsTravelledDocuments({ appId, canDownload, canAttach, onAttached }: {
   const [err, setErr] = useState('');
 
   const [requested, setRequested] = useState<{ name: string; note?: string }[]>([]);
+  const [required, setRequired] = useState<string[]>([]);
 
   const reload = () => {
     listLmsDocuments(appId).then((d) => {
       setFiles(d.files || {});
       setRequested(d.requested || []);
+      setRequired(d.required || []);
     }).catch(() => { /* none on file */ });
   };
 
@@ -1853,7 +1855,42 @@ function LmsTravelledDocuments({ appId, canDownload, canAttach, onAttached }: {
             </div>
           ))}
         </div>
-        {entries.length === 0 && (
+        {/* WHAT SHOULD BE HERE, not only what is (ruling 2026-08-18): "this
+            should have the documents listed for view - even if not there, let
+            us have a listing of the required documents."
+
+            An empty card saying "nothing on file" tells a reviewer the case is
+            bare. A list of what the case NEEDS tells them what is missing,
+            which is the thing they can act on. The required set comes from the
+            same tiered checklist the submission gate enforces, so the screen
+            and the gate cannot disagree. */}
+        {(required.length > 0) && (
+          <div className="mb-3">
+            <p className="mb-1 text-xs font-medium text-gray-700">
+              Required for this case
+            </p>
+            <div className="rounded-lg border border-gray-200 bg-gray-50/60 p-2">
+              {required.map((r) => {
+                // entries is [name, meta] pairs - the document's NAME is the
+                // key, not a field on the value.
+                const have = entries.some(([name]) =>
+                  String(name).trim().toLowerCase() === r.trim().toLowerCase());
+                return (
+                  <div key={r} className="flex items-center gap-2 py-0.5 text-xs">
+                    <span className={have ? 'text-green-600' : 'text-amber-600'}>
+                      {have ? '\u2713' : '\u25cb'}
+                    </span>
+                    <span className={have ? 'text-gray-700' : 'text-amber-800 font-medium'}>
+                      {r}
+                    </span>
+                    {!have && <span className="text-gray-400">not on file</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {entries.length === 0 && required.length === 0 && (
           <p className="py-3 text-center text-xs text-gray-400">
             Nothing on file yet.
           </p>

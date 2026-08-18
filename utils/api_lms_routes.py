@@ -1347,7 +1347,48 @@ def lms_application_documents_list(
         raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
     if not resolve_application_permissions(user, app).get("can_view"):
         raise HTTPException(status_code=403, detail="Application is out of scope")
-    return {"files": app.get("document_files", {}) or {},
+    # ── WHAT THE CASE NEEDS, not only what it has ───────────────────────────
+    # RULING (2026-08-18): "this should have the documents listed for view -
+    # even if not there, let us have a listing of the required documents."
+    #
+    # An empty card saying "nothing on file" tells a reviewer the case is bare.
+    # A list of what it NEEDS tells them what is MISSING, which is the thing
+    # they can act on.
+    #
+    # It comes from the same tiered checklist the submission gate enforces -
+    # default, plus amount and product tiers - so the screen and the gate
+    # cannot disagree about what is required.
+    _required = []
+    try:
+        _cfg = get_credit_workflow_config() or {}
+        _dc = _cfg.get("document_checklist") or {}
+        if not _dc:
+            import json as _json
+            _dc = (_json.load(open("data/lms_config.json", encoding="utf-8"))
+                   .get("document_checklist") or {})
+        _required = list(_dc.get("default") or [])
+        _amt = float(app.get("amount") or 0)
+        if _amt >= 10_000_000:
+            _required += list(_dc.get("above_10m") or [])
+        _ct = str(app.get("client_type", "") or "").lower()
+        if "cib" in _ct or "corporate" in _ct or "commercial" in _ct:
+            _required += list(_dc.get("corporate") or [])
+        _prod = str(app.get("product", "") or "").lower()
+        if "mortgage" in _prod:
+            _required += list(_dc.get("mortgage") or [])
+        # Same name twice helps nobody.
+        _seen, _out = set(), []
+        for r in _required:
+            k = str(r).strip().lower()
+            if k and k not in _seen:
+                _seen.add(k)
+                _out.append(str(r).strip())
+        _required = _out
+    except Exception:
+        _required = []
+
+    return {"required": _required,
+            "files": app.get("document_files", {}) or {},
             "provided": list(app.get("documents_provided", []) or []),
             # What has been asked for and not yet supplied, so one call answers
             # "what is on file and what is still owed".
