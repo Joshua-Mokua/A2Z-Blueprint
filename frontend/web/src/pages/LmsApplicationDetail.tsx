@@ -168,6 +168,14 @@ export function LmsApplicationDetail() {
   const { application, permissions, loading, error, refetch } =
     useLmsApplication(appId);
   const mutations = useLmsMutations();
+  // Read once for the tab label - the panel fetches its own copy for voting.
+  const [dccRoster, setDccRoster] = useState<{ committee_kind?: string } | null>(null);
+  useEffect(() => {
+    if (!appId) return;
+    void (async () => {
+      try { setDccRoster(await getDccRoster(appId)); } catch { /* no committee */ }
+    })();
+  }, [appId]);
   // ── CREDIT RISK GETS A DIFFERENT PAGE ────────────────────────────────────
   // RULING (2026-08-18): "for them the Department Review and the Department
   // Credit Committee buttons should not be there - it should be the Case
@@ -440,7 +448,14 @@ export function LmsApplicationDetail() {
           //
           // Sits directly after Department Analysis, because that is the order
           // the work happens: read the case, analyse it, take it to committee.
-          { id: 'dcc', label: 'Department Credit Committee', color: '#005B82', content: (
+          // NAMED FOR WHICHEVER COMMITTEE HOLDS IT (ruling 2026-08-18). A case
+          // referred to the Business Credit Committee is not a department
+          // matter, and telling the Managing Director she is looking at the
+          // Department Credit Committee is how a screen loses a room.
+          { id: 'dcc',
+            label: dccRoster?.committee_kind === 'mcc'
+              ? 'Business Credit Committee' : 'Department Credit Committee',
+            color: '#005B82', content: (
             <div className="space-y-4">
               <DccVotePanel appId={application.id} toast={toast} onDone={refetch} />
               {permissions.can_submit_to_dcc && (
@@ -1826,7 +1841,22 @@ function DccVotePanel({ appId, toast, onDone }: {
     return (
       <Card>
         <Card.Header>
-          <h3 className="text-sm font-semibold text-gray-900">Department Credit Committee</h3>
+          <h3 className="text-sm font-semibold text-gray-900">
+            {roster?.name || (roster?.committee_kind === 'mcc'
+              ? 'Business Credit Committee' : 'Department Credit Committee')}
+          </h3>
+          {/* WHAT THEY WERE ASKED (ruling 2026-08-18): a case circulated to
+              this committee carries a note from whoever packaged it. A
+              committee that has to reconstruct the question for itself is a
+              committee wasting the room's time. */}
+          {roster?.circulation_note && (
+            <p className="mt-1 text-xs text-gray-700">
+              <span className="font-medium">
+                {roster.circulated_by_name || 'The analyst'} wrote:
+              </span>{' '}
+              {roster.circulation_note}
+            </p>
+          )}
         </Card.Header>
         <Card.Body>
           <p className="text-sm text-gray-600">
@@ -1841,7 +1871,10 @@ function DccVotePanel({ appId, toast, onDone }: {
     return (
       <Card>
         <Card.Header>
-          <h3 className="text-sm font-semibold text-gray-900">Department Credit Committee</h3>
+          <h3 className="text-sm font-semibold text-gray-900">
+            {roster?.name || (roster?.committee_kind === 'mcc'
+              ? 'Business Credit Committee' : 'Department Credit Committee')}
+          </h3>
         </Card.Header>
         <Card.Body>
           <p className="text-sm text-gray-600">
