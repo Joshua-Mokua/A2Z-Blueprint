@@ -1222,6 +1222,91 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
         <h3 className="text-sm font-semibold text-gray-900">Record decision</h3>
       </Card.Header>
       <Card.Body>
+        {/* ─────────── Refer it on ───────────
+            RULING (2026-08-18): "give these two items a bigger button, and at
+            least above there. Remove 'above my authority' and just have Refer
+            to Director Credit."
+
+            They were small text links at the foot of the panel, under the
+            comments box - so the two things an analyst does when a case is
+            beyond them were the least visible things on the page, below
+            everything they would do if it were not.
+
+            And "above my authority" was the wrong words. Referring a large
+            case upward is the process working, not an admission - the phrasing
+            made a routine act sound like a confession. */}
+        <div className="mb-4 rounded-lg border border-[#005B82]/20 bg-[#005B82]/5 p-3">
+          {!escalateOpen ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => { setEscalateTarget('chief'); setEscalateOpen(true); }}
+                disabled={mutations.loading}
+                className="rounded-md border border-[#005B82] bg-white px-4 py-2 text-sm font-semibold text-[#005B82] transition hover:bg-[#005B82] hover:text-white disabled:opacity-50"
+              >
+                Refer to Director Credit
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEscalateTarget('mcc'); setEscalateOpen(true); }}
+                disabled={mutations.loading}
+                className="rounded-md border border-[#005B82] bg-white px-4 py-2 text-sm font-semibold text-[#005B82] transition hover:bg-[#005B82] hover:text-white disabled:opacity-50"
+              >
+                Refer to the Management Credit Committee
+              </button>
+            </div>
+          ) : (
+            <div className="rounded-md border border-[#005B82]/30 bg-[#005B82]/5 p-3">
+              <label className="text-sm font-medium text-gray-800">
+                {escalateTarget === 'mcc'
+                  ? 'Why does this need the Management Credit Committee?'
+                  : 'Why does this need Director Credit?'}
+              </label>
+              <textarea
+                value={escalateReason}
+                onChange={(e) => setEscalateReason(e.target.value)}
+                rows={2}
+                placeholder="Exposure above my limit; concentration in one sector…"
+                className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary resize-y"
+              />
+              <p className="mt-1 text-xs text-gray-600">
+                A case arriving with no question attached wastes the trip.
+              </p>
+              <div className="mt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setEscalateOpen(false); setEscalateReason(''); }}
+                  className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={mutations.loading || !escalateReason.trim()}
+                  onClick={() => {
+                    void (async () => {
+                      try {
+                        const r = await escalateToChief(appId, { reason: escalateReason.trim(), to: escalateTarget });
+                        const to = (r as unknown as { escalated_to?: string }).escalated_to;
+                        setError(null);
+                        setEscalateOpen(false);
+                        setEscalateReason('');
+                        setEscalateTarget('chief');
+                        toast({ tone: 'success',
+                          message: `Sent to ${to || 'the Chief Credit Risk'}. The case stays with you.` });
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : 'Could not escalate');
+                      }
+                    })();
+                  }}
+                  className="rounded-md bg-[#005B82] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  {escalateTarget === 'mcc' ? 'Refer to the committee' : 'Refer to Director Credit'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="text-sm font-medium text-gray-700">Verdict *</label>
@@ -1292,10 +1377,7 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
               placeholder="Board resolution&#10;Debenture&#10;Insurance certificate"
               className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Cleared by credit admin before the case moves on. The last one
-              ticked releases it to Trops.
-            </p>
+
           </div>
         )}
         {verdict === 'approved' && (
@@ -1325,9 +1407,7 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
               placeholder="Charge registered&#10;Insurance assigned&#10;Valuation within 90 days"
               className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Cleared by Trops before money moves. Leave blank if there are none.
-            </p>
+
           </div>
         )}
 
@@ -1341,78 +1421,6 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
 
             The case does not change hands: escalation asks a question of
             somebody senior, and the analyst still owns it. */}
-        <div className="mt-4 border-t border-gray-100 pt-3">
-          {!escalateOpen ? (
-            <div className="flex flex-wrap items-center gap-4">
-              <button
-                type="button"
-                onClick={() => { setEscalateTarget('chief'); setEscalateOpen(true); }}
-                disabled={mutations.loading}
-                className="text-xs font-medium text-[#005B82] hover:underline disabled:opacity-50"
-              >
-                Above my authority — push to the Chief Credit Risk
-              </button>
-              <button
-                type="button"
-                onClick={() => { setEscalateTarget('mcc'); setEscalateOpen(true); }}
-                disabled={mutations.loading}
-                className="text-xs font-medium text-[#005B82] hover:underline disabled:opacity-50"
-              >
-                Refer to the Management Credit Committee
-              </button>
-            </div>
-          ) : (
-            <div className="rounded-md border border-[#005B82]/30 bg-[#005B82]/5 p-3">
-              <label className="text-sm font-medium text-gray-800">
-                {escalateTarget === 'mcc'
-                  ? 'Why does this need the Management Credit Committee?'
-                  : 'Why does this need the Chief?'}
-              </label>
-              <textarea
-                value={escalateReason}
-                onChange={(e) => setEscalateReason(e.target.value)}
-                rows={2}
-                placeholder="Exposure above my limit; concentration in one sector…"
-                className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary resize-y"
-              />
-              <p className="mt-1 text-xs text-gray-600">
-                A case arriving with no question attached wastes the trip.
-              </p>
-              <div className="mt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => { setEscalateOpen(false); setEscalateReason(''); }}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={mutations.loading || !escalateReason.trim()}
-                  onClick={() => {
-                    void (async () => {
-                      try {
-                        const r = await escalateToChief(appId, { reason: escalateReason.trim(), to: escalateTarget });
-                        const to = (r as unknown as { escalated_to?: string }).escalated_to;
-                        setError(null);
-                        setEscalateOpen(false);
-                        setEscalateReason('');
-                        setEscalateTarget('chief');
-                        toast({ tone: 'success',
-                          message: `Sent to ${to || 'the Chief Credit Risk'}. The case stays with you.` });
-                      } catch (e) {
-                        setError(e instanceof Error ? e.message : 'Could not escalate');
-                      }
-                    })();
-                  }}
-                  className="rounded-md bg-[#005B82] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  {escalateTarget === 'mcc' ? 'Refer to the committee' : 'Push to the Chief'}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
         <div className="mt-3">
           <label className="text-sm font-medium text-gray-700">Comments</label>
           <textarea
