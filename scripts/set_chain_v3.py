@@ -160,8 +160,16 @@ def main():
     if not m:
         print("ABORT: cannot find CHAIN in the builder.")
         return 1
+    # APPEND, DO NOT REPLACE. The first version of this wrote only ORDER into
+    # CHAIN and dropped the seventy patchers already there - every leaderboard,
+    # funnel, daily-log and validation patch the pilot has been running since
+    # the first release. The builder refused, which is what that guard is for.
+    #
+    # Ours are stripped from wherever they sat above and re-appended in the
+    # verified order; everything else keeps its place and its order.
+    body = m.group(1).rstrip()
     block = "".join('\n    "%s",' % p for p in ORDER)
-    out = out[:m.start(1)] + block + out[m.end(1):]
+    out = out[:m.start(1)] + body + block + out[m.end(1):]
 
     n = re.search(r"\nNOT_FOR_RELEASE\s*=\s*\{(.*?)\n\}", out, re.S)
     if n:
@@ -181,12 +189,22 @@ def main():
 
     m2 = re.search(r"\nCHAIN\s*=\s*\[(.*?)\n\]", out, re.S)
     got = re.findall(r'"([^"]+)"', m2.group(1))
-    if got != ORDER:
-        print("ABORT: the chain is not the verified order.")
-        for a, b in zip(got, ORDER):
+    tail = got[-len(ORDER):]
+    if tail != ORDER:
+        print("ABORT: the chain does not end in the verified order.")
+        for a, b in zip(tail, ORDER):
             if a != b:
                 print("   expected %s, found %s" % (b, a))
                 break
+        return 1
+    # Nothing that was already in the chain may be lost. Dropping a patcher
+    # the pilot is running is not a smaller mistake than adding a bad one.
+    before = set(re.findall(r'"([^"]+)"', m.group(1)))
+    lost = sorted(before - set(got) - set(EXCLUDE))
+    if lost:
+        print("ABORT: %d patcher(s) would be dropped from the chain:" % len(lost))
+        for x in lost[:8]:
+            print("   %s" % x)
         return 1
     if len(got) != len(set(got)):
         dupes = sorted({x for x in got if got.count(x) > 1})
