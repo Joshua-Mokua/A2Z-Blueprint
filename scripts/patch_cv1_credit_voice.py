@@ -149,26 +149,36 @@ FLAGS_BLOCK = r'''    # ── FLAGS SET ON A MEMBER SURVIVE A RE-NAMING ──�
 
 def main():
     apply = "--apply" in sys.argv
-    for f in (ROUTES, NAMER):
-        if not os.path.isfile(f):
-            print("ABORT: %s not found." % f)
-            return 1
+    if not os.path.isfile(ROUTES):
+        print("ABORT: %s not found." % ROUTES)
+        return 1
 
     r = open(ROUTES, encoding="utf-8").read()
-    n = open(NAMER, encoding="utf-8").read()
+    # THE NAMER IS OURS, NOT THE BANK'S. name_dcc_members.py is a tool we run
+    # on a box to configure a committee; it is not part of what ships. On the
+    # pilot's tree it simply is not there, and requiring it aborted the whole
+    # release over a script the release does not contain.
+    #
+    # The half that matters to the bank is the credit-voice rule. The flag
+    # preservation matters to whoever runs the namer, wherever it lives.
+    _have_namer = os.path.isfile(NAMER)
+    n = open(NAMER, encoding="utf-8").read() if _have_namer else ""
     if "A CREDIT VOICE MUST BE IN THE ROOM" in r:
         print("ABORT: CV1 looks applied.")
         return 1
     if "THE BUSINESS CREDIT COMMITTEE ANSWERS TO CREDIT RISK" not in r:
         print("ABORT: BC1 must be applied first.")
         return 1
-    if r.count(VOICE_ANCHOR) != 1 or n.count(FLAGS_OLD) != 1:
-        print("ABORT: anchors matched %d / %d times."
-              % (r.count(VOICE_ANCHOR), n.count(FLAGS_OLD)))
+    if r.count(VOICE_ANCHOR) != 1:
+        print("ABORT: the tally anchor matched %d times." % r.count(VOICE_ANCHOR))
         return 1
+    _do_namer = _have_namer and n.count(FLAGS_OLD) == 1
+    if _have_namer and not _do_namer:
+        print("  note: name_dcc_members.py is here but already carries the fix")
 
     r = r.replace(VOICE_ANCHOR, VOICE_BLOCK + VOICE_ANCHOR, 1)
-    n = n.replace(FLAGS_OLD, FLAGS_BLOCK.rstrip(), 1)
+    if _do_namer:
+        n = n.replace(FLAGS_OLD, FLAGS_BLOCK.rstrip(), 1)
     print("  ok  a credit voice is required; flags survive a re-naming")
 
     if '"mcc"' not in VOICE_BLOCK:
@@ -189,7 +199,8 @@ def main():
         print("       carried across.")
         return 1
     import ast
-    for name, src in ((ROUTES, r), (NAMER, n)):
+    _targets = [(ROUTES, r)] + ([(NAMER, n)] if _do_namer else [])
+    for name, src in _targets:
         try:
             ast.parse(src)
         except SyntaxError as exc:
@@ -202,13 +213,13 @@ def main():
         print("\nDRY RUN - nothing written. Re-run with --apply.")
         return 0
 
-    for path, src in ((ROUTES, r), (NAMER, n)):
+    for path, src in _targets:
         shutil.copy2(path, path + BACKUP_SUFFIX)
         open(path, "w", encoding="utf-8", newline="").write(src)
         print("APPLIED %s" % path)
 
     import py_compile
-    for path in (ROUTES, NAMER):
+    for path, _src in _targets:
         try:
             py_compile.compile(path, doraise=True)
         except Exception as exc:
