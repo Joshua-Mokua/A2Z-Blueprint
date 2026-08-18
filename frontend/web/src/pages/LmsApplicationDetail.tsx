@@ -56,31 +56,89 @@ import {
 // different ways and nothing can be reported on. Ticking gives one wording.
 // The free-text box below the list keeps anything unusual possible - a
 // checklist that cannot be escaped is worse than none.
+// ── The conditions a bank here actually attaches ─────────────────────────
+// RULING (2026-08-18): "is that list conclusive? Even on the preconditions,
+// like covenants to consolidate banking with us, anything on debentures?"
+//
+// It was not. The first pass was a reasonable dozen and stopped short of the
+// things that matter most on commercial paper - covenants, debentures, and
+// the Kenyan-specific consents without which a charge cannot be perfected.
+// Grouped, because a reviewer looks for a KIND of condition, not an
+// alphabetical list.
+//
+// This is a STARTING SET, not a credit policy. The free-text box below each
+// list is what makes it safe to be incomplete; credit should prune and add to
+// these until they match the bank's own manual.
 const PRE_APPROVAL_CONDITIONS: string[] = [
-  'Salary domiciliation to Ecobank',
+  // — Documentation and identity —
   'Signed offer letter returned',
   'Executed loan agreement',
-  'Personal guarantee from directors',
   'Board resolution to borrow',
-  'Valuation report not older than 6 months',
-  'Satisfactory CRB report',
-  'Proof of income for the last 3 months',
+  'Certified copies of directors\u2019 IDs and KRA PINs',
+  'Valid tax compliance certificate',
   'Confirmation of employment from employer',
-  'Check-off arrangement with employer',
+  'Proof of income for the last 3 months',
+  'Satisfactory CRB report',
+  'Audited accounts for the last 2 years',
+
+  // — Banking relationship —
+  'Salary domiciliation to the bank',
+  'Consolidation of banking: turnover routed through the bank',
   'Repayment account opened and funded',
-  'Existing facility with another bank cleared',
+  'Check-off arrangement with employer',
+  'Standing order or direct debit mandate',
+  'Existing facilities with other banks cleared',
+  'Collection or escrow account operated with the bank',
+
+  // — Security —
+  'Debenture: fixed and floating charge over company assets',
+  'Legal charge over the offered property',
+  'Chattels mortgage over movable assets',
+  'Directors\u2019 personal guarantees, supported by a statement of net worth',
+  'Corporate guarantee from the parent or associate',
+  'Assignment of contract proceeds or receivables',
+  'Lien over deposits or cash cover',
+  'Postdated cheques for the instalments',
+  'Valuation report not older than 6 months',
+
+  // — Covenants —
+  'Negative pledge: no further borrowing without the bank\u2019s consent',
+  'Debt service coverage ratio maintained above the agreed level',
+  'Gearing not to exceed the agreed ratio',
+  'No dividend or director loans without the bank\u2019s consent',
+  'Audited accounts submitted within 120 days of year end',
+  'Management accounts submitted quarterly',
+  'No change in shareholding or control without consent',
+  'Stock and debtors returns submitted monthly',
 ];
 
 const PRE_DISBURSEMENT_CONDITIONS: string[] = [
+  // — Perfection —
   'Security perfected and charge registered',
+  'Stamp duty paid in full',
+  'Official search done and title clear of encumbrances',
+  'Discharge of any prior charge received',
+  'Debenture registered at the Companies Registry',
+  'Title deed held by the bank',
+
+  // — Consents and clearances, without which a charge will not register —
+  'Spousal consent to charge obtained',
+  'Land rent and rates clearance certificates obtained',
+  'Landlord\u2019s consent for leasehold property',
+  'Land Control Board consent where applicable',
+
+  // — Insurance —
   'Insurance assigned to the bank, premium paid',
   'Credit life cover in place',
-  'Legal charge stamped and lodged',
-  'Title deed held by the bank',
-  'First instalment deposit received',
-  'Standing order or direct debit set up',
+  'Assets and stock insured with the bank\u2019s interest noted',
+
+  // — Money —
+  'First instalment or equity contribution received',
+  'Drawdown notice received from the borrower',
+  'KYC refreshed and sanctions screening clear',
   'All statutory approvals obtained',
 ];
+
 
 // ── Format helpers ──────────────────────────────────────────────────────
 
@@ -1771,7 +1829,7 @@ function DccVotePanel({ appId, toast, onDone }: {
 // "CRB" on one case and "CRB Report" on another cannot be checked off a
 // required list, and the analyst should not have to know the exact string.
 // "Other" stays for the paper nobody anticipated.
-const ANALYST_DOCS = ['CRB Report', 'Call Back Memo', 'Other'];
+const ANALYST_DOCS = ['Other'];
 
 function LmsTravelledDocuments({ appId, canDownload, canAttach, onAttached }: {
   appId: string; canDownload: boolean; canAttach?: boolean; onAttached?: () => void;

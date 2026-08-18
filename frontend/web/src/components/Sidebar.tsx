@@ -142,11 +142,6 @@ export function Sidebar({ onNavigate }: SidebarProps) {
             (item) => !DEMO_HIDE.has(item.path)
               && !hidden.has(item.path)
               && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff))
-              // NOT FOR CREDIT RISK (ruling 2026-08-18): "I want his sidebar
-              // not to have the Department Review - the CIS is their main
-              // workbench." That entry is the segment analyst's desk; credit
-              // risk arrives after that work is finished, and a link into
-              // somebody else's queue invites duplicating it.
               && !(/credit risk|credit admin|remedial|recover/i.test(user?.role ?? '')
                    && item.label === 'Department Review'),
           );
