@@ -1889,7 +1889,6 @@ function DccVotePanel({ appId, toast, onDone }: {
       </Card>
     );
   }
-  const votesByMember = new Map(roster.votes.map((v) => [v.member_id, v]));
   const resolve = async () => {
     setBusy(true);
     try {
@@ -1937,22 +1936,42 @@ function DccVotePanel({ appId, toast, onDone }: {
           <p className="text-xs text-gray-400">No DCC members configured yet (set them in the credit-workflow config).</p>
         ) : (
           <>
-            <div className="mb-3 space-y-1">
-              {roster.members.map((m) => {
-                const id = m.id || m.member_id || '';
-                const v = votesByMember.get(id);
-                return (
-                  <div key={id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-800">
-                      {m.name || id}{m.role ? <span className="text-xs text-gray-500"> — {m.role}</span> : null}
-                    </span>
-                    <span className={v ? (v.vote === 'YES' ? 'text-green-700' : v.vote === 'NO' ? 'text-red-600' : 'text-gray-500') : 'text-gray-300'}>
-                      {v ? v.vote : 'not voted'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            {/* THE MEMBERS WHO HAVE VOTED, AND ONLY THOSE (ruling 2026-08-18):
+                "listing of the committee members below on that voting pane is
+                not necessary, since they are appearing with their votes on top
+                plus the drop down."
+
+                The full roster was printed three times on one card - the
+                header count, this list, and again inside the select. A member
+                looking for what the committee has said had to read past two
+                copies of the same names to find it.
+
+                What is left is the votes CAST, which is the only part that
+                changes and the only part anybody is reading for. Who has not
+                voted is the header's job: "3/8 voted". */}
+            {roster.votes.length > 0 && (
+              <div className="mb-3 space-y-1">
+                {roster.votes.map((v) => {
+                  const m = roster.members.find(
+                    (x) => (x.id || x.member_id || '') === v.member_id);
+                  return (
+                    <div key={v.member_id}
+                         className="flex items-center justify-between text-sm">
+                      <span className="text-gray-800">
+                        {m?.name || v.member_id}
+                        {m?.role ? (
+                          <span className="text-xs text-gray-500"> — {m.role}</span>
+                        ) : null}
+                      </span>
+                      <span className={v.vote === 'YES' ? 'text-green-700'
+                        : v.vote === 'NO' ? 'text-red-600' : 'text-gray-500'}>
+                        {v.vote}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="grid grid-cols-1 items-end gap-2 border-t pt-3 md:grid-cols-3">
               <div>
                 <label className="text-xs font-medium text-gray-700">Member</label>
