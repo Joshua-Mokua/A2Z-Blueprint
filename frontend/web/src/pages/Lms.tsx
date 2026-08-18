@@ -61,14 +61,28 @@ export function Lms() {
   // B1: workload tabs. Analysts default to their own cases; managers to All.
   const myCode = String(user?.staff_code ?? '');
   const roleLc = String(user?.role ?? '').toLowerCase();
-  const isPureAnalyst = roleLc.includes('analyst') && !isAdmin
+  const worksCasesDirectly = /credit risk|credit analys|credit admin|remedial|recover/.test(roleLc);
+  const isPureAnalyst = (roleLc.includes('analyst') || worksCasesDirectly) && !isAdmin
     && !/chief|head|manager|officer|director|managing/.test(roleLc);
   const [tab, setTab] = useState<'mine' | 'pool' | 'all'>('all');
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 25;
   const { toast } = useToast();
   const [requestBusy, setRequestBusy] = useState<string | null>(null);
-  const isManagerRole = isAdmin || /chief|head|manager|officer|director|managing/.test(roleLc);
+  // ── WHO ALLOCATES, AND WHO WORKS THE CASE ────────────────────────────────
+  // RULING (2026-08-18): "on his pool it is still indicating Assign, while his
+  // should be Reviewing."
+  //
+  // The title test treats anybody with "manager" in their role as somebody who
+  // ALLOCATES work - so a Credit Risk Manager, who works cases himself, was
+  // offered a dropdown to hand them to somebody else instead of a button to
+  // take one.
+  //
+  // Credit risk, credit analysis and credit administration WORK the case. They
+  // pick it up; they do not parcel it out. Admins and the genuine allocating
+  // managers keep the Assign control.
+  const isManagerRole = isAdmin
+    || (!worksCasesDirectly && /chief|head|manager|officer|director|managing/.test(roleLc));
   // PICKING IS IMMEDIATE. doRequest below asks a manager to allocate the case
   // and is kept for the roles that still work that way; a department analyst
   // takes their own segment's work without asking.

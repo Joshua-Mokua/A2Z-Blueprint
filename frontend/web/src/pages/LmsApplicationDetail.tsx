@@ -340,6 +340,67 @@ export function LmsApplicationDetail() {
                   voting - so it is not repeated here. */}
             </div>
           ) },
+          // ── CREDIT RISK REVIEW ────────────────────────────────────────
+          // RULING (2026-08-18): the bank credit analyst "needs an extra
+          // button on top indicating Credit Risk Review, after the Department
+          // Committee ... he needs to review and recommend based on the
+          // pre-approval and pre-disbursement conditions, including escalating
+          // to the Director Credit Risk. If he approves, it is from here that
+          // it should travel to credit administration."
+          //
+          // THE PANEL ALREADY EXISTS. ActionPanelDecision carries the verdict,
+          // both kinds of condition and the push to the Chief, and the server
+          // already routes an approval to credit admin. It was buried on the
+          // Actions tab among a dozen other things, so the one step this role
+          // exists to perform was the hardest thing on the page to find.
+          //
+          // This gives it a tab of its own, named for the job, sitting where
+          // the work happens: after the committee that recommended the case.
+          //
+          // Shown only to somebody who may actually decide - can_record_decision
+          // is the same gate the panel already had. A tab that is visible and
+          // does nothing is worse than no tab.
+          ...(permissions.can_record_decision ? [{
+            id: 'crr', label: 'Credit Risk Review', color: '#C62828', content: (
+              <div className="space-y-4">
+                <Card>
+                  <Card.Body>
+                    <p className="text-sm text-gray-700">
+                      The department committee has recommended this case. Record
+                      the credit decision here: approve with any pre-approval and
+                      pre-disbursement conditions, return it for more information,
+                      or push it to the Chief Credit Risk.
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      An approval sends the case to Credit Administration with its
+                      conditions attached. A decline goes back to the owner, who
+                      may appeal or accept it.
+                    </p>
+                  </Card.Body>
+                </Card>
+                <ActionPanelDecision
+                  appId={application.id}
+                  open={decisionOpen}
+                  setOpen={setDecisionOpen}
+                  mutations={mutations}
+                  onSuccess={async (verdict) => {
+                    await refetch();
+                    setDecisionOpen(false);
+                    toast({
+                      tone: verdict === 'approved' ? 'success'
+                        : verdict === 'declined' ? 'danger' : 'warning',
+                      message: verdict === 'approved'
+                        ? 'Approved — the case is now with Credit Administration.'
+                        : verdict === 'declined'
+                        ? 'Declined — it goes back to the owner to appeal or accept.'
+                        : `Decision recorded: ${verdict}`,
+                    });
+                  }}
+                  toast={toast}
+                />
+              </div>
+            ),
+          }] : []),
           { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: (
             <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
           ) },
