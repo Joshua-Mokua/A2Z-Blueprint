@@ -3187,7 +3187,39 @@ def _linked_app_reopens_origination(deal: dict) -> bool:
 
 
 def _deal_locked(deal: dict) -> bool:
-    return _deal_submitted_to_credit(deal) and not _linked_app_reopens_origination(deal)
+    """Is the branch locked out of editing this deal?
+
+    RULING (2026-08-18): "what did we solution for, if the branch is not able
+    to vote and recommend before it even flows to the department and not even
+    credit yet? I thought we were clear that after the documents are gathered,
+    that Submit is in fact Submit to the Branch Credit Committee."
+
+    The routing was right and IS right - submitting sends the case to the
+    branch's own committee. THE LOCK WAS THE STALE PART, and it predates all of
+    that work.
+
+    Its whole test was "does this deal have an lms_application_id?". Submitting
+    creates one, because the deal and the loan application are one object the
+    whole way. When that test was written, submitting MEANT going to credit, so
+    the lock and the words "with Credit" were both true.
+
+    They are not true now. A case at a BRANCH COMMITTEE STAGE has not left the
+    branch: their own committee holds it, their own people vote on it, and if
+    that committee asks for a document the branch should be able to attach it
+    without a rework loop to unlock their own case.
+
+    So: the branch keeps the case while their committee has it. The lock falls
+    when the case moves past the branch - to the department, to credit, and
+    beyond - which is when it has genuinely left them.
+    """
+    if not _deal_submitted_to_credit(deal):
+        return False
+    if _linked_app_reopens_origination(deal):
+        return False
+    stage = str(deal.get("stage", "") or "").lower()
+    if "branch" in stage and "committee" in stage:
+        return False
+    return True
 
 
 def _user_is_admin(user: dict) -> bool:
