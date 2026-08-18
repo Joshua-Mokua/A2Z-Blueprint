@@ -2206,9 +2206,41 @@ export async function provideLmsInfo(appId: string, body: ProvideInfoRequest): P
 }
 /** Push a case up to the Chief Credit Risk for their approval. The Chief is
  *  resolved server-side from config - the caller does not name a person. */
+/** The condition library, as the bank words it. `configured` is false until
+ *  an admin has set one - the screen then falls back to the built-in set
+ *  WITHOUT presenting it as the bank's own. */
+export interface ConditionLibrary {
+  pre_approval: string[];
+  pre_disbursement: string[];
+  configured?: boolean;
+}
+
+export async function getConditionLibrary(): Promise<ConditionLibrary> {
+  return getJson<ConditionLibrary>('/lms/config/conditions');
+}
+
+export async function setConditionLibrary(
+  body: Partial<Pick<ConditionLibrary, 'pre_approval' | 'pre_disbursement'>>,
+): Promise<ConditionLibrary> {
+  return postJson<ConditionLibrary>('/lms/config/conditions', body);
+}
+
+export interface PoolVisibility { roles: string[]; statuses: string[]; }
+
+export async function getPoolVisibility(): Promise<PoolVisibility> {
+  return getJson<PoolVisibility>('/lms/config/pool-visibility');
+}
+
+export async function setPoolVisibility(body: Partial<PoolVisibility>): Promise<PoolVisibility> {
+  return postJson<PoolVisibility>('/lms/config/pool-visibility', body);
+}
+
 export async function escalateToChief(
   appId: string,
-  body: { reason: string },
+  /** `to` picks who answers: the Chief Credit Risk, or the Management Credit
+   *  Committee, which sits and votes. From the analyst's side the act is the
+   *  same - above my authority, here is why. */
+  body: { reason: string; to?: 'chief' | 'mcc' },
 ): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse>(
     `/lms/applications/${encodeURIComponent(appId)}/escalate-to-chief`, body);
@@ -2882,6 +2914,9 @@ export async function downloadDealDocument(dealId: string, docName: string): Pro
 // pipeline deal, served under LMS view permission (the credit side has no deal
 // scope). Used by the analyst / DCC / BCC / Chief Credit to read every file.
 export interface LmsDocumentsResponse {
+  /** What this case NEEDS, from the same tiered checklist the submission gate
+   *  enforces - so the screen and the gate cannot disagree. */
+  required?: string[];
   files: Record<string, DealDocumentMeta>;
   provided: string[];
   /** Documents an analyst has asked for on THIS case - separate from the

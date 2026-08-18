@@ -20,7 +20,9 @@ import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesT
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, resubmitAfterRework, escalateToChief, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, resubmitAfterRework, escalateToChief, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse,
+  getConditionLibrary,
+} from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -42,10 +44,102 @@ import { Skeleton } from '@/components/Skeleton';
 import { Timeline, eventLabel } from '@/components/Timeline';
 import {
   DECISION_VERDICTS,
-  COMMON_AUTHORITIES,
   type DecisionVerdict,
   type LoanApplication,
 } from '@/types/lms';
+
+
+// ── The conditions a Kenyan bank actually attaches ───────────────────────
+// RULING (2026-08-18): "list all the common credit pre-approval conditions
+// including things like salary domiciliation, that he can tick on, and have a
+// place to add others."
+//
+// Typed by hand on every case, the same six conditions end up worded six
+// different ways and nothing can be reported on. Ticking gives one wording.
+// The free-text box below the list keeps anything unusual possible - a
+// checklist that cannot be escaped is worse than none.
+// ── The conditions a bank here actually attaches ─────────────────────────
+// RULING (2026-08-18): "is that list conclusive? Even on the preconditions,
+// like covenants to consolidate banking with us, anything on debentures?"
+//
+// It was not. The first pass was a reasonable dozen and stopped short of the
+// things that matter most on commercial paper - covenants, debentures, and
+// the Kenyan-specific consents without which a charge cannot be perfected.
+// Grouped, because a reviewer looks for a KIND of condition, not an
+// alphabetical list.
+//
+// This is a STARTING SET, not a credit policy. The free-text box below each
+// list is what makes it safe to be incomplete; credit should prune and add to
+// these until they match the bank's own manual.
+const PRE_APPROVAL_CONDITIONS: string[] = [
+  // — Documentation and identity —
+  'Signed offer letter returned',
+  'Executed loan agreement',
+  'Board resolution to borrow',
+  'Certified copies of directors\u2019 IDs and KRA PINs',
+  'Valid tax compliance certificate',
+  'Confirmation of employment from employer',
+  'Proof of income for the last 3 months',
+  'Satisfactory CRB report',
+  'Audited accounts for the last 2 years',
+
+  // — Banking relationship —
+  'Salary domiciliation to the bank',
+  'Consolidation of banking: turnover routed through the bank',
+  'Repayment account opened and funded',
+  'Check-off arrangement with employer',
+  'Standing order or direct debit mandate',
+  'Existing facilities with other banks cleared',
+  'Collection or escrow account operated with the bank',
+
+  // — Security —
+  'Debenture: fixed and floating charge over company assets',
+  'Legal charge over the offered property',
+  'Chattels mortgage over movable assets',
+  'Directors\u2019 personal guarantees, supported by a statement of net worth',
+  'Corporate guarantee from the parent or associate',
+  'Assignment of contract proceeds or receivables',
+  'Lien over deposits or cash cover',
+  'Postdated cheques for the instalments',
+  'Valuation report not older than 6 months',
+
+  // — Covenants —
+  'Negative pledge: no further borrowing without the bank\u2019s consent',
+  'Debt service coverage ratio maintained above the agreed level',
+  'Gearing not to exceed the agreed ratio',
+  'No dividend or director loans without the bank\u2019s consent',
+  'Audited accounts submitted within 120 days of year end',
+  'Management accounts submitted quarterly',
+  'No change in shareholding or control without consent',
+  'Stock and debtors returns submitted monthly',
+];
+
+const PRE_DISBURSEMENT_CONDITIONS: string[] = [
+  // — Perfection —
+  'Security perfected and charge registered',
+  'Stamp duty paid in full',
+  'Official search done and title clear of encumbrances',
+  'Discharge of any prior charge received',
+  'Debenture registered at the Companies Registry',
+  'Title deed held by the bank',
+
+  // — Consents and clearances, without which a charge will not register —
+  'Spousal consent to charge obtained',
+  'Land rent and rates clearance certificates obtained',
+  'Landlord\u2019s consent for leasehold property',
+  'Land Control Board consent where applicable',
+
+  // — Insurance —
+  'Insurance assigned to the bank, premium paid',
+  'Credit life cover in place',
+  'Assets and stock insured with the bank\u2019s interest noted',
+
+  // — Money —
+  'First instalment or equity contribution received',
+  'Drawdown notice received from the borrower',
+  'KYC refreshed and sanctions screening clear',
+  'All statutory approvals obtained',
+];
 
 
 // ── Format helpers ──────────────────────────────────────────────────────
@@ -74,6 +168,23 @@ export function LmsApplicationDetail() {
   const { application, permissions, loading, error, refetch } =
     useLmsApplication(appId);
   const mutations = useLmsMutations();
+  // ── CREDIT RISK GETS A DIFFERENT PAGE ────────────────────────────────────
+  // RULING (2026-08-18): "for them the Department Review and the Department
+  // Credit Committee buttons should not be there - it should be the Case
+  // Journey and then their Credit Risk Review ... remove the Transaction Memo
+  // for now since that travels as an attachment."
+  //
+  // Those tabs are somebody else's work, finished by the time the case reaches
+  // credit risk. Leaving them invites a reviewer to redo a completed step and
+  // buries the one step that is not done.
+  const _viewerRole = String(user?.role ?? '').toLowerCase();
+  const isCreditRisk = /credit risk|credit admin|remedial|recover/.test(_viewerRole);
+  // Affordability is BACK (ruling 2026-08-18): "one button I want to
+  // reintroduce is the Affordability, since I believe we can build on this -
+  // reading from the statements being uploaded and the payslips to calculate
+  // affordability." It is the analyst's own arithmetic, not another
+  // department's finished work, so it belongs on their page.
+  const HIDE_FOR_CREDIT_RISK = ['documents', 'dcc', 'cr', 'engines', 'actions'];
 
 
   // Panel toggles
@@ -405,6 +516,157 @@ export function LmsApplicationDetail() {
                   voting - so it is not repeated here. */}
             </div>
           ) },
+          // ── CREDIT RISK REVIEW ────────────────────────────────────────
+          // RULING (2026-08-18): the bank credit analyst "needs an extra
+          // button on top indicating Credit Risk Review, after the Department
+          // Committee ... he needs to review and recommend based on the
+          // pre-approval and pre-disbursement conditions, including escalating
+          // to the Director Credit Risk. If he approves, it is from here that
+          // it should travel to credit administration."
+          //
+          // THE PANEL ALREADY EXISTS. ActionPanelDecision carries the verdict,
+          // both kinds of condition and the push to the Chief, and the server
+          // already routes an approval to credit admin. It was buried on the
+          // Actions tab among a dozen other things, so the one step this role
+          // exists to perform was the hardest thing on the page to find.
+          //
+          // This gives it a tab of its own, named for the job, sitting where
+          // the work happens: after the committee that recommended the case.
+          //
+          // Shown only to somebody who may actually decide - can_record_decision
+          // is the same gate the panel already had. A tab that is visible and
+          // does nothing is worse than no tab.
+          ...(permissions.can_record_decision ? [{
+            id: 'crr', label: 'Credit Risk Review', color: '#C62828', content: (
+              <div className="space-y-4">
+                {/* THE PAPERS FIRST (ruling 2026-08-18): "he should actually
+                    first be seeing the attached documents for view." A credit
+                    decision is made on the documents; putting the form above
+                    them invites a decision before the reading.
+
+                    The two paragraphs of explanation that stood here are gone.
+                    Somebody arriving on a tab called Credit Risk Review knows
+                    what it is for, and prose above a form is read once and
+                    scrolled past for ever after. */}
+                {/* ─────────── The decision that stands, and any appeal ───────────
+                    RULING (2026-08-18): "on the appealed cases the first
+                    resolution is fully maintained, but there should now be an
+                    appeal section below listing the grounds for appeal and any
+                    additional appeal documents, then the analysts can give
+                    another decision."
+
+                    THE FIRST DECISION IS NOT REPLACED OR HIDDEN. An appeal is
+                    a second look at the same case, and a reviewer who cannot
+                    see what was decided before - and on what grounds it is
+                    being contested - is not reviewing an appeal, they are
+                    deciding blind. */}
+                {application.decision?.verdict && (
+                  <Card stripe="accent">
+                    <Card.Header>
+                      <h3 className="text-sm font-semibold text-gray-900">
+                        Decision on record
+                      </h3>
+                    </Card.Header>
+                    <Card.Body>
+                      <p className="text-sm">
+                        <span className="font-semibold uppercase">
+                          {application.decision.verdict}
+                        </span>
+                        {application.decision.authority
+                          ? <span className="text-gray-600"> — {application.decision.authority}</span>
+                          : null}
+                        {application.decision.date
+                          ? <span className="text-gray-500"> · {application.decision.date}</span>
+                          : null}
+                      </p>
+                      {application.decision.reason && (
+                        <p className="mt-1 text-xs text-gray-700">
+                          {application.decision.reason}
+                        </p>
+                      )}
+                      {(application.decision.conditions ?? []).length > 0 && (
+                        <ul className="mt-2 list-disc pl-5 text-xs text-gray-700">
+                          {(application.decision.conditions ?? []).map((c, i) => (
+                            <li key={i}>{c}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </Card.Body>
+                  </Card>
+                )}
+
+                {(application.appeals ?? []).length > 0 && (
+                  <Card stripe="primary">
+                    <Card.Header>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          Appeal{(application.appeals ?? []).length > 1 ? 's' : ''}
+                        </h3>
+                        {application.appeal_pending && (
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                            awaiting your decision
+                          </span>
+                        )}
+                      </div>
+                    </Card.Header>
+                    <Card.Body>
+                      {(application.appeals ?? []).map((a, i) => (
+                        <div key={i} className="mb-3 border-l-2 border-gray-200 pl-3 last:mb-0">
+                          <p className="text-xs text-gray-500">
+                            {a.by_name || 'the owner'}
+                            {a.at ? ` · ${String(a.at).slice(0, 16)}` : ''}
+                          </p>
+                          <p className="mt-0.5 text-sm text-gray-800">{a.reason}</p>
+                          {a.outcome && (
+                            <p className="mt-1 text-xs text-gray-600">
+                              Answered: <span className="font-medium">{a.outcome}</span>
+                              {a.reviewed_by_name ? ` by ${a.reviewed_by_name}` : ''}
+                              {a.review_note ? ` — ${a.review_note}` : ''}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                      <p className="mt-2 text-xs text-gray-500">
+                        Any documents attached since the decision are listed below.
+                        Record a fresh decision underneath — the one above stays on
+                        record.
+                      </p>
+                    </Card.Body>
+                  </Card>
+                )}
+
+                <LmsTravelledDocuments
+                  appId={application.id}
+                  canDownload={!!permissions.can_update}
+                  canAttach={!!(permissions.can_view ?? true)}
+                  onAttached={refetch} />
+                <ActionPanelDecision
+                  appId={application.id}
+                  /* OPEN ON ARRIVAL (ruling 2026-08-18): "he does not need to
+                     click on Record decision - it should just open up." One
+                     click to reach a tab and another to reveal the only thing
+                     on it is one click too many. */
+                  open
+                  setOpen={setDecisionOpen}
+                  mutations={mutations}
+                  onSuccess={async (verdict) => {
+                    await refetch();
+                    setDecisionOpen(false);
+                    toast({
+                      tone: verdict === 'approved' ? 'success'
+                        : verdict === 'declined' ? 'danger' : 'warning',
+                      message: verdict === 'approved'
+                        ? 'Approved — the case is now with Credit Administration.'
+                        : verdict === 'declined'
+                        ? 'Declined — it goes back to the owner to appeal or accept.'
+                        : `Decision recorded: ${verdict}`,
+                    });
+                  }}
+                  toast={toast}
+                />
+              </div>
+            ),
+          }] : []),
           { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: (
             <CreditReportCard appId={application.id} canEdit={!!permissions.can_update && !_viewerIsAnalyst} toast={toast} embedded />
           ) },
@@ -601,7 +863,7 @@ export function LmsApplicationDetail() {
 
             </div>
           ) },
-        ]}
+        ].filter((t) => !isCreditRisk || !HIDE_FOR_CREDIT_RISK.includes(t.id))}
       />
       </main>
     </div>
@@ -911,9 +1173,45 @@ function ActionPanelUpdate({
 
 function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast }: ActionPanelProps) {
   const [verdict, setVerdict] = useState<DecisionVerdict>('approved');
-  const [authority, setAuthority] = useState<string>(COMMON_AUTHORITIES[0]);
+  // Who is signed in, and in what role - not a list to choose from.
+  const { user: _decisionUser } = useRole();
+  const [authority, setAuthority] = useState<string>('');
+  useEffect(() => {
+    const nm = String(_decisionUser?.full_name ?? '').trim();
+    const rl = String(_decisionUser?.role ?? '').trim();
+    setAuthority(nm && rl ? `${nm} (${rl})` : nm || rl);
+  }, [_decisionUser]);
   const [reason, setReason]       = useState<string>('');
   const [conditions, setConditions] = useState<string>('');
+  // ── THE CONDITIONS ACTUALLY USED (ruling 2026-08-18) ──────────────────
+  // "list all the common credit pre-approval conditions including things like
+  // salary domiciliation, that he can tick on, and have a place to add
+  // others."
+  //
+  // Typing the same six conditions by hand on every case is how they end up
+  // worded six different ways and impossible to report on. Ticking gives one
+  // wording; the free box below keeps anything unusual possible.
+  // ── THE BANK'S OWN WORDING, WHERE IT HAS SET ONE ──────────────────────
+  // RULING (2026-08-18): the conditions "should be configured and not hard
+  // coded". The lists below are a starting set; once an admin has worded the
+  // bank's own in Administration, those are used instead.
+  //
+  // The built-in set remains as a FALLBACK, not a default to be overwritten
+  // silently - a bank that has not configured anything still gets a usable
+  // screen rather than two empty boxes.
+  const [libPre, setLibPre] = useState<string[]>(PRE_APPROVAL_CONDITIONS);
+  const [libDisb, setLibDisb] = useState<string[]>(PRE_DISBURSEMENT_CONDITIONS);
+  useEffect(() => {
+    void (async () => {
+      try {
+        const lib = await getConditionLibrary();
+        if (lib.pre_approval?.length) setLibPre(lib.pre_approval);
+        if (lib.pre_disbursement?.length) setLibDisb(lib.pre_disbursement);
+      } catch { /* keep the built-in set */ }
+    })();
+  }, []);
+  const [tickedPre, setTickedPre] = useState<string[]>([]);
+  const [tickedDisb, setTickedDisb] = useState<string[]>([]);
   // ── TWO KINDS, BECAUSE DIFFERENT PEOPLE TICK THEM ───────────────────────
   // RULING (2026-08-15): approve "with pre-approval conditions, pre-
   // disbursement conditions". Credit admin clears the first; Trops clears the
@@ -925,6 +1223,8 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
   const [preDisb, setPreDisb] = useState<string>('');
   const [escalateOpen, setEscalateOpen] = useState(false);
   const [escalateReason, setEscalateReason] = useState('');
+  // Who answers: an individual, or a committee that will sit on it.
+  const [escalateTarget, setEscalateTarget] = useState<'chief' | 'mcc'>('chief');
   const [comments, setComments]   = useState<string>('');
   const [error, setError]         = useState<string | null>(null);
 
@@ -952,10 +1252,16 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
     setError(null);
     if (!authority.trim()) { setError('Authority is required.'); return; }
 
-    const conditionsList = conditions
-      .split('\n')
-      .map((c) => c.trim())
-      .filter((c) => c.length > 0);
+    // Ticked AND typed. A checklist that discards the free box would lose the
+    // one condition somebody bothered to write out.
+    const conditionsList = [
+      ...tickedPre,
+      ...conditions.split('\n').map((c) => c.trim()).filter((c) => c.length > 0),
+    ];
+    const disbList = [
+      ...tickedDisb,
+      ...preDisb.split('\n').map((c) => c.trim()).filter((c) => c.length > 0),
+    ];
 
     const result = await mutations.recordDecision(appId, {
       verdict,
@@ -963,8 +1269,7 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
       reason: reason.trim() || undefined,
       conditions: conditionsList.length > 0 ? conditionsList : undefined,
       pre_approval_conditions: conditionsList.length > 0 ? conditionsList : undefined,
-      pre_disbursement_conditions: preDisb
-        .split('\n').map((c) => c.trim()).filter((c) => c.length > 0),
+      pre_disbursement_conditions: disbList,
       comments: comments.trim() || undefined,
     });
 
@@ -982,107 +1287,45 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
         <h3 className="text-sm font-semibold text-gray-900">Record decision</h3>
       </Card.Header>
       <Card.Body>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label className="text-sm font-medium text-gray-700">Verdict *</label>
-            <select
-              value={verdict}
-              onChange={(e) => setVerdict(e.target.value as DecisionVerdict)}
-              disabled={mutations.loading}
-              className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-            >
-              {DECISION_VERDICTS.map((v) => (
-                <option key={v} value={v}>{v}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Authority *</label>
-            <input
-              type="text"
-              value={authority}
-              onChange={(e) => setAuthority(e.target.value)}
-              disabled={mutations.loading}
-              list="authority-options"
-              className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-            />
-            <datalist id="authority-options">
-              {COMMON_AUTHORITIES.map((a) => (
-                <option key={a} value={a} />
-              ))}
-            </datalist>
-          </div>
-        </div>
-        <div className="mt-3">
-          <label className="text-sm font-medium text-gray-700">
-            Reason {verdict !== 'approved' && <span className="text-gray-500">(recommended for {verdict})</span>}
-          </label>
-          <input
-            type="text"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            disabled={mutations.loading}
-            className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-          />
-        </div>
-        {verdict === 'approved' && (
-          <div className="mt-3">
-            <label className="text-sm font-medium text-gray-700">Pre-approval conditions (one per line)</label>
-            <textarea
-              value={conditions}
-              onChange={(e) => setConditions(e.target.value)}
-              disabled={mutations.loading}
-              rows={3}
-              placeholder="Board resolution&#10;Debenture&#10;Insurance certificate"
-              className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Cleared by credit admin before the case moves on. The last one
-              ticked releases it to Trops.
-            </p>
-          </div>
-        )}
-        {verdict === 'approved' && (
-          <div className="mt-3">
-            <label className="text-sm font-medium text-gray-700">Pre-disbursement conditions (one per line)</label>
-            <textarea
-              value={preDisb}
-              onChange={(e) => setPreDisb(e.target.value)}
-              disabled={mutations.loading}
-              rows={3}
-              placeholder="Charge registered&#10;Insurance assigned&#10;Valuation within 90 days"
-              className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Cleared by Trops before money moves. Leave blank if there are none.
-            </p>
-          </div>
-        )}
+        {/* ─────────── Refer it on ───────────
+            RULING (2026-08-18): "give these two items a bigger button, and at
+            least above there. Remove 'above my authority' and just have Refer
+            to Director Credit."
 
-        {/* ─────────── Push it to the Chief ───────────
-            RULING (2026-08-15): the analyst may "push to the Chief Credit Risk
-            for their approval as well."
+            They were small text links at the foot of the panel, under the
+            comments box - so the two things an analyst does when a case is
+            beyond them were the least visible things on the page, below
+            everything they would do if it were not.
 
-            The Chief is resolved SERVER-SIDE from config - this does not name a
-            person, because a bank changes its people more often than its
-            software.
-
-            The case does not change hands: escalation asks a question of
-            somebody senior, and the analyst still owns it. */}
-        <div className="mt-4 border-t border-gray-100 pt-3">
+            And "above my authority" was the wrong words. Referring a large
+            case upward is the process working, not an admission - the phrasing
+            made a routine act sound like a confession. */}
+        <div className="mb-4 rounded-lg border border-[#005B82]/20 bg-[#005B82]/5 p-3">
           {!escalateOpen ? (
-            <button
-              type="button"
-              onClick={() => setEscalateOpen(true)}
-              disabled={mutations.loading}
-              className="text-xs font-medium text-[#005B82] hover:underline disabled:opacity-50"
-            >
-              Above my authority — push to the Chief Credit Risk
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => { setEscalateTarget('chief'); setEscalateOpen(true); }}
+                disabled={mutations.loading}
+                className="rounded-md border border-[#005B82] bg-white px-4 py-2 text-sm font-semibold text-[#005B82] transition hover:bg-[#005B82] hover:text-white disabled:opacity-50"
+              >
+                Refer to Director Credit
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEscalateTarget('mcc'); setEscalateOpen(true); }}
+                disabled={mutations.loading}
+                className="rounded-md border border-[#005B82] bg-white px-4 py-2 text-sm font-semibold text-[#005B82] transition hover:bg-[#005B82] hover:text-white disabled:opacity-50"
+              >
+                Refer to the Management Credit Committee
+              </button>
+            </div>
           ) : (
             <div className="rounded-md border border-[#005B82]/30 bg-[#005B82]/5 p-3">
               <label className="text-sm font-medium text-gray-800">
-                Why does this need the Chief?
+                {escalateTarget === 'mcc'
+                  ? 'Why does this need the Management Credit Committee?'
+                  : 'Why does this need Director Credit?'}
               </label>
               <textarea
                 value={escalateReason}
@@ -1108,11 +1351,12 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
                   onClick={() => {
                     void (async () => {
                       try {
-                        const r = await escalateToChief(appId, { reason: escalateReason.trim() });
+                        const r = await escalateToChief(appId, { reason: escalateReason.trim(), to: escalateTarget });
                         const to = (r as unknown as { escalated_to?: string }).escalated_to;
                         setError(null);
                         setEscalateOpen(false);
                         setEscalateReason('');
+                        setEscalateTarget('chief');
                         toast({ tone: 'success',
                           message: `Sent to ${to || 'the Chief Credit Risk'}. The case stays with you.` });
                       } catch (e) {
@@ -1122,7 +1366,211 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
                   }}
                   className="rounded-md bg-[#005B82] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
                 >
-                  Push to the Chief
+                  {escalateTarget === 'mcc' ? 'Refer to the committee' : 'Refer to Director Credit'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label className="text-sm font-medium text-gray-700">Verdict *</label>
+            <select
+              value={verdict}
+              onChange={(e) => setVerdict(e.target.value as DecisionVerdict)}
+              disabled={mutations.loading}
+              className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+            >
+              {DECISION_VERDICTS.map((v) => (
+                <option key={v} value={v}>{v}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            {/* AUTHORITY IS WHOEVER IS SIGNED IN (ruling 2026-08-18): "on
+                authority it should be automatic - it is giving a dropdown of
+                Branch Manager which should not be the case. I would rather it
+                records the role and captures the person logged in."
+
+                A free-text box offering Branch Manager to a Credit Risk
+                Manager invites the wrong answer and records it as fact. The
+                authority under which a credit decision was taken is not a
+                preference - it is who took it, and the system already knows. */}
+            <label className="text-sm font-medium text-gray-700">Authority</label>
+            <div className="mt-1 h-10 px-3 flex items-center rounded-md border border-gray-200 bg-gray-50 text-sm text-gray-700">
+              {authority || 'not signed in'}
+            </div>
+            <p className="mt-1 text-xs text-gray-500">Recorded automatically.</p>
+          </div>
+        </div>
+        <div className="mt-3">
+          <label className="text-sm font-medium text-gray-700">
+            Reason {verdict !== 'approved' && <span className="text-gray-500">(recommended for {verdict})</span>}
+          </label>
+          <input
+            type="text"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            disabled={mutations.loading}
+            className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+          />
+        </div>
+        {verdict === 'approved' && (
+          <div className="mt-3">
+            <label className="text-sm font-medium text-gray-700">Pre-approval conditions</label>
+            <div className="mt-1 mb-2 grid grid-cols-1 gap-1 rounded-md border border-gray-200 bg-gray-50 p-2 md:grid-cols-2">
+              {libPre.map((c) => (
+                <label key={c} className="flex items-start gap-2 text-xs text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={tickedPre.includes(c)}
+                    onChange={(e) => setTickedPre(e.target.checked
+                      ? [...tickedPre, c]
+                      : tickedPre.filter((x) => x !== c))}
+                    className="mt-0.5"
+                  />
+                  <span>{c}</span>
+                </label>
+              ))}
+            </div>
+            <label className="text-xs font-medium text-gray-600">Anything else (one per line)</label>
+            <textarea
+              value={conditions}
+              onChange={(e) => setConditions(e.target.value)}
+              disabled={mutations.loading}
+              rows={3}
+              placeholder="Board resolution&#10;Debenture&#10;Insurance certificate"
+              className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Cleared by credit admin before the case moves on. The last one
+              ticked releases it to Trops.
+            </p>
+          </div>
+        )}
+        {verdict === 'approved' && (
+          <div className="mt-3">
+            <label className="text-sm font-medium text-gray-700">Pre-disbursement conditions</label>
+            <div className="mt-1 mb-2 grid grid-cols-1 gap-1 rounded-md border border-gray-200 bg-gray-50 p-2 md:grid-cols-2">
+              {libDisb.map((c) => (
+                <label key={c} className="flex items-start gap-2 text-xs text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={tickedDisb.includes(c)}
+                    onChange={(e) => setTickedDisb(e.target.checked
+                      ? [...tickedDisb, c]
+                      : tickedDisb.filter((x) => x !== c))}
+                    className="mt-0.5"
+                  />
+                  <span>{c}</span>
+                </label>
+              ))}
+            </div>
+            <label className="text-xs font-medium text-gray-600">Anything else (one per line)</label>
+            <textarea
+              value={preDisb}
+              onChange={(e) => setPreDisb(e.target.value)}
+              disabled={mutations.loading}
+              rows={3}
+              placeholder="Charge registered&#10;Insurance assigned&#10;Valuation within 90 days"
+              className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Cleared by Trops before money moves. Leave blank if there are none.
+            </p>
+          </div>
+        )}
+
+        {/* ─────────── Push it to the Chief ───────────
+            RULING (2026-08-15): the analyst may "push to the Chief Credit Risk
+            for their approval as well."
+
+            The Chief is resolved SERVER-SIDE from config - this does not name a
+            person, because a bank changes its people more often than its
+            software.
+
+            The case does not change hands: escalation asks a question of
+            somebody senior, and the analyst still owns it. */}
+        {/* ─────────── Refer it on ───────────
+            RULING (2026-08-18): "give these two items a bigger button, and at
+            least above there. Remove 'above my authority' and just have Refer
+            to Director Credit."
+
+            They were small text links at the foot of the panel, under the
+            comments box - so the two things an analyst does when a case is
+            beyond them were the least visible things on the page, below
+            everything they would do if it were not.
+
+            And "above my authority" was the wrong words. Referring a large
+            case upward is the process working, not an admission - the phrasing
+            made a routine act sound like a confession. */}
+        <div className="mb-4 rounded-lg border border-[#005B82]/20 bg-[#005B82]/5 p-3">
+          {!escalateOpen ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => { setEscalateTarget('chief'); setEscalateOpen(true); }}
+                disabled={mutations.loading}
+                className="rounded-md border border-[#005B82] bg-white px-4 py-2 text-sm font-semibold text-[#005B82] transition hover:bg-[#005B82] hover:text-white disabled:opacity-50"
+              >
+                Refer to Director Credit
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEscalateTarget('mcc'); setEscalateOpen(true); }}
+                disabled={mutations.loading}
+                className="rounded-md border border-[#005B82] bg-white px-4 py-2 text-sm font-semibold text-[#005B82] transition hover:bg-[#005B82] hover:text-white disabled:opacity-50"
+              >
+                Refer to the Management Credit Committee
+              </button>
+            </div>
+          ) : (
+            <div className="rounded-md border border-[#005B82]/30 bg-[#005B82]/5 p-3">
+              <label className="text-sm font-medium text-gray-800">
+                {escalateTarget === 'mcc'
+                  ? 'Why does this need the Management Credit Committee?'
+                  : 'Why does this need Director Credit?'}
+              </label>
+              <textarea
+                value={escalateReason}
+                onChange={(e) => setEscalateReason(e.target.value)}
+                rows={2}
+                placeholder="Exposure above my limit; concentration in one sector…"
+                className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary resize-y"
+              />
+              <p className="mt-1 text-xs text-gray-600">
+                A case arriving with no question attached wastes the trip.
+              </p>
+              <div className="mt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setEscalateOpen(false); setEscalateReason(''); }}
+                  className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={mutations.loading || !escalateReason.trim()}
+                  onClick={() => {
+                    void (async () => {
+                      try {
+                        const r = await escalateToChief(appId, { reason: escalateReason.trim(), to: escalateTarget });
+                        const to = (r as unknown as { escalated_to?: string }).escalated_to;
+                        setError(null);
+                        setEscalateOpen(false);
+                        setEscalateReason('');
+                        setEscalateTarget('chief');
+                        toast({ tone: 'success',
+                          message: `Sent to ${to || 'the Chief Credit Risk'}. The case stays with you.` });
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : 'Could not escalate');
+                      }
+                    })();
+                  }}
+                  className="rounded-md bg-[#005B82] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  {escalateTarget === 'mcc' ? 'Refer to the committee' : 'Refer to Director Credit'}
                 </button>
               </div>
             </div>
@@ -1672,7 +2120,7 @@ function DccVotePanel({ appId, toast, onDone }: {
 // "CRB" on one case and "CRB Report" on another cannot be checked off a
 // required list, and the analyst should not have to know the exact string.
 // "Other" stays for the paper nobody anticipated.
-const ANALYST_DOCS = ['CRB Report', 'Call Back Memo', 'Other'];
+const ANALYST_DOCS = ['Other'];
 
 function LmsTravelledDocuments({ appId, canDownload, canAttach, onAttached }: {
   appId: string; canDownload: boolean; canAttach?: boolean; onAttached?: () => void;
@@ -1683,11 +2131,13 @@ function LmsTravelledDocuments({ appId, canDownload, canAttach, onAttached }: {
   const [err, setErr] = useState('');
 
   const [requested, setRequested] = useState<{ name: string; note?: string }[]>([]);
+  const [required, setRequired] = useState<string[]>([]);
 
   const reload = () => {
     listLmsDocuments(appId).then((d) => {
       setFiles(d.files || {});
       setRequested(d.requested || []);
+      setRequired(d.required || []);
     }).catch(() => { /* none on file */ });
   };
 
@@ -1754,7 +2204,42 @@ function LmsTravelledDocuments({ appId, canDownload, canAttach, onAttached }: {
             </div>
           ))}
         </div>
-        {entries.length === 0 && (
+        {/* WHAT SHOULD BE HERE, not only what is (ruling 2026-08-18): "this
+            should have the documents listed for view - even if not there, let
+            us have a listing of the required documents."
+
+            An empty card saying "nothing on file" tells a reviewer the case is
+            bare. A list of what the case NEEDS tells them what is missing,
+            which is the thing they can act on. The required set comes from the
+            same tiered checklist the submission gate enforces, so the screen
+            and the gate cannot disagree. */}
+        {(required.length > 0) && (
+          <div className="mb-3">
+            <p className="mb-1 text-xs font-medium text-gray-700">
+              Required for this case
+            </p>
+            <div className="rounded-lg border border-gray-200 bg-gray-50/60 p-2">
+              {required.map((r) => {
+                // entries is [name, meta] pairs - the document's NAME is the
+                // key, not a field on the value.
+                const have = entries.some(([name]) =>
+                  String(name).trim().toLowerCase() === r.trim().toLowerCase());
+                return (
+                  <div key={r} className="flex items-center gap-2 py-0.5 text-xs">
+                    <span className={have ? 'text-green-600' : 'text-amber-600'}>
+                      {have ? '\u2713' : '\u25cb'}
+                    </span>
+                    <span className={have ? 'text-gray-700' : 'text-amber-800 font-medium'}>
+                      {r}
+                    </span>
+                    {!have && <span className="text-gray-400">not on file</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {entries.length === 0 && required.length === 0 && (
           <p className="py-3 text-center text-xs text-gray-400">
             Nothing on file yet.
           </p>

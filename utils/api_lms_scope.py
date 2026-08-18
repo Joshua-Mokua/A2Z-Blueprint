@@ -252,8 +252,66 @@ def filter_apps_by_visibility(
     pool_statuses = {s.strip().lower() for s in pool_cfg["statuses"]}
     caller_segment = _analyst_segment(caller_role, caller_staff_code)  # '' unless segment-specific
 
+    # ── A COMMITTEE MEMBER SEES WHAT IS BEFORE THEIR COMMITTEE ──────────────
+    # Visibility was: your own cases, your cascade, or the credit pool if your
+    # role is configured for it. Committee membership granted nothing.
+    #
+    # That works while committees are made of credit people, who have the pool
+    # anyway. It breaks on the Business Credit Committee: the MD, the CFO and
+    # treasury sit on it and none of them has a credit pool role - so a case
+    # referred to them appeared to nobody, and the committee could not meet
+    # about a case it could not see.
+    #
+    # Giving those people the whole pool would be the wrong fix - they would
+    # see every case in the bank to vote on a handful. A member sees the cases
+    # BEFORE THEIR OWN COMMITTEE, and nothing else.
+    _my_committees = set()
+    if caller_staff_code:
+        try:
+            from utils.api import _read_committee_palette as _pal
+            _me = str(caller_staff_code).strip()
+            for _c in (_pal() or []):
+                for _m in (_c.get("members") or []):
+                    if not isinstance(_m, dict):
+                        continue
+                    if str(_m.get("staff_code", "") or "").strip() == _me:
+                        _my_committees.add(str(_c.get("code") or ""))
+                        # THE SAME RULE THE RESOLVER USES, or the two disagree
+                        # about which committee is the business one. B4 is
+                        # named "Credit Committee" - neither "management" nor
+                        # "business credit" appears in it, and matching on
+                        # words alone found nobody.
+                        _nm = str(_c.get("name", "") or "").lower()
+                        if ("management" in _nm or "business credit" in _nm
+                                or str(_c.get("code")) == "B4"):
+                            _my_committees.add("mcc")
+                        elif str(_c.get("kind", "")).lower() != "branch":
+                            # A DEPARTMENT committee member sees dcc cases -
+                            # but only their OWN segment's. The segment is
+                            # carried so a Consumer member does not see
+                            # Commercial's cases, which is the whole point of
+                            # having three of them.
+                            for _seg, _word in (("consumer", "consumer"),
+                                                ("commercial", "commercial"),
+                                                ("cib", "corporate")):
+                                if _word in _nm:
+                                    _my_committees.add("dcc:%s" % _seg)
+                        break
+        except Exception:
+            _my_committees = set()
+
     visible: List[Dict[str, Any]] = []
     for a in apps:
+        # Before my committee, and still awaiting it: I can see it.
+        if _my_committees:
+            _kind = str(a.get("committee_kind", "") or "").lower()
+            _src = str((a.get("dcc") or {}).get("source_committee", "") or "")
+            _hit = bool(_kind) and (_kind in _my_committees or _src in _my_committees)
+            if not _hit and _kind == "dcc":
+                _hit = ("dcc:%s" % _app_segment(a)) in _my_committees
+            if _hit:
+                visible.append(a)
+                continue
         rm_code = str(a.get('rm_code', '') or '')
         if rm_code and rm_code in visible_codes:
             # Segment-bound Dept Analysts see ONLY their own segment even via cascade.
