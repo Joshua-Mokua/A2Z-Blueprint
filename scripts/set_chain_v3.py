@@ -5,7 +5,7 @@ Set the release chain to the order verified against the pilot's own tree.
 
 VERIFIED 2026-08-18 against a clean copy of origin/alex-dev:
 
-    45 applied, 0 failed (44 verified + MP1)
+    47 applied, 0 failed (45 verified + BR2 + LG1)
     py_compile clean on seven modules
     tsc --noEmit clean, vite build clean
     every one of fifteen markers present on the built tree
@@ -86,6 +86,11 @@ ORDER = [
     'patch_cr1_memo_before_analysis',
     'patch_gv1_gate_carries_voting',
     'patch_lk1_branch_keeps_its_case',
+    # Both touch api.py and are independent of each other; they sit here
+    # because BR2 changes how a branch is FOUND, and everything downstream
+    # that routes to a branch committee depends on it.
+    'patch_br2_branch_from_unit_or_owner',
+    'patch_lg1_legal_officers',
     'patch_dm1_decision_moves_case',
     'patch_cd1_conditions_and_tick',
     'remove_cd1_tick',

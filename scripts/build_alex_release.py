@@ -128,6 +128,8 @@ CHAIN = [
     "patch_cr1_memo_before_analysis",
     "patch_gv1_gate_carries_voting",
     "patch_lk1_branch_keeps_its_case",
+    "patch_br2_branch_from_unit_or_owner",
+    "patch_lg1_legal_officers",
     "patch_dm1_decision_moves_case",
     "patch_cd1_conditions_and_tick",
     "remove_cd1_tick",
