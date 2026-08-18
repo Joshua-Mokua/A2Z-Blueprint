@@ -20,7 +20,9 @@ import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesT
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, escalateToChief, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse } from '@/lib/api';
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, escalateToChief, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse,
+  getConditionLibrary,
+} from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
@@ -1124,6 +1126,25 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
   // Typing the same six conditions by hand on every case is how they end up
   // worded six different ways and impossible to report on. Ticking gives one
   // wording; the free box below keeps anything unusual possible.
+  // ── THE BANK'S OWN WORDING, WHERE IT HAS SET ONE ──────────────────────
+  // RULING (2026-08-18): the conditions "should be configured and not hard
+  // coded". The lists below are a starting set; once an admin has worded the
+  // bank's own in Administration, those are used instead.
+  //
+  // The built-in set remains as a FALLBACK, not a default to be overwritten
+  // silently - a bank that has not configured anything still gets a usable
+  // screen rather than two empty boxes.
+  const [libPre, setLibPre] = useState<string[]>(PRE_APPROVAL_CONDITIONS);
+  const [libDisb, setLibDisb] = useState<string[]>(PRE_DISBURSEMENT_CONDITIONS);
+  useEffect(() => {
+    void (async () => {
+      try {
+        const lib = await getConditionLibrary();
+        if (lib.pre_approval?.length) setLibPre(lib.pre_approval);
+        if (lib.pre_disbursement?.length) setLibDisb(lib.pre_disbursement);
+      } catch { /* keep the built-in set */ }
+    })();
+  }, []);
   const [tickedPre, setTickedPre] = useState<string[]>([]);
   const [tickedDisb, setTickedDisb] = useState<string[]>([]);
   // ── TWO KINDS, BECAUSE DIFFERENT PEOPLE TICK THEM ───────────────────────
@@ -1248,7 +1269,7 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
           <div className="mt-3">
             <label className="text-sm font-medium text-gray-700">Pre-approval conditions</label>
             <div className="mt-1 mb-2 grid grid-cols-1 gap-1 rounded-md border border-gray-200 bg-gray-50 p-2 md:grid-cols-2">
-              {PRE_APPROVAL_CONDITIONS.map((c) => (
+              {libPre.map((c) => (
                 <label key={c} className="flex items-start gap-2 text-xs text-gray-700">
                   <input
                     type="checkbox"
@@ -1281,7 +1302,7 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
           <div className="mt-3">
             <label className="text-sm font-medium text-gray-700">Pre-disbursement conditions</label>
             <div className="mt-1 mb-2 grid grid-cols-1 gap-1 rounded-md border border-gray-200 bg-gray-50 p-2 md:grid-cols-2">
-              {PRE_DISBURSEMENT_CONDITIONS.map((c) => (
+              {libDisb.map((c) => (
                 <label key={c} className="flex items-start gap-2 text-xs text-gray-700">
                   <input
                     type="checkbox"

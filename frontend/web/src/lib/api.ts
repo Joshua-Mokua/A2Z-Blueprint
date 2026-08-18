@@ -2206,6 +2206,25 @@ export async function provideLmsInfo(appId: string, body: ProvideInfoRequest): P
 }
 /** Push a case up to the Chief Credit Risk for their approval. The Chief is
  *  resolved server-side from config - the caller does not name a person. */
+/** The condition library, as the bank words it. `configured` is false until
+ *  an admin has set one - the screen then falls back to the built-in set
+ *  WITHOUT presenting it as the bank's own. */
+export interface ConditionLibrary {
+  pre_approval: string[];
+  pre_disbursement: string[];
+  configured?: boolean;
+}
+
+export async function getConditionLibrary(): Promise<ConditionLibrary> {
+  return getJson<ConditionLibrary>('/lms/config/conditions');
+}
+
+export async function setConditionLibrary(
+  body: Partial<Pick<ConditionLibrary, 'pre_approval' | 'pre_disbursement'>>,
+): Promise<ConditionLibrary> {
+  return postJson<ConditionLibrary>('/lms/config/conditions', body);
+}
+
 export interface PoolVisibility { roles: string[]; statuses: string[]; }
 
 export async function getPoolVisibility(): Promise<PoolVisibility> {

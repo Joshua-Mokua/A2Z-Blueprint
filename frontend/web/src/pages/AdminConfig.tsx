@@ -41,6 +41,7 @@ import {
   type AdminBranch,
   type SlaConfig,
   getPoolVisibility, setPoolVisibility,
+  getConditionLibrary, setConditionLibrary,
 } from '@/lib/api';
 import type { PipelineConfig, ProductFlow, DealCategoryConfig } from '@/types/pipeline';
 
@@ -133,6 +134,7 @@ const SUBTABS: { id: string; label: string }[] = [
   { id: 'mou',      label: 'MOU / Partners' },
   { id: 'org',      label: 'Committees & Branches' },
   { id: 'pool',     label: 'Credit Pool Access' },
+  { id: 'conds',    label: 'Credit Conditions' },
 ];
 
 function PanelShell({
@@ -1145,6 +1147,7 @@ export default function AdminConfig() {
               </>
             )}
             {subTab === 'pool' && <PoolVisibilityPanel />}
+            {subTab === 'conds' && <ConditionLibraryPanel />}
           </div>
             </SubTabCtx.Provider>
           </>
@@ -1521,6 +1524,121 @@ function PoolVisibilityPanel() {
             <p className="mt-2 text-xs text-gray-500">
               Statuses currently in the pool: {statuses.join(', ') || 'none'}.
             </p>
+          </>
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+
+
+/* ─────────── Credit Conditions ───────────
+   RULING (2026-08-18): "the items we listed in the pre-approval and
+   pre-disbursement conditions can now be added to the admin config. We can
+   maintain those as they are, but the admin should be able to amend and add to
+   suit the bank's terminologies without seeming like we are introducing new
+   concepts. They should be configured and not hard-coded."
+
+   A list written into the software is a developer's guess at a bank's credit
+   policy. Worded differently from the credit manual, it makes the system look
+   as though it is inventing terms - and nobody can correct it without a
+   release.
+
+   UNTIL AN ADMIN SAVES ONE, THE SCREEN SAYS SO. The analyst still gets the
+   built-in set so the system is usable on day one, but this panel does not
+   pretend that set is the bank's. */
+function ConditionLibraryPanel() {
+  const { toast } = useToast();
+  const [pre, setPre] = useState<string>('');
+  const [disb, setDisb] = useState<string>('');
+  const [configured, setConfigured] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const lib = await getConditionLibrary();
+        setPre((lib.pre_approval ?? []).join('\n'));
+        setDisb((lib.pre_disbursement ?? []).join('\n'));
+        setConfigured(Boolean(lib.configured));
+      } catch (e) {
+        toast({ tone: 'danger',
+          message: e instanceof Error ? e.message : 'Could not read the conditions' });
+      } finally { setLoading(false); }
+    })();
+    /* eslint-disable-next-line */
+  }, []);
+
+  const save = async (key: 'pre_approval' | 'pre_disbursement', text: string) => {
+    const list = text.split('\n').map((x) => x.trim()).filter(Boolean);
+    setSaving(key);
+    try {
+      const lib = await setConditionLibrary({ [key]: list });
+      setPre((lib.pre_approval ?? []).join('\n'));
+      setDisb((lib.pre_disbursement ?? []).join('\n'));
+      setConfigured(true);
+      toast({ tone: 'success', message: 'Conditions saved.' });
+    } catch (e) {
+      toast({ tone: 'danger',
+        message: e instanceof Error ? e.message : 'Could not save' });
+    } finally { setSaving(null); }
+  };
+
+  const box = (
+    label: string, hint: string, value: string,
+    onChange: (v: string) => void, key: 'pre_approval' | 'pre_disbursement',
+  ) => (
+    <div className="mb-5">
+      <label className="text-sm font-semibold text-gray-900">{label}</label>
+      <p className="mb-1 text-xs text-gray-600">{hint}</p>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={12}
+        spellCheck={false}
+        className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-xs focus:border-brand-primary focus:outline-none"
+      />
+      <div className="mt-1 flex items-center justify-between">
+        <span className="text-xs text-gray-500">
+          {value.split('\n').filter((x) => x.trim()).length} condition(s), one per line
+        </span>
+        <Button size="sm" disabled={saving !== null} onClick={() => void save(key, value)}>
+          {saving === key ? 'Saving…' : 'Save'}
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <Card className="mb-4">
+      <Card.Header>
+        <h3 className="text-sm font-semibold text-gray-900">Credit Conditions</h3>
+      </Card.Header>
+      <Card.Body>
+        {loading ? (
+          <p className="py-4 text-center text-sm text-gray-400">Loading…</p>
+        ) : (
+          <>
+            {configured === false && (
+              <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                The bank has not worded its own conditions yet. Analysts are
+                seeing a starting set built into the system — reword these to
+                match your credit manual and save.
+              </div>
+            )}
+            <p className="mb-4 text-xs text-gray-600">
+              These are what a credit analyst ticks when approving a case.
+              Pre-approval conditions are cleared by credit admin; pre-disbursement
+              conditions by Trops before money moves. Analysts can still type
+              anything not on these lists.
+            </p>
+            {box('Pre-approval conditions',
+                 'Cleared by credit admin. The last one ticked releases the case to Trops.',
+                 pre, setPre, 'pre_approval')}
+            {box('Pre-disbursement conditions',
+                 'Cleared by Trops before money moves.',
+                 disb, setDisb, 'pre_disbursement')}
           </>
         )}
       </Card.Body>
