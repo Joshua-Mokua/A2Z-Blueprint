@@ -2206,8 +2206,6 @@ export async function provideLmsInfo(appId: string, body: ProvideInfoRequest): P
 }
 /** Push a case up to the Chief Credit Risk for their approval. The Chief is
  *  resolved server-side from config - the caller does not name a person. */
-/** Which credit roles may see the whole credit pool. Read and written by a
- *  config admin only - the people it GRANTS never touch this screen. */
 export interface PoolVisibility { roles: string[]; statuses: string[]; }
 
 export async function getPoolVisibility(): Promise<PoolVisibility> {

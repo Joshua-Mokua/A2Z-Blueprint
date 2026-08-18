@@ -42,11 +42,45 @@ import { Skeleton } from '@/components/Skeleton';
 import { Timeline, eventLabel } from '@/components/Timeline';
 import {
   DECISION_VERDICTS,
-  COMMON_AUTHORITIES,
   type DecisionVerdict,
   type LoanApplication,
 } from '@/types/lms';
 
+
+// ── The conditions a Kenyan bank actually attaches ───────────────────────
+// RULING (2026-08-18): "list all the common credit pre-approval conditions
+// including things like salary domiciliation, that he can tick on, and have a
+// place to add others."
+//
+// Typed by hand on every case, the same six conditions end up worded six
+// different ways and nothing can be reported on. Ticking gives one wording.
+// The free-text box below the list keeps anything unusual possible - a
+// checklist that cannot be escaped is worse than none.
+const PRE_APPROVAL_CONDITIONS: string[] = [
+  'Salary domiciliation to Ecobank',
+  'Signed offer letter returned',
+  'Executed loan agreement',
+  'Personal guarantee from directors',
+  'Board resolution to borrow',
+  'Valuation report not older than 6 months',
+  'Satisfactory CRB report',
+  'Proof of income for the last 3 months',
+  'Confirmation of employment from employer',
+  'Check-off arrangement with employer',
+  'Repayment account opened and funded',
+  'Existing facility with another bank cleared',
+];
+
+const PRE_DISBURSEMENT_CONDITIONS: string[] = [
+  'Security perfected and charge registered',
+  'Insurance assigned to the bank, premium paid',
+  'Credit life cover in place',
+  'Legal charge stamped and lodged',
+  'Title deed held by the bank',
+  'First instalment deposit received',
+  'Standing order or direct debit set up',
+  'All statutory approvals obtained',
+];
 
 // ── Format helpers ──────────────────────────────────────────────────────
 
@@ -74,6 +108,18 @@ export function LmsApplicationDetail() {
   const { application, permissions, loading, error, refetch } =
     useLmsApplication(appId);
   const mutations = useLmsMutations();
+  // ── CREDIT RISK GETS A DIFFERENT PAGE ────────────────────────────────────
+  // RULING (2026-08-18): "for them the Department Review and the Department
+  // Credit Committee buttons should not be there - it should be the Case
+  // Journey and then their Credit Risk Review ... remove the Transaction Memo
+  // for now since that travels as an attachment."
+  //
+  // Those tabs are somebody else's work, finished by the time the case reaches
+  // credit risk. Leaving them invites a reviewer to redo a completed step and
+  // buries the one step that is not done.
+  const _viewerRole = String(user?.role ?? '').toLowerCase();
+  const isCreditRisk = /credit risk|credit admin|remedial|recover/.test(_viewerRole);
+  const HIDE_FOR_CREDIT_RISK = ['documents', 'dcc', 'cr', 'affordability', 'engines'];
 
 
   // Panel toggles
@@ -363,24 +409,27 @@ export function LmsApplicationDetail() {
           ...(permissions.can_record_decision ? [{
             id: 'crr', label: 'Credit Risk Review', color: '#C62828', content: (
               <div className="space-y-4">
-                <Card>
-                  <Card.Body>
-                    <p className="text-sm text-gray-700">
-                      The department committee has recommended this case. Record
-                      the credit decision here: approve with any pre-approval and
-                      pre-disbursement conditions, return it for more information,
-                      or push it to the Chief Credit Risk.
-                    </p>
-                    <p className="mt-1 text-xs text-gray-500">
-                      An approval sends the case to Credit Administration with its
-                      conditions attached. A decline goes back to the owner, who
-                      may appeal or accept it.
-                    </p>
-                  </Card.Body>
-                </Card>
+                {/* THE PAPERS FIRST (ruling 2026-08-18): "he should actually
+                    first be seeing the attached documents for view." A credit
+                    decision is made on the documents; putting the form above
+                    them invites a decision before the reading.
+
+                    The two paragraphs of explanation that stood here are gone.
+                    Somebody arriving on a tab called Credit Risk Review knows
+                    what it is for, and prose above a form is read once and
+                    scrolled past for ever after. */}
+                <LmsTravelledDocuments
+                  appId={application.id}
+                  canDownload={!!permissions.can_update}
+                  canAttach={!!(permissions.can_view ?? true)}
+                  onAttached={refetch} />
                 <ActionPanelDecision
                   appId={application.id}
-                  open={decisionOpen}
+                  /* OPEN ON ARRIVAL (ruling 2026-08-18): "he does not need to
+                     click on Record decision - it should just open up." One
+                     click to reach a tab and another to reveal the only thing
+                     on it is one click too many. */
+                  open
                   setOpen={setDecisionOpen}
                   mutations={mutations}
                   onSuccess={async (verdict) => {
@@ -597,7 +646,7 @@ export function LmsApplicationDetail() {
 
             </div>
           ) },
-        ]}
+        ].filter((t) => !isCreditRisk || !HIDE_FOR_CREDIT_RISK.includes(t.id))}
       />
       </main>
     </div>
@@ -907,9 +956,26 @@ function ActionPanelUpdate({
 
 function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast }: ActionPanelProps) {
   const [verdict, setVerdict] = useState<DecisionVerdict>('approved');
-  const [authority, setAuthority] = useState<string>(COMMON_AUTHORITIES[0]);
+  // Who is signed in, and in what role - not a list to choose from.
+  const { user: _decisionUser } = useRole();
+  const [authority, setAuthority] = useState<string>('');
+  useEffect(() => {
+    const nm = String(_decisionUser?.full_name ?? '').trim();
+    const rl = String(_decisionUser?.role ?? '').trim();
+    setAuthority(nm && rl ? `${nm} (${rl})` : nm || rl);
+  }, [_decisionUser]);
   const [reason, setReason]       = useState<string>('');
   const [conditions, setConditions] = useState<string>('');
+  // ── THE CONDITIONS ACTUALLY USED (ruling 2026-08-18) ──────────────────
+  // "list all the common credit pre-approval conditions including things like
+  // salary domiciliation, that he can tick on, and have a place to add
+  // others."
+  //
+  // Typing the same six conditions by hand on every case is how they end up
+  // worded six different ways and impossible to report on. Ticking gives one
+  // wording; the free box below keeps anything unusual possible.
+  const [tickedPre, setTickedPre] = useState<string[]>([]);
+  const [tickedDisb, setTickedDisb] = useState<string[]>([]);
   // ── TWO KINDS, BECAUSE DIFFERENT PEOPLE TICK THEM ───────────────────────
   // RULING (2026-08-15): approve "with pre-approval conditions, pre-
   // disbursement conditions". Credit admin clears the first; Trops clears the
@@ -948,10 +1014,16 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
     setError(null);
     if (!authority.trim()) { setError('Authority is required.'); return; }
 
-    const conditionsList = conditions
-      .split('\n')
-      .map((c) => c.trim())
-      .filter((c) => c.length > 0);
+    // Ticked AND typed. A checklist that discards the free box would lose the
+    // one condition somebody bothered to write out.
+    const conditionsList = [
+      ...tickedPre,
+      ...conditions.split('\n').map((c) => c.trim()).filter((c) => c.length > 0),
+    ];
+    const disbList = [
+      ...tickedDisb,
+      ...preDisb.split('\n').map((c) => c.trim()).filter((c) => c.length > 0),
+    ];
 
     const result = await mutations.recordDecision(appId, {
       verdict,
@@ -959,8 +1031,7 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
       reason: reason.trim() || undefined,
       conditions: conditionsList.length > 0 ? conditionsList : undefined,
       pre_approval_conditions: conditionsList.length > 0 ? conditionsList : undefined,
-      pre_disbursement_conditions: preDisb
-        .split('\n').map((c) => c.trim()).filter((c) => c.length > 0),
+      pre_disbursement_conditions: disbList,
       comments: comments.trim() || undefined,
     });
 
@@ -993,20 +1064,20 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Authority *</label>
-            <input
-              type="text"
-              value={authority}
-              onChange={(e) => setAuthority(e.target.value)}
-              disabled={mutations.loading}
-              list="authority-options"
-              className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-            />
-            <datalist id="authority-options">
-              {COMMON_AUTHORITIES.map((a) => (
-                <option key={a} value={a} />
-              ))}
-            </datalist>
+            {/* AUTHORITY IS WHOEVER IS SIGNED IN (ruling 2026-08-18): "on
+                authority it should be automatic - it is giving a dropdown of
+                Branch Manager which should not be the case. I would rather it
+                records the role and captures the person logged in."
+
+                A free-text box offering Branch Manager to a Credit Risk
+                Manager invites the wrong answer and records it as fact. The
+                authority under which a credit decision was taken is not a
+                preference - it is who took it, and the system already knows. */}
+            <label className="text-sm font-medium text-gray-700">Authority</label>
+            <div className="mt-1 h-10 px-3 flex items-center rounded-md border border-gray-200 bg-gray-50 text-sm text-gray-700">
+              {authority || 'not signed in'}
+            </div>
+            <p className="mt-1 text-xs text-gray-500">Recorded automatically.</p>
           </div>
         </div>
         <div className="mt-3">
@@ -1023,7 +1094,23 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
         </div>
         {verdict === 'approved' && (
           <div className="mt-3">
-            <label className="text-sm font-medium text-gray-700">Pre-approval conditions (one per line)</label>
+            <label className="text-sm font-medium text-gray-700">Pre-approval conditions</label>
+            <div className="mt-1 mb-2 grid grid-cols-1 gap-1 rounded-md border border-gray-200 bg-gray-50 p-2 md:grid-cols-2">
+              {PRE_APPROVAL_CONDITIONS.map((c) => (
+                <label key={c} className="flex items-start gap-2 text-xs text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={tickedPre.includes(c)}
+                    onChange={(e) => setTickedPre(e.target.checked
+                      ? [...tickedPre, c]
+                      : tickedPre.filter((x) => x !== c))}
+                    className="mt-0.5"
+                  />
+                  <span>{c}</span>
+                </label>
+              ))}
+            </div>
+            <label className="text-xs font-medium text-gray-600">Anything else (one per line)</label>
             <textarea
               value={conditions}
               onChange={(e) => setConditions(e.target.value)}
@@ -1040,7 +1127,23 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
         )}
         {verdict === 'approved' && (
           <div className="mt-3">
-            <label className="text-sm font-medium text-gray-700">Pre-disbursement conditions (one per line)</label>
+            <label className="text-sm font-medium text-gray-700">Pre-disbursement conditions</label>
+            <div className="mt-1 mb-2 grid grid-cols-1 gap-1 rounded-md border border-gray-200 bg-gray-50 p-2 md:grid-cols-2">
+              {PRE_DISBURSEMENT_CONDITIONS.map((c) => (
+                <label key={c} className="flex items-start gap-2 text-xs text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={tickedDisb.includes(c)}
+                    onChange={(e) => setTickedDisb(e.target.checked
+                      ? [...tickedDisb, c]
+                      : tickedDisb.filter((x) => x !== c))}
+                    className="mt-0.5"
+                  />
+                  <span>{c}</span>
+                </label>
+              ))}
+            </div>
+            <label className="text-xs font-medium text-gray-600">Anything else (one per line)</label>
             <textarea
               value={preDisb}
               onChange={(e) => setPreDisb(e.target.value)}

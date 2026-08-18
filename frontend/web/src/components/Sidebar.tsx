@@ -70,6 +70,13 @@ const NAV_GROUPS: NavGroup[] = [
     // people end up believing a screen is safe because it is hard to find.
     label: 'Department Review',
     items: [
+      // NOT FOR CREDIT RISK (ruling 2026-08-18): "I want his sidebar not to
+      // have the Department Review, since that one does not really concern
+      // them - the CIS is their main workbench."
+      //
+      // Department Review is the segment analyst's desk. Credit risk arrives
+      // after that work is finished, and an entry leading to somebody else's
+      // queue is an invitation to duplicate it.
       { path: '/lms',                 label: 'Department Review',   matchActive: (p) => p === '/lms' || p.startsWith('/lms/'), visibleFor: (_m, _a, _c, _md, credit) => credit },
     ],
   },
@@ -116,6 +123,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   // Credit Intelligence modules belong to credit staff (analysts, credit admin,
   // treasury/disbursement, recovery) + admin/MD. Front-line RMs/branch see the
   // pipeline instead, and track their own cases there.
+  // Credit risk works at the credit stage, not the department stage.
   const isCreditStaff = isAdminOrMd || /credit|analys|underwrit|recover|collection|treasur|disburs/i.test(user?.role ?? '');
 
   return (
@@ -133,7 +141,14 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           const items = group.items.filter(
             (item) => !DEMO_HIDE.has(item.path)
               && !hidden.has(item.path)
-              && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff)),
+              && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff))
+              // NOT FOR CREDIT RISK (ruling 2026-08-18): "I want his sidebar
+              // not to have the Department Review - the CIS is their main
+              // workbench." That entry is the segment analyst's desk; credit
+              // risk arrives after that work is finished, and a link into
+              // somebody else's queue invites duplicating it.
+              && !(/credit risk|credit admin|remedial|recover/i.test(user?.role ?? '')
+                   && item.label === 'Department Review'),
           );
           if (!items.length) return null;
           return (
