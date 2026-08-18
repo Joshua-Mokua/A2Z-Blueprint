@@ -1705,9 +1705,62 @@ def lms_dcc_vote(
     roster_ids = {str(m.get("id") or m.get("member_id") or "").strip()
                   for m in (dcc.get("members") or []) if isinstance(m, dict)}
     if not member_id or member_id not in roster_ids:
-        raise HTTPException(status_code=400, detail=f"'{member_id}' is not a DCC member")
+        raise HTTPException(status_code=400, detail=f"'{member_id}' is not a committee member")
+    # ── A VOTE IS PERSONAL ──────────────────────────────────────────────────
+    # FOUND 2026-08-18, rehearsing the Business Credit Committee before the MD
+    # sat on it. member_id arrived from the PAYLOAD and was checked only
+    # against the roster - so any member could cast a vote in another member's
+    # name, INCLUDING THE CHAIR'S. On a committee whose chair's vote is
+    # mandatory, that is not a small thing: one member could complete a
+    # decision alone.
+    #
+    # The audit log recorded who really sent it, so it was traceable after the
+    # fact. That is not the same as preventable.
+    #
+    # The member voting must BE the person signed in. Matched by staff code,
+    # then by name, which is how membership is matched everywhere else.
+    _me = str(user.get("staff_code", "") or "").strip()
+    _myname = str(user.get("full_name", "") or "").strip().lower()
+    _mine = False
+    for _m in (dcc.get("members") or []):
+        if not isinstance(_m, dict):
+            continue
+        _mid = str(_m.get("id") or _m.get("member_id") or "").strip()
+        if _mid != member_id:
+            continue
+        _mcode = str(_m.get("staff_code", "") or "").strip()
+        _mname = str(_m.get("name", "") or "").strip().lower()
+        _mine = bool((_me and (_mid == _me or _mcode == _me))
+                     or (_myname and _mname == _myname))
+        break
+    if not _mine and not user.get("is_admin"):
+        raise HTTPException(
+            status_code=403,
+            detail="You can only cast your own vote. This seat belongs to "
+                   "somebody else on the committee.")
     if vote not in ("YES", "NO", "ABSTAIN"):
         raise HTTPException(status_code=400, detail="vote must be YES, NO, or ABSTAIN")
+    # ── ONE VOTE PER MEMBER, AND IT STANDS ──────────────────────────────────
+    # FOUND 2026-08-18, rehearsing before the MD sat on this committee. The
+    # line below REMOVES the member's previous vote and the next re-adds it -
+    # so a second vote silently replaced the first, with no record that a
+    # member had changed their mind and no refusal.
+    #
+    # The branch committee has required one vote per member since VF1. The
+    # department and business committees never did, and nobody noticed because
+    # the panel hides the button after voting - so only somebody calling the
+    # endpoint directly would find it. Which is what a rehearsal does.
+    #
+    # A vote quietly overwritten is worse than one refused: the record then
+    # says the committee agreed, when a member may have been persuaded - or
+    # pressed - to vote again.
+    if (any(str(v.get("member_id")) == str(member_id)
+            for v in (app.get("dcc_votes", []) or []))
+            and not user.get("is_admin")):
+        raise HTTPException(
+            status_code=409,
+            detail="You have already voted on this case. A vote stands once "
+                   "cast - ask an administrator if it must be changed.")
     votes = [v for v in (app.get("dcc_votes", []) or []) if v.get("member_id") != member_id]
     votes.append({
         "member_id": member_id, "vote": vote,
@@ -1738,11 +1791,33 @@ def lms_dcc_resolve(
         raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
     caller = str(user.get("staff_code", "") or "")
     analyst_code = str((app.get("analyst") or {}).get("code", "") or "")
-    if not (is_manager(user) or (caller and caller == analyst_code)):
-        raise HTTPException(status_code=403,
-                            detail="Only a manager or the assigned analyst can close the DCC.")
+
     from utils.api_lms_mutations import get_credit_workflow_config
     dcc = _dcc_for_app(app)
+    # ── A COMMITTEE CAN CLOSE ITS OWN SITTING ───────────────────────────────
+    # FOUND 2026-08-18, rehearsing the Business Credit Committee. Closing was
+    # restricted to a manager or the ASSIGNED ANALYST. That is right for a
+    # department committee, which an analyst convenes about their own case.
+    #
+    # It is wrong for the business committee. That one is chaired by the
+    # Managing Director and has NO assigned analyst - the case was referred to
+    # it. Under the old rule the MD could sit, hear the case and vote, and then
+    # not be allowed to record what the committee had decided.
+    #
+    # A member of the committee that just sat may close it. Nobody else.
+    _closer = str(user.get("staff_code", "") or "").strip()
+    _closer_name = str(user.get("full_name", "") or "").strip().lower()
+    _on_committee = any(
+        (_closer and (str(m.get("staff_code", "")).strip() == _closer
+                      or str(m.get("id") or m.get("member_id") or "").strip() == _closer))
+        or (_closer_name and str(m.get("name", "")).strip().lower() == _closer_name)
+        for m in (dcc.get("members") or []) if isinstance(m, dict))
+    if not (_on_committee or is_manager(user)
+            or (caller and caller == analyst_code)):
+        raise HTTPException(
+            status_code=403,
+            detail="Only a member of this committee, its analyst, or a "
+                   "manager can record its decision.")
     if not dcc.get("enabled"):
         raise HTTPException(status_code=400, detail="The Department Credit Committee is not enabled.")
     # The BUSINESS CREDIT COMMITTEE sits on the same machinery - it votes,
