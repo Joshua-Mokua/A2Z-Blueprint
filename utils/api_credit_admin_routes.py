@@ -1018,6 +1018,41 @@ def troops_disburse(case_id: str, payload: TroopsDisburseRequest,
         import logging
         logging.getLogger("a2z.creditadmin").warning(
             "K001 autopopulate (loan-app status flip) failed for %s", case_id, exc_info=True)
+    # ── DISBURSEMENT CLOSES THE DEAL AS WON ─────────────────────────────────
+    # RULING (2026-08-15): "tick disbursed and that should automatically close
+    # the case as won."
+    #
+    # The money has moved. Leaving the pipeline deal open means the branch that
+    # originated it still sees it as work in progress, the funnel counts it as
+    # pipeline, and somebody eventually closes it by hand - or does not, and
+    # the numbers drift.
+    #
+    # BEST EFFORT. If the deal cannot be found or written, the DISBURSEMENT
+    # STILL STANDS: money moving is the fact, and a pipeline stage is
+    # bookkeeping about it. Failing the disbursement because a deal could not
+    # be closed would be the wrong way round.
+    try:
+        _deal_id = str((app or {}).get("pipeline_deal_id") or "") if app_id else ""
+        if _deal_id:
+            from utils.api import _write_deal as _wd
+            from utils.core import PipelineManager as _PM
+            _pm = _PM()
+            _d = _pm.get_deal(_deal_id)
+            if _d and not str(_d.get("stage", "")).lower().startswith("closed"):
+                _wd(_pm, _deal_id, {
+                    "stage": "Closed Won",
+                    "closed_reason": "Disbursed",
+                    "closed_at": datetime.now().isoformat(timespec="seconds"),
+                    "closed_by_name": str(user.get("full_name", "") or ""),
+                    "disbursed": True,
+                    "disbursed_at": datetime.now().isoformat(timespec="seconds"),
+                }, uname)
+                audit_log("PIPELINE_CLOSED_WON_ON_DISBURSEMENT", uname,
+                          "%s|deal=%s" % (case_id, _deal_id))
+    except Exception as _exc:
+        audit_log("PIPELINE_CLOSE_ON_DISBURSEMENT_FAILED", uname,
+                  "%s|%s: %s" % (case_id, type(_exc).__name__, str(_exc)[:70]))
+
     audit_log("TROOPS_DISBURSED", uname, f"{case_id}|{gl}")
     return {"case": cam.get(case_id), "troops_status": "disbursed", "disbursed": True}
 

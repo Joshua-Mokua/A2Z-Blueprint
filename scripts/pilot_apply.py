@@ -137,6 +137,61 @@ def main():
             os.replace(tmp, cfg_path)
             did("created %d branch committee(s)" % len(planned))
 
+    # ── 1b. COMMITTEE MEMBERS ───────────────────────────────────────────────
+    # Creating the committees is not enough: they come out EMPTY, and a voting
+    # committee with no members cannot decide - a case reaching that gate stops
+    # with nothing in the interface to free it. That is worse than having no
+    # committees at all, so seeding members belongs in the same command.
+    #
+    # Drawn from THIS box's staff register, which is why it cannot ship as
+    # data: chair is the branch manager, members are the service and operations
+    # managers plus every relationship manager except direct sales.
+    #
+    # Sixteen committees is a lot of hand-assignment to get wrong once.
+    head("1b. COMMITTEE MEMBERS")
+    try:
+        import subprocess as _sp
+        _r = _sp.run([sys.executable, os.path.join("scripts", "seed_committee_members.py")]
+                     + (["--apply"] if apply else []),
+                     capture_output=True, text=True, timeout=300)
+        for _ln in (_r.stdout or "").strip().split("\n")[-16:]:
+            if _ln.strip():
+                print("  %s" % _ln.rstrip()[:96])
+        if apply and _r.returncode == 0:
+            did("seeded committee members")
+    except Exception as _exc:
+        print("  could not seed members: %s" % _exc)
+        print("  Run it by hand: python scripts\\seed_committee_members.py --apply")
+
+    # ── 1c. COMMITTEE ROUTING ───────────────────────────────────────────────
+    # ANOTHER STEP THAT WAS LEFT AS A SEPARATE COMMAND AND THEREFORE MISSED.
+    # The pilot ran everything it was told to, the sixteen branch committees
+    # correctly stopped appearing as product gates - and BCC1, the placeholder
+    # they are meant to be chosen through, was never created, because the
+    # script that creates it was never in this list.
+    #
+    # It also repoints client_type_to_dcc, which names DCC_CONS / DCC_COMM /
+    # DCC_CIB - none of which exist in the palette, so every deal routes to a
+    # committee that is not there.
+    #
+    # Anything a release cannot carry belongs in THIS command. A step sent as
+    # a line in a message is a step that gets missed, and that is on whoever
+    # wrote the message rather than on whoever read it.
+    head("1c. COMMITTEE ROUTING")
+    try:
+        import subprocess as _sp2
+        _r2 = _sp2.run([sys.executable, os.path.join("scripts", "fix_committee_routing.py")]
+                       + (["--apply"] if apply else []),
+                       capture_output=True, text=True, timeout=300)
+        for _ln in (_r2.stdout or "").strip().split("\n")[-12:]:
+            if _ln.strip():
+                print("  %s" % _ln.rstrip()[:96])
+        if apply and _r2.returncode == 0:
+            did("committee routing")
+    except Exception as _exc:
+        print("  could not fix routing: %s" % _exc)
+        print("  Run it by hand: python scripts\\fix_committee_routing.py --apply")
+
     # ── 2. HIDDEN MODULES ───────────────────────────────────────────────────
     # Only on a deployment that has asked for it. An empty list hides nothing,
     # so this can never take a module away from somebody who did not ask.
