@@ -326,6 +326,32 @@ try:
 except Exception as _exc:  # noqa: BLE001
     logger.warning(f"Roles router not loaded: {_exc}")
 
+# ── THE ROUTERS THAT WERE WRITTEN AND NEVER MOUNTED ─────────────────────────
+# Found 2026-08-19 while surveying for the term-deposit workflow: 59 endpoints
+# across treasury and legal exist, compile, and are reachable from nowhere.
+#
+#   api_treasury.py   43 routes - ALM, LCR and NSFR, repricing gaps, yield
+#                     curves, FX and bond positions, mark-to-market, climate
+#                     limits, Islamic treasury, digital assets
+#   api_legal.py      16 routes - matters, contract review, clauses, counsel,
+#                     documents, obligations, legal holds, spend, analytics
+#
+# Somebody wrote all of it. Nothing mounted it, so nothing could call it - and
+# no test noticed, because a route that does not exist cannot fail. That is the
+# quietest way for work to be lost, and it had been lost for a long time.
+#
+# Each is guarded separately: one module failing to import must not take the
+# whole API down, and the warning names which one so it is not silent.
+for _mod_name, _label in (("utils.api_treasury", "treasury"),
+                          ("utils.api_legal", "legal"),
+                          ("utils.api_treasury_rates", "treasury rate desk")):
+    try:
+        _m = __import__(_mod_name, fromlist=["router"])
+        app.include_router(_m.router)
+        logger.info("A2Z API — %s router mounted", _label)
+    except Exception as _exc:  # noqa: BLE001
+        logger.warning("%s router not loaded: %s", _label, _exc)
+
 
 # Helper: emit an audit_log entry from API context. Imported lazily so the
 # api module can be imported in environments that don't have streamlit
