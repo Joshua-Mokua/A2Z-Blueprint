@@ -2097,7 +2097,10 @@ export interface DccOutcome {
   by?: string; by_name?: string; at?: string; note?: string;
 }
 export interface DccRosterResponse {
-  enabled: boolean; name: string; is_dcc_case: boolean;
+  enabled: boolean; name: string; committee_kind?: string;
+  circulation_note?: string;
+  circulated_by_name?: string;
+  is_dcc_case: boolean;
   members: DccMember[]; votes: DccVote[]; outcome?: DccOutcome | null;
 }
 export async function getDccRoster(appId: string): Promise<DccRosterResponse> {

@@ -1789,7 +1789,22 @@ def lms_dcc_roster(
     return {
         "enabled": bool(dcc.get("enabled")),
         "name": str(dcc.get("name", "Department Credit Committee")),
-        "is_dcc_case": str(app.get("committee_kind", "")) == "dcc",
+        # ── BEFORE *A* COMMITTEE, NOT ONLY THE DEPARTMENT ONE ──────────────
+        # The panel draws its bench on this. It read == "dcc", so a case before
+        # the BUSINESS committee returned false and every member - the MD, the
+        # CFO, treasury - was told the case was not before their committee,
+        # while sitting in the meeting called to decide it.
+        #
+        # The vote and resolve endpoints already accept both kinds. This is the
+        # one place that still only knew about one.
+        "is_dcc_case": str(app.get("committee_kind", "")) in ("dcc", "mcc"),
+        # Which committee, so the panel can name it rather than say
+        # "Department Credit Committee" to the Managing Director.
+        "committee_kind": str(app.get("committee_kind", "") or ""),
+        # What the analyst wrote when they circulated it. The committee reads
+        # this before it sits.
+        "circulation_note": str(app.get("circulation_note", "") or ""),
+        "circulated_by_name": str(app.get("circulated_by_name", "") or ""),
         "members": list(dcc.get("members") or []),
         "votes": list(app.get("dcc_votes", []) or []),
         "outcome": app.get("dcc_outcome"),

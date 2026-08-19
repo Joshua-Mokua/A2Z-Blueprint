@@ -168,6 +168,14 @@ export function LmsApplicationDetail() {
   const { application, permissions, loading, error, refetch } =
     useLmsApplication(appId);
   const mutations = useLmsMutations();
+  // Read once for the tab label - the panel fetches its own copy for voting.
+  const [dccRoster, setDccRoster] = useState<{ committee_kind?: string } | null>(null);
+  useEffect(() => {
+    if (!appId) return;
+    void (async () => {
+      try { setDccRoster(await getDccRoster(appId)); } catch { /* no committee */ }
+    })();
+  }, [appId]);
   // ── CREDIT RISK GETS A DIFFERENT PAGE ────────────────────────────────────
   // RULING (2026-08-18): "for them the Department Review and the Department
   // Credit Committee buttons should not be there - it should be the Case
@@ -505,7 +513,14 @@ export function LmsApplicationDetail() {
           //
           // Sits directly after Department Analysis, because that is the order
           // the work happens: read the case, analyse it, take it to committee.
-          { id: 'dcc', label: 'Department Credit Committee', color: '#005B82', content: (
+          // NAMED FOR WHICHEVER COMMITTEE HOLDS IT (ruling 2026-08-18). A case
+          // referred to the Business Credit Committee is not a department
+          // matter, and telling the Managing Director she is looking at the
+          // Department Credit Committee is how a screen loses a room.
+          { id: 'dcc',
+            label: dccRoster?.committee_kind === 'mcc'
+              ? 'Business Credit Committee' : 'Department Credit Committee',
+            color: '#005B82', content: (
             <div className="space-y-4">
               <DccVotePanel appId={application.id} toast={toast} onDone={refetch} />
               {permissions.can_submit_to_dcc && (
@@ -1981,7 +1996,22 @@ function DccVotePanel({ appId, toast, onDone }: {
     return (
       <Card>
         <Card.Header>
-          <h3 className="text-sm font-semibold text-gray-900">Department Credit Committee</h3>
+          <h3 className="text-sm font-semibold text-gray-900">
+            {roster?.name || (roster?.committee_kind === 'mcc'
+              ? 'Business Credit Committee' : 'Department Credit Committee')}
+          </h3>
+          {/* WHAT THEY WERE ASKED (ruling 2026-08-18): a case circulated to
+              this committee carries a note from whoever packaged it. A
+              committee that has to reconstruct the question for itself is a
+              committee wasting the room's time. */}
+          {roster?.circulation_note && (
+            <p className="mt-1 text-xs text-gray-700">
+              <span className="font-medium">
+                {roster.circulated_by_name || 'The analyst'} wrote:
+              </span>{' '}
+              {roster.circulation_note}
+            </p>
+          )}
         </Card.Header>
         <Card.Body>
           <p className="text-sm text-gray-600">
@@ -1996,7 +2026,10 @@ function DccVotePanel({ appId, toast, onDone }: {
     return (
       <Card>
         <Card.Header>
-          <h3 className="text-sm font-semibold text-gray-900">Department Credit Committee</h3>
+          <h3 className="text-sm font-semibold text-gray-900">
+            {roster?.name || (roster?.committee_kind === 'mcc'
+              ? 'Business Credit Committee' : 'Department Credit Committee')}
+          </h3>
         </Card.Header>
         <Card.Body>
           <p className="text-sm text-gray-600">
@@ -2011,7 +2044,6 @@ function DccVotePanel({ appId, toast, onDone }: {
       </Card>
     );
   }
-  const votesByMember = new Map(roster.votes.map((v) => [v.member_id, v]));
   const resolve = async () => {
     setBusy(true);
     try {
@@ -2059,22 +2091,42 @@ function DccVotePanel({ appId, toast, onDone }: {
           <p className="text-xs text-gray-400">No DCC members configured yet (set them in the credit-workflow config).</p>
         ) : (
           <>
-            <div className="mb-3 space-y-1">
-              {roster.members.map((m) => {
-                const id = m.id || m.member_id || '';
-                const v = votesByMember.get(id);
-                return (
-                  <div key={id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-800">
-                      {m.name || id}{m.role ? <span className="text-xs text-gray-500"> — {m.role}</span> : null}
-                    </span>
-                    <span className={v ? (v.vote === 'YES' ? 'text-green-700' : v.vote === 'NO' ? 'text-red-600' : 'text-gray-500') : 'text-gray-300'}>
-                      {v ? v.vote : 'not voted'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            {/* THE MEMBERS WHO HAVE VOTED, AND ONLY THOSE (ruling 2026-08-18):
+                "listing of the committee members below on that voting pane is
+                not necessary, since they are appearing with their votes on top
+                plus the drop down."
+
+                The full roster was printed three times on one card - the
+                header count, this list, and again inside the select. A member
+                looking for what the committee has said had to read past two
+                copies of the same names to find it.
+
+                What is left is the votes CAST, which is the only part that
+                changes and the only part anybody is reading for. Who has not
+                voted is the header's job: "3/8 voted". */}
+            {roster.votes.length > 0 && (
+              <div className="mb-3 space-y-1">
+                {roster.votes.map((v) => {
+                  const m = roster.members.find(
+                    (x) => (x.id || x.member_id || '') === v.member_id);
+                  return (
+                    <div key={v.member_id}
+                         className="flex items-center justify-between text-sm">
+                      <span className="text-gray-800">
+                        {m?.name || v.member_id}
+                        {m?.role ? (
+                          <span className="text-xs text-gray-500"> — {m.role}</span>
+                        ) : null}
+                      </span>
+                      <span className={v.vote === 'YES' ? 'text-green-700'
+                        : v.vote === 'NO' ? 'text-red-600' : 'text-gray-500'}>
+                        {v.vote}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="grid grid-cols-1 items-end gap-2 border-t pt-3 md:grid-cols-3">
               <div>
                 <label className="text-xs font-medium text-gray-700">Member</label>
