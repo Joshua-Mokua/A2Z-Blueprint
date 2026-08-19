@@ -326,6 +326,32 @@ try:
 except Exception as _exc:  # noqa: BLE001
     logger.warning(f"Roles router not loaded: {_exc}")
 
+# ── THE ROUTERS THAT WERE WRITTEN AND NEVER MOUNTED ─────────────────────────
+# Found 2026-08-19 while surveying for the term-deposit workflow: 59 endpoints
+# across treasury and legal exist, compile, and are reachable from nowhere.
+#
+#   api_treasury.py   43 routes - ALM, LCR and NSFR, repricing gaps, yield
+#                     curves, FX and bond positions, mark-to-market, climate
+#                     limits, Islamic treasury, digital assets
+#   api_legal.py      16 routes - matters, contract review, clauses, counsel,
+#                     documents, obligations, legal holds, spend, analytics
+#
+# Somebody wrote all of it. Nothing mounted it, so nothing could call it - and
+# no test noticed, because a route that does not exist cannot fail. That is the
+# quietest way for work to be lost, and it had been lost for a long time.
+#
+# Each is guarded separately: one module failing to import must not take the
+# whole API down, and the warning names which one so it is not silent.
+for _mod_name, _label in (("utils.api_treasury", "treasury"),
+                          ("utils.api_legal", "legal"),
+                          ("utils.api_treasury_rates", "treasury rate desk")):
+    try:
+        _m = __import__(_mod_name, fromlist=["router"])
+        app.include_router(_m.router)
+        logger.info("A2Z API — %s router mounted", _label)
+    except Exception as _exc:  # noqa: BLE001
+        logger.warning("%s router not loaded: %s", _label, _exc)
+
 
 # Helper: emit an audit_log entry from API context. Imported lazily so the
 # api module can be imported in environments that don't have streamlit
@@ -7918,6 +7944,33 @@ def pipeline_queue_committee(user: dict = Depends(get_current_user)):
         try:
             _flow = _stage_flow_for(d.get("product_type") or d.get("product", "")) or []
             _cur = str(d.get("stage", "") or "")
+            # ── A PRODUCT WITH NO COMMITTEE HAS NO BUSINESS HERE ─────────────
+            # RULING (2026-08-19): "products that don't require a committee,
+            # like accounts, are still flowing there. We needed those that
+            # require the credit committee's recommendation - but those
+            # starting and ending at the branches."
+            #
+            # A current account, a debit card, a fixed deposit: no committee
+            # stage in the flow, no committee decision to make, nothing for a
+            # committee member to do. They were arriving anyway.
+            if _flow and not any("committee" in str(x).lower() for x in _flow):
+                continue
+
+            # ── AN UNPLACEABLE STAGE IS NOT A COMMITTEE STAGE ────────────────
+            # The filter below only ran when the deal's stage could be FOUND in
+            # its flow. Where it could not, the whole block was skipped and the
+            # deal was INCLUDED - so every deal sitting on a stage its product
+            # no longer defines landed in the committee queue, whatever the
+            # product.
+            #
+            # That is the wrong way to fail. A queue of things to vote on
+            # should hold only cases that have demonstrably reached a
+            # committee; a case nobody can place has not demonstrated it.
+            # audit_200 reports unplaceable deals separately, so they stay
+            # visible rather than being quietly swept in here.
+            if _flow and _cur not in _flow:
+                continue
+
             if _flow and _cur in _flow:
                 _here = _flow.index(_cur)
                 _gate_at = -1
@@ -12363,9 +12416,46 @@ def _deal_for_docs(deal_id: str, user: dict):
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
     visible = get_visible_staff_codes(user)
-    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
-        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
-    return pm, deal
+    if resolve_deal_permissions(deal, user, visible).get("can_view"):
+        return pm, deal
+
+    # ── A COMMITTEE MEMBER MAY READ WHAT THEY ARE VOTING ON ─────────────────
+    # RULING (2026-08-19): "the branch manager is voting on cases they don't
+    # see documents."
+    #
+    # Cascade scope says a manager sees their own reports' deals. A committee
+    # member is often NEITHER the owner nor their manager - Ludy chairs
+    # Eldoret's committee and the case belongs to a relationship manager she
+    # does not line-manage. So the papers 404'd and she voted on a case she
+    # could not read.
+    #
+    # A VOTE CAST WITHOUT THE PAPERS IS THE FAILURE THE COMMITTEE EXISTS TO
+    # PREVENT. Sitting on the committee a case is before is exactly the
+    # entitlement to read it.
+    #
+    # Narrow on purpose: only for a case whose journey reaches a committee
+    # this person sits on. It does not open the deal, only its documents, and
+    # only while it is before them.
+    try:
+        me = str(user.get("staff_code", "") or "").strip()
+        myname = str(user.get("full_name", "") or "").strip().lower()
+        if me or myname:
+            for _code in (_effective_committee_journey(deal) or []):
+                _c = _committee_by_code(_code) or {}
+                for _m in (_c.get("members") or []):
+                    if not isinstance(_m, dict):
+                        continue
+                    if ((me and str(_m.get("staff_code", "")).strip() == me)
+                            or (myname and str(_m.get("name", "")).strip().lower() == myname)):
+                        return pm, deal
+                _chair = str(_c.get("chaired_by", "") or "").strip().lower()
+                _chair_code = str(_c.get("chair_staff_code", "") or "").strip()
+                if (me and _chair_code and me == _chair_code) or (myname and myname == _chair):
+                    return pm, deal
+    except Exception:
+        pass
+
+    raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
 
 
 @app.post("/api/pipeline/deals/{deal_id}/documents", tags=["pipeline"])

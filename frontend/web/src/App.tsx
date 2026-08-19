@@ -81,6 +81,7 @@ import { LmsApplicationDetail } from './pages/LmsApplicationDetail';
 import { CreditAdmin } from './pages/CreditAdmin';
 import { CreditAdminCaseDetail } from './pages/CreditAdminCaseDetail';
 import { Troops } from './pages/Troops';
+import TreasuryRateDesk from './pages/TreasuryRateDesk';
 import { Cbs } from './pages/Cbs';
 import { CbsCustomerDetail } from './pages/CbsCustomerDetail';
 import { Cascade } from './pages/Cascade';
@@ -163,6 +164,7 @@ function App() {
                     <Route path="/credit-admin"          element={<CreditAdmin />} />
                     <Route path="/credit-admin/:caseId"  element={<CreditAdminCaseDetail />} />
                     <Route path="/troops"                element={<Troops />} />
+                    <Route path="/treasury/rates"        element={<TreasuryRateDesk />} />
 
                     {/* CBS Customer Lookup — γ2. */}
                     <Route path="/cbs"         element={<Cbs />} />

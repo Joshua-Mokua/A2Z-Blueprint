@@ -87,6 +87,10 @@ const NAV_GROUPS: NavGroup[] = [
       { path: '/committee/convening', label: 'Committee Convening', matchActive: (p) => p.startsWith('/committee/convening'), visibleFor: (_m, _a, _c, md) => md },
       { path: '/credit-admin',        label: 'Credit Admin',        matchActive: (p) => p === '/credit-admin' || p.startsWith('/credit-admin/'), visibleFor: (_m, _a, _c, _md, credit) => credit },
       { path: '/troops',              label: 'Trops Disbursement',  matchActive: (p) => p.startsWith('/troops'), visibleFor: (_m, _a, _c, _md, credit) => credit },
+      // Treasury prices term deposits; they are not credit staff and would not
+      // see this under the credit gate. The page refuses a non-treasury caller
+      // itself, so the entry can be shown to anyone who might be on the desk.
+      { path: '/treasury/rates',      label: 'Treasury Rate Desk',  matchActive: (p) => p.startsWith('/treasury/rates') },
       { path: '/credit-analytics',    label: 'Credit Analytics',    matchActive: (p) => p.startsWith('/credit-analytics'), visibleFor: (_m, _a, _c, _md, credit) => credit },
     ],
   },

@@ -109,7 +109,75 @@ def resolve_application_permissions(
     # Admin, managers in scope, the assigned analyst, and other credit staff in
     # scope keep full view (they are in scope and are not the owner).
     owner_touchpoint_open = is_owner and status in ("info_requested", "offer_issued")
-    can_view = is_admin or (in_scope and (not is_owner or owner_touchpoint_open))
+    # ── ANYONE ASKED TO VOTE MAY SEE WHAT THEY ARE VOTING ON ────────────────
+    # RULING (2026-08-19): "anyone listed to vote, even if the case is out of
+    # their scope, should at least see what they are voting on."
+    #
+    # can_view was cascade scope alone. A committee member is very often
+    # outside it - Jane chairs the Consumer committee and the case belongs to a
+    # branch relationship manager she does not line-manage; the MD sits on the
+    # business committee and manages nobody's pipeline directly. Measured
+    # before this: Jane can_view=False on the very case she chairs.
+    #
+    # So they were being asked to vote on cases the system would not show them.
+    # A vote cast without sight of the case is the failure the committee exists
+    # to prevent, and it is worse here than at the branch: these are the
+    # committees that see the large exposures.
+    #
+    # NARROW ON PURPOSE. It reads the case's OWN committee_kind and grants
+    # sight only to people on the committee that kind resolves to - as a member
+    # or as its chair. It is view only: can_update, can_decide and the rest are
+    # decided below exactly as before, so a committee member reads the case and
+    # nothing more.
+    _on_its_committee = False
+    try:
+        _kind = str((app or {}).get("committee_kind", "") or "").lower()
+        if _kind in ("dcc", "mcc"):
+            _me = str((user or {}).get("staff_code", "") or "").strip()
+            _myname = str((user or {}).get("full_name", "") or "").strip().lower()
+            if _me or _myname:
+                from pathlib import Path as _P
+                import json as _J
+                _cfgp = _P(__file__).resolve().parent.parent / "data" / "lms_config.json"
+                _pal = ((_J.loads(_cfgp.read_text(encoding="utf-8")) or {})
+                        .get("credit_workflow") or {}).get("committee_palette") or []
+                _seg = str((app or {}).get("client_type", "") or "").lower()
+                for _c in _pal:
+                    if str(_c.get("kind", "")).lower() == "branch":
+                        continue
+                    _nm = str(_c.get("name", "") or "").lower()
+                    # Which committee is this case's? The business one when it
+                    # was referred there, otherwise the one for its segment.
+                    if _kind == "mcc":
+                        _mine = ("management" in _nm or "business credit" in _nm
+                                 or str(_c.get("code")) == "B4")
+                    else:
+                        _mine = (("consumer" in _nm and ("consumer" in _seg or "individual" in _seg
+                                                        or _seg in ("personal", "retail")))
+                                 or ("commercial" in _nm and "commercial" in _seg)
+                                 or ("corporate" in _nm and (_seg == "cib" or "corporate" in _seg
+                                                             or "investment" in _seg)))
+                    if not _mine:
+                        continue
+                    for _m in (_c.get("members") or []):
+                        if not isinstance(_m, dict):
+                            continue
+                        if ((_me and str(_m.get("staff_code", "")).strip() == _me)
+                                or (_myname and str(_m.get("name", "")).strip().lower() == _myname)):
+                            _on_its_committee = True
+                            break
+                    _chair = str(_c.get("chaired_by", "") or "").strip().lower()
+                    _chaircode = str(_c.get("chair_staff_code", "") or "").strip()
+                    if ((_me and _chaircode and _me == _chaircode)
+                            or (_myname and _myname == _chair)):
+                        _on_its_committee = True
+                    if _on_its_committee:
+                        break
+    except Exception:
+        _on_its_committee = False
+
+    can_view = (is_admin or _on_its_committee
+                or (in_scope and (not is_owner or owner_touchpoint_open)))
 
     # ── can_update ──
     # Status guardrail FIRST. Then either:
