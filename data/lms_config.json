@@ -279,32 +279,34 @@
         "code": "B1",
         "name": "Consumer Banking Credit Committee",
         "chaired_by": "Jane Jelagat Atugah",
+        "branch": "",
+        "kind": "",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "members": [
           {
-            "name": "",
-            "role": "",
-            "staff_code": "",
+            "name": "JELAGAT Jane [EKE-Consumer Banking]",
+            "role": "Head of Consumer",
+            "staff_code": "KE1158",
+            "full_funnel": true
+          },
+          {
+            "name": "Lunar Magero",
+            "role": "Head of Sales",
+            "staff_code": "KE1136",
             "full_funnel": false
           },
           {
-            "name": "",
-            "role": "",
-            "staff_code": "",
+            "name": "KAMERE Annette [EKE-Consumer Banking]",
+            "role": "Head, Consumer Products",
+            "staff_code": "KE816",
             "full_funnel": false
           },
           {
-            "name": "",
-            "role": "",
-            "staff_code": "",
-            "full_funnel": false
-          },
-          {
-            "name": "",
-            "role": "",
-            "staff_code": "",
+            "name": "LEIN Fiona [EKE-Consumer]",
+            "role": "Head Premier Banking",
+            "staff_code": "KE1269",
             "full_funnel": false
           }
         ]
@@ -313,32 +315,34 @@
         "code": "B2",
         "name": "Commercial Banking Credit Committee",
         "chaired_by": "Victor Mutabari Mbaabu",
+        "branch": "",
+        "kind": "",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "members": [
           {
-            "name": "",
-            "role": "",
-            "staff_code": "",
+            "name": "Victor Mutabari Mbaabu",
+            "role": "Head EFS",
+            "staff_code": "KE959",
+            "full_funnel": true
+          },
+          {
+            "name": "Livingstone Maina Kagio",
+            "role": "Head, Local Corporates",
+            "staff_code": "KE1252",
             "full_funnel": false
           },
           {
-            "name": "",
-            "role": "",
-            "staff_code": "",
+            "name": "WAMBUA Upendo [EKE-commercial Banking]",
+            "role": "Head, SME",
+            "staff_code": "KE1281",
             "full_funnel": false
           },
           {
-            "name": "",
-            "role": "",
-            "staff_code": "",
-            "full_funnel": false
-          },
-          {
-            "name": "",
-            "role": "",
-            "staff_code": "",
+            "name": "ONTITA Brian [EKE-Commercial Banking]",
+            "role": "Credit Analyst",
+            "staff_code": "KE1305",
             "full_funnel": false
           }
         ]
@@ -347,32 +351,34 @@
         "code": "B3",
         "name": "Corporate & Investment Banking Credit Committee",
         "chaired_by": "Cyprian Kiprotich Rono",
+        "branch": "",
+        "kind": "",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "members": [
           {
-            "name": "",
-            "role": "",
-            "staff_code": "",
-            "full_funnel": true
-          },
-          {
-            "name": "",
-            "role": "",
-            "staff_code": "",
-            "full_funnel": true
-          },
-          {
-            "name": "",
-            "role": "",
-            "staff_code": "",
+            "name": "ORENGE Jaffrson [EKE-Corporate]",
+            "role": "Relationship Manager, Regional Corporates",
+            "staff_code": "KE1293",
             "full_funnel": false
           },
           {
-            "name": "",
-            "role": "",
-            "staff_code": "",
+            "name": "RONO Cyprian [EKE-Corporate Bank]",
+            "role": "Director, Corporate Banking Kenya & EAC",
+            "staff_code": "KE1265",
+            "full_funnel": true
+          },
+          {
+            "name": "George Nyamai Jimmy",
+            "role": "Corporate Credit Analyst",
+            "staff_code": "KE1315",
+            "full_funnel": false
+          },
+          {
+            "name": "MAGOTHE Samuel [EKE-Corporate Bank]",
+            "role": "Relationship Manager, Regional Corporates",
+            "staff_code": "KE840",
             "full_funnel": false
           }
         ]
@@ -386,18 +392,63 @@
         "amount_threshold_kes": 0.0,
         "members": [
           {
-            "name": "",
-            "role": "",
-            "staff_code": "",
-            "full_funnel": false
+            "id": "KE1333",
+            "member_id": "KE1333",
+            "staff_code": "KE1333",
+            "name": "Rabecca Mbithi",
+            "role": "Managing Director"
           },
           {
-            "name": "",
-            "role": "",
-            "staff_code": "",
-            "full_funnel": false
+            "id": "KE820",
+            "member_id": "KE820",
+            "staff_code": "KE820",
+            "name": "Thomas Okumu",
+            "role": "Director, Credit Risk Management- Kenya & EAC"
+          },
+          {
+            "id": "KE1219",
+            "member_id": "KE1219",
+            "staff_code": "KE1219",
+            "name": "Justus Kimutai Korir",
+            "role": "Credit Risk Manager"
+          },
+          {
+            "id": "KE1265",
+            "member_id": "KE1265",
+            "staff_code": "KE1265",
+            "name": "RONO Cyprian [EKE-Corporate Bank]",
+            "role": "Director, Corporate Banking Kenya & EAC"
+          },
+          {
+            "id": "KE959",
+            "member_id": "KE959",
+            "staff_code": "KE959",
+            "name": "Victor Mutabari Mbaabu",
+            "role": "Head EFS"
+          },
+          {
+            "id": "KE555",
+            "member_id": "KE555",
+            "staff_code": "KE555",
+            "name": "Mary Wangari Wanjiru",
+            "role": "Chief Finance Officer"
+          },
+          {
+            "id": "KE1141",
+            "member_id": "KE1141",
+            "staff_code": "KE1141",
+            "name": "Mohamed Souleymane",
+            "role": "Director, Treasury & FICC, EAC"
+          },
+          {
+            "id": "KE175",
+            "member_id": "KE175",
+            "staff_code": "KE175",
+            "name": "Peninah Wanjiru Njenga",
+            "role": "Senior FX Trader"
           }
-        ]
+        ],
+        "chair_staff_code": "KE820"
       },
       {
         "code": "B5",
@@ -431,6 +482,13 @@
         "branch": "Westlands",
         "kind": "branch",
         "members": [
+          {
+            "staff_code": "KE356",
+            "name": "Hellen Wangui Gathii",
+            "role": "Branch Manager",
+            "id": "KE356",
+            "member_id": "KE356"
+          },
           {
             "staff_code": "KE96",
             "name": "MWANGI Joyce  [EKE-Operations]",
@@ -470,6 +528,13 @@
         "kind": "branch",
         "members": [
           {
+            "staff_code": "KE150",
+            "name": "MURAYA Martha  [EKE-commercial Banking]",
+            "role": "Branch Manager",
+            "id": "KE150",
+            "member_id": "KE150"
+          },
+          {
             "staff_code": "KE968",
             "name": "ATIBU Honest [EKE-Operations]",
             "role": "Customer Service Manager"
@@ -498,6 +563,13 @@
         "kind": "branch",
         "members": [
           {
+            "staff_code": "KE332",
+            "name": "THAIRU Ruth  [EKE-commercial Banking]",
+            "role": "Branch Manager",
+            "id": "KE332",
+            "member_id": "KE332"
+          },
+          {
             "staff_code": "KE814",
             "name": "RIBUTHI Loise [EKE-Operations]",
             "role": "Customer Service Manager"
@@ -525,6 +597,13 @@
         "branch": "Kisumu",
         "kind": "branch",
         "members": [
+          {
+            "staff_code": "KE322",
+            "name": "OKWARO Thaddeus  [EKE-commercial Banking]",
+            "role": "Branch Manager",
+            "id": "KE322",
+            "member_id": "KE322"
+          },
           {
             "staff_code": "KE801",
             "name": "Hilda Nyaboke Osoro",
@@ -563,6 +642,13 @@
         "branch": "Ecobank Towers",
         "kind": "branch",
         "members": [
+          {
+            "staff_code": "KE395",
+            "name": "MONARI Violet  [EKE-commercial Banking]",
+            "role": "Branch Manager",
+            "id": "KE395",
+            "member_id": "KE395"
+          },
           {
             "staff_code": "KE484",
             "name": "Mbuthia Florence [EKE-Operations]",
@@ -617,6 +703,13 @@
         "kind": "branch",
         "members": [
           {
+            "staff_code": "KE632",
+            "name": "MEEME Joyce [EKE-Operations]",
+            "role": "Branch Manager",
+            "id": "KE632",
+            "member_id": "KE632"
+          },
+          {
             "staff_code": "KE708",
             "name": "Maryanne Njeri Chege",
             "role": "Customer Service Manager"
@@ -660,6 +753,13 @@
         "kind": "branch",
         "members": [
           {
+            "staff_code": "KE1289",
+            "name": "WANJALA Geoffrey [EKE-Commercial]",
+            "role": "Branch Manager",
+            "id": "KE1289",
+            "member_id": "KE1289"
+          },
+          {
             "staff_code": "KE345",
             "name": "Josephine Gakii Gituma",
             "role": "Customer Service Manager"
@@ -693,6 +793,13 @@
         "kind": "branch",
         "members": [
           {
+            "staff_code": "KE439",
+            "name": "MINING Ludy [EKE-Operations]",
+            "role": "Branch Manager",
+            "id": "KE439",
+            "member_id": "KE439"
+          },
+          {
             "staff_code": "KE1170",
             "name": "Pauline Wangari Wacheru",
             "role": "Branch Operations Officer"
@@ -720,6 +827,13 @@
         "branch": "Mombasa Moi",
         "kind": "branch",
         "members": [
+          {
+            "staff_code": "KE526",
+            "name": "ADAM Amina [EKE-Operations]",
+            "role": "Customer Service Manager",
+            "id": "KE526",
+            "member_id": "KE526"
+          },
           {
             "staff_code": "KE807",
             "name": "Fenella Mwamburi",
@@ -754,6 +868,13 @@
         "kind": "branch",
         "members": [
           {
+            "staff_code": "KE461",
+            "name": "Betty Wachera Waiguru",
+            "role": "Customer Service Manager",
+            "id": "KE461",
+            "member_id": "KE461"
+          },
+          {
             "staff_code": "KE1124",
             "name": "GITONGA Brenda [EKE-Operations]",
             "role": "Branch Operations Officer"
@@ -776,6 +897,13 @@
         "branch": "Industrial Area",
         "kind": "branch",
         "members": [
+          {
+            "staff_code": "KE1342",
+            "name": "Carolyne Nashipae Adewunmi",
+            "role": "Branch Manager",
+            "id": "KE1342",
+            "member_id": "KE1342"
+          },
           {
             "staff_code": "KE519",
             "name": "Wairimu Margaret [EKE-Operations]",
@@ -815,6 +943,13 @@
         "kind": "branch",
         "members": [
           {
+            "staff_code": "KE1317",
+            "name": "Richard Nzioka",
+            "role": "Branch Manager",
+            "id": "KE1317",
+            "member_id": "KE1317"
+          },
+          {
             "staff_code": "KE408",
             "name": "Mary Chepkemboi Lagat",
             "role": "Customer Service Manager"
@@ -843,6 +978,13 @@
         "kind": "branch",
         "members": [
           {
+            "staff_code": "KE546",
+            "name": "MIANO ELIZABETH [EKE-Operations]",
+            "role": "Customer Service Manager",
+            "id": "KE546",
+            "member_id": "KE546"
+          },
+          {
             "staff_code": "KE1044",
             "name": "MWIRIGI Esther [EKE-Operations]",
             "role": "Branch Operations Officer"
@@ -865,6 +1007,13 @@
         "branch": "Thika",
         "kind": "branch",
         "members": [
+          {
+            "staff_code": "KE637",
+            "name": "RONO Brenda [EKE-Operations]",
+            "role": "Customer Service Manager",
+            "id": "KE637",
+            "member_id": "KE637"
+          },
           {
             "staff_code": "KE1032",
             "name": "Ursula Wanjira Muthee",
@@ -893,6 +1042,13 @@
         "branch": "Kisii",
         "kind": "branch",
         "members": [
+          {
+            "staff_code": "KE1218",
+            "name": "OJIAMBO Dennis [EKE-Commercial Banking]",
+            "role": "Branch Manager",
+            "id": "KE1218",
+            "member_id": "KE1218"
+          },
           {
             "staff_code": "KE859",
             "name": "Jackline Nyakerario Mainye",
@@ -932,6 +1088,13 @@
         "kind": "branch",
         "members": [
           {
+            "staff_code": "KE1349",
+            "name": "YEGO Faith",
+            "role": "Branch Manager",
+            "id": "KE1349",
+            "member_id": "KE1349"
+          },
+          {
             "staff_code": "KE955",
             "name": "MULUMIA Bertha [EKE-Operations]",
             "role": "Customer Service Manager"
@@ -964,7 +1127,72 @@
         "kind": "branch_placeholder",
         "members": []
       }
-    ]
+    ],
+    "dcc": {
+      "enabled": true,
+      "name": "Credit Committee",
+      "members": [
+        {
+          "id": "KE1333",
+          "member_id": "KE1333",
+          "staff_code": "KE1333",
+          "name": "Rabecca Mbithi",
+          "role": "Managing Director"
+        },
+        {
+          "id": "KE820",
+          "member_id": "KE820",
+          "staff_code": "KE820",
+          "name": "Thomas Okumu",
+          "role": "Director, Credit Risk Management- Kenya & EAC"
+        },
+        {
+          "id": "KE1219",
+          "member_id": "KE1219",
+          "staff_code": "KE1219",
+          "name": "Justus Kimutai Korir",
+          "role": "Credit Risk Manager"
+        },
+        {
+          "id": "KE1265",
+          "member_id": "KE1265",
+          "staff_code": "KE1265",
+          "name": "RONO Cyprian [EKE-Corporate Bank]",
+          "role": "Director, Corporate Banking Kenya & EAC"
+        },
+        {
+          "id": "KE959",
+          "member_id": "KE959",
+          "staff_code": "KE959",
+          "name": "Victor Mutabari Mbaabu",
+          "role": "Head EFS"
+        },
+        {
+          "id": "KE555",
+          "member_id": "KE555",
+          "staff_code": "KE555",
+          "name": "Mary Wangari Wanjiru",
+          "role": "Chief Finance Officer"
+        },
+        {
+          "id": "KE1141",
+          "member_id": "KE1141",
+          "staff_code": "KE1141",
+          "name": "Mohamed Souleymane",
+          "role": "Director, Treasury & FICC, EAC"
+        },
+        {
+          "id": "KE175",
+          "member_id": "KE175",
+          "staff_code": "KE175",
+          "name": "Peninah Wanjiru Njenga",
+          "role": "Senior FX Trader"
+        }
+      ],
+      "chaired_by": "Thomas Okumu",
+      "voting_rule": "SIMPLE_MAJORITY",
+      "source_committee": "B4"
+    }
   },
   "pool_visibility": {
     "roles": [

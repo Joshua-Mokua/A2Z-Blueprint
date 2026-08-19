@@ -12587,8 +12587,25 @@ def seed_committee_palette(user: dict = Depends(require_config_admin)):
 
 def _branch_committee_code_for(deal: dict) -> str:
     """The branch committee code for a deal's origin branch, or '' if none/head-office."""
-    import json as _json
-    branch = str(deal.get("branch", "") or "").strip()
+    # THE SAME THREE PLACES A BRANCH CAN BE FOUND, in the same order as
+    # _deal_is_branch_originated - or the two disagree, and a deal counts as
+    # branch-originated while no branch committee can be found for it. That
+    # gap is silent: the case simply arrives at the department committee with
+    # its own branch never having seen it.
+    branch = (str(deal.get("branch", "") or "").strip()
+              or str(deal.get("unit", "") or "").strip())
+    if not branch:
+        code = str(deal.get("staff_code", "") or "").strip()
+        if code:
+            try:
+                from utils.api_pipeline_scope import get_staff_roster
+                df = get_staff_roster()
+                for _i, r in df.iterrows():
+                    if str(r.get("Staff Code", "") or "").strip() == code:
+                        branch = str(r.get("Unit", "") or "").strip()
+                        break
+            except Exception:
+                branch = ""
     if not branch:
         return ""
     for c in _read_committee_palette():
@@ -12740,9 +12757,46 @@ def _client_type_dcc_for(deal: dict) -> str:
     return ""
 
 def _deal_is_branch_originated(deal: dict) -> bool:
-    """Branch-originated = the deal has a branch. Non-branch (head-office/direct)
-    deals skip branch-only committees (e.g. BCC)."""
-    return bool(str(deal.get("branch", "") or "").strip())
+    """Branch-originated = the deal has a branch, or an owner who works at one.
+
+    FOUND IN THE PILOT (2026-08-18). A Fortis deal had NO branch field, so this
+    returned False, the branch committee was stripped from its journey, and the
+    case went straight to the department committee. Nobody could vote on it,
+    nothing said why, and the branch's own committee never knew it existed.
+
+    The rule itself is right: a head-office deal genuinely should skip a branch
+    committee. What was wrong is that A MISSING FIELD LOOKED EXACTLY LIKE A
+    DELIBERATE HEAD-OFFICE DEAL, and the case quietly skipped a governance gate
+    on the strength of it.
+
+    `unit` is checked too - the two are used interchangeably across this
+    codebase and a deal often carries one and not the other.
+
+    Where neither is present, the OWNER'S branch is used. A deal raised by a
+    relationship manager at Fortis belongs to Fortis whether or not somebody
+    filled the field in, and inferring it from the person is far safer than
+    silently dropping their committee.
+
+    Only when there is no branch, no unit, and no owner on the register is a
+    deal treated as head-office - and audit_200 reports those separately, so
+    they are visible rather than assumed.
+    """
+    if str(deal.get("branch", "") or "").strip():
+        return True
+    if str(deal.get("unit", "") or "").strip():
+        return True
+    code = str(deal.get("staff_code", "") or "").strip()
+    if not code:
+        return False
+    try:
+        from utils.api_pipeline_scope import get_staff_roster
+        df = get_staff_roster()
+        for _i, r in df.iterrows():
+            if str(r.get("Staff Code", "") or "").strip() == code:
+                return bool(str(r.get("Unit", "") or "").strip())
+    except Exception:
+        pass
+    return False
 
 
 def _effective_committee_journey(deal: dict) -> list:

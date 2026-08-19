@@ -326,7 +326,15 @@ def _require_config_admin_impl(user: dict) -> dict:
     gate matches the executive tier by substring (chief / managing / director /
     admin) so the CEO, MD, and Directors can view + edit reference config, while
     RMs / officers / branch staff are denied. It does NOT touch require_admin
-    (which still guards destructive endpoints) or the admin-superuser override."""
+    (which still guards destructive endpoints) or the admin-superuser override.
+
+    Also accepts the is_admin DB flag directly — mirrors the fix already
+    applied to _require_admin_impl. Without this, a granted is_admin=True
+    with a non-executive role title (e.g. hobiero: "Business Analyst",
+    bmuthini: "Finance Officer") could not pass this gate even though the
+    same user sails through every other admin check in the app."""
+    if user.get("is_admin"):
+        return user
     role = (user.get("role") or "").lower()
     if any(tok in role for tok in ("admin", "director", "chief", "managing")):
         return user

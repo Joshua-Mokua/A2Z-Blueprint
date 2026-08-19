@@ -38,6 +38,8 @@ import json
 import os
 import sys
 
+import pandas as pd
+
 sys.path.insert(0, os.getcwd())
 
 
@@ -79,7 +81,11 @@ def main():
         df = get_staff_roster()
         for _i, r in df.iterrows():
             code = str(r.get("Staff Code") or "").strip()
-            unit = str(r.get("Unit") or "").strip()
+            _raw_unit = r.get("Unit")
+            # A real NaN (pandas float) is truthy in Python, so `or ""` never
+            # fires and str(nan) leaks the literal text "nan" as a branch -
+            # worse than blank, since it looks resolved but matches nothing.
+            unit = "" if pd.isna(_raw_unit) else str(_raw_unit or "").strip()
             if code and unit:
                 unit_by_code[code] = unit
     except Exception as exc:

@@ -633,6 +633,14 @@
           "stage": "Closed Lost - Trops",
           "target_days": 1,
           "win_probability": 7
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ],
       "required_documents": [
@@ -697,6 +705,14 @@
         {
           "stage": "Trops",
           "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ]
     },
@@ -751,6 +767,14 @@
           "stage": "Closed - Trops",
           "target_days": 1,
           "win_probability": 7
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ],
       "required_documents": [
@@ -825,6 +849,14 @@
           "stage": "Closed - Trops",
           "target_days": 1,
           "win_probability": 2
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ],
       "required_documents": [
@@ -889,6 +921,14 @@
         {
           "stage": "Trops",
           "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ]
     },
@@ -935,6 +975,14 @@
         {
           "stage": "Trops",
           "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ]
     },
@@ -981,6 +1029,14 @@
         {
           "stage": "Trops",
           "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ]
     },
@@ -1002,6 +1058,14 @@
         {
           "stage": "Account Openned",
           "target_days": 1
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ],
       "required_documents": [
@@ -1025,6 +1089,14 @@
           "stage": "Documentation",
           "target_days": 1,
           "win_probability": 50
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ],
       "required_documents": [
@@ -1046,6 +1118,14 @@
           "stage": "Fixed Deposit Openned",
           "target_days": 0.5,
           "win_probability": 50
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ],
       "required_documents": [],
@@ -1321,6 +1401,14 @@
         {
           "stage": "Trops",
           "target_days": 1
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ],
       "required_documents": [
@@ -1824,6 +1912,14 @@
         {
           "stage": "Trops",
           "target_days": 1
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ],
       "required_documents": [
@@ -1880,6 +1976,14 @@
         {
           "stage": "Trops",
           "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ]
     },
@@ -1926,6 +2030,14 @@
         {
           "stage": "Trops",
           "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ]
     },
@@ -1980,6 +2092,14 @@
         {
           "stage": "Trops",
           "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ],
       "required_documents": [
@@ -2037,6 +2157,14 @@
         {
           "stage": "Trops",
           "target_days": 3
+        },
+        {
+          "stage": "Closed Won",
+          "target_days": 0
+        },
+        {
+          "stage": "Closed Lost",
+          "target_days": 0
         }
       ],
       "required_documents": [
