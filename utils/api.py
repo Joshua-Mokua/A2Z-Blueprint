@@ -12632,9 +12632,46 @@ def _deal_for_docs(deal_id: str, user: dict):
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
     visible = get_visible_staff_codes(user)
-    if not resolve_deal_permissions(deal, user, visible).get("can_view"):
-        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
-    return pm, deal
+    if resolve_deal_permissions(deal, user, visible).get("can_view"):
+        return pm, deal
+
+    # ── A COMMITTEE MEMBER MAY READ WHAT THEY ARE VOTING ON ─────────────────
+    # RULING (2026-08-19): "the branch manager is voting on cases they don't
+    # see documents."
+    #
+    # Cascade scope says a manager sees their own reports' deals. A committee
+    # member is often NEITHER the owner nor their manager - Ludy chairs
+    # Eldoret's committee and the case belongs to a relationship manager she
+    # does not line-manage. So the papers 404'd and she voted on a case she
+    # could not read.
+    #
+    # A VOTE CAST WITHOUT THE PAPERS IS THE FAILURE THE COMMITTEE EXISTS TO
+    # PREVENT. Sitting on the committee a case is before is exactly the
+    # entitlement to read it.
+    #
+    # Narrow on purpose: only for a case whose journey reaches a committee
+    # this person sits on. It does not open the deal, only its documents, and
+    # only while it is before them.
+    try:
+        me = str(user.get("staff_code", "") or "").strip()
+        myname = str(user.get("full_name", "") or "").strip().lower()
+        if me or myname:
+            for _code in (_effective_committee_journey(deal) or []):
+                _c = _committee_by_code(_code) or {}
+                for _m in (_c.get("members") or []):
+                    if not isinstance(_m, dict):
+                        continue
+                    if ((me and str(_m.get("staff_code", "")).strip() == me)
+                            or (myname and str(_m.get("name", "")).strip().lower() == myname)):
+                        return pm, deal
+                _chair = str(_c.get("chaired_by", "") or "").strip().lower()
+                _chair_code = str(_c.get("chair_staff_code", "") or "").strip()
+                if (me and _chair_code and me == _chair_code) or (myname and myname == _chair):
+                    return pm, deal
+    except Exception:
+        pass
+
+    raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
 
 
 @app.post("/api/pipeline/deals/{deal_id}/documents", tags=["pipeline"])

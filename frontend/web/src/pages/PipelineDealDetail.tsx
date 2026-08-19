@@ -1687,6 +1687,20 @@ function CommitteeJourneyCard({ dealId, canEdit }: { dealId: string; canEdit: bo
         </div>
       </Card.Header>
       <Card.Body>
+        {/* ─────────── THE PAPERS, WHERE THE VOTE IS ───────────
+            RULING (2026-08-19): "the branch manager is voting on cases they
+            don't see documents."
+
+            There was a View documentation button that switched tabs. That is
+            not the same thing: a committee member who must navigate away,
+            read, and come back will vote without reading, and a vote cast
+            without the papers is the failure this whole committee exists to
+            prevent.
+
+            So the documents are listed HERE, on the card where the vote is
+            cast. Read-only - attaching belongs to the branch, not the
+            committee - and each one opens in place. */}
+        <CommitteeDocumentStrip dealId={dealId} />
         <div className="space-y-4">
           {data.gates.map((gate) => (
             <div key={gate.code} className="rounded border p-3">
@@ -1995,5 +2009,76 @@ function RateRequestPanel({ deal, canEdit, onChanged }: {
         )}
       </Card.Body>
     </Card>
+  );
+}
+
+
+/* A compact, read-only list of what travelled with the case, for the voting
+   card. Not the full documents panel: a committee needs to READ the papers,
+   not manage them, and the upload controls belong to the branch. */
+function CommitteeDocumentStrip({ dealId }: { dealId: string }) {
+  const [files, setFiles] = useState<Record<string, { filename?: string }>>({});
+  const [required, setRequired] = useState<string[]>([]);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    listDealDocuments(dealId)
+      .then((d) => {
+        if (!alive) return;
+        setFiles((d.files ?? {}) as Record<string, { filename?: string }>);
+        setRequired((d as unknown as { required?: string[] }).required ?? []);
+      })
+      .catch((e) => { if (alive) setErr(e instanceof Error ? e.message : 'unavailable'); });
+    return () => { alive = false; };
+  }, [dealId]);
+
+  const names = Object.keys(files);
+
+  return (
+    <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50/60 p-3">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-600">
+        What you are voting on
+      </p>
+      {err ? (
+        /* Say which of the two it is. "Unavailable" sends somebody hunting;
+           "you cannot see this deal" tells them who to ask. */
+        <p className="text-xs text-amber-700">
+          {err.includes('404')
+            ? 'This deal is not in your scope, so its documents cannot be shown. Ask an administrator to check your cascade.'
+            : `Documents could not be loaded: ${err}`}
+        </p>
+      ) : names.length === 0 && required.length === 0 ? (
+        <p className="text-xs text-gray-500">Nothing has been attached to this case.</p>
+      ) : (
+        <div className="space-y-1">
+          {names.map((n) => (
+            <div key={n} className="flex items-center justify-between text-xs">
+              <span className="text-gray-800">
+                <span className="text-green-600">✓</span> {n}
+                {files[n]?.filename ? (
+                  <span className="ml-2 text-gray-500">{files[n].filename}</span>
+                ) : null}
+              </span>
+              <a
+                href={`/api/pipeline/deals/${encodeURIComponent(dealId)}/documents/${encodeURIComponent(n)}`}
+                target="_blank" rel="noopener noreferrer"
+                className="font-medium text-brand-primary hover:underline"
+              >
+                View
+              </a>
+            </div>
+          ))}
+          {required.filter((r) => !names.some((n) => n.toLowerCase() === r.toLowerCase()))
+            .map((r) => (
+              <div key={r} className="flex items-center gap-2 text-xs">
+                <span className="text-amber-600">○</span>
+                <span className="font-medium text-amber-800">{r}</span>
+                <span className="text-gray-400">not on file</span>
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
   );
 }
