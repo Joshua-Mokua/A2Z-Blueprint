@@ -5,7 +5,7 @@ Set the release chain to the order verified against the pilot's own tree.
 
 VERIFIED 2026-08-18 against a clean copy of origin/alex-dev:
 
-    47 applied, 0 failed (45 verified + BR2 + LG1)
+    51 applied, 0 failed (47 verified + QC1, CDOC1, CV2, TR1)
     py_compile clean on seven modules
     tsc --noEmit clean, vite build clean
     every one of fifteen markers present on the built tree
@@ -91,6 +91,14 @@ ORDER = [
     # that routes to a branch committee depends on it.
     'patch_br2_branch_from_unit_or_owner',
     'patch_lg1_legal_officers',
+    # QC1 narrows the committee queue; CDOC1 and CV2 let a voter READ what they
+    # are voting on - the branch half and the department/business half of one
+    # rule. TR1 is the treasury rate desk and mounts two routers that were
+    # written and never mounted.
+    'patch_qc1_committee_queue_only_committees',
+    'patch_cdoc1_committee_reads_the_case',
+    'patch_cv2_voters_see_the_case',
+    'patch_tr1_treasury_rate_desk',
     'patch_dm1_decision_moves_case',
     'patch_cd1_conditions_and_tick',
     'remove_cd1_tick',
@@ -110,6 +118,10 @@ ORDER = [
     'patch_cl1_condition_library',
     'patch_wn1_disbursed_closes_won',
     'patch_ui2_credit_frontend',
+    # AFTER UI2: it routes a page UI2 carries, and it edits the pilot's OWN
+    # App.tsx by anchor rather than replacing it - ours imports pages the
+    # pilot does not have, including Warehouse.
+    'patch_rt2_rate_desk_route',
 ]
 
 # Folded into UI2, or ours rather than the bank's.
@@ -228,9 +240,22 @@ def main():
         if got.index(repair) != got.index(after) + 1:
             print("ABORT: %s must run IMMEDIATELY after %s." % (repair, after))
             return 1
-    if got[-1] != "patch_ui2_credit_frontend":
-        print("ABORT: UI2 must be last - it carries the whole front end and")
-        print("       anything after it would be overwritten.")
+    # UI2 CARRIES WHOLE FILES, so anything that EDITS one of them must run
+    # after it or be overwritten. RT2 is the exception that proves it: it edits
+    # App.tsx, which UI2 deliberately does NOT carry - ours imports pages the
+    # pilot does not have, including Warehouse - so RT2 must follow UI2 and
+    # patch the pilot's own file by anchor.
+    _ui2 = "patch_ui2_credit_frontend"
+    _after_ui2_ok = {"patch_rt2_rate_desk_route"}
+    if _ui2 not in got:
+        print("ABORT: UI2 is not in the chain.")
+        return 1
+    _tail = got[got.index(_ui2) + 1:]
+    _bad = [x for x in _tail if x not in _after_ui2_ok]
+    if _bad:
+        print("ABORT: these run AFTER UI2 and would be overwritten by it:")
+        for x in _bad[:6]:
+            print("   %s" % x)
         return 1
     for old, new in (("patch_mv1_committee_votes_persist",
                       "patch_mv1_committee_votes_persist_v2"),):

@@ -130,6 +130,10 @@ CHAIN = [
     "patch_lk1_branch_keeps_its_case",
     "patch_br2_branch_from_unit_or_owner",
     "patch_lg1_legal_officers",
+    "patch_qc1_committee_queue_only_committees",
+    "patch_cdoc1_committee_reads_the_case",
+    "patch_cv2_voters_see_the_case",
+    "patch_tr1_treasury_rate_desk",
     "patch_dm1_decision_moves_case",
     "patch_cd1_conditions_and_tick",
     "remove_cd1_tick",
@@ -146,6 +150,7 @@ CHAIN = [
     "patch_cl1_condition_library",
     "patch_wn1_disbursed_closes_won",
     "patch_ui2_credit_frontend",
+    "patch_rt2_rate_desk_route",
 ]
 
 # Patchers that deliberately do NOT ship to the pilot. Anything in scripts/ that
