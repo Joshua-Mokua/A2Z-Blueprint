@@ -38,7 +38,9 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, fetchNextStep, type NextStep, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, castCommitteeVote, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse } from '@/lib/api';
+import { fetchPipelineDealDetail, fetchCreditChecklist, fetchNextStep, type NextStep, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, castCommitteeVote, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse,
+  fetchRateState, requestRate, acceptCounterRate, declineCounterRate, type RateRequestState,
+} from '@/lib/api';
 import { Timeline } from '@/components/Timeline';
 import type { LoanAppHistoryEvent } from '@/types/lms';
 import { useRole } from '@/hooks/useRole';
@@ -306,6 +308,16 @@ export function PipelineDealDetail() {
         defaultTabId="journey"
         tabs={[
           { id: 'journey', label: 'Case Journey', color: '#0082BB', content: <CaseJourneyTab deal={deal} /> },
+          // ── THE RATE, FOR DEPOSIT PRODUCTS ONLY ───────────────────────────
+          // A term deposit is priced, not underwritten: there is no committee
+          // and no credit decision, only a rate the customer wants and a desk
+          // that answers. Showing this tab on a mortgage would be as wrong as
+          // showing a committee on a fixed deposit.
+          ...(/deposit|savings|account/i.test(String(deal.product_type || deal.product || ''))
+            ? [{ id: 'rate', label: 'Rate', color: '#00897B',
+                 content: <RateRequestPanel deal={deal} canEdit={canEditDocs}
+                                            onChanged={() => void reloadDeal()} /> }]
+            : []),
           { id: 'documents', label: 'Documentation and Credit Review', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} stageFlow={stageFlow} canEdit={canEditDocs} /> },
           { id: 'affordability', label: 'Affordability', color: '#00A65A', content: <AffordabilityAppraisal dealId={deal.id} /> },
           { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={canEditDocs} /> },
@@ -1823,3 +1835,165 @@ function CommitteeJourneyCard({ dealId, canEdit }: { dealId: string; canEdit: bo
   );
 }
 
+
+/* ─────────── The rate on a term deposit ───────────
+   RULING (2026-08-19): "the owner of the deal indicates the rate the customer
+   wants ... if they counter it goes back to the branch for discussion with the
+   customer, and if the customer is agreeable then they can accept the counter
+   WITHOUT returning it back to treasury."
+
+   So the branch has two moments here and they are different in kind: asking,
+   and then closing. Between them the case belongs to treasury and there is
+   nothing to press - which the panel says, rather than showing disabled
+   buttons that invite a click. */
+function RateRequestPanel({ deal, canEdit, onChanged }: {
+  deal: PipelineDeal; canEdit: boolean; onChanged: () => void;
+}) {
+  const { toast } = useToast();
+  const [state, setState] = useState<RateRequestState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [amount, setAmount] = useState(String(deal.deal_value ?? ''));
+  const [tenor, setTenor] = useState('');
+  const [asked, setAsked] = useState('');
+  const [why, setWhy] = useState('');
+
+  const load = () => {
+    fetchRateState(deal.id).then(setState).catch(() => setState(null));
+  };
+  useEffect(load, [deal.id]);
+
+  const rr = (state?.rate_request ?? {}) as Record<string, unknown>;
+  const status = String(rr.status ?? '');
+  const offered = rr.offered_rate as number | undefined;
+  const requested = rr.requested_rate as number | undefined;
+
+  const run = async (fn: () => Promise<unknown>, ok: string) => {
+    setBusy(true);
+    try { await fn(); toast({ tone: 'success', message: ok }); load(); onChanged(); }
+    catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Failed' }); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Card>
+      <Card.Header>
+        <h3 className="text-sm font-semibold text-gray-900">Rate</h3>
+      </Card.Header>
+      <Card.Body>
+        {!status && (
+          <>
+            <p className="mb-3 text-sm text-gray-700">
+              Ask treasury for a rate. The whole desk sees it, and whoever picks
+              it up either approves what you asked or comes back with their own.
+            </p>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div>
+                <label className="text-xs font-medium text-gray-700">Amount (KES)</label>
+                <input type="number" value={amount} disabled={!canEdit || busy}
+                       onChange={(e) => setAmount(e.target.value)}
+                       className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-700">Tenor (days)</label>
+                <input type="number" value={tenor} disabled={!canEdit || busy}
+                       onChange={(e) => setTenor(e.target.value)}
+                       className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-700">Rate the customer wants (%)</label>
+                <input type="number" step="0.01" value={asked} disabled={!canEdit || busy}
+                       onChange={(e) => setAsked(e.target.value)}
+                       className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <Button size="sm" disabled={!canEdit || busy}
+                      onClick={() => void run(
+                        () => requestRate(deal.id, {
+                          amount: Number(amount), tenor_days: tenor,
+                          requested_rate: Number(asked) }),
+                        'Sent to the treasury desk.')}>
+                Ask treasury
+              </Button>
+            </div>
+          </>
+        )}
+
+        {status === 'awaiting_treasury' && (
+          <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
+            <p className="text-sm text-gray-800">
+              With treasury — asked {Number(requested).toFixed(2)}% for {String(rr.tenor)} days.
+            </p>
+            <p className="mt-1 text-xs text-gray-600">
+              Any dealer on the desk can price it. Nothing to do here until they do.
+            </p>
+          </div>
+        )}
+
+        {status === 'countered' && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 p-3">
+            <p className="text-sm text-gray-900">
+              Treasury came back at <span className="font-semibold">{Number(offered).toFixed(2)}%</span>
+              {' '}against the {Number(requested).toFixed(2)}% asked.
+            </p>
+            {Boolean(rr.note) && (
+              <p className="mt-1 text-xs text-gray-700">{String(rr.note)}</p>
+            )}
+            <p className="mt-2 text-xs text-gray-600">
+              Put it to the customer. If they take it, close it here — it does
+              not go back to treasury.
+            </p>
+            <div className="mt-3 flex flex-wrap items-end gap-2">
+              <Button size="sm" disabled={!canEdit || busy}
+                      onClick={() => void run(() => acceptCounterRate(deal.id, {}),
+                        'Accepted — booked and closed.')}>
+                The customer accepts {Number(offered).toFixed(2)}%
+              </Button>
+              <div className="min-w-[14rem] flex-1">
+                <label className="text-xs font-medium text-gray-700">
+                  Or why they did not
+                </label>
+                <input type="text" value={why} onChange={(e) => setWhy(e.target.value)}
+                       placeholder="Placed elsewhere at 11%…"
+                       className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm" />
+              </div>
+              <Button size="sm" variant="secondary" disabled={!canEdit || busy}
+                      onClick={() => void run(
+                        () => declineCounterRate(deal.id, { reason: why.trim() }),
+                        'Closed as lost. Treasury will see it.')}>
+                No agreement
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {['approved', 'accepted_at_counter', 'declined_at_counter'].includes(status) && (
+          <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+            <p className="text-sm text-gray-900">
+              {status === 'declined_at_counter'
+                ? `Lost at ${Number(offered).toFixed(2)}%.`
+                : `Won at ${Number(offered).toFixed(2)}%.`}
+              {rr.priced_by_name ? ` Priced by ${String(rr.priced_by_name)}.` : ''}
+            </p>
+          </div>
+        )}
+
+        {(state?.history ?? []).length > 0 && (
+          <div className="mt-4 border-t pt-3">
+            <p className="mb-1 text-xs font-medium text-gray-700">What happened</p>
+            {(state?.history ?? []).map((h, i) => (
+              <div key={i} className="flex justify-between py-0.5 text-xs text-gray-700">
+                <span>
+                  {h.what}
+                  {h.rate !== undefined ? ` at ${Number(h.rate).toFixed(2)}%` : ''}
+                  {h.by ? ` — ${h.by}` : ''}
+                </span>
+                <span className="text-gray-400">{String(h.at ?? '').slice(0, 16)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card.Body>
+    </Card>
+  );
+}

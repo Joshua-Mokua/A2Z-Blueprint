@@ -2238,6 +2238,84 @@ export async function setPoolVisibility(body: Partial<PoolVisibility>): Promise<
   return postJson<PoolVisibility>('/lms/config/pool-visibility', body);
 }
 
+// ── The treasury rate desk ────────────────────────────────────────────────
+// A branch asks for a rate on a term deposit; the whole treasury desk sees it;
+// a dealer approves it or counters. An approval closes the deal there and
+// then; a counter goes back to the BRANCH, not into another treasury queue.
+export interface RatePoolRow {
+  deal_id: string;
+  client_name?: string;
+  product?: string;
+  branch?: string;
+  rm_name?: string;
+  amount?: number;
+  tenor?: string;
+  requested_rate?: number | null;
+  offered_rate?: number | null;
+  status?: string;
+  requested_at?: string;
+  priced_by_name?: string | null;
+  outcome?: string;
+}
+
+export interface RatePoolResponse {
+  waiting: RatePoolRow[];
+  /** Answered ones stay in view: a desk that only sees its backlog cannot
+   *  tell whether its pricing is winning business. */
+  answered: RatePoolRow[];
+  total_waiting: number;
+}
+
+export interface RateRequestState {
+  deal_id: string;
+  rate_request: Record<string, unknown>;
+  history?: { what: string; rate?: number; by?: string; at?: string; note?: string }[];
+}
+
+export async function fetchRatePool(): Promise<RatePoolResponse> {
+  return getJson<RatePoolResponse>('/treasury/rates/pool');
+}
+
+export async function fetchRateState(dealId: string): Promise<RateRequestState> {
+  return getJson<RateRequestState>(`/treasury/rates/${encodeURIComponent(dealId)}`);
+}
+
+export async function requestRate(
+  dealId: string,
+  body: { amount: number; tenor_days: string; requested_rate: number },
+): Promise<RateRequestState> {
+  return postJson<RateRequestState>(
+    `/treasury/rates/${encodeURIComponent(dealId)}/request`, body);
+}
+
+export async function approveRateRequest(
+  dealId: string, body: { note?: string } = {},
+): Promise<RateRequestState> {
+  return postJson<RateRequestState>(
+    `/treasury/rates/${encodeURIComponent(dealId)}/approve`, body);
+}
+
+export async function counterRateRequest(
+  dealId: string, body: { offered_rate: number; note?: string },
+): Promise<RateRequestState> {
+  return postJson<RateRequestState>(
+    `/treasury/rates/${encodeURIComponent(dealId)}/counter`, body);
+}
+
+export async function acceptCounterRate(
+  dealId: string, body: { note?: string } = {},
+): Promise<RateRequestState> {
+  return postJson<RateRequestState>(
+    `/treasury/rates/${encodeURIComponent(dealId)}/accept-counter`, body);
+}
+
+export async function declineCounterRate(
+  dealId: string, body: { reason?: string } = {},
+): Promise<RateRequestState> {
+  return postJson<RateRequestState>(
+    `/treasury/rates/${encodeURIComponent(dealId)}/decline-counter`, body);
+}
+
 export async function escalateToChief(
   appId: string,
   /** `to` picks who answers: the Chief Credit Risk, or the Management Credit
