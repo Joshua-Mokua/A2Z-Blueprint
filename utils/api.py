@@ -7704,6 +7704,33 @@ def pipeline_queue_committee(user: dict = Depends(get_current_user)):
         try:
             _flow = _stage_flow_for(d.get("product_type") or d.get("product", "")) or []
             _cur = str(d.get("stage", "") or "")
+            # ── A PRODUCT WITH NO COMMITTEE HAS NO BUSINESS HERE ─────────────
+            # RULING (2026-08-19): "products that don't require a committee,
+            # like accounts, are still flowing there. We needed those that
+            # require the credit committee's recommendation - but those
+            # starting and ending at the branches."
+            #
+            # A current account, a debit card, a fixed deposit: no committee
+            # stage in the flow, no committee decision to make, nothing for a
+            # committee member to do. They were arriving anyway.
+            if _flow and not any("committee" in str(x).lower() for x in _flow):
+                continue
+
+            # ── AN UNPLACEABLE STAGE IS NOT A COMMITTEE STAGE ────────────────
+            # The filter below only ran when the deal's stage could be FOUND in
+            # its flow. Where it could not, the whole block was skipped and the
+            # deal was INCLUDED - so every deal sitting on a stage its product
+            # no longer defines landed in the committee queue, whatever the
+            # product.
+            #
+            # That is the wrong way to fail. A queue of things to vote on
+            # should hold only cases that have demonstrably reached a
+            # committee; a case nobody can place has not demonstrated it.
+            # audit_200 reports unplaceable deals separately, so they stay
+            # visible rather than being quietly swept in here.
+            if _flow and _cur not in _flow:
+                continue
+
             if _flow and _cur in _flow:
                 _here = _flow.index(_cur)
                 _gate_at = -1
