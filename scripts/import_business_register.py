@@ -312,45 +312,44 @@ def main():
     import datetime as _dt
     run_id = "%s %s" % (source[:40], _dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
     made = failed = 0
+    # ── ONE READ, ONE WRITE ─────────────────────────────────────────────────
+    # This used to call create() per row, and create() reads and writes the
+    # WHOLE store each time. 973 health facilities meant 973 full reads and 973
+    # full writes - roughly a million record-operations - and Windows refused
+    # one of the temp-file replaces halfway through with "Access is denied",
+    # because nothing should replace a file a thousand times in a few seconds.
+    #
+    # The warehouse is aiming at a million records. Quadratic does not get
+    # there, and the failure would not be a clear error - it would be an import
+    # that stopped partway and left the shelf half-filled.
+    from utils.deals_warehouse import create_many
+    batch = []
     for r in rows:
-        try:
-            create(
-                name=r["name"],
-                created_by_code="import",
-                created_by_name=source[:60],
-                sector=r["sector"], subsector=r.get("subsector", ""), town=r["town"],
-                contact_phone=r["phone"], contact_email=r["email"],
-                notes=("Registered no. %s" % r["reg_no"]) if r["reg_no"] else "",
-                # Provenance on every record: a year from now anybody can ask
-                # where this came from and whether we were allowed to have it.
-                source_event="%s%s" % (source, " (%s)" % licence if licence else ""),
-                # WHERE THIS ROW CAME FROM, so a re-import recognises it even
-                # after somebody has corrected the name.
-                # THE RICH FIELDS A DIRECTORY BRINGS. CBK publishes a named
-                # person, a website and a street address; SASRA does not. They
-                # were being read from the CSV and then dropped on the floor
-                # here, which threw away the reason CBK is worth importing.
-                contact_name=r.get("contact_name", ""),
-                website=r.get("website", ""),
-                physical_location=r.get("physical_location", ""),
-                postal_address=r.get("postal_address", ""),
-                source_ref="%s|%s" % (source_ref_base, canonical_key(r["name"])),
-                import_run=run_id,
-            )
-            made += 1
-        except ValueError as exc:
-            # The store checks for duplicates too, inside its lock. Reaching
-            # here means another writer got in first - a skip, not a failure.
-            if "Already on the shelf" in str(exc):
-                skipped_dupe += 1
-            else:
-                failed += 1
-                if failed == 1:
-                    print("  first failure: %s" % str(exc)[:70])
-        except Exception as exc:
-            failed += 1
-            if failed == 1:
-                print("  first failure: %s" % str(exc)[:70])
+        batch.append({
+            "name": r["name"],
+            "sector": r["sector"], "subsector": r.get("subsector", ""),
+            "town": r["town"],
+            "contact_phone": r["phone"], "contact_email": r["email"],
+            "contact_name": r.get("contact_name", ""),
+            "website": r.get("website", ""),
+            "physical_location": r.get("physical_location", ""),
+            "postal_address": r.get("postal_address", ""),
+            "notes": ("Registered no. %s" % r["reg_no"]) if r["reg_no"] else "",
+            # Provenance on every record: a year from now anybody can ask where
+            # this came from and whether we were allowed to have it.
+            "source_event": "%s%s" % (source, " (%s)" % licence if licence else ""),
+            "source_ref": "%s|%s" % (source_ref_base, canonical_key(r["name"])),
+            "import_run": run_id,
+        })
+    try:
+        made, dupes_in_store, blanks = create_many(batch, "import", source[:60])
+        skipped_dupe += dupes_in_store
+        failed = 0
+    except Exception as exc:
+        print("\nABORT: the batch write failed: %s" % str(exc)[:80])
+        print("       Nothing was written - the store is as it was.")
+        return 1
+
     filled = 0
     updates = locals().get('updates') or {}
     if ("--update" in sys.argv) and updates:

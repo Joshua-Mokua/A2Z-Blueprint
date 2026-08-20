@@ -366,36 +366,6 @@ def canonical_key(name: str) -> str:
     return " ".join(words)
 
 
-def find_by_source_ref(ref: str):
-    """The prospect that came from THIS row of THIS register, if any.
-
-    RULING (2026-08-20): "how do we save the imports and keep cleaning them
-    from our end - the whole idea was to create a data warehouse of all
-    businesses and institutions in Kenya."
-
-    Duplicates were matched on the CANONICAL NAME, and that quietly punishes
-    cleaning. Correct "1ICEA Lion" to "ICEA Lion" - which is exactly the work
-    the warehouse exists for - and the key changes. Re-import the register next
-    year and the old, uncorrected row comes back as a NEW prospect, sitting
-    beside the one somebody fixed.
-
-    At a few dozen records that is untidy. At eighteen hundred across a dozen
-    registers it is a warehouse nobody trusts.
-
-    So an imported prospect also carries where it came from - the register and
-    the name AS PUBLISHED - and a re-import matches on that first. The name can
-    then be cleaned freely: the row it came from does not move.
-    """
-    ref = str(ref or "").strip()
-    if not ref:
-        return None
-    for pid, rec in (_read() or {}).items():
-        if str(rec.get("source_ref", "") or "").strip() == ref:
-            out = dict(rec)
-            out["id"] = pid
-            return out
-    return None
-
 def find_duplicate(name: str, records: Optional[list] = None) -> Optional[dict]:
     """The existing prospect this name would duplicate, or None."""
     key = canonical_key(name)
@@ -413,6 +383,110 @@ def all_prospects() -> list:
 
 def get(prospect_id: str) -> Optional[dict]:
     return (_read() or {}).get(str(prospect_id))
+
+
+def find_by_source_ref(ref: str):
+    """The prospect that came from THIS row of THIS register, if any.
+
+    Duplicates matched on the canonical NAME punish the very work the warehouse
+    exists for: correct a mangled name and the key changes, so the next import
+    of the same register brings the old row back beside the corrected one.
+
+    An imported prospect therefore carries where it came from - the register,
+    plus the name AS PUBLISHED - and a re-import matches on that first.
+    """
+    ref = str(ref or "").strip()
+    if not ref:
+        return None
+    for pid, rec in (_read() or {}).items():
+        if str(rec.get("source_ref", "") or "").strip() == ref:
+            out = dict(rec)
+            out["id"] = pid
+            return out
+    return None
+
+
+def create_many(records, created_by_code="import", created_by_name="import"):
+    """Add many prospects in ONE read and ONE write.
+
+    RULING (2026-08-20): "the idea behind the data warehouse is to consolidate
+    all businesses in Kenya ... our initial target was to even have a million
+    records plus."
+
+    `create()` reads the whole store and writes the whole store, every time.
+    That is correct for one prospect typed by a person. For a register it is
+    quadratic: 973 facilities meant 973 full reads and 973 full writes, roughly
+    a million record-operations, and Windows refused one of the temp-file
+    replaces halfway through - "Access is denied" - because nothing should be
+    creating and replacing a file a thousand times in a few seconds.
+
+    At a million rows that approach never finishes at all.
+
+    This reads once, builds the whole map in memory, and writes once - to
+    Postgres and then the mirror. Duplicate checking happens in memory against
+    both what is already stored AND what this batch has already added, so a
+    register that lists the same business twice does not create two.
+
+    Returns (added, skipped_duplicate, skipped_blank).
+    """
+    data = _read() or {}
+    by_key = {}
+    by_ref = {}
+    for pid, rec in data.items():
+        k = canonical_key(str(rec.get("name", "")))
+        if k:
+            by_key[k] = pid
+        r = str(rec.get("source_ref", "") or "").strip()
+        if r:
+            by_ref[r] = pid
+
+    added = dupe = blank = 0
+    now = datetime.now().isoformat(timespec="seconds")
+    for rec in records:
+        name = str((rec or {}).get("name", "") or "").strip()
+        if len(name) < 3:
+            blank += 1
+            continue
+        ref = str(rec.get("source_ref", "") or "").strip()
+        key = canonical_key(name)
+        if (ref and ref in by_ref) or key in by_key:
+            dupe += 1
+            continue
+        pid = "WH" + uuid.uuid4().hex[:10].upper()
+        row = {
+            "id": pid,
+            "name": name,
+            "canonical_key": key,
+            "sector": str(rec.get("sector", "") or "").strip(),
+            "subsector": str(rec.get("subsector", "") or "").strip(),
+            "town": str(rec.get("town", "") or "").strip(),
+            "status": str(rec.get("status", "") or STATUS_AVAILABLE),
+            "estimated_value": rec.get("estimated_value") or 0,
+            "contact_name": str(rec.get("contact_name", "") or "").strip(),
+            "contact_phone": str(rec.get("contact_phone", "") or "").strip(),
+            "contact_email": str(rec.get("contact_email", "") or "").strip(),
+            "website": str(rec.get("website", "") or "").strip(),
+            "physical_location": str(rec.get("physical_location", "") or "").strip(),
+            "postal_address": str(rec.get("postal_address", "") or "").strip(),
+            "notes": str(rec.get("notes", "") or "").strip(),
+            "source_event": str(rec.get("source_event", "") or "").strip(),
+            "source_ref": ref,
+            "import_run": str(rec.get("import_run", "") or "").strip(),
+            "created_by_code": created_by_code,
+            "created_by_name": created_by_name,
+            "created_at": now,
+            "claimed_by_code": "", "claimed_by_name": "", "claimed_at": "",
+            "deal_id": "",
+        }
+        data[pid] = row
+        by_key[key] = pid
+        if ref:
+            by_ref[ref] = pid
+        added += 1
+
+    if added:
+        _write(data)
+    return added, dupe, blank
 
 
 def create(*, name: str, created_by_code: str, created_by_name: str,
@@ -454,18 +528,11 @@ def create(*, name: str, created_by_code: str, created_by_name: str,
         "contact_email": str(contact_email or "").strip(),
         "notes": str(notes or "").strip(),
         "source_event": str(source_event or "").strip(),
-        # WHERE THIS ROW CAME FROM and WHICH RUN BROUGHT IT. The reference is
-        # the register plus the name AS PUBLISHED, so a name corrected later
-        # does not make the next import think this is a new business. The run
-        # id makes a bad import findable and undoable.
-        # A DIRECTORY BRINGS MORE THAN A NAME. CBK publishes a website, a
-        # street address and a postal box; dropping them on import threw away
-        # the reason that register is worth having.
+        "source_ref": str(source_ref or "").strip(),
+        "import_run": str(import_run or "").strip(),
         "website": str(website or "").strip(),
         "physical_location": str(physical_location or "").strip(),
         "postal_address": str(postal_address or "").strip(),
-        "source_ref": str(source_ref or "").strip(),
-        "import_run": str(import_run or "").strip(),
         "estimated_value": float(estimated_value or 0),
         "status": STATUS_AVAILABLE,
         "created_by_code": str(created_by_code).strip(),
