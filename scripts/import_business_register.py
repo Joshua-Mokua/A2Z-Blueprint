@@ -284,7 +284,11 @@ def main():
                 "phone": str(r.get(cols.get("phone", "")) or "").strip(),
                 "email": str(r.get(cols.get("email", "")) or "").strip(),
                 "reg_no": str(r.get(cols.get("reg_no", "")) or "").strip(),
-            })
+                            "contact_name": str(r.get("contact_name") or "").strip(),
+                "website": str(r.get("website") or "").strip(),
+                "physical_location": str(r.get("physical_location") or "").strip(),
+                "postal_address": str(r.get("postal_address") or "").strip(),
+})
             bysector[sector] = bysector.get(sector, 0) + 1
 
     print("\n  READY        %d" % len(rows))
@@ -322,6 +326,14 @@ def main():
                 source_event="%s%s" % (source, " (%s)" % licence if licence else ""),
                 # WHERE THIS ROW CAME FROM, so a re-import recognises it even
                 # after somebody has corrected the name.
+                # THE RICH FIELDS A DIRECTORY BRINGS. CBK publishes a named
+                # person, a website and a street address; SASRA does not. They
+                # were being read from the CSV and then dropped on the floor
+                # here, which threw away the reason CBK is worth importing.
+                contact_name=r.get("contact_name", ""),
+                website=r.get("website", ""),
+                physical_location=r.get("physical_location", ""),
+                postal_address=r.get("postal_address", ""),
                 source_ref="%s|%s" % (source_ref_base, canonical_key(r["name"])),
                 import_run=run_id,
             )

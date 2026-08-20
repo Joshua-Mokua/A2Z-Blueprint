@@ -400,7 +400,9 @@ def create(*, name: str, created_by_code: str, created_by_name: str,
            contact_phone: str = "", contact_email: str = "",
            notes: str = "", source_event: str = "",
            estimated_value: float = 0.0, subsector: str = "",
-           source_ref: str = "", import_run: str = "") -> dict:
+           source_ref: str = "", import_run: str = "",
+           website: str = "", physical_location: str = "",
+           postal_address: str = "") -> dict:
     """List a prospect on the shelf.
 
     Only the NAME is required. A prospect jotted down at an event with a name
@@ -436,6 +438,12 @@ def create(*, name: str, created_by_code: str, created_by_name: str,
         # the register plus the name AS PUBLISHED, so a name corrected later
         # does not make the next import think this is a new business. The run
         # id makes a bad import findable and undoable.
+        # A DIRECTORY BRINGS MORE THAN A NAME. CBK publishes a website, a
+        # street address and a postal box; dropping them on import threw away
+        # the reason that register is worth having.
+        "website": str(website or "").strip(),
+        "physical_location": str(physical_location or "").strip(),
+        "postal_address": str(postal_address or "").strip(),
         "source_ref": str(source_ref or "").strip(),
         "import_run": str(import_run or "").strip(),
         "estimated_value": float(estimated_value or 0),
