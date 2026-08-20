@@ -59,6 +59,18 @@ def _text(html):
     return re.sub(r"\s+", " ", t).strip()
 
 
+def _town_case(name):
+    """Nairobi, not NAIROBI - and not Nairobi West as a county either."""
+    t = re.sub(r"\s+", " ", str(name or "")).strip()
+    if not t:
+        return ""
+    if t.isupper() or t.islower():
+        t = t.title()
+    # A register sometimes gives a ward where a county belongs. Left alone -
+    # dropping it would lose the only location the row has.
+    return t
+
+
 def _pick(headers):
     low = [h.strip().lower() for h in headers]
     cols = {}
@@ -153,7 +165,11 @@ def main():
                 "company_name": name.title() if name.isupper() else name,
                 "industry_description": "%s - %s" % (label or category, sector),
                 "subsector": sub,
-                "town": get("county"),
+                # TOWN CASING. EPRA writes "Nairobi" on one row and
+                # "NAIROBI" on the next, and the shelf then shows them as two
+                # towns - 36 in one and 7 in the other, and a filter on either
+                # misses the rest. Title case them so they land together.
+                "town": _town_case(get("county")),
                 "company_phone": get("phone"),
                 "company_email": get("email"),
                 "contact_name": "",
