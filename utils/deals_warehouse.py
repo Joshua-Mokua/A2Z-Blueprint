@@ -567,8 +567,25 @@ def create_many(records, created_by_code="import", created_by_name="import"):
     data = _read() or {}
     by_key = {}
     by_ref = {}
+
+    def _key(rec):
+        """Name AND place. A NAME IS NOT UNIQUE IN KENYA.
+
+        "Iiani Pri Sch" appears twelve times in the school register - twelve
+        different schools in twelve different places. Keying on the name alone
+        collapsed them into one, and the loss looked like a duplicate skip.
+
+        The importer already keys this way; this did not, so it quietly undid
+        the importer's work one layer down.
+        """
+        place = " ".join(x for x in (str(rec.get("town", "") or ""),
+                                     str(rec.get("physical_location", "") or ""))
+                         if x)
+        return "%s|%s" % (canonical_key(str(rec.get("name", ""))),
+                          canonical_key(place))
+
     for pid, rec in data.items():
-        k = canonical_key(str(rec.get("name", "")))
+        k = _key(rec)
         if k:
             by_key[k] = pid
         r = str(rec.get("source_ref", "") or "").strip()
@@ -583,7 +600,7 @@ def create_many(records, created_by_code="import", created_by_name="import"):
             blank += 1
             continue
         ref = str(rec.get("source_ref", "") or "").strip()
-        key = canonical_key(name)
+        key = _key(rec)
         if (ref and ref in by_ref) or key in by_key:
             dupe += 1
             continue

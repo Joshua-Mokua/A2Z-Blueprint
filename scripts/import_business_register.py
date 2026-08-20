@@ -223,7 +223,12 @@ def main():
     # and by where it came from. find_by_source_ref reads the WHOLE store on
     # every call - fine for one lookup, quadratic inside a loop of 31,230.
     _already = all_prospects() or []
-    existing = {canonical_key(p.get("name", "")) for p in _already}
+    existing = {"%s|%s" % (canonical_key(p.get("name", "")),
+                           canonical_key(" ".join(x for x in
+                                                  (p.get("town", ""),
+                                                   p.get("physical_location", ""))
+                                                  if x)))
+                for p in _already}
     existing_refs = {str(p.get("source_ref", "") or "").strip()
                      for p in _already
                      if str(p.get("source_ref", "") or "").strip()}
@@ -294,8 +299,30 @@ def main():
             # PUBLISHED, so the name in the warehouse is free to be corrected.
             # An enriched file coming back carries its own reference; a fresh
             # register does not, so one is derived.
+            # ── A NAME IS NOT UNIQUE IN KENYA ───────────────────────────
+            # "Iiani Pri Sch" appears TWELVE times in the school register -
+            # twelve different schools in twelve different places. Keying on
+            # the name alone threw away 3,754 of them, and they looked like
+            # duplicates rather than losses.
+            #
+            # The place disambiguates: a school in Kiambu and a school of the
+            # same name in Kisii are different customers. Where a register
+            # gives a street address too, that is used - two clinics can share
+            # a name AND a county.
+            #
+            # A re-import still matches, because the same row produces the same
+            # key. Only genuinely different businesses now get their own.
+            # THE RAW ROW, because the dedupe runs BEFORE town is resolved.
+            # r here is the CSV row, so the mapped column names are needed -
+            # r.get("town") is empty at this point and every school looked
+            # like it was in the same place, which is why they still collapsed.
+            _place = " ".join(x for x in (
+                str(r.get(cols.get("town", "")) or "").strip(),
+                str(r.get("physical_location") or "").strip(),
+                str(r.get(cols.get("address", "")) or "").strip()) if x)
             ref = str(r.get("source_ref") or "").strip() or (
-                "%s|%s" % (source_ref_base, canonical_key(name)))
+                "%s|%s|%s" % (source_ref_base, canonical_key(name),
+                              canonical_key(_place)))
             # LOOK IT UP IN THE INDEX, NOT THE STORE. 31,230 rows against a
             # 13,000-record shelf, each doing a full read, is four hundred
             # million comparisons - the symptom is an import that hangs.
@@ -317,11 +344,15 @@ def main():
                     }
                 skipped_dupe += 1
                 continue
-            key = canonical_key(name)
+            # The NAME index is now keyed on name AND place, for the same
+            # reason. Left on the name alone it would reject the eleven other
+            # Iiani schools before the ref check ever ran.
+            key = "%s|%s" % (canonical_key(name), canonical_key(_place))
             if key in existing:
                 skipped_dupe += 1
                 continue
             existing.add(key)
+            r["_ref"] = ref
             # A register that lists the same business twice must not create
             # two, so this batch's refs join the index as they are used.
             if ref:
@@ -337,6 +368,10 @@ def main():
                 " ".join(str(r.get(cols.get(k, "")) or "") for k in ("town", "address")),
                 towns)
             rows.append({
+                # THE KEY THE DEDUPE USED, carried onto the record so the
+                # stored source_ref is the thing it was matched on rather than
+                # a second, different guess computed later.
+                "_ref": ref,
                 "name": name, "sector": sector, "subsector": subsector, "town": town,
                 "phone": str(r.get(cols.get("phone", "")) or "").strip(),
                 "email": str(r.get(cols.get("email", "")) or "").strip(),
@@ -395,7 +430,9 @@ def main():
             # Provenance on every record: a year from now anybody can ask where
             # this came from and whether we were allowed to have it.
             "source_event": "%s%s" % (source, " (%s)" % licence if licence else ""),
-            "source_ref": "%s|%s" % (source_ref_base, canonical_key(r["name"])),
+            # The same key the dedupe used, so the record carries the thing
+            # it was matched on rather than a second, different guess.
+            "source_ref": r.get("_ref", ""),
             "import_run": run_id,
         })
     try:
