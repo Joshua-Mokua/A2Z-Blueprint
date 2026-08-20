@@ -35,7 +35,20 @@ sys.path.insert(0, os.getcwd())
 COLUMNS = ["source_ref", "company_name", "industry_description", "subsector",
            "town", "company_phone", "company_email", "contact_name",
            "postal_address", "physical_location", "website", "notes",
-           "_complete", "_missing"]
+           # ── FOR A SPREADSHEET AND FOR A MODEL ──────────────────────────
+           # RULING (2026-08-20): "the ability to download with the fields
+           # with % calculator so that I can upload to other models to add to
+           # the data."
+           #
+           # _complete reads "2 of 6", which a person understands and a
+           # spreadsheet cannot sort. _percent is the same thing as a NUMBER,
+           # so the file can be sorted, filtered and charted.
+           #
+           # _needs is the row written as an instruction. A model handed
+           # "Find the phone, email and website for Tenwek Mission Hospital,
+           # Bomet" can act on it; handed a column called _missing it has to
+           # infer what is wanted.
+           "_complete", "_percent", "_missing", "_needs"]
 
 WANTED = [("company_phone", "phone"), ("company_email", "email"),
           ("contact_name", "contact"), ("town", "town"),
@@ -96,7 +109,14 @@ def main():
             "website": p.get("website", ""),
             "notes": p.get("notes", ""),
             "_complete": "%d of %d" % (have, len(WANTED)),
+            "_percent": int(round(100.0 * have / len(WANTED))),
             "_missing": ", ".join(gaps),
+            "_needs": ("" if not gaps else
+                       "Find the %s for %s%s." % (
+                           ", ".join(gaps[:-1]) + " and " + gaps[-1]
+                           if len(gaps) > 1 else gaps[0],
+                           p.get("name", ""),
+                           (", " + str(p.get("town"))) if p.get("town") else "")),
         })
 
     if not rows:
@@ -128,8 +148,10 @@ def main():
     print("=" * 72)
     print("  file        %s" % out)
     print("  prospects   %d" % len(rows))
-    print("  complete    %d have everything"
-          % sum(1 for r in rows if not r["_missing"]))
+    full = sum(1 for r in rows if not r["_missing"])
+    avg = sum(r["_percent"] for r in rows) / float(len(rows))
+    print("  complete    %d have everything (%.0f%%)" % (full, 100.0 * full / len(rows)))
+    print("  average     %.0f%% complete across the file" % avg)
     if gapcount:
         print("\n  WHAT IS MISSING, most common first:")
         for g, n in sorted(gapcount.items(), key=lambda x: -x[1]):

@@ -219,7 +219,14 @@ def main():
     # THE CANONICAL KEY, not the raw name. "Mwalimu National Sacco Society Ltd"
     # and "MWALIMU NATIONAL SACCO SOCIETY LIMITED" are one business, and a
     # register will spell it both ways across two documents.
-    existing = {canonical_key(p.get("name", "")) for p in all_prospects()}
+    # ONE READ for both indexes. Everything already on the shelf, keyed by name
+    # and by where it came from. find_by_source_ref reads the WHOLE store on
+    # every call - fine for one lookup, quadratic inside a loop of 31,230.
+    _already = all_prospects() or []
+    existing = {canonical_key(p.get("name", "")) for p in _already}
+    existing_refs = {str(p.get("source_ref", "") or "").strip()
+                     for p in _already
+                     if str(p.get("source_ref", "") or "").strip()}
 
     with open(path, encoding="utf-8-sig", newline="") as fh:
         sample = fh.read(8192)
@@ -289,7 +296,10 @@ def main():
             # register does not, so one is derived.
             ref = str(r.get("source_ref") or "").strip() or (
                 "%s|%s" % (source_ref_base, canonical_key(name)))
-            if find_by_source_ref(ref) is not None:
+            # LOOK IT UP IN THE INDEX, NOT THE STORE. 31,230 rows against a
+            # 13,000-record shelf, each doing a full read, is four hundred
+            # million comparisons - the symptom is an import that hangs.
+            if ref in existing_refs:
                 if "--update" in sys.argv:
                     # ── THE RETURN LEG ──────────────────────────────────────
                     # ONLY BLANKS are filled. A value already in the warehouse
@@ -312,6 +322,10 @@ def main():
                 skipped_dupe += 1
                 continue
             existing.add(key)
+            # A register that lists the same business twice must not create
+            # two, so this batch's refs join the index as they are used.
+            if ref:
+                existing_refs.add(ref)
             raw_sector = str(r.get(cols.get("sector", "")) or "")
             sector = _sector_for(raw_sector, sectors)
             # "SACCO - Financial Services" carries both: the top-level sector
