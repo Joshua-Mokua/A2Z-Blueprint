@@ -150,6 +150,25 @@ def _db():
                    "ON deals_warehouse (status)")
         db.execute("CREATE INDEX IF NOT EXISTS idx_dw_key "
                    "ON deals_warehouse (canonical_key)")
+        # THE COLUMNS THE SHELF IS BROWSED BY. Without these, every filter is
+        # a sequential scan - fine at 773 rows, hopeless at a million, and the
+        # symptom is a page that spins rather than an error anybody can see.
+        for _ix, _col in (("idx_dw_town", "town"),
+                          ("idx_dw_sector", "sector"),
+                          ("idx_dw_name", "name"),
+                          ("idx_dw_run", "import_run")):
+            try:
+                db.execute("CREATE INDEX IF NOT EXISTS %s ON deals_warehouse (%s)"
+                           % (_ix, _col))
+            except Exception:
+                pass
+        # A shelf is almost always browsed as "available, in this town" - one
+        # index for the pair beats two separate ones.
+        try:
+            db.execute("CREATE INDEX IF NOT EXISTS idx_dw_status_town "
+                       "ON deals_warehouse (status, town)")
+        except Exception:
+            pass
         return db
     except Exception:
         return None
@@ -383,6 +402,122 @@ def all_prospects() -> list:
 
 def get(prospect_id: str) -> Optional[dict]:
     return (_read() or {}).get(str(prospect_id))
+
+
+def query(status="available", town="", sector="", q="", limit=200, offset=0):
+    """Ask POSTGRES for a page of the shelf. Falls back to the file.
+
+    RULING (2026-08-20): "how long will it be taking loading as we add more
+    data, is there a way to make it faster."
+
+    Every read went through _read(), which pulls EVERY row into Python and
+    filters there. At 773 records the page took seconds; the warehouse is
+    aiming at a million, where that approach simply does not return.
+
+    A database exists to answer questions like this. The WHERE and the LIMIT
+    belong in SQL, and then a page costs the same whether the shelf holds a
+    thousand rows or a million.
+
+    Returns (rows, total) - the total is the count MATCHING THE FILTER, not the
+    whole shelf, because "12 of 41,000" tells an officer nothing useful about
+    the thing they just searched for.
+    """
+    db = _db()
+    if db is None:
+        # No database: filter the file, and accept that this is the slow path.
+        rows = []
+        for pid, rec in (_read() or {}).items():
+            if status and str(rec.get("status", "")) != status:
+                continue
+            if town and str(rec.get("town", "")) != town:
+                continue
+            if sector and str(rec.get("sector", "")) != sector:
+                continue
+            if q and q.lower() not in ("%s %s" % (rec.get("name", ""),
+                                                 rec.get("notes", ""))).lower():
+                continue
+            out = dict(rec)
+            out["id"] = pid
+            rows.append(out)
+        rows.sort(key=lambda r: str(r.get("name", "")).lower())
+        return rows[offset:offset + limit], len(rows)
+
+    where, params = [], []
+    if status:
+        where.append("status = %s")
+        params.append(status)
+    if town:
+        where.append("town = %s")
+        params.append(town)
+    if sector:
+        where.append("sector = %s")
+        params.append(sector)
+    if q:
+        where.append("(name ILIKE %s OR notes ILIKE %s)")
+        params.extend(["%%%s%%" % q, "%%%s%%" % q])
+    clause = (" WHERE " + " AND ".join(where)) if where else ""
+
+    try:
+        total = db.fetch_scalar(
+            "SELECT count(*) FROM deals_warehouse" + clause, tuple(params)) or 0
+        rows = db.fetch_all(
+            "SELECT * FROM deals_warehouse" + clause +
+            " ORDER BY name LIMIT %s OFFSET %s",
+            tuple(params) + (int(limit), int(offset)))
+    except Exception as exc:
+        try:
+            import logging
+            logging.getLogger(__name__).error(
+                "deals_warehouse: the paged query failed, falling back to the "
+                "file: %s", exc)
+        except Exception:
+            pass
+        return query(status, town, sector, q, limit, offset) if db is None else ([], 0)
+
+    out = []
+    for r in rows or []:
+        rec = {}
+        pl = r.get("payload")
+        if pl:
+            try:
+                rec = json.loads(pl) if isinstance(pl, str) else dict(pl)
+            except Exception:
+                rec = {}
+        for c in _COLS:
+            if r.get(c) is not None:
+                rec[c] = r.get(c)
+        rec["id"] = str(r.get("id"))
+        out.append(rec)
+    return out, int(total)
+
+
+def counts_by(field, status="available"):
+    """How many prospects per sector or town, straight from SQL.
+
+    The sector and town pickers were being built by loading every record and
+    counting in Python. One GROUP BY does it, and it stays instant as the shelf
+    grows.
+    """
+    if field not in ("sector", "subsector", "town", "status"):
+        raise ValueError("counts_by: %r is not a groupable field" % field)
+    db = _db()
+    if db is None:
+        out = {}
+        for _pid, rec in (_read() or {}).items():
+            if status and str(rec.get("status", "")) != status:
+                continue
+            k = str(rec.get(field, "") or "")
+            if k:
+                out[k] = out.get(k, 0) + 1
+        return out
+    try:
+        rows = db.fetch_all(
+            "SELECT %s AS k, count(*) AS n FROM deals_warehouse "
+            "WHERE status = %%s AND %s <> '' GROUP BY %s ORDER BY n DESC"
+            % (field, field, field), (status,))
+        return {str(r["k"]): int(r["n"]) for r in rows or []}
+    except Exception:
+        return {}
 
 
 def find_by_source_ref(ref: str):
