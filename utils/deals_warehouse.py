@@ -346,6 +346,36 @@ def canonical_key(name: str) -> str:
     return " ".join(words)
 
 
+def find_by_source_ref(ref: str):
+    """The prospect that came from THIS row of THIS register, if any.
+
+    RULING (2026-08-20): "how do we save the imports and keep cleaning them
+    from our end - the whole idea was to create a data warehouse of all
+    businesses and institutions in Kenya."
+
+    Duplicates were matched on the CANONICAL NAME, and that quietly punishes
+    cleaning. Correct "1ICEA Lion" to "ICEA Lion" - which is exactly the work
+    the warehouse exists for - and the key changes. Re-import the register next
+    year and the old, uncorrected row comes back as a NEW prospect, sitting
+    beside the one somebody fixed.
+
+    At a few dozen records that is untidy. At eighteen hundred across a dozen
+    registers it is a warehouse nobody trusts.
+
+    So an imported prospect also carries where it came from - the register and
+    the name AS PUBLISHED - and a re-import matches on that first. The name can
+    then be cleaned freely: the row it came from does not move.
+    """
+    ref = str(ref or "").strip()
+    if not ref:
+        return None
+    for pid, rec in (_read() or {}).items():
+        if str(rec.get("source_ref", "") or "").strip() == ref:
+            out = dict(rec)
+            out["id"] = pid
+            return out
+    return None
+
 def find_duplicate(name: str, records: Optional[list] = None) -> Optional[dict]:
     """The existing prospect this name would duplicate, or None."""
     key = canonical_key(name)
@@ -369,7 +399,8 @@ def create(*, name: str, created_by_code: str, created_by_name: str,
            sector: str = "", town: str = "", contact_name: str = "",
            contact_phone: str = "", contact_email: str = "",
            notes: str = "", source_event: str = "",
-           estimated_value: float = 0.0, subsector: str = "") -> dict:
+           estimated_value: float = 0.0, subsector: str = "",
+           source_ref: str = "", import_run: str = "") -> dict:
     """List a prospect on the shelf.
 
     Only the NAME is required. A prospect jotted down at an event with a name
@@ -401,6 +432,12 @@ def create(*, name: str, created_by_code: str, created_by_name: str,
         "contact_email": str(contact_email or "").strip(),
         "notes": str(notes or "").strip(),
         "source_event": str(source_event or "").strip(),
+        # WHERE THIS ROW CAME FROM and WHICH RUN BROUGHT IT. The reference is
+        # the register plus the name AS PUBLISHED, so a name corrected later
+        # does not make the next import think this is a new business. The run
+        # id makes a bad import findable and undoable.
+        "source_ref": str(source_ref or "").strip(),
+        "import_run": str(import_run or "").strip(),
         "estimated_value": float(estimated_value or 0),
         "status": STATUS_AVAILABLE,
         "created_by_code": str(created_by_code).strip(),

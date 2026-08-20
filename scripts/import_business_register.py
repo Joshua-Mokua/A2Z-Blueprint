@@ -167,7 +167,7 @@ def main():
 
     try:
         from utils.deals_warehouse import sectors as _sectors, towns as _towns, \
-            all_prospects, create, canonical_key
+            all_prospects, create, canonical_key, find_by_source_ref
     except Exception as exc:
         print("ABORT: %s  (apply patch_dw1_warehouse.py first)" % exc)
         return 1
@@ -212,12 +212,25 @@ def main():
             print("       'company_name' and re-run.")
             return 1
 
+        # The register this row belongs to. Derived from --source so two
+        # registers never collide, and stable across years so re-importing an
+        # updated edition recognises what it already holds.
+        source_ref_base = canonical_key(source) or os.path.basename(path)
+
         rows, skipped_noname, skipped_dupe = [], 0, 0
         bysector = {}
         for r in reader:
             name = str(r.get(cols["name"]) or "").strip()
             if not name:
                 skipped_noname += 1
+                continue
+            # ── MATCHED ON THE ROW, NOT THE NAME ────────────────────────
+            # A record cleaned by hand must not come back as a duplicate on
+            # the next import. The reference is the register plus the name AS
+            # PUBLISHED, so the name in the warehouse is free to be corrected.
+            ref = "%s|%s" % (source_ref_base, canonical_key(name))
+            if find_by_source_ref(ref) is not None:
+                skipped_dupe += 1
                 continue
             key = canonical_key(name)
             if key in existing:
@@ -258,6 +271,10 @@ def main():
         print("\nDRY RUN - nothing written. Re-run with --apply --source ... ")
         return 0
 
+    # One id per import, so a bad run can be found and undone rather than
+    # picked out of the shelf by eye.
+    import datetime as _dt
+    run_id = "%s %s" % (source[:40], _dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
     made = failed = 0
     for r in rows:
         try:
@@ -271,6 +288,10 @@ def main():
                 # Provenance on every record: a year from now anybody can ask
                 # where this came from and whether we were allowed to have it.
                 source_event="%s%s" % (source, " (%s)" % licence if licence else ""),
+                # WHERE THIS ROW CAME FROM, so a re-import recognises it even
+                # after somebody has corrected the name.
+                source_ref="%s|%s" % (source_ref_base, canonical_key(r["name"])),
+                import_run=run_id,
             )
             made += 1
         except ValueError as exc:
