@@ -104,28 +104,48 @@ def _db():
         db.execute("""
             CREATE TABLE IF NOT EXISTS deals_warehouse (
                 id              VARCHAR(60) PRIMARY KEY,
-                canonical_key   VARCHAR(300),
-                name            VARCHAR(300),
+                canonical_key   TEXT,
+                name            TEXT,
                 sector          VARCHAR(120),
                 subsector       VARCHAR(120),
                 town            VARCHAR(120),
                 status          VARCHAR(40),
                 estimated_value NUMERIC(18,2),
-                contact_name    VARCHAR(200),
-                contact_phone   VARCHAR(60),
-                contact_email   VARCHAR(200),
+                -- A REGISTER PUBLISHES WHAT IT PUBLISHES, and a bank lists
+                -- six phone numbers on one line: "+254-20-3877290/3/7;
+                -- 3872183/4; 3867503, 0711-074074, 0708-111000". VARCHAR(60)
+                -- rejected the whole row, and the record fell back to the file
+                -- alone - which is the state that lost the warehouse.
+                --
+                -- These are free text from a document nobody controls. TEXT
+                -- costs nothing in Postgres and cannot be the reason a
+                -- prospect goes missing.
+                contact_name    TEXT,
+                contact_phone   TEXT,
+                contact_email   TEXT,
                 notes           TEXT,
-                source_event    VARCHAR(200),
+                source_event    TEXT,
                 created_by_code VARCHAR(50),
-                created_by_name VARCHAR(200),
+                created_by_name TEXT,
                 created_at      VARCHAR(40),
                 claimed_by_code VARCHAR(50),
-                claimed_by_name VARCHAR(200),
+                claimed_by_name TEXT,
                 claimed_at      VARCHAR(40),
                 deal_id         VARCHAR(60),
                 payload         JSONB
             )
         """)
+        # A table created before this fix still has the narrow columns, and
+        # CREATE TABLE IF NOT EXISTS will not change them. Widen in place -
+        # ALTER to TEXT is safe, keeps every row, and is a no-op the second
+        # time.
+        for _c in ("name", "canonical_key", "contact_name", "contact_phone",
+                   "contact_email", "source_event", "created_by_name",
+                   "claimed_by_name"):
+            try:
+                db.execute("ALTER TABLE deals_warehouse ALTER COLUMN %s TYPE TEXT" % _c)
+            except Exception:
+                pass
         db.execute("CREATE INDEX IF NOT EXISTS idx_dw_status "
                    "ON deals_warehouse (status)")
         db.execute("CREATE INDEX IF NOT EXISTS idx_dw_key "
