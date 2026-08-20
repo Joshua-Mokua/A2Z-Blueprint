@@ -61,6 +61,7 @@ def warehouse_taxonomy(user: dict = Depends(get_current_user)):
 @router.get("/shelves")
 def warehouse_shelves(status: str = "available", town: str = "",
                       sector: str = "", q: str = "",
+                      limit: int = 200, offset: int = 0,
                       user: dict = Depends(get_current_user)):
     """The shelf, grouped by sector.
 
@@ -71,23 +72,30 @@ def warehouse_shelves(status: str = "available", town: str = "",
     and admin, because a shared shelf of every prospect's personal contact
     details is a data-protection problem rather than a sales tool.
     """
-    from utils.deals_warehouse import shelves as _shelves
+    # ── A PAGE, NOT THE WHOLE SHELF ─────────────────────────────────────────
+    # This loaded EVERY prospect and filtered in Python. At 338 records nobody
+    # noticed; at 12,591 the page spins and then shows an empty shelf, and the
+    # warehouse is aiming at a million.
+    #
+    # The database does the filtering and the paging now, so a page costs the
+    # same whether the shelf holds a thousand rows or a million.
+    from utils.deals_warehouse import query as _query
     code, _name = _actor(user)
     admin = _is_admin(user)
     needle = str(q or "").strip().lower()
 
     out = {}
     total = 0
-    for sec, items in _shelves(status=status or "available").items():
+    _rows, _total = _query(status=status or "available", town=town,
+                           sector=sector, q=needle,
+                           limit=max(1, min(int(limit or 200), 500)),
+                           offset=max(0, int(offset or 0)))
+    _grouped = {}
+    for _r in _rows:
+        _grouped.setdefault(str(_r.get("sector") or "Other"), []).append(_r)
+    for sec, items in _grouped.items():
         keep = []
         for r in items:
-            if town and str(r.get("town") or "") != town:
-                continue
-            if sector and sec != sector:
-                continue
-            if needle and needle not in (str(r.get("name") or "")
-                                         + " " + str(r.get("notes") or "")).lower():
-                continue
             mine = (str(r.get("created_by_code") or "") == code
                     or str(r.get("claimed_by_code") or "") == code)
             row = {k: r.get(k) for k in
@@ -143,7 +151,16 @@ def warehouse_shelves(status: str = "available", town: str = "",
             total += 1
         if keep:
             out[sec] = keep
-    return {"shelves": out, "total": total, "status": status or "available"}
+    return {"shelves": out,
+            # What this page holds, and what the FILTER matches in total. The
+            # page needs both to say "showing 200 of 12,591" - a total that
+            # ignores the filter tells an officer nothing about what they just
+            # searched for.
+            "shown": total,
+            "total": _total,
+            "limit": limit, "offset": offset,
+            "has_more": (int(offset or 0) + total) < _total,
+            "status": status or "available"}
 
 
 @router.post("/prospects")
