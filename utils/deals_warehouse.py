@@ -168,7 +168,23 @@ def _db_write(data: dict) -> bool:
         else:
             db.execute("DELETE FROM deals_warehouse")
         return True
-    except Exception:
+    except Exception as exc:
+        # NEVER SILENT. The first version of this returned False and said
+        # nothing, so a registry rejection - a correct, deliberate refusal
+        # with a clear message - looked exactly like "no database". The write
+        # failed for two days' worth of reasons nobody could see.
+        #
+        # It still does not RAISE, because a warehouse that takes the app down
+        # when Postgres hiccups is worse than one that falls back. But it says
+        # so, every time, where somebody will read it.
+        try:
+            import logging
+            logging.getLogger(__name__).error(
+                "deals_warehouse: the database write FAILED, the file is now "
+                "the only copy: %s", exc)
+        except Exception:
+            pass
+        print("*** deals_warehouse: database write failed: %s" % exc)
         return False
 
 
@@ -179,7 +195,14 @@ def _db_read():
         return None
     try:
         rows = db.fetch_all("SELECT * FROM deals_warehouse")
-    except Exception:
+    except Exception as exc:
+        try:
+            import logging
+            logging.getLogger(__name__).error(
+                "deals_warehouse: the database read failed, falling back to "
+                "the file: %s", exc)
+        except Exception:
+            pass
         return None
     out = {}
     for r in rows or []:

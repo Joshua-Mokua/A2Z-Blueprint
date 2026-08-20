@@ -89,6 +89,14 @@ TABLE_USE_DB = {
     "targets":          False,
     "pipeline_deals":   True,
     "loan_applications":True,
+    # The deals warehouse was JSON-only and was LOST on 2026-08-20 - every
+    # sacco and entity the team had entered, with nothing to recover from.
+    # Registered here so it goes where the rest of the bank's data goes.
+    #
+    # WORTH NOTING: the registry refused the first attempt to write it, which
+    # is the gate doing its job. What hid that was a silent `except` in the
+    # caller, not a fault here.
+    "deals_warehouse":  True,
     # Tier 3 — Operational
     "watchlist":        True,
     "ews_cases":        True,
