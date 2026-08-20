@@ -182,7 +182,20 @@ def main():
         sample = fh.read(8192)
         fh.seek(0)
         try:
-            dialect = csv.Sniffer().sniff(sample)
+            # THE HEADER DECIDES, NOT THE SNIFFER. A pipe inside a value -
+            # source_ref is "register|name" - made Sniffer choose "|" as the
+            # delimiter, and every row arrived as ONE field whose name was the
+            # whole line. It reported "1 column found" and carried on.
+            #
+            # A comma in the header line means a comma-separated file. That is
+            # not a guess, and it cannot be fooled by what is inside a value.
+            _first = sample.split("\n", 1)[0]
+            if _first.count(",") >= 2:
+                dialect = csv.excel
+            elif _first.count("\t") >= 2:
+                dialect = csv.excel_tab
+            else:
+                dialect = csv.Sniffer().sniff(sample)
         except csv.Error:
             dialect = csv.excel
         reader = csv.DictReader(fh, dialect=dialect)
@@ -216,6 +229,7 @@ def main():
         # registers never collide, and stable across years so re-importing an
         # updated edition recognises what it already holds.
         source_ref_base = canonical_key(source) or os.path.basename(path)
+        updates = {}
 
         rows, skipped_noname, skipped_dupe = [], 0, 0
         bysector = {}
@@ -228,8 +242,26 @@ def main():
             # A record cleaned by hand must not come back as a duplicate on
             # the next import. The reference is the register plus the name AS
             # PUBLISHED, so the name in the warehouse is free to be corrected.
-            ref = "%s|%s" % (source_ref_base, canonical_key(name))
+            # An enriched file coming back carries its own reference; a fresh
+            # register does not, so one is derived.
+            ref = str(r.get("source_ref") or "").strip() or (
+                "%s|%s" % (source_ref_base, canonical_key(name)))
             if find_by_source_ref(ref) is not None:
+                if "--update" in sys.argv:
+                    # ── THE RETURN LEG ──────────────────────────────────────
+                    # ONLY BLANKS are filled. A value already in the warehouse
+                    # was put there by somebody who looked, and a spreadsheet
+                    # round trip must not overwrite that. The NAME is never
+                    # touched: correcting names is deliberate work done in the
+                    # record card, and a bulk update must not undo it.
+                    updates[ref] = {
+                        "contact_phone": str(r.get(cols.get("phone", "")) or "").strip(),
+                        "contact_email": str(r.get(cols.get("email", "")) or "").strip(),
+                        "contact_name": str(r.get("contact_name") or "").strip(),
+                        "town": str(r.get(cols.get("town", "")) or "").strip(),
+                        "physical_location": str(r.get("physical_location") or "").strip(),
+                        "website": str(r.get("website") or "").strip(),
+                    }
                 skipped_dupe += 1
                 continue
             key = canonical_key(name)
@@ -307,6 +339,31 @@ def main():
             failed += 1
             if failed == 1:
                 print("  first failure: %s" % str(exc)[:70])
+    filled = 0
+    updates = locals().get('updates') or {}
+    if ("--update" in sys.argv) and updates:
+        from utils.deals_warehouse import _read as _wh_read, _write as _wh_write
+        data = _wh_read()
+        by_ref = {}
+        for pid, rec in data.items():
+            rr = str(rec.get("source_ref", "") or "").strip()
+            if rr:
+                by_ref[rr] = pid
+        for ref, vals in updates.items():
+            pid = by_ref.get(ref)
+            if not pid:
+                continue
+            touched = False
+            for k, v in vals.items():
+                if v and not str(data[pid].get(k, "") or "").strip():
+                    data[pid][k] = v
+                    touched = True
+            if touched:
+                filled += 1
+        if filled:
+            _wh_write(data)
+        print("\nfilled blanks on %d record(s) from the enriched file." % filled)
+
     print("\nlisted %d prospects (%d duplicates skipped, %d failed)"
           % (made, skipped_dupe, failed))
     print("Restart uvicorn. Pipeline Intelligence > Deals Warehouse.")
