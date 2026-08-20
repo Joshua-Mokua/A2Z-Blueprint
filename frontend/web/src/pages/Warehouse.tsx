@@ -45,6 +45,14 @@ export default function Warehouse() {
   const [landed, setLanded] = useState(false);
   const [shelves, setShelves] = useState<Record<string, WarehouseProspect[]>>({});
   const [total, setTotal] = useState(0);
+  // ── A WINDOW ONTO THE SHELF ─────────────────────────────────────────────
+  // The shelf holds 12,591 records and is aiming at a million. The page asks
+  // for 200 at a time and moves through them; `matched` is what the FILTER
+  // matches, which is the number an officer is actually asking about.
+  const PAGE = 200;
+  const [offset, setOffset] = useState(0);
+  const [matched, setMatched] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [counts, setCounts] = useState({ validated: 0 });
   const [an, setAn] = useState<WarehouseAnalytics | null>(null);
   // PICK A SHELF, do not scroll to it. At 165 records - and 1,800 coming - an
@@ -83,7 +91,7 @@ export default function Warehouse() {
       if (tab === 'analytics') {
         setAn(await fetchWarehouseAnalytics());
       } else if (tab !== 'mine') {
-        const r = await fetchWarehouseShelves({ town, q });
+        const r = await fetchWarehouseShelves({ town, q, limit: PAGE, offset });
         const all = r.shelves ?? {};
         // Filtered client-side: the shelf endpoint already returns every
         // prospect with its score, and a second round trip to re-ask the same
@@ -102,6 +110,8 @@ export default function Warehouse() {
         });
         setShelves(out);
         setTotal(n);
+        setMatched(r.total ?? n);
+        setHasMore(Boolean(r.has_more));
         setCounts({ validated: v });
         if (!landed) {
           setLanded(true);
@@ -115,7 +125,11 @@ export default function Warehouse() {
     } finally {
       setLoading(false);
     }
-  }, [tab, town, q, toast, landed]);
+  }, [tab, town, q, toast, landed, offset]);
+  // A NEW FILTER STARTS AT THE FIRST PAGE. Keeping the offset would land you
+  // on page four of a search that has three, and the shelf would look empty.
+  useEffect(() => { setOffset(0); }, [town, q, tab]);
+
 
   useEffect(() => { void load(); }, [load]);
 
@@ -386,9 +400,39 @@ export default function Warehouse() {
                     <option value="">Countrywide</option>
                     {towns.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
+                  {/* WHAT IS ON SCREEN, AND WHAT THE FILTER MATCHES. The
+                      shelf holds more than a page, so a bare count would be a
+                      lie - "200 available" when 12,591 match is worse than no
+                      number at all. */}
                   <span className="rounded-full bg-[#E6F1FB] px-2.5 py-1 text-[#0C447C]">
-                    {sector || subsector ? `${shown} of ${total}` : `${total} available`}
+                    {matched > shown
+                      ? `${offset + 1}\u2013${offset + shown} of ${matched}`
+                      : sector || subsector
+                        ? `${shown} of ${total}`
+                        : `${total} available`}
                   </span>
+                  {(offset > 0 || hasMore) && (
+                    <span className="inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={offset === 0 || loading}
+                        onClick={() => setOffset(Math.max(0, offset - PAGE))}
+                        className="rounded-md border border-gray-300 px-2 py-1 text-xs
+                                   text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                      >
+                        \u2190 Previous
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!hasMore || loading}
+                        onClick={() => setOffset(offset + PAGE)}
+                        className="rounded-md border border-gray-300 px-2 py-1 text-xs
+                                   text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                      >
+                        Next \u2192
+                      </button>
+                    </span>
+                  )}
                   <Button size="sm" onClick={() => setCreating((v) => !v)}>
                     {creating ? 'Cancel' : 'List a prospect'}
                   </Button>
