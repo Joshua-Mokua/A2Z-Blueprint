@@ -117,7 +117,12 @@ def main():
                     if len(cells) < 3:
                         continue
                     # The number column is optional - some pages drop it.
-                    if re.fullmatch(r"\d{1,3}", _flat(cells[0])):
+                    # "8" in the forex register, "9." in money remittance.
+                    # Requiring a bare number meant every MRP row fell to the
+                    # no-number branch, the columns shifted by one, and NOTHING
+                    # came out - which at least failed loudly rather than
+                    # importing 20 street addresses as businesses.
+                    if re.fullmatch(r"\d{1,3}\.?", _flat(cells[0])):
                         name, loc, contact = (_flat(cells[1]),
                                               _flat(cells[2]) if len(cells) > 2 else "",
                                               _flat(cells[3]) if len(cells) > 3 else "")
