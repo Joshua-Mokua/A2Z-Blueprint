@@ -52,6 +52,7 @@ WHAT IT DELIBERATELY LEAVES OUT
         --source "CompanyData BRS extract" --licence "commercial, 2026 seat"
 """
 import csv
+import re
 import os
 import sys
 
@@ -83,14 +84,26 @@ PERSONAL_HINTS = ("director", "owner_name", "contact_person", "first_name",
 # Free-text industry -> the warehouse's own sectors. Anything unmatched goes to
 # "Other" rather than inventing a sector nobody browses.
 SECTOR_MAP = [
-    (("agri", "farm", "horticult", "coffee", "tea", "livestock"), "Agriculture & Agribusiness"),
-    (("manufact", "factory", "processing", "industrial", "assembl"), "Manufacturing"),
+    # "tea" put Kenyatta National Hospital under Agriculture, because it is
+    # inside "TEAching". Whole-word matching fixes that, and the plurals a
+    # register actually writes are listed rather than relied on by prefix.
+    (("agri", "agriculture", "agribusiness", "farm", "farms", "farming",
+      "horticult", "horticulture", "coffee", "tea", "livestock", "dairy",
+      "fisheries", "irrigation"), "Agriculture & Agribusiness"),
+    (("manufact", "manufacturing", "factory", "factories", "processing",
+      "industrial", "industries", "assembl", "engineering", "steam",
+      "boiler", "millers", "mills"), "Manufacturing"),
     (("retail", "wholesale", "trading", "supermarket", "shop", "distribut"), "Wholesale & Retail Trade"),
     (("transport", "logistic", "freight", "haulage", "courier", "shipping"), "Transport & Logistics"),
     (("construct", "real estate", "property", "building", "contractor"), "Construction & Real Estate"),
     (("hotel", "restaurant", "tourism", "travel", "lodge", "hospitality", "safari"), "Hospitality & Tourism"),
     (("school", "college", "university", "educat", "training", "academy"), "Education"),
-    (("hospital", "clinic", "pharmac", "health", "medical", "diagnost"), "Health & Pharmaceuticals"),
+    # WHOLE-WORD matching means a keyword must be complete. "health" no longer
+    # catches "healthcare", so the words a register actually uses are listed.
+    (("hospital", "hospitals", "clinic", "clinics", "pharmac", "pharmacy",
+      "health", "healthcare", "medical", "diagnost", "dispensary",
+      "dispensaries", "laboratory", "nursing", "maternity", "dental",
+      "eye", "vct", "hospice"), "Health & Pharmaceuticals"),
     (("bank", "sacco", "microfinance", "insur", "financ", "invest", "fund"), "Financial Services"),
     (("software", "ict", "telecom", "technolog", "computer", "internet", "data"), "ICT & Telecommunications"),
     (("energy", "petrol", "oil", "gas", "solar", "power", "mining", "quarry"), "Energy & Extractives"),
@@ -122,9 +135,39 @@ def _match_columns(headers):
 
 
 def _sector_for(raw, sectors):
+    """Which shelf this business belongs on.
+
+    FOUND 2026-08-20: Kenyatta National Hospital landed under "Agriculture &
+    Agribusiness". The keyword "tea" matched inside "TEAching Referral
+    Hospital", and because Agriculture is first in the map it won.
+
+    A SUBSTRING TEST ON A SHORT WORD IS NOT A MATCH. "tea" is inside teaching,
+    steam, protea and instead; "oil" is inside boiler and toilet; "gas" is
+    inside gasket. Every one of those would have quietly filed a business on
+    the wrong shelf, where the RM who works that sector never sees it.
+
+    So a keyword must match a WHOLE WORD. "tea processing" still matches; "tea"
+    inside "teaching" does not.
+
+    AND THE EXPLICIT SECTOR WINS. These files carry "Hospital - Healthcare",
+    where the part after the dash is the sector somebody already decided. That
+    is better evidence than any keyword guess, so it is tried first.
+    """
     t = str(raw or "").lower()
+
+    # "Comprehensive Teaching Hospital - Healthcare": the part after the last
+    # dash was named deliberately upstream. Trust it before guessing.
+    if " - " in t:
+        tail = t.rsplit(" - ", 1)[1].strip()
+        for label in sectors:
+            if tail == label.lower():
+                return label
+        for keys, label in SECTOR_MAP:
+            if any(re.search(r"\b%s\b" % re.escape(k), tail) for k in keys):
+                return label if label in sectors else "Other"
+
     for keys, label in SECTOR_MAP:
-        if any(k in t for k in keys):
+        if any(re.search(r"\b%s\b" % re.escape(k), t) for k in keys):
             return label if label in sectors else "Other"
     return "Other"
 
