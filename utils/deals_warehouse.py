@@ -76,7 +76,139 @@ DEFAULT_SECTORS = [
 ]
 
 
+# ── POSTGRES IS THE STORE. JSON IS THE BACKUP. ──────────────────────────────
+# RULING, stated repeatedly: "we are to be fully PostgreSQL, JSON is just
+# backup. This is a bank system."
+#
+# This module was JSON-ONLY - no table, no sync, and the file was not even
+# tracked in git. On 2026-08-20 it was lost, and every sacco and entity the
+# team had entered went with it. There was nothing to recover from, anywhere.
+#
+# It now follows the same shape as pipeline_deals: the database is read first
+# and written authoritatively, and the JSON file is kept as a mirror so a box
+# with no database still works.
+#
+# WHY THE MIRROR STAYS: development boxes run without Postgres, and a module
+# that raises when the database is down would take the whole app with it. The
+# mirror is a fallback, NOT the source - if the database answers, its answer
+# wins.
+
+_TABLE = "deals_warehouse"
+
+
+def _db():
+    """The database, or None if it is not reachable. Never raises."""
+    try:
+        from utils.db import Database
+        db = Database()
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS deals_warehouse (
+                id              VARCHAR(60) PRIMARY KEY,
+                canonical_key   VARCHAR(300),
+                name            VARCHAR(300),
+                sector          VARCHAR(120),
+                subsector       VARCHAR(120),
+                town            VARCHAR(120),
+                status          VARCHAR(40),
+                estimated_value NUMERIC(18,2),
+                contact_name    VARCHAR(200),
+                contact_phone   VARCHAR(60),
+                contact_email   VARCHAR(200),
+                notes           TEXT,
+                source_event    VARCHAR(200),
+                created_by_code VARCHAR(50),
+                created_by_name VARCHAR(200),
+                created_at      VARCHAR(40),
+                claimed_by_code VARCHAR(50),
+                claimed_by_name VARCHAR(200),
+                claimed_at      VARCHAR(40),
+                deal_id         VARCHAR(60),
+                payload         JSONB
+            )
+        """)
+        db.execute("CREATE INDEX IF NOT EXISTS idx_dw_status "
+                   "ON deals_warehouse (status)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_dw_key "
+                   "ON deals_warehouse (canonical_key)")
+        return db
+    except Exception:
+        return None
+
+
+_COLS = ("id", "canonical_key", "name", "sector", "subsector", "town",
+         "status", "estimated_value", "contact_name", "contact_phone",
+         "contact_email", "notes", "source_event", "created_by_code",
+         "created_by_name", "created_at", "claimed_by_code",
+         "claimed_by_name", "claimed_at", "deal_id")
+
+
+def _db_write(data: dict) -> bool:
+    """Upsert every prospect. True if the database took them."""
+    db = _db()
+    if db is None:
+        return False
+    try:
+        for pid, rec in (data or {}).items():
+            if not isinstance(rec, dict):
+                continue
+            row = {c: rec.get(c) for c in _COLS}
+            row["id"] = str(pid)
+            try:
+                ev = rec.get("estimated_value")
+                row["estimated_value"] = float(ev) if ev not in (None, "") else None
+            except (TypeError, ValueError):
+                row["estimated_value"] = None
+            row["payload"] = json.dumps(rec, default=str)
+            db.upsert(_TABLE, row, "id")
+        # A prospect deleted from the map must go from the table too, or a
+        # removed one reappears on the next read.
+        keep = [str(k) for k in (data or {})]
+        if keep:
+            db.execute("DELETE FROM deals_warehouse WHERE id <> ALL(%s)", (keep,))
+        else:
+            db.execute("DELETE FROM deals_warehouse")
+        return True
+    except Exception:
+        return False
+
+
+def _db_read():
+    """Every prospect from the database, or None if it cannot answer."""
+    db = _db()
+    if db is None:
+        return None
+    try:
+        rows = db.fetch_all("SELECT * FROM deals_warehouse")
+    except Exception:
+        return None
+    out = {}
+    for r in rows or []:
+        rec = {}
+        pl = r.get("payload")
+        if pl:
+            try:
+                rec = json.loads(pl) if isinstance(pl, str) else dict(pl)
+            except Exception:
+                rec = {}
+        for c in _COLS:
+            if r.get(c) is not None:
+                rec[c] = r.get(c)
+        if rec.get("estimated_value") is not None:
+            try:
+                rec["estimated_value"] = float(rec["estimated_value"])
+            except (TypeError, ValueError):
+                pass
+        out[str(r.get("id"))] = rec
+    return out
+
+
 def _read() -> dict:
+    # DATABASE FIRST. The file is consulted only when the database cannot
+    # answer - and an EMPTY database is a real answer, not a failure, so a
+    # genuinely empty warehouse does not silently fall back to a stale file.
+    db_rows = _db_read()
+    if db_rows is not None:
+        return db_rows
     if not os.path.exists(_PATH):
         return {}
     try:
@@ -92,6 +224,10 @@ def _read() -> dict:
 
 
 def _write(data: dict) -> None:
+    # The database is written FIRST and is the record. The file follows as a
+    # mirror, so a box without Postgres still works and so there is always a
+    # readable copy on disk.
+    _db_write(data)
     os.makedirs(os.path.dirname(_PATH) or ".", exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(_PATH) or ".", suffix=".tmp")
     try:
