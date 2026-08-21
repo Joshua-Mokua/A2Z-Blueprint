@@ -405,7 +405,35 @@ def main():
     import glob
     on_disk = {os.path.splitext(os.path.basename(f))[0]
                for f in glob.glob(os.path.join("scripts", "patch_*.py"))}
-    unlisted = sorted(on_disk - set(CHAIN) - NOT_FOR_RELEASE)
+    # ── A PATCHER THAT EDITS THIS FILE EXCLUDES ITSELF ──────────────────────
+    # WHS, NFR, RTN and RTN_NAMED each refused a build by existing, and each
+    # was fixed by naming the previous one - a regress that ends only when the
+    # RULE is written down instead of the names.
+    #
+    # A patcher that writes to build_alex_release.py cannot be replayed onto
+    # the pilot: the pilot has no release builder. That is a fact about the
+    # file, not a judgement anybody should have to remember.
+    #
+    # The explicit NOT_FOR_RELEASE list stays for the warehouse and anything
+    # else held back for a REASON - a reason belongs in writing where somebody
+    # can disagree with it. Only the mechanical case is automatic.
+    _edits_builder = set()
+    for _f in glob.glob(os.path.join("scripts", "patch_*.py")):
+        try:
+            _src = open(_f, encoding="utf-8", errors="ignore").read()
+        except OSError:
+            continue
+        if "build_alex_release" in _src:
+            _edits_builder.add(os.path.splitext(os.path.basename(_f))[0])
+    if _edits_builder:
+        print("  %d patcher(s) edit the release builder and cannot reach the"
+              % len(_edits_builder))
+        print("  pilot - excluded automatically:")
+        for _b in sorted(_edits_builder):
+            print("     %s" % _b)
+        print("")
+
+    unlisted = sorted(on_disk - set(CHAIN) - NOT_FOR_RELEASE - _edits_builder)
     if unlisted:
         print("")
         print("  *** %d patcher(s) exist but are NOT in the release chain:" % len(unlisted))
