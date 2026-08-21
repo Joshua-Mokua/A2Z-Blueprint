@@ -1071,16 +1071,29 @@ export async function validateProspect(id: string): Promise<{ completeness: Comp
 export async function fetchWarehouseTaxonomy(): Promise<{ sectors: string[]; towns: string[] }> {
   return getJson<{ sectors: string[]; towns: string[] }>('/warehouse/taxonomy');
 }
+/** A PAGE of the shelf. `total` is what the filter matches; `shown` is what
+ *  came back in this page. At 12,591 records the endpoint can no longer send
+ *  everything, so the page asks for a window and moves through it. */
 export async function fetchWarehouseShelves(
-  opts: { town?: string; sector?: string; q?: string } = {},
-): Promise<{ shelves: Record<string, WarehouseProspect[]>; total: number }> {
+  opts: { town?: string; sector?: string; q?: string;
+          limit?: number; offset?: number } = {},
+): Promise<{
+  shelves: Record<string, WarehouseProspect[]>;
+  total: number; shown?: number; limit?: number; offset?: number;
+  has_more?: boolean;
+}> {
   const qs = new URLSearchParams();
   if (opts.town) qs.set('town', opts.town);
   if (opts.sector) qs.set('sector', opts.sector);
   if (opts.q) qs.set('q', opts.q);
+  qs.set('limit', String(opts.limit ?? 200));
+  qs.set('offset', String(opts.offset ?? 0));
   const s = qs.toString();
-  return getJson<{ shelves: Record<string, WarehouseProspect[]>; total: number }>(
-    `/warehouse/shelves${s ? `?${s}` : ''}`);
+  return getJson<{
+    shelves: Record<string, WarehouseProspect[]>;
+    total: number; shown?: number; limit?: number; offset?: number;
+    has_more?: boolean;
+  }>(`/warehouse/shelves${s ? `?${s}` : ''}`);
 }
 export async function fetchWarehouseMine(): Promise<WarehouseMine> {
   return getJson<WarehouseMine>('/warehouse/mine');
