@@ -85,7 +85,29 @@ def main():
     excluded = set(getattr(mod, "NOT_FOR_RELEASE", set()))
     on_disk = {f[:-3] for f in os.listdir("scripts")
                if f.startswith("patch_") and f.endswith(".py")}
-    unplaced = sorted(on_disk - set(chain) - excluded)
+    # ── THE SAME RULE THE BUILDER USES ──────────────────────────────────────
+    # A patcher that edits build_alex_release.py cannot be replayed onto the
+    # pilot - the pilot has no release builder. The builder learned this; this
+    # check did not, so it went on reporting them as unplaced.
+    #
+    # A rule enforced in one place and not the other is not a rule, it is a
+    # coincidence. Both read the same fact from the same files.
+    edits_builder = set()
+    for f in os.listdir("scripts"):
+        if not (f.startswith("patch_") and f.endswith(".py")):
+            continue
+        try:
+            if "build_alex_release" in open(os.path.join("scripts", f),
+                                            encoding="utf-8",
+                                            errors="ignore").read():
+                edits_builder.add(f[:-3])
+        except OSError:
+            pass
+    unplaced = sorted(on_disk - set(chain) - excluded - edits_builder)
+    if edits_builder:
+        print("  note  %d patcher(s) edit the release builder and are excluded"
+              % len(edits_builder))
+        print("        automatically - they cannot reach the pilot.")
     note(not unplaced, "every patcher is in the chain or named as excluded",
          "%d unplaced" % len(unplaced) if unplaced else "")
     for p in unplaced:
