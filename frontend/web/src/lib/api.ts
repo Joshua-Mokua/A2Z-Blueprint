@@ -1071,14 +1071,9 @@ export async function validateProspect(id: string): Promise<{ completeness: Comp
 export async function fetchWarehouseTaxonomy(): Promise<{ sectors: string[]; towns: string[] }> {
   return getJson<{ sectors: string[]; towns: string[] }>('/warehouse/taxonomy');
 }
-/** A PAGE of the shelf.
- *
- *  `total` is what the FILTER matches; `shown` is what came back in this page.
- *  At 12,591 records the endpoint can no longer send everything - the page
- *  spun and then showed an empty shelf - so it asks for a window and moves
- *  through it. A page then costs the same whether the shelf holds a thousand
- *  rows or a million.
- */
+/** A PAGE of the shelf. `total` is what the filter matches; `shown` is what
+ *  came back in this page. At 12,591 records the endpoint can no longer send
+ *  everything, so the page asks for a window and moves through it. */
 export async function fetchWarehouseShelves(
   opts: { town?: string; sector?: string; q?: string;
           limit?: number; offset?: number } = {},

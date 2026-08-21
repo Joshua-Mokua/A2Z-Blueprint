@@ -42,8 +42,6 @@ import { useNavigate } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useRole } from '@/hooks/useRole';
 import { useToast } from '@/components/Toast';
-import { fetchDealOrigins, fetchOriginSources,
-         type DealOrigin, type OriginSourceOption } from '@/lib/api';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useFxRates } from '@/hooks/useFxRates';
 import { Card } from '@/components/Card';
@@ -132,15 +130,6 @@ export function PipelineCreate() {
   const [otherText,   setOtherText]   = useState<string>('');     // free text when 'Other' chosen
   const SENTINEL_OTHER = '__OTHER__';
   const [isNtb,       setIsNtb]       = useState(false);
-  // ORIGIN (ruling 2026-08-11). Only DECLARABLE origins are offered - referral
-  // and warehouse are stamped by the workflow that routed the deal, so
-  // offering them here would invite a claim with no evidence behind it.
-  const [origin, setOrigin] = useState('self');
-  const [originOpts, setOriginOpts] = useState<DealOrigin[]>([]);
-  // The SOURCE for that origin - which event, which partnership. Empty for
-  // origins with nothing to pick, so no second dropdown renders.
-  const [sourceOpts, setSourceOpts] = useState<OriginSourceOption[]>([]);
-  const [sourceId, setSourceId] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
 
   // γ2: Tracks the CBS customer picked via the autofill dropdown.
@@ -223,45 +212,6 @@ export function PipelineCreate() {
   // Admin config drives the segment cascade, sectors, and per-class stage
   // flows. Best-effort — the form falls back to legacy defaults if it can't
   // load.
-  // The declarable origins, from config - so an eighth channel appears here
-  // without a frontend change.
-  useEffect(() => {
-    let alive = true;
-    void (async () => {
-      try {
-        const r = await fetchDealOrigins();
-        if (!alive) return;
-        const declarable = r.origins.filter(
-          (o) => o.key !== 'referral' && o.key !== 'warehouse');
-        setOriginOpts(declarable);
-        setOrigin((cur) => (declarable.some((o) => o.key === cur)
-          ? cur : (r.default || 'self')));
-      } catch {
-        // A failed lookup must not block deal capture - the server defaults
-        // the origin anyway, so the form stays usable.
-        if (alive) setOriginOpts([]);
-      }
-    })();
-    return () => { alive = false; };
-  }, []);
-
-  // Reload the source list whenever the origin changes, and clear any previous
-  // choice - a stale event_id left behind would attribute this deal to the
-  // wrong roadshow. The server clears it too; doing it here keeps the form
-  // honest about what it is about to send.
-  useEffect(() => {
-    let alive = true;
-    setSourceId('');
-    void (async () => {
-      try {
-        const r = await fetchOriginSources(origin);
-        if (alive) setSourceOpts(r.options ?? []);
-      } catch {
-        if (alive) setSourceOpts([]);
-      }
-    })();
-    return () => { alive = false; };
-  }, [origin]);
   useEffect(() => {
     let active = true;
     fetchPipelineConfig()
@@ -923,10 +873,6 @@ export function PipelineCreate() {
     // ── Standard create path (with optional conflict fields) ───────────
     const body: CreateDealRequest = {
       client_name:  clientName.trim(),
-      // Declared origin. The server validates it and silently replaces a
-      // system-routed value, so a stale client cannot claim a referral.
-      origin,
-      ...(sourceId ? { event_id: sourceId } : {}),
       staff_code:   user.staff_code,
       staff_name:   user.full_name,
       deal_value:   isBundle ? bundleTotal : (isTopUp ? topUpAmtNum : dealValueNum),
@@ -1009,7 +955,7 @@ export function PipelineCreate() {
       <PageHeader
         title="New Deal"
         breadcrumbs={[
-          { label: 'A2Z Sales Pro', to: '/pipeline' },
+          { label: 'EKE Sales Pro', to: '/pipeline' },
           { label: 'New deal' },
         ]}
         subtitle="Capture a lead — customer, classification, value, and ownership."
@@ -1080,56 +1026,7 @@ export function PipelineCreate() {
             <span className="text-xs text-gray-400">Who is this deal for?</span>
           </Card.Header>
           <Card.Body>
-            {/* ORIGIN — the first gate. Where did this deal come from? Only
-                the origins a person can legitimately declare appear here;
-                referral and warehouse are stamped by the system when the deal
-                actually travels that route. */}
-            {originOpts.length > 0 && (
-              <div className="mb-4">
-                <label className="text-sm font-medium text-gray-700">
-                  Deal origin
-                </label>
-                <select
-                  value={origin}
-                  onChange={(e) => setOrigin(e.target.value)}
-                  disabled={mutations.loading}
-                  className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
-                >
-                  {originOpts.map((o) => (
-                    <option key={o.key} value={o.key}>{o.label}</option>
-                  ))}
-                </select>
-                {(() => {
-                  const o = originOpts.find((x) => x.key === origin);
-                  return o?.note ? (
-                    <p className="mt-1 text-xs text-gray-500">{o.note}</p>
-                  ) : null;
-                })()}
-
-                {sourceOpts.length > 0 && (
-                  <div className="mt-3">
-                    <label className="text-sm font-medium text-gray-700">
-                      Which one?
-                    </label>
-                    <select
-                      value={sourceId}
-                      onChange={(e) => setSourceId(e.target.value)}
-                      disabled={mutations.loading}
-                      className="mt-1 w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
-                    >
-                      <option value="">Not specified</option>
-                      {sourceOpts.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.label}{o.sub ? ` — ${o.sub}` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Relationship status — drives whether a CBS CIF lookup is
+            {/* Relationship status FIRST — drives whether a CBS CIF lookup is
                 offered (existing customer) or the form is filled fresh (NTB). */}
             <div className="mb-4">
               <label className="text-sm font-medium text-gray-700">

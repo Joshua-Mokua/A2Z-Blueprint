@@ -69,12 +69,14 @@ import { setCurrentToken, setOn401Callback } from '@/lib/api';
 
 // ── Storage keys + tunables (single source of truth) ────────────────────
 
-const STORAGE_KEY_TOKEN         = 'a2z_token';
-const STORAGE_KEY_EXPIRES       = 'a2z_token_expires_at';
-const STORAGE_KEY_MUST_ROTATE   = 'a2z_must_rotate';
+const STORAGE_KEY_TOKEN           = 'a2z_token';
+const STORAGE_KEY_EXPIRES         = 'a2z_token_expires_at';
+const STORAGE_KEY_MUST_ROTATE     = 'a2z_must_rotate';
+const STORAGE_KEY_MUST_SET_STAFF  = 'a2z_must_set_staff_id';
 const EXPIRY_SAFETY_MARGIN_MS   = 30_000;
 const LOGIN_ENDPOINT            = '/api/auth/login';
 const CHANGE_PASSWORD_ENDPOINT  = '/api/auth/change-password';
+const SET_STAFF_ID_ENDPOINT     = '/api/auth/set-staff-id';
 
 
 // ── Safe storage helpers ────────────────────────────────────────────────
@@ -96,6 +98,7 @@ function clearAllAuthStorage(): void {
   safeStorageRemove(STORAGE_KEY_TOKEN);
   safeStorageRemove(STORAGE_KEY_EXPIRES);
   safeStorageRemove(STORAGE_KEY_MUST_ROTATE);
+  safeStorageRemove(STORAGE_KEY_MUST_SET_STAFF);
 }
 
 
@@ -106,8 +109,10 @@ export const AuthContext = createContext<AuthContextValue>({
   token:     null,
   expiresAt: null,
   error:     null,
+  mustSetStaffId:  false,
   login:           async () => { /* no-op default */ },
   changePassword:  async () => { /* no-op default */ },
+  setStaffId:      async () => { /* no-op default */ },
   logout:          () => { /* no-op default */ },
 });
 
@@ -119,6 +124,7 @@ interface AuthState {
   token:     string | null;
   expiresAt: number | null;
   error:     string | null;
+  mustSetStaffId: boolean;
 }
 
 const INITIAL_STATE: AuthState = {
@@ -126,6 +132,7 @@ const INITIAL_STATE: AuthState = {
   token:     null,
   expiresAt: null,
   error:     null,
+  mustSetStaffId: false,
 };
 
 
@@ -139,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedToken     = safeStorageGet(STORAGE_KEY_TOKEN);
     const storedExpires   = safeStorageGet(STORAGE_KEY_EXPIRES);
     const storedMustRotate = safeStorageGet(STORAGE_KEY_MUST_ROTATE) === 'true';
+    const storedMustSetStaffId = safeStorageGet(STORAGE_KEY_MUST_SET_STAFF) === 'true';
 
     if (!storedToken || !storedExpires) {
       setState({ ...INITIAL_STATE, status: 'unauthenticated' });
@@ -158,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token:     storedToken,
       expiresAt,
       error:     null,
+      mustSetStaffId: storedMustSetStaffId,
     });
   }, []);
 
@@ -173,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCurrentToken(null);
       setState((s) => (
         (s.status === 'authenticated' || s.status === 'must_rotate')
-          ? { status: 'expired', token: null, expiresAt: null, error: null }
+          ? { status: 'expired', token: null, expiresAt: null, error: null, mustSetStaffId: false }
           : s
       ));
     });
@@ -187,21 +196,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (username: string, password: string) => {
     setState((s) => ({ ...s, error: null }));
 
+    // AD auth (utils/external_auth.py) waits up to ad_timeout_seconds (45s,
+    // data/auth_settings.json — deliberately kept under nginx's default 60s
+    // proxy_read_timeout on /api/, or nginx 504s before our own graceful
+    // timeout response can return) before falling back to local auth, which
+    // then also has to run. 75s gives headroom before the CLIENT gives up and
+    // reports a network error, rather than the request hanging indefinitely
+    // on a truly dead connection.
+    const LOGIN_TIMEOUT_MS = 75_000;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), LOGIN_TIMEOUT_MS);
+
     let res: Response;
     try {
       res = await fetch(LOGIN_ENDPOINT, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ username, password }),
+        signal:  controller.signal,
       });
-    } catch {
-      const msg = 'Cannot reach authentication server. Please try again.';
+    } catch (err) {
+      const msg = (err instanceof DOMException && err.name === 'AbortError')
+        ? 'The authentication server took too long to respond. Please try again.'
+        : 'Cannot reach authentication server. Please try again.';
       setState((s) => ({ ...s, error: msg }));
       throw new Error(msg);
+    } finally {
+      clearTimeout(timer);
     }
 
     if (res.status === 401) {
       const msg = 'Invalid username or password.';
+      setState((s) => ({ ...s, error: msg }));
+      throw new Error(msg);
+    }
+    if (res.status === 504) {
+      // Backend distinguishes "AD server didn't respond in time" from
+      // "credentials were checked and rejected" — surface its own message
+      // rather than the generic 5xx one below, since the fix is "try again",
+      // not "check your password".
+      let msg = 'The authentication server did not respond in time. Please try again.';
+      try {
+        const body = await res.json();
+        if (body && typeof body.detail === 'string') msg = body.detail;
+      } catch { /* keep default */ }
       setState((s) => ({ ...s, error: msg }));
       throw new Error(msg);
     }
@@ -235,6 +273,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const expiresAt = Date.now() + body.expires_in_seconds * 1000;
     const mustRotate = body.must_change_password === true;
+    const mustSetStaffId = body.must_set_staff_id === true;
 
     safeStorageSet(STORAGE_KEY_TOKEN,   body.access_token);
     safeStorageSet(STORAGE_KEY_EXPIRES, String(expiresAt));
@@ -243,6 +282,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       safeStorageRemove(STORAGE_KEY_MUST_ROTATE);
     }
+    if (mustSetStaffId) {
+      safeStorageSet(STORAGE_KEY_MUST_SET_STAFF, 'true');
+    } else {
+      safeStorageRemove(STORAGE_KEY_MUST_SET_STAFF);
+    }
     // CRITICAL: sync token BEFORE setState (race fix).
     setCurrentToken(body.access_token);
     setState({
@@ -250,6 +294,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token:     body.access_token,
       expiresAt,
       error:     null,
+      mustSetStaffId,
     });
   }, []);
 
@@ -342,9 +387,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // must_rotate flag in storage so a subsequent F5 lands in
       // 'authenticated', not 'must_rotate'.
       const expiresAt = Date.now() + body.expires_in_seconds * 1000;
+      const mustSetStaffId = body.must_set_staff_id === true;
       safeStorageSet(STORAGE_KEY_TOKEN,   body.access_token);
       safeStorageSet(STORAGE_KEY_EXPIRES, String(expiresAt));
       safeStorageRemove(STORAGE_KEY_MUST_ROTATE);
+      if (mustSetStaffId) {
+        safeStorageSet(STORAGE_KEY_MUST_SET_STAFF, 'true');
+      } else {
+        safeStorageRemove(STORAGE_KEY_MUST_SET_STAFF);
+      }
       // CRITICAL: sync token BEFORE setState (race fix — same discipline
       // as login). On the must_rotate → authenticated transition,
       // RoleProvider's auth-status effect fires whoami immediately;
@@ -356,7 +407,81 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token:     body.access_token,
         expiresAt,
         error:     null,
+        mustSetStaffId,
       });
+    },
+    [state.token],
+  );
+
+  // ── setStaffId action ─────────────────────────────────────────────────
+  // POST /api/auth/set-staff-id. Takes a normal full-scope token (unlike
+  // changePassword, missing staff_code doesn't restrict the token) and
+  // returns a fresh token with must_set_staff_id cleared. Same manual
+  // fetch + Authorization header pattern as changePassword.
+  const setStaffId = useCallback(
+    async (staffCode: string) => {
+      setState((s) => ({ ...s, error: null }));
+
+      const currentToken = state.token;
+      if (!currentToken) {
+        const msg = 'You must be signed in to set your staff ID.';
+        setState((s) => ({ ...s, error: msg }));
+        throw new Error(msg);
+      }
+
+      let res: Response;
+      try {
+        res = await fetch(SET_STAFF_ID_ENDPOINT, {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${currentToken}`,
+          },
+          body: JSON.stringify({ staff_code: staffCode }),
+        });
+      } catch {
+        const msg = 'Cannot reach the server. Please try again.';
+        setState((s) => ({ ...s, error: msg }));
+        throw new Error(msg);
+      }
+
+      if (res.status === 400) {
+        let detail = 'Staff ID is invalid.';
+        try {
+          const body = await res.json();
+          if (body && typeof body.detail === 'string') detail = body.detail;
+        } catch { /* keep default */ }
+        setState((s) => ({ ...s, error: detail }));
+        throw new Error(detail);
+      }
+      if (!res.ok) {
+        const msg = `Failed to set staff ID (HTTP ${res.status}).`;
+        setState((s) => ({ ...s, error: msg }));
+        throw new Error(msg);
+      }
+
+      let body: TokenResponse;
+      try {
+        body = await res.json() as TokenResponse;
+      } catch {
+        const msg = 'Server returned an invalid response.';
+        setState((s) => ({ ...s, error: msg }));
+        throw new Error(msg);
+      }
+
+      const expiresAt = Date.now() + body.expires_in_seconds * 1000;
+      safeStorageSet(STORAGE_KEY_TOKEN,   body.access_token);
+      safeStorageSet(STORAGE_KEY_EXPIRES, String(expiresAt));
+      safeStorageRemove(STORAGE_KEY_MUST_SET_STAFF);
+      setCurrentToken(body.access_token);
+      setState((s) => ({
+        ...s,
+        status:    'authenticated',
+        token:     body.access_token,
+        expiresAt,
+        error:     null,
+        mustSetStaffId: false,
+      }));
     },
     [state.token],
   );
@@ -370,6 +495,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token:     null,
       expiresAt: null,
       error:     null,
+      mustSetStaffId: false,
     });
   }, []);
 
@@ -380,8 +506,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token:     state.token,
     expiresAt: state.expiresAt,
     error:     state.error,
+    mustSetStaffId: state.mustSetStaffId,
     login,
     changePassword,
+    setStaffId,
     logout,
   };
 

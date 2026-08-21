@@ -34,19 +34,7 @@ export function DonutChart({
         <PieChart>
           <Pie data={data} dataKey="value" nameKey="name"
                cx="50%" cy="50%" innerRadius="58%" outerRadius="80%"
-               paddingAngle={2} cornerRadius={4} stroke="#fff" strokeWidth={2}
-               // SHARE IS THE QUESTION a donut is asked. Without a percentage
-               // the reader has to judge it by eye from the arc, which is what
-               // pie charts are criticised for - and the legend gives names
-               // without proportions.
-               //
-               // Slices under 4% are left unlabelled: at that size the text
-               // collides with its neighbours and the chart becomes less
-               // readable than it was, not more.
-               label={(e: { percent?: number }) => (
-                 (e.percent ?? 0) >= 0.04
-                   ? `${Math.round((e.percent ?? 0) * 100)}%` : '')}
-               labelLine={false}>
+               paddingAngle={2} cornerRadius={4} stroke="#fff" strokeWidth={2}>
             {data.map((d, i) => (
               <Cell key={d.name} fill={d.color ?? colors[i % colors.length]} />
             ))}

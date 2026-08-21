@@ -154,13 +154,6 @@ export default function PipelineAnalytics() {
                     <span className="text-sm font-semibold text-gray-800">
                       {o.label || o.origin}
                     </span>
-                    {/* SHARE, not just a count. "Events produced 13 deals" is
-                        only meaningful against the whole book, and a reader
-                        should not have to add up the other cards to find out. */}
-                    <span className="ml-auto text-[11px] tabular-nums text-gray-500">
-                      {originTotal > 0
-                        ? `${Math.round((o.count / originTotal) * 100)}%` : '—'}
-                    </span>
                     <span className="text-xs tabular-nums text-gray-500">
                       {originTotal ? Math.round((o.count / originTotal) * 100) : 0}%
                     </span>

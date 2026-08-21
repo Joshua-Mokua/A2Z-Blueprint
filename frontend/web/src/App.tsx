@@ -76,15 +76,11 @@ import { CreditAnalytics } from './pages/CreditAnalytics';
 import { PipelineDealDetail } from './pages/PipelineDealDetail';
 import { PipelineCreate } from './pages/PipelineCreate';
 import { PipelineManagerQueues } from './pages/PipelineManagerQueues';
-import OriginChannels from './pages/OriginChannels';
-import Warehouse from './pages/Warehouse';
-import ProspectDetail from './pages/ProspectDetail';
 import { Lms } from './pages/Lms';
 import { LmsApplicationDetail } from './pages/LmsApplicationDetail';
 import { CreditAdmin } from './pages/CreditAdmin';
 import { CreditAdminCaseDetail } from './pages/CreditAdminCaseDetail';
 import { Troops } from './pages/Troops';
-import TreasuryRateDesk from '@/pages/TreasuryRateDesk';
 import { Cbs } from './pages/Cbs';
 import { CbsCustomerDetail } from './pages/CbsCustomerDetail';
 import { Cascade } from './pages/Cascade';
@@ -154,15 +150,6 @@ function App() {
                         documents intent. */}
                     <Route path="/pipeline/new"     element={<PipelineCreate />} />
                     <Route path="/pipeline/queues"  element={<PipelineManagerQueues />} />
-                    {/* The old Events page is superseded by Origin Channels -
-                        one page for all three. The route is kept so bookmarks
-                        still work, but it renders the new page: two pages
-                        showing the same events, with different layouts, is how
-                        a product starts to feel like two systems. */}
-                    <Route path="/pipeline/events"  element={<OriginChannels />} />
-                    <Route path="/pipeline/channels" element={<OriginChannels />} />
-                    <Route path="/pipeline/warehouse" element={<Warehouse />} />
-                    <Route path="/pipeline/warehouse/:prospectId" element={<ProspectDetail />} />
                     <Route path="/pipeline/:dealId" element={<PipelineDealDetail />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/credit-analytics" element={<CreditAnalytics />} />
@@ -176,10 +163,6 @@ function App() {
                     <Route path="/credit-admin"          element={<CreditAdmin />} />
                     <Route path="/credit-admin/:caseId"  element={<CreditAdminCaseDetail />} />
                     <Route path="/troops"                element={<Troops />} />
-                    {/* The treasury rate desk. Role-gated server-side: a
-                        non-treasury caller gets a plain message rather than
-                        an error, so the route can stay open. */}
-                    <Route path="/treasury/rates"        element={<TreasuryRateDesk />} />
 
                     {/* CBS Customer Lookup — γ2. */}
                     <Route path="/cbs"         element={<Cbs />} />
