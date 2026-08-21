@@ -187,6 +187,11 @@ NOT_FOR_RELEASE = {
     # thing that is unplaced. WHS taught us that; this is the same lesson
     # applied to itself.
     "patch_nfr_six",
+    # RTN edits the builder too: a failed build now discards the partial
+    # replay and returns you to the branch you started from. It cannot be
+    # replayed onto the pilot for the same reason as WHS and NFR - it IS the
+    # tool doing the replaying.
+    "patch_rtn_return_home",
 
     # THE WAREHOUSE IS HELD BACK (ruling 2026-08-11): "anything on the
     # warehouse is not to be released to Alex until I am certain it is well
