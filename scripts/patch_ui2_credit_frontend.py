@@ -187,7 +187,13 @@ EXPECT = {
     # underwritten, so it has nothing to do with the credit application page.
     "frontend/web/src/pages/PipelineDealDetail.tsx":
         ["RateRequestPanel", "CommitteeDocumentStrip"],
-    "frontend/web/src/pages/TreasuryRateDesk.tsx": ["fetchRatePool"],
+    # TreasuryRateDesk.tsx was checked here but UI2 DOES NOT CARRY IT -
+    # patch_tr1_treasury_rate_desk ships that page. The check looked the file
+    # up in FILES, found nothing, and the replay died with a KeyError on the
+    # release build - the one run where it mattered.
+    #
+    # A patch must only make claims about the files it actually carries.
+    # Checking somebody else's file is not caution; it is a crash waiting.
     # The warehouse entry is a MARKER, not a feature: an older UI2 stripped it
     # from this box's sidebar, and without something to detect that, the patch
     # reads as "already applied" and never restores it.
