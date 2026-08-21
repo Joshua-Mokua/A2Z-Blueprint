@@ -44,7 +44,21 @@ FAIL = []
 def sh(*a, **kw):
     kw.setdefault("capture_output", True)
     kw.setdefault("text", True)
+    # WINDOWS DEFAULTS TO cp1252 AND THE SOURCE IS UTF-8. Without this, reading
+    # a file with a box-drawing character in a comment raises
+    # UnicodeDecodeError inside a reader thread - and the caller sees empty
+    # output rather than an error. That made the auth check report five files
+    # as MOVED when nothing had moved at all.
+    kw.setdefault("encoding", "utf-8")
+    kw.setdefault("errors", "replace")
     return subprocess.run(list(a), **kw)
+
+
+def sh_bytes(*a):
+    """Raw bytes, no decoding. For comparing file contents, where a decode is
+    not just unnecessary but actively dangerous - a failed decode looks like a
+    difference."""
+    return subprocess.run(list(a), capture_output=True).stdout
 
 
 def note(ok, title, detail=""):
@@ -171,13 +185,16 @@ def main():
              "the replayed python compiles",
              (r.stderr or "").strip()[:18] if r else "nothing to compile")
 
+        # COMPARE BYTES, NOT TEXT. A file is the same or it is not; decoding
+        # it first only creates ways for identical files to look different.
         moved = []
         for f in getattr(mod, "DELTA", []):
-            a = sh("git", "show", "origin/alex-dev:%s" % f).stdout
+            a = sh_bytes("git", "show", "origin/alex-dev:%s" % f)
             q = os.path.join(tmp, f)
-            b = open(q, encoding="utf-8", errors="ignore").read() \
-                if os.path.isfile(q) else ""
-            if a and b and a != b:
+            b = open(q, "rb").read() if os.path.isfile(q) else b""
+            # Line endings differ between a git blob and a checked-out file on
+            # Windows, and that is not a change anybody made.
+            if a and b and a.replace(b"\r\n", b"\n") != b.replace(b"\r\n", b"\n"):
                 moved.append(f)
         note(not moved, "the pilot's authentication files are untouched",
              "%d moved" % len(moved) if moved else "")
@@ -187,13 +204,14 @@ def main():
         theirs = []
         for f in ("data/lms_config.json", "data/users.json",
                   "data/pipeline_settings.json", "data/org_config.json"):
-            a = sh("git", "show", "origin/alex-dev:%s" % f).stdout
+            a = sh_bytes("git", "show", "origin/alex-dev:%s" % f)
             if not a:
                 continue
             q = os.path.join(tmp, f)
-            if os.path.isfile(q) and open(q, encoding="utf-8",
-                                          errors="ignore").read() != a:
-                theirs.append(os.path.basename(f))
+            if os.path.isfile(q):
+                b = open(q, "rb").read()
+                if a.replace(b"\r\n", b"\n") != b.replace(b"\r\n", b"\n"):
+                    theirs.append(os.path.basename(f))
         note(not theirs, "no configuration of the bank's would be overwritten",
              ", ".join(theirs)[:18])
     finally:
