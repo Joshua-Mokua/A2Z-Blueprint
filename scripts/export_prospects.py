@@ -58,6 +58,22 @@ WANTED = [("company_phone", "phone"), ("company_email", "email"),
 def main():
     out = ""
     sector = subsector = county = status = missing = ""
+    # ── HANDING 41,878 ROWS TO ANYBODY IS NOT A REQUEST, IT IS A DUMP ───────
+    # RULING (2026-08-21): "I need that link to download and hand to an agent
+    # to do a deep search."
+    #
+    # One file of forty thousand rows is unworkable for a person and beyond
+    # most models' context. --chunk splits it into numbered files that can be
+    # handed out separately, worked on in parallel, and brought back one at a
+    # time - so a mistake in one costs one batch rather than the lot.
+    chunk = 0
+    if "--chunk" in sys.argv:
+        i = sys.argv.index("--chunk")
+        if i + 1 < len(sys.argv):
+            try:
+                chunk = max(0, int(sys.argv[i + 1]))
+            except ValueError:
+                chunk = 0
     for flag, name in (("--out", "out"), ("--sector", "sector"),
                        ("--subsector", "subsector"), ("--county", "county"),
                        ("--status", "status"), ("--missing", "missing")):
@@ -132,11 +148,24 @@ def main():
         bits = [b for b in (subsector or sector, county, status) if b]
         out = "prospects_%s.csv" % ("_".join(bits).replace(" ", "_") or "all")
 
-    with open(out, "w", encoding="utf-8-sig", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=COLUMNS)
-        w.writeheader()
-        for r in rows:
-            w.writerow(r)
+    written = []
+    if chunk and len(rows) > chunk:
+        stem = out[:-4] if out.lower().endswith(".csv") else out
+        for n in range(0, len(rows), chunk):
+            part = "%s_%02d.csv" % (stem, n // chunk + 1)
+            with open(part, "w", encoding="utf-8-sig", newline="") as fh:
+                w = csv.DictWriter(fh, fieldnames=COLUMNS)
+                w.writeheader()
+                for r in rows[n:n + chunk]:
+                    w.writerow(r)
+            written.append((part, len(rows[n:n + chunk])))
+    else:
+        with open(out, "w", encoding="utf-8-sig", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=COLUMNS)
+            w.writeheader()
+            for r in rows:
+                w.writerow(r)
+        written.append((out, len(rows)))
 
     gapcount = {}
     for r in rows:
@@ -146,7 +175,14 @@ def main():
     print("=" * 72)
     print("EXPORTED FOR ENRICHMENT")
     print("=" * 72)
-    print("  file        %s" % out)
+    if len(written) > 1:
+        print("  files       %d" % len(written))
+        for f, n in written[:6]:
+            print("     %-44s %d rows" % (os.path.basename(f), n))
+        if len(written) > 6:
+            print("     ... and %d more" % (len(written) - 6))
+    else:
+        print("  file        %s" % written[0][0])
     print("  prospects   %d" % len(rows))
     full = sum(1 for r in rows if not r["_missing"])
     avg = sum(r["_percent"] for r in rows) / float(len(rows))
