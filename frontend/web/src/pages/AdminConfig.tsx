@@ -40,6 +40,8 @@ import {
   type CommitteeTier,
   type AdminBranch,
   type SlaConfig,
+  getPoolVisibility, setPoolVisibility,
+  getConditionLibrary, setConditionLibrary,
 } from '@/lib/api';
 import type { PipelineConfig, ProductFlow, DealCategoryConfig } from '@/types/pipeline';
 
@@ -131,6 +133,8 @@ const SUBTABS: { id: string; label: string }[] = [
   { id: 'products', label: 'Products & Flows' },
   { id: 'mou',      label: 'MOU / Partners' },
   { id: 'org',      label: 'Committees & Branches' },
+  { id: 'pool',     label: 'Credit Pool Access' },
+  { id: 'conds',    label: 'Credit Conditions' },
 ];
 
 function PanelShell({
@@ -1142,6 +1146,8 @@ export default function AdminConfig() {
                 <BranchesPanel />
               </>
             )}
+            {subTab === 'pool' && <PoolVisibilityPanel />}
+            {subTab === 'conds' && <ConditionLibraryPanel />}
           </div>
             </SubTabCtx.Provider>
           </>
@@ -1401,5 +1407,241 @@ function CategoryEditor({
         <Button size="sm" onClick={add} disabled={!newName.trim()}>Add category</Button>
       </div>
     </div>
+  );
+}
+
+
+/* ─────────── Credit Pool Access ───────────
+   RULING (2026-08-17): "can I give them access from the admin side? I may not
+   want them to have the admin configuration module."
+
+   Exactly right, and it is why this panel exists rather than a script. The
+   CONFIG ADMIN grants pool sight here; the people being granted it - credit
+   risk, credit admin, remedial - never open this screen at all. Granting a
+   permission and holding a permission are different things, and one should not
+   require the other.
+
+   The endpoint already existed with a require_config_admin gate. This is the
+   screen it was missing.
+
+   MATCHING IS LENIENT AND THAT MATTERS: an entry counts if it is a SUBSTRING
+   of somebody's role. "credit manager" therefore does NOT match "Credit Risk
+   Manager" - the word "risk" sits between the halves - which is precisely how
+   a Credit Risk Manager came to see nothing at all. Shorter entries match more
+   people, so "credit risk" catches both the Manager and the Director. */
+function PoolVisibilityPanel() {
+  const { toast } = useToast();
+  const [roles, setRoles] = useState<string[]>([]);
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [draft, setDraft] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const v = await getPoolVisibility();
+      setRoles(v.roles ?? []);
+      setStatuses(v.statuses ?? []);
+    } catch (e) {
+      toast({ tone: 'danger',
+        message: e instanceof Error ? e.message : 'Could not read pool access' });
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { void load(); /* eslint-disable-next-line */ }, []);
+
+  const save = async (next: string[]) => {
+    setSaving(true);
+    try {
+      const v = await setPoolVisibility({ roles: next });
+      setRoles(v.roles ?? next);
+      toast({ tone: 'success', message: 'Credit pool access updated.' });
+    } catch (e) {
+      toast({ tone: 'danger',
+        message: e instanceof Error ? e.message : 'Could not save' });
+    } finally { setSaving(false); }
+  };
+
+  const add = () => {
+    const v = draft.trim().toLowerCase();
+    if (!v) return;
+    if (roles.includes(v)) { setDraft(''); return; }
+    setDraft('');
+    void save([...roles, v]);
+  };
+
+  return (
+    <Card className="mb-4">
+      <Card.Header>
+        <h3 className="text-sm font-semibold text-gray-900">Credit Pool Access</h3>
+      </Card.Header>
+      <Card.Body>
+        <p className="mb-3 text-xs text-gray-600">
+          Roles listed here see every case in the credit pool, not just their own
+          branch. A role counts if the text below appears anywhere in a person's
+          job title — so <span className="font-medium">credit risk</span> matches
+          both Credit Risk Manager and Director, Credit Risk Management.
+        </p>
+        {loading ? (
+          <p className="py-4 text-center text-sm text-gray-400">Loading…</p>
+        ) : (
+          <>
+            <div className="mb-3 flex flex-wrap gap-2">
+              {roles.length === 0 && (
+                <span className="text-xs text-gray-400">
+                  Nobody has pool access — every credit screen will be empty.
+                </span>
+              )}
+              {roles.map((r) => (
+                <span key={r}
+                  className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-800">
+                  {r}
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => void save(roles.filter((x) => x !== r))}
+                    className="ml-1 text-gray-400 hover:text-red-600 disabled:opacity-50"
+                    aria-label={`Remove ${r}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+                placeholder="credit risk"
+                className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-brand-primary focus:outline-none"
+              />
+              <Button size="sm" onClick={add} disabled={saving || !draft.trim()}>
+                Add role
+              </Button>
+            </div>
+            <p className="mt-2 text-xs text-gray-500">
+              Statuses currently in the pool: {statuses.join(', ') || 'none'}.
+            </p>
+          </>
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+
+
+/* ─────────── Credit Conditions ───────────
+   RULING (2026-08-18): "the items we listed in the pre-approval and
+   pre-disbursement conditions can now be added to the admin config. We can
+   maintain those as they are, but the admin should be able to amend and add to
+   suit the bank's terminologies without seeming like we are introducing new
+   concepts. They should be configured and not hard-coded."
+
+   A list written into the software is a developer's guess at a bank's credit
+   policy. Worded differently from the credit manual, it makes the system look
+   as though it is inventing terms - and nobody can correct it without a
+   release.
+
+   UNTIL AN ADMIN SAVES ONE, THE SCREEN SAYS SO. The analyst still gets the
+   built-in set so the system is usable on day one, but this panel does not
+   pretend that set is the bank's. */
+function ConditionLibraryPanel() {
+  const { toast } = useToast();
+  const [pre, setPre] = useState<string>('');
+  const [disb, setDisb] = useState<string>('');
+  const [configured, setConfigured] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const lib = await getConditionLibrary();
+        setPre((lib.pre_approval ?? []).join('\n'));
+        setDisb((lib.pre_disbursement ?? []).join('\n'));
+        setConfigured(Boolean(lib.configured));
+      } catch (e) {
+        toast({ tone: 'danger',
+          message: e instanceof Error ? e.message : 'Could not read the conditions' });
+      } finally { setLoading(false); }
+    })();
+    /* eslint-disable-next-line */
+  }, []);
+
+  const save = async (key: 'pre_approval' | 'pre_disbursement', text: string) => {
+    const list = text.split('\n').map((x) => x.trim()).filter(Boolean);
+    setSaving(key);
+    try {
+      const lib = await setConditionLibrary({ [key]: list });
+      setPre((lib.pre_approval ?? []).join('\n'));
+      setDisb((lib.pre_disbursement ?? []).join('\n'));
+      setConfigured(true);
+      toast({ tone: 'success', message: 'Conditions saved.' });
+    } catch (e) {
+      toast({ tone: 'danger',
+        message: e instanceof Error ? e.message : 'Could not save' });
+    } finally { setSaving(null); }
+  };
+
+  const box = (
+    label: string, hint: string, value: string,
+    onChange: (v: string) => void, key: 'pre_approval' | 'pre_disbursement',
+  ) => (
+    <div className="mb-5">
+      <label className="text-sm font-semibold text-gray-900">{label}</label>
+      <p className="mb-1 text-xs text-gray-600">{hint}</p>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={12}
+        spellCheck={false}
+        className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-xs focus:border-brand-primary focus:outline-none"
+      />
+      <div className="mt-1 flex items-center justify-between">
+        <span className="text-xs text-gray-500">
+          {value.split('\n').filter((x) => x.trim()).length} condition(s), one per line
+        </span>
+        <Button size="sm" disabled={saving !== null} onClick={() => void save(key, value)}>
+          {saving === key ? 'Saving…' : 'Save'}
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <Card className="mb-4">
+      <Card.Header>
+        <h3 className="text-sm font-semibold text-gray-900">Credit Conditions</h3>
+      </Card.Header>
+      <Card.Body>
+        {loading ? (
+          <p className="py-4 text-center text-sm text-gray-400">Loading…</p>
+        ) : (
+          <>
+            {configured === false && (
+              <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                The bank has not worded its own conditions yet. Analysts are
+                seeing a starting set built into the system — reword these to
+                match your credit manual and save.
+              </div>
+            )}
+            <p className="mb-4 text-xs text-gray-600">
+              These are what a credit analyst ticks when approving a case.
+              Pre-approval conditions are cleared by credit admin; pre-disbursement
+              conditions by Trops before money moves. Analysts can still type
+              anything not on these lists.
+            </p>
+            {box('Pre-approval conditions',
+                 'Cleared by credit admin. The last one ticked releases the case to Trops.',
+                 pre, setPre, 'pre_approval')}
+            {box('Pre-disbursement conditions',
+                 'Cleared by Trops before money moves.',
+                 disb, setDisb, 'pre_disbursement')}
+          </>
+        )}
+      </Card.Body>
+    </Card>
   );
 }

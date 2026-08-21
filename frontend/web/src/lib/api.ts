@@ -931,6 +931,243 @@ export interface PipelineOriginSplit {
   origin: string; label?: string; credits_party?: boolean;
   count: number; value: number; won: number;
 }
+export interface OriginChannel {
+  key: string; label: string; origin: string; store: string;
+  supports_roi: boolean; party_label: string; note: string;
+}
+export interface ChannelRecord {
+  id: string; channel: string; name: string; party: string;
+  owner_type: string; owner: string; branch: string; category: string;
+  start_date: string; end_date: string; status: string;
+  budget_kes: number | null; spent_kes: number | null;
+  target_leads: number | null; target_accounts: number | null;
+  target_value_kes: number | null;
+  leads: number; accounts: number; won_value: number;
+  roi_pct: number | null; supports_roi: boolean;
+}
+export interface ChannelDeal {
+  id: string; client: string; product: string; value: number;
+  stage: string; gate: string; position: number;
+  closed: boolean; won: boolean;
+  owner: string; branch: string; source_id: string; opened: string;
+}
+export async function fetchChannelDeals(
+  key: string, recordId = '',
+): Promise<{ channel: string; record_id: string; deals: ChannelDeal[]; total_value: number }> {
+  const q = new URLSearchParams(recordId ? { record_id: recordId } : {});
+  const qs = q.toString();
+  return getJson<{ channel: string; record_id: string; deals: ChannelDeal[]; total_value: number }>(
+    `/channels/${encodeURIComponent(key)}/deals${qs ? `?${qs}` : ''}`);
+}
+export interface ChannelAnalytics {
+  channel: OriginChannel;
+  totals: {
+    records: number; spent: number; leads: number; accounts: number;
+    value: number; conversion_pct: number | null;
+    cost_per_account: number | null; roi_pct: number | null;
+    supports_roi: boolean;
+  };
+  by_owner: { owner: string; records: number; spent: number; leads: number;
+              accounts: number; value: number }[];
+  by_stage: { stage: string; count: number }[];
+  best: { id: string; name: string; owner: string; spent: number;
+          leads: number; accounts: number; value: number;
+          cost_per_account: number | null }[];
+  no_conversions: { id: string; name: string; leads: number }[];
+  untagged: { id: string; name: string }[];
+}
+export async function fetchChannelAnalytics(key: string): Promise<ChannelAnalytics> {
+  return getJson<ChannelAnalytics>(`/channels/${encodeURIComponent(key)}/analytics`);
+}
+export interface ChannelOwners {
+  units: { value: string; label: string }[];
+  branches: { value: string; label: string }[];
+  mine: { unit: string; branch: string };
+  is_admin: boolean;
+}
+export async function fetchChannelOwners(): Promise<ChannelOwners> {
+  return getJson<ChannelOwners>('/channels/owners');
+}
+// ── Deals Warehouse ───────────────────────────────────────────────────────
+export interface WarehouseProspect {
+  id: string; name: string; sector: string; town: string; status: string;
+  estimated_value: number; source_event: string; notes: string;
+  created_by_name: string; created_at: string;
+  claimed_by_name: string; claimed_at: string; deal_id: string;
+  mine: boolean; contacts_visible: boolean;
+  score?: number; validated?: boolean; missing_count?: number;
+  contact_name?: string; contact_phone?: string; contact_email?: string;
+}
+export interface ProspectFact {
+  id: string; kind: string; title: string; detail: string;
+  source: string; url: string; occurred_on: string;
+  added_by: string; added_at: string;
+}
+export interface ProspectDetail {
+  prospect: WarehouseProspect;
+  card: { items: ProspectFact[]; counts: Record<string, number>; total: number };
+  completeness: Completeness;
+}
+export async function fetchProspect(id: string): Promise<ProspectDetail> {
+  return getJson<ProspectDetail>(`/warehouse/prospects/${encodeURIComponent(id)}`);
+}
+export async function addProspectFact(
+  id: string, body: Record<string, unknown>,
+): Promise<{ item: ProspectFact }> {
+  return postJson<{ item: ProspectFact }, Record<string, unknown>>(
+    `/warehouse/prospects/${encodeURIComponent(id)}/enrichment`, body);
+}
+export interface WarehouseMine {
+  listed: WarehouseProspect[]; claimed: WarehouseProspect[];
+  stale: WarehouseProspect[];
+  counts: { listed: number; claimed: number; stale: number };
+}
+export interface CompletenessField {
+  key: string; label: string; weight: number; why: string;
+}
+export interface Completeness {
+  prospect_id: string; score: number; complete: boolean;
+  fully_complete: boolean; threshold: number;
+  have: string[]; missing: CompletenessField[];
+  answered: number; of: number;
+  validated: boolean; validated_by: string; validated_at: string;
+  stale_validation: boolean;
+}
+export interface WarehouseCut {
+  label: string; total: number; validated: number; ready: number; average_score: number;
+}
+export interface WarehouseAnalytics {
+  totals: { prospects: number; validated: number; ready_to_validate: number;
+            under_validation: number; average_score: number; claimed: number;
+            converted: number };
+  by_sector: WarehouseCut[]; by_segment: WarehouseCut[];
+  by_county: WarehouseCut[]; by_source: WarehouseCut[];
+  bands: { band: string; count: number }[];
+  gaps: { key: string; label: string; missing: number }[];
+}
+export async function fetchWarehouseAnalytics(): Promise<WarehouseAnalytics> {
+  return getJson<WarehouseAnalytics>('/warehouse/analytics');
+}
+export async function fetchCompletenessMatrix(): Promise<{
+  fields: CompletenessField[];
+  summary: { total: number; average_score: number; complete: number;
+             validated: number; worst_gaps: { key: string; label: string; missing: number }[] };
+  segments: string[]; sectors: string[]; counties: string[];
+}> {
+  return getJson('/warehouse/completeness');
+}
+export async function updateProspect(
+  id: string, changes: Record<string, unknown>, password = '',
+): Promise<{ prospect: Record<string, unknown> }> {
+  return postJson<{ prospect: Record<string, unknown> }, Record<string, unknown>>(
+    `/warehouse/prospects/${encodeURIComponent(id)}`,
+    password ? { ...changes, password } : changes, 'PATCH');
+}
+export async function validateProspect(id: string): Promise<{ completeness: Completeness }> {
+  return postJson<{ completeness: Completeness }, Record<string, never>>(
+    `/warehouse/prospects/${encodeURIComponent(id)}/validate`,
+    {} as Record<string, never>);
+}
+export async function fetchWarehouseTaxonomy(): Promise<{ sectors: string[]; towns: string[] }> {
+  return getJson<{ sectors: string[]; towns: string[] }>('/warehouse/taxonomy');
+}
+/** A PAGE of the shelf. `total` is what the filter matches; `shown` is what
+ *  came back in this page. At 12,591 records the endpoint can no longer send
+ *  everything, so the page asks for a window and moves through it. */
+export async function fetchWarehouseShelves(
+  opts: { town?: string; sector?: string; q?: string;
+          limit?: number; offset?: number } = {},
+): Promise<{
+  shelves: Record<string, WarehouseProspect[]>;
+  total: number; shown?: number; limit?: number; offset?: number;
+  has_more?: boolean;
+}> {
+  const qs = new URLSearchParams();
+  if (opts.town) qs.set('town', opts.town);
+  if (opts.sector) qs.set('sector', opts.sector);
+  if (opts.q) qs.set('q', opts.q);
+  qs.set('limit', String(opts.limit ?? 200));
+  qs.set('offset', String(opts.offset ?? 0));
+  const s = qs.toString();
+  return getJson<{
+    shelves: Record<string, WarehouseProspect[]>;
+    total: number; shown?: number; limit?: number; offset?: number;
+    has_more?: boolean;
+  }>(`/warehouse/shelves${s ? `?${s}` : ''}`);
+}
+export async function fetchWarehouseMine(): Promise<WarehouseMine> {
+  return getJson<WarehouseMine>('/warehouse/mine');
+}
+export async function createProspect(
+  body: Record<string, unknown>,
+): Promise<{ prospect: WarehouseProspect }> {
+  return postJson<{ prospect: WarehouseProspect }, Record<string, unknown>>(
+    '/warehouse/prospects', body);
+}
+export async function claimProspect(
+  id: string,
+): Promise<{ prospect: WarehouseProspect; referrer_code: string; referrer_name: string }> {
+  return postJson<{ prospect: WarehouseProspect; referrer_code: string; referrer_name: string },
+                  Record<string, never>>(
+    `/warehouse/prospects/${encodeURIComponent(id)}/claim`, {} as Record<string, never>);
+}
+export async function deleteProspect(
+  id: string, password = '',
+): Promise<{ deleted: string }> {
+  // Uses the existing postJson-with-method pattern rather than a new helper -
+  // one way of issuing a DELETE is enough.
+  const q = password ? `?password=${encodeURIComponent(password)}` : '';
+  return postJson<{ deleted: string }, Record<string, never>>(
+    `/warehouse/prospects/${encodeURIComponent(id)}${q}`,
+    {} as Record<string, never>, 'DELETE');
+}
+export async function archiveProspect(
+  id: string, reason: string,
+): Promise<{ prospect: WarehouseProspect }> {
+  return postJson<{ prospect: WarehouseProspect }, { reason: string }>(
+    `/warehouse/prospects/${encodeURIComponent(id)}/archive`, { reason });
+}
+export async function fetchChannels(): Promise<{ channels: OriginChannel[] }> {
+  return getJson<{ channels: OriginChannel[] }>('/channels');
+}
+export async function fetchChannelRecords(
+  key: string, activeOnly = false, mine = false,
+): Promise<{ channel: OriginChannel; records: ChannelRecord[]; tagged_deals: number }> {
+  const q = new URLSearchParams({ active_only: String(activeOnly), mine: String(mine) });
+  return getJson<{ channel: OriginChannel; records: ChannelRecord[]; tagged_deals: number }>(
+    `/channels/${encodeURIComponent(key)}/records?${q.toString()}`);
+}
+export async function createChannelRecord(
+  key: string, body: Record<string, unknown>,
+): Promise<{ record: ChannelRecord }> {
+  return postJson<{ record: ChannelRecord }, Record<string, unknown>>(
+    `/channels/${encodeURIComponent(key)}/records`, body);
+}
+export interface PipelineEvent {
+  id: string; name: string; partner: string; branch: string;
+  department: string; category: string;
+  start_date: string; end_date: string; status: string;
+  budget_kes: number; spent_kes: number;
+  target_leads: number | null; target_accounts: number | null;
+  stored_leads: number | null; stored_accounts: number | null;
+  derived_leads: number; derived_accounts: number; derived_value: number;
+  derived_roi_pct: number | null; stored_roi_pct: number | null;
+}
+export async function fetchPipelineEvents(
+  activeOnly = false,
+): Promise<{ events: PipelineEvent[]; tagged_deals: number; total_deals: number }> {
+  const q = new URLSearchParams({ active_only: String(activeOnly) });
+  return getJson<{ events: PipelineEvent[]; tagged_deals: number; total_deals: number }>(
+    `/pipeline/events?${q.toString()}`);
+}
+export interface OriginSourceOption { id: string; label: string; sub: string }
+export async function fetchOriginSources(
+  origin: string, activeOnly = true,
+): Promise<{ origin: string; field: string; options: OriginSourceOption[] }> {
+  const q = new URLSearchParams({ origin, active_only: String(activeOnly) });
+  return getJson<{ origin: string; field: string; options: OriginSourceOption[] }>(
+    `/pipeline/origin-sources?${q.toString()}`);
+}
 export async function fetchDealOrigins(): Promise<{ origins: DealOrigin[]; default: string }> {
   return getJson<{ origins: DealOrigin[]; default: string }>('/pipeline/origins');
 }
@@ -956,8 +1193,14 @@ export async function fetchPipelineAnalyticsSummary(
   return getJson<PipelineAnalyticsSummary>(`/pipeline/analytics/summary?${q.toString()}`);
 }
 
-export async function fetchPipelineDefinedFunnel(): Promise<DefinedFunnel> {
-  return getJson<DefinedFunnel>('/pipeline/funnel');
+export async function fetchPipelineDefinedFunnel(
+  opts: { unit?: string; segment?: string } = {},
+): Promise<DefinedFunnel> {
+  const q = new URLSearchParams();
+  if (opts.unit) q.set('unit', opts.unit);
+  if (opts.segment) q.set('segment', opts.segment);
+  const qs = q.toString();
+  return getJson<DefinedFunnel>(`/pipeline/funnel${qs ? `?${qs}` : ''}`);
 }
 
 // ── Cumulative leaderboard (staff / role / branch / unit) ─────────────────
@@ -1330,8 +1573,14 @@ export async function fetchCustomerPortfolioOwner(cif: string): Promise<Customer
  * value split, per-class buckets (asset/liability/insurance/other), the
  * validated funnel, and the scope-aware pending-validation count.
  */
-export async function fetchPipelineAnalytics(): Promise<PipelineAnalyticsResponse> {
-  return getJson<PipelineAnalyticsResponse>('/pipeline/analytics');
+export async function fetchPipelineAnalytics(
+  opts: { unit?: string; segment?: string } = {},
+): Promise<PipelineAnalyticsResponse> {
+  const q = new URLSearchParams();
+  if (opts.unit) q.set('unit', opts.unit);
+  if (opts.segment) q.set('segment', opts.segment);
+  const qs = q.toString();
+  return getJson<PipelineAnalyticsResponse>(`/pipeline/analytics${qs ? `?${qs}` : ''}`);
 }
 
 export async function fetchPipelineDrill(
@@ -1410,6 +1659,25 @@ export interface NextStep {
 }
 export async function fetchNextStep(dealId: string): Promise<NextStep> {
   return getJson<NextStep>(`/pipeline/deals/${encodeURIComponent(dealId)}/next-step`);
+}
+export interface CommitteeQueueCase {
+  /** Whether THIS member has already voted on every committee still pending
+   *  for this case. Without it the list said "Review" beside cases somebody
+   *  had already dealt with, and they could not tell which. */
+  you_voted?: boolean;
+  your_vote?: string;
+  deal_id: string; client_name: string; product: string;
+  deal_value?: number; currency?: string; branch?: string; stage?: string;
+  owner?: string; awaiting: string[]; awaiting_names: string[];
+  submitted_at?: string;
+}
+export interface CommitteeQueueResponse {
+  committees: { code: string; name: string; members: number }[];
+  cases: CommitteeQueueCase[];
+  total: number;
+}
+export async function fetchCommitteeQueue(): Promise<CommitteeQueueResponse> {
+  return getJson<CommitteeQueueResponse>('/pipeline/queues/committee');
 }
 export async function fetchCreditChecklist(
   dealId: string,
@@ -1842,7 +2110,10 @@ export interface DccOutcome {
   by?: string; by_name?: string; at?: string; note?: string;
 }
 export interface DccRosterResponse {
-  enabled: boolean; name: string; is_dcc_case: boolean;
+  enabled: boolean; name: string; committee_kind?: string;
+  circulation_note?: string;
+  circulated_by_name?: string;
+  is_dcc_case: boolean;
   members: DccMember[]; votes: DccVote[]; outcome?: DccOutcome | null;
 }
 export async function getDccRoster(appId: string): Promise<DccRosterResponse> {
@@ -1867,6 +2138,17 @@ export async function resolveDcc(
     body,
   );
 }
+/** The rework is done - send the case back to the analyst who returned it.
+ *  Not into the pool: they have the context, and re-queueing turns a two-hour
+ *  correction into a two-day one. */
+export async function resubmitAfterRework(
+  appId: string,
+  body: { note?: string } = {},
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse>(
+    `/lms/applications/${encodeURIComponent(appId)}/resubmit-after-rework`, body);
+}
+
 export async function handToCreditAnalyst(appId: string): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, Record<string, never>>(
     `/lms/applications/${encodeURIComponent(appId)}/hand-to-credit-analyst`,
@@ -1938,6 +2220,126 @@ export async function requestLmsInfo(appId: string, body: RequestInfoRequest): P
 export async function provideLmsInfo(appId: string, body: ProvideInfoRequest): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, ProvideInfoRequest>(lmsAction(appId, 'provide-info'), body);
 }
+/** Push a case up to the Chief Credit Risk for their approval. The Chief is
+ *  resolved server-side from config - the caller does not name a person. */
+/** The condition library, as the bank words it. `configured` is false until
+ *  an admin has set one - the screen then falls back to the built-in set
+ *  WITHOUT presenting it as the bank's own. */
+export interface ConditionLibrary {
+  pre_approval: string[];
+  pre_disbursement: string[];
+  configured?: boolean;
+}
+
+export async function getConditionLibrary(): Promise<ConditionLibrary> {
+  return getJson<ConditionLibrary>('/lms/config/conditions');
+}
+
+export async function setConditionLibrary(
+  body: Partial<Pick<ConditionLibrary, 'pre_approval' | 'pre_disbursement'>>,
+): Promise<ConditionLibrary> {
+  return postJson<ConditionLibrary>('/lms/config/conditions', body);
+}
+
+export interface PoolVisibility { roles: string[]; statuses: string[]; }
+
+export async function getPoolVisibility(): Promise<PoolVisibility> {
+  return getJson<PoolVisibility>('/lms/config/pool-visibility');
+}
+
+export async function setPoolVisibility(body: Partial<PoolVisibility>): Promise<PoolVisibility> {
+  return postJson<PoolVisibility>('/lms/config/pool-visibility', body);
+}
+
+// ── The treasury rate desk ────────────────────────────────────────────────
+// A branch asks for a rate on a term deposit; the whole treasury desk sees it;
+// a dealer approves it or counters. An approval closes the deal there and
+// then; a counter goes back to the BRANCH, not into another treasury queue.
+export interface RatePoolRow {
+  deal_id: string;
+  client_name?: string;
+  product?: string;
+  branch?: string;
+  rm_name?: string;
+  amount?: number;
+  tenor?: string;
+  requested_rate?: number | null;
+  offered_rate?: number | null;
+  status?: string;
+  requested_at?: string;
+  priced_by_name?: string | null;
+  outcome?: string;
+}
+
+export interface RatePoolResponse {
+  waiting: RatePoolRow[];
+  /** Answered ones stay in view: a desk that only sees its backlog cannot
+   *  tell whether its pricing is winning business. */
+  answered: RatePoolRow[];
+  total_waiting: number;
+}
+
+export interface RateRequestState {
+  deal_id: string;
+  rate_request: Record<string, unknown>;
+  history?: { what: string; rate?: number; by?: string; at?: string; note?: string }[];
+}
+
+export async function fetchRatePool(): Promise<RatePoolResponse> {
+  return getJson<RatePoolResponse>('/treasury/rates/pool');
+}
+
+export async function fetchRateState(dealId: string): Promise<RateRequestState> {
+  return getJson<RateRequestState>(`/treasury/rates/${encodeURIComponent(dealId)}`);
+}
+
+export async function requestRate(
+  dealId: string,
+  body: { amount: number; tenor_days: string; requested_rate: number },
+): Promise<RateRequestState> {
+  return postJson<RateRequestState>(
+    `/treasury/rates/${encodeURIComponent(dealId)}/request`, body);
+}
+
+export async function approveRateRequest(
+  dealId: string, body: { note?: string } = {},
+): Promise<RateRequestState> {
+  return postJson<RateRequestState>(
+    `/treasury/rates/${encodeURIComponent(dealId)}/approve`, body);
+}
+
+export async function counterRateRequest(
+  dealId: string, body: { offered_rate: number; note?: string },
+): Promise<RateRequestState> {
+  return postJson<RateRequestState>(
+    `/treasury/rates/${encodeURIComponent(dealId)}/counter`, body);
+}
+
+export async function acceptCounterRate(
+  dealId: string, body: { note?: string } = {},
+): Promise<RateRequestState> {
+  return postJson<RateRequestState>(
+    `/treasury/rates/${encodeURIComponent(dealId)}/accept-counter`, body);
+}
+
+export async function declineCounterRate(
+  dealId: string, body: { reason?: string } = {},
+): Promise<RateRequestState> {
+  return postJson<RateRequestState>(
+    `/treasury/rates/${encodeURIComponent(dealId)}/decline-counter`, body);
+}
+
+export async function escalateToChief(
+  appId: string,
+  /** `to` picks who answers: the Chief Credit Risk, or the Management Credit
+   *  Committee, which sits and votes. From the analyst's side the act is the
+   *  same - above my authority, here is why. */
+  body: { reason: string; to?: 'chief' | 'mcc' },
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse>(
+    `/lms/applications/${encodeURIComponent(appId)}/escalate-to-chief`, body);
+}
+
 export async function escalateLmsApplication(appId: string, body: { reason: string; to_manager?: string }): Promise<LoanAppMutationResponse> {
   return postJson<LoanAppMutationResponse, { reason: string; to_manager?: string }>(lmsAction(appId, 'escalate'), body);
 }
@@ -2606,6 +3008,9 @@ export async function downloadDealDocument(dealId: string, docName: string): Pro
 // pipeline deal, served under LMS view permission (the credit side has no deal
 // scope). Used by the analyst / DCC / BCC / Chief Credit to read every file.
 export interface LmsDocumentsResponse {
+  /** What this case NEEDS, from the same tiered checklist the submission gate
+   *  enforces - so the screen and the gate cannot disagree. */
+  required?: string[];
   files: Record<string, DealDocumentMeta>;
   provided: string[];
   /** Documents an analyst has asked for on THIS case - separate from the
@@ -2705,11 +3110,39 @@ export interface CommitteeGate {
   code: string; name: string; recording_mode: string; voting_rule: string;
   members: { name: string; role: string }[];
   record: CommitteeRecord | null;
+  /** Progress BEFORE a decision exists. Without these a member cannot tell
+   *  whether the committee is waiting on them or on somebody else, which is
+   *  the question they opened the case to answer. */
+  /** Whether THIS viewer may vote on this gate. canEdit means owner or
+   *  admin, which a committee member is not - they were shown a read-only
+   *  panel with nothing to vote with. The server answers from the roster. */
+  can_vote?: boolean;
+  votes_cast?: number;
+  quorum?: number;
+  awaiting?: string[];
 }
 export interface CommitteeRecordsResponse { gates: CommitteeGate[]; cr_only: boolean; }
 export async function getDealCommitteeRecords(dealId: string): Promise<CommitteeRecordsResponse> {
   return getJson<CommitteeRecordsResponse>(`/pipeline/deals/${encodeURIComponent(dealId)}/committee-records`);
 }
+export interface CommitteeVoteResult {
+  status: string; committee: string; your_vote: string;
+  votes_cast: number; quorum: number; decided: boolean; outcome: string;
+  tally: { name?: string; role?: string; vote?: string; at?: string }[];
+  awaiting: string[];
+}
+/** ONE MEMBER, ONE VOTE, from their own login. recordDealCommitteeDecision
+ *  posts every member's vote at once, which is how a single member closed a
+ *  case: one vote, below quorum, DEFERRED, done. */
+export async function castCommitteeVote(
+  dealId: string, code: string,
+  body: { vote: string; documents_validated?: boolean; comment?: string; note?: string },
+): Promise<CommitteeVoteResult> {
+  return postJson<CommitteeVoteResult>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/committee/${encodeURIComponent(code)}/vote`,
+    body);
+}
+
 export async function recordDealCommitteeDecision(
   dealId: string,
   body: { code: string; outcome?: string; votes?: CommitteeVote[]; note?: string },

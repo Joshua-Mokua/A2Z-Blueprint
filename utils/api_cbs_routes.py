@@ -116,6 +116,35 @@ def _resolve_owner_name(staff_code: str) -> str:
         from utils.api_pipeline_scope import get_staff_roster
         roster = get_staff_roster()
         hit = roster[roster["Staff Code"].astype(str).str.strip() == code]
+        # ── KE0539 AND KE539 ARE THE SAME PERSON ────────────────────────────
+        # FROM THE PILOT (2026-08-21): Lucy Lidahuli owns the portfolio, CBS
+        # returns KE0539, the register holds KE539, and the exact match failed.
+        # The screen then said "this owner isn't a recognised system user" and
+        # asked an RM to confirm a recipient the system already knew.
+        #
+        # The padding was introduced for DSA codes, which need four digits. It
+        # was never meant to make a three-digit staff code into a different
+        # person - but a string comparison cannot tell the difference.
+        #
+        # So: compare on the DIGITS, ignoring how many zeros sit in front. KE539
+        # and KE0539 and KE00539 are one person; KE5390 is not, because the
+        # digits differ.
+        if hit.empty:
+            import re as _re
+
+            def _digits(v):
+                m = _re.match(r"^([A-Za-z]*)0*(\d+)$", str(v or "").strip())
+                return ("%s%s" % (m.group(1).upper(), m.group(2))) if m else ""
+
+            _want = _digits(code)
+            if _want:
+                _norm = roster["Staff Code"].astype(str).map(_digits)
+                hit = roster[_norm == _want]
+                if not hit.empty:
+                    logger.info(
+                        "portfolio owner %s matched the roster as %s - the "
+                        "codes differ only by leading zeros", code,
+                        str(hit.iloc[0].get("Staff Code")))
         if not hit.empty:
             return str(hit.iloc[0].get("Staff Name") or "").strip()
     except Exception as exc:  # surfaced, not silent (CGR1)
