@@ -67,6 +67,8 @@ BLOCK = '''NOT_FOR_RELEASE = {
     # thing that is unplaced. WHS taught us that; this is the same lesson
     # applied to itself.
     "patch_nfr_six",
+    # RTN too - it also edits the builder, for the same reason.
+    "patch_rtn_return_home",
 '''
 
 

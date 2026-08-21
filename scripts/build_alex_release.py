@@ -471,8 +471,28 @@ def main():
             print("\nABORT: stopping at the first failure - continuing would")
             print("       stack patches onto a partly-written file.")
             print("       %s" % why)
+            # ── PUT THE DEVELOPER BACK WHERE THEY STARTED ───────────────
+            # The half-applied patches must be DISCARDED first. Git refuses to
+            # switch branches over modified files, so without this the
+            # checkout silently fails, the branch delete silently fails
+            # (you cannot delete the branch you are standing on), and the next
+            # commit lands on a half-built release branch.
+            #
+            # That happened three times in a row before anybody noticed.
+            #
+            # Discarding is correct: this branch is about to be deleted, and a
+            # half-replayed tree is worth nothing. Nothing on the ORIGINAL
+            # branch is touched.
+            sh("git", "reset", "--hard", "-q", check=False)
             sh("git", "checkout", "-q", here, check=False)
             sh("git", "branch", "-D", branch, check=False)
+            _now = sh("git", "rev-parse", "--abbrev-ref", "HEAD").strip()
+            if _now == here:
+                print("\n  you are back on %s - nothing was left behind." % here)
+            else:
+                print("\n  *** COULD NOT RETURN TO %s - you are on %s."
+                      % (here, _now))
+                print("      Run:  git checkout -f %s" % here)
             return 1
 
     print("\napplied %d · already present %d · failed %d"
