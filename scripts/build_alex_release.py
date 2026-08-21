@@ -130,6 +130,7 @@ CHAIN = [
     "patch_lk1_branch_keeps_its_case",
     "patch_br2_branch_from_unit_or_owner",
     "patch_lg1_legal_officers",
+    "patch_sc1_staff_code_zeros",
     "patch_qc1_committee_queue_only_committees",
     "patch_cdoc1_committee_reads_the_case",
     "patch_cv2_voters_see_the_case",
@@ -535,28 +536,6 @@ def main():
                   "data/lms_config.json")
     blocked = [f for f in staged if f in DATA_BLOCK or "backup" in f.lower()]
     staged = [f for f in staged if f not in blocked]
-
-    # ── THE WAREHOUSE MENU ENTRY DOES NOT TRAVEL ────────────────────────────
-    # The warehouse patchers are excluded above, so the pilot has no warehouse
-    # PAGE. If the sidebar still offered a route to it, the menu would point at
-    # nothing.
-    #
-    # This used to be handled by shipping a sidebar with the entry already
-    # removed - which also removed it from the DEVELOPER'S screen every time
-    # that patch was applied here. Stripping at build keeps the decision where
-    # it belongs: this is a release choice, not a source one.
-    _bar = os.path.join("frontend", "web", "src", "components", "Sidebar.tsx")
-    if _bar in staged or _bar.replace(os.sep, "/") in staged:
-        try:
-            _txt = open(_bar, encoding="utf-8").read()
-            _keep = [l for l in _txt.split("\n") if "Deals Warehouse" not in l]
-            if len(_keep) != len(_txt.split("\n")):
-                open(_bar, "w", encoding="utf-8", newline="").write("\n".join(_keep))
-                print("  removed the Deals Warehouse menu entry from the release")
-                print("  sidebar (the page itself is not in this release).")
-        except Exception as _exc:  # noqa: BLE001
-            print("  *** could not strip the warehouse entry: %s" % _exc)
-            print("      CHECK THE SIDEBAR BEFORE PUSHING.")
 
     print("\n" + "=" * 72)
     print("STAGING")

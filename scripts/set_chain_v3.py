@@ -91,6 +91,12 @@ ORDER = [
     # that routes to a branch committee depends on it.
     'patch_br2_branch_from_unit_or_owner',
     'patch_lg1_legal_officers',
+    # SC1 touches api_cbs_routes.py, which nothing else in the chain does, so
+    # it can sit anywhere. It goes last of the backend patchers because it is
+    # the newest and the order of independent edits is arbitrary - what matters
+    # is that it is IN the chain. It was fixed on main by a direct edit, and a
+    # direct edit does not travel: the release replays patchers.
+    'patch_sc1_staff_code_zeros',
     # QC1 narrows the committee queue; CDOC1 and CV2 let a voter READ what they
     # are voting on - the branch half and the department/business half of one
     # rule. TR1 is the treasury rate desk and mounts two routers that were
