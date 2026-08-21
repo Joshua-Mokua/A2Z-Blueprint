@@ -478,6 +478,31 @@ def main():
             print("  reverted %s (stays on Alex's side)" % f)
 
     # ── the guard that matters ───────────────────────────────────────────────
+    # ── THE WAREHOUSE MENU ENTRY DOES NOT TRAVEL ────────────────────────────
+    # The pilot has no warehouse page, route or backend - it is deliberately
+    # held back until it is well built. UI2 carries the menu entry because it
+    # is a REAL item on the developer's box, so it is stripped HERE, at build,
+    # rather than baked out of a patch that is applied in both places.
+    #
+    # An RM given a menu item that leads nowhere concludes the system is
+    # broken, not that a feature is pending.
+    _bar = os.path.join("frontend", "web", "src", "components", "Sidebar.tsx")
+    if os.path.isfile(_bar):
+        _txt = open(_bar, encoding="utf-8").read()
+        _had = _txt.count("Deals Warehouse")
+        if _had:
+            _kept = [l for l in _txt.split("\n")
+                     if "label: 'Deals Warehouse'" not in l]
+            open(_bar, "w", encoding="utf-8", newline="").write("\n".join(_kept))
+            _left = "\n".join(_kept).count("Deals Warehouse")
+            print("\n  stripped the Deals Warehouse menu entry (%d -> %d)"
+                  % (_had, _left))
+            if _left:
+                print("\nABORT: the entry survived the strip. The pilot would")
+                print("       get a menu item leading to a page that is not")
+                print("       there.")
+                return 1
+
     print("\n" + "=" * 72)
     print("SAFETY CHECK")
     print("=" * 72)
