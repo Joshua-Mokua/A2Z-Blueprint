@@ -164,6 +164,30 @@ CHAIN = [
 # datetime.parseTs). Re-running them would only abort as "already applied", but
 # listing them keeps the guard meaningful instead of crying wolf every build.
 NOT_FOR_RELEASE = {
+    # ── THE WAREHOUSE STORE (2026-08-20/21) ────────────────────────────────
+    # Postgres-backed store, registered table, audible failures, columns wide
+    # enough for what a register publishes, paged reads, and import
+    # provenance. All of it belongs to the warehouse, which is held back until
+    # it is well built - and the pilot has no warehouse page, route or backend
+    # to use any of it.
+    "patch_wh1_warehouse_on_postgres",
+    "patch_wh2_register_and_speak_up",
+    "patch_wh3_columns_take_the_register",
+    "patch_wp1_warehouse_paging",
+    "patch_im1_import_provenance",
+
+    # ── THE BUILDER ITSELF ─────────────────────────────────────────────────
+    # WHS teaches THIS script to strip the Deals Warehouse menu entry before
+    # staging. It cannot be replayed onto the pilot: it is the tool doing the
+    # replaying, and it lives on this box only.
+    "patch_whs_strip_at_build",
+    # And THIS patcher, which is what wrote the lines above. A patcher that
+    # edits the release builder can never be replayed onto the pilot - and if
+    # it is not named here, the very next build refuses because IT is now the
+    # thing that is unplaced. WHS taught us that; this is the same lesson
+    # applied to itself.
+    "patch_nfr_six",
+
     # THE WAREHOUSE IS HELD BACK (ruling 2026-08-11): "anything on the
     # warehouse is not to be released to Alex until I am certain it is well
     # built."
