@@ -1,15 +1,20 @@
+import { useEffect, useState } from 'react';
 import { displayName } from "../lib/names";
 import { Link, useLocation } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
 import { isManager } from '@/lib/role';
+import { fetchMyCommittees } from '@/lib/api';
 
 interface NavItem {
   path: string;
   label: string;
   matchActive: (pathname: string) => boolean;
-  visibleFor?: (isMgr: boolean, isAdmin: boolean, isCfgAdmin: boolean, isAdminOrMd: boolean, isCreditStaff: boolean) => boolean;
+  // onCommittee is last and OPTIONAL, so every existing entry that takes
+  // five arguments still satisfies the type. Adding it as required would have
+  // meant editing thirty menu entries that do not care about it.
+  visibleFor?: (isMgr: boolean, isAdmin: boolean, isCfgAdmin: boolean, isAdminOrMd: boolean, isCreditStaff: boolean, onCommittee?: boolean) => boolean;
 }
 interface NavGroup { label: string; items: NavItem[]; }
 
@@ -78,7 +83,7 @@ const NAV_GROUPS: NavGroup[] = [
       // Department Review is the segment analyst's desk. Credit risk arrives
       // after that work is finished, and an entry leading to somebody else's
       // queue is an invitation to duplicate it.
-      { path: '/lms',                 label: 'Department Review',   matchActive: (p) => p === '/lms' || p.startsWith('/lms/'), visibleFor: (_m, _a, _c, _md, credit) => credit },
+      { path: '/lms',                 label: 'Department Review',   matchActive: (p) => p === '/lms' || p.startsWith('/lms/'), visibleFor: (_m, _a, _c, _md, credit, committee) => credit || Boolean(committee) },
     ],
   },
   {
@@ -131,6 +136,30 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   // Credit risk works at the credit stage, not the department stage.
   const isCreditStaff = isAdminOrMd || /credit|analys|underwrit|recover|collection|treasur|disburs/i.test(user?.role ?? '');
 
+  // ── A SEATED COMMITTEE MEMBER CAN REACH THE COMMITTEE ────────────────────
+  // The rule above asks what somebody's job is CALLED. The eight people the
+  // bank seated on its Consumer and Commercial credit committees are business
+  // heads - Head of Consumer, Head of SME, Head of Branches - and not one of
+  // their titles contains a word in that list. All eight were seated, sent
+  // cases, and unable to open the screen where the committee lives.
+  //
+  // A committee is a governance body drawn from the business. Membership is a
+  // fact in the config; a job title is a guess about it.
+  //
+  // This hides nothing new and grants nothing: the vote endpoint refuses a
+  // non-member with a 403 either way.
+  const [onCommittee, setOnCommittee] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    fetchMyCommittees()
+      .then((r) => { if (alive) setOnCommittee(Boolean(r?.on_committee)); })
+      // A sidebar must render even when this call fails. Falling back to the
+      // role rule is the old behaviour, which is wrong for eight people but
+      // not broken for anybody.
+      .catch(() => { if (alive) setOnCommittee(false); });
+    return () => { alive = false; };
+  }, [user?.username]);
+
   return (
     <aside className="sidebar">
       <div className="sb-brand">
@@ -146,7 +175,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           const items = group.items.filter(
             (item) => !DEMO_HIDE.has(item.path)
               && !hidden.has(item.path)
-              && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff))
+              && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff, onCommittee))
               && !(/credit risk|credit admin|remedial|recover/i.test(user?.role ?? '')
                    && item.label === 'Department Review'),
           );
