@@ -1565,8 +1565,14 @@ def lms_application_document_request(
     if not app:
         raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
     perms = resolve_application_permissions(user, app)
+    # can_decide -> can_record_decision: same key-name bug as the attach-
+    # document endpoint above (that key never existed on this dict).
+    _analyst = app.get("analyst") or {}
+    _is_assigned_analyst = bool(user.get("staff_code")) and (
+        str(_analyst.get("code", "") or "") == str(user.get("staff_code", "") or ""))
     if not (perms.get("can_update") or perms.get("can_submit_to_dcc")
-            or perms.get("can_decide") or perms.get("can_hand_to_credit_analyst")):
+            or perms.get("can_record_decision") or perms.get("can_hand_to_credit_analyst")
+            or _is_assigned_analyst):
         raise HTTPException(status_code=403,
                             detail="Only somebody working this case can request documents.")
 
@@ -1619,8 +1625,19 @@ def lms_application_document_upload(
     if not app:
         raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
     perms = resolve_application_permissions(user, app)
-    if not (perms.get("can_edit") or perms.get("can_submit_to_dcc")
-            or perms.get("can_decide") or perms.get("is_assigned_analyst")):
+    # BUG (found 2026-08-24, a real 403 on a real case): this checked
+    # perms.get("can_edit")/"can_decide"/"is_assigned_analyst" — none of those
+    # keys exist in what resolve_application_permissions actually returns
+    # (it's can_update / can_record_decision, and is_assigned_analyst is an
+    # internal variable never exposed as a key). Every one of those .get()
+    # calls silently returned None, so ONLY can_submit_to_dcc could ever pass
+    # — which is False for a case that has already BEEN submitted, locking
+    # out the assigned analyst on their own case at exactly that status.
+    _analyst = app.get("analyst") or {}
+    _is_assigned_analyst = bool(user.get("staff_code")) and (
+        str(_analyst.get("code", "") or "") == str(user.get("staff_code", "") or ""))
+    if not (perms.get("can_update") or perms.get("can_submit_to_dcc")
+            or perms.get("can_record_decision") or _is_assigned_analyst):
         raise HTTPException(
             status_code=403,
             detail="Only somebody working this case can attach documents to it.")
