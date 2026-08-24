@@ -80,6 +80,14 @@ from utils.api_lms_mutations import (
 )
 from utils.api_lms_permissions import resolve_application_permissions
 
+# Kept equal to utils.api._DOC_MAX_BYTES (not imported directly — api.py
+# imports THIS module, so importing back would be circular). The two case-
+# document attach points below used to cap at 20MB/30MB, well under the
+# pipeline side's 200MB, for no documented reason — an LMS case document is
+# not smaller than a pipeline one. Aligned so the limit doesn't depend on
+# which screen someone happens to be attaching from.
+_LMS_DOC_MAX_BYTES = 200 * 1024 * 1024  # 200 MB
+
 
 # ─────────────────────────────────────────────────────────────────────
 # Router declaration
@@ -1625,9 +1633,9 @@ def lms_application_document_upload(
         raise HTTPException(status_code=400, detail=f"content_b64 invalid: {exc}")
     if not raw:
         raise HTTPException(status_code=400, detail="empty file")
-    if len(raw) > 20 * 1024 * 1024:
+    if len(raw) > _LMS_DOC_MAX_BYTES:
         raise HTTPException(status_code=400,
-                            detail=f"file too large ({len(raw)} bytes; max 20MB)")
+                            detail=f"file too large ({len(raw)} bytes; max {_LMS_DOC_MAX_BYTES // (1024*1024)}MB)")
 
     safe = "".join(c for c in (body.filename or doc_name)
                    if c.isalnum() or c in " ._-").strip() or "attachment"
@@ -2281,8 +2289,9 @@ def lms_callback_memo_upload(
         raise HTTPException(status_code=400, detail="Invalid file content.")
     if not raw:
         raise HTTPException(status_code=400, detail="Empty file.")
-    if len(raw) > 30 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large (max 30 MB).")
+    if len(raw) > _LMS_DOC_MAX_BYTES:
+        raise HTTPException(status_code=400,
+                            detail=f"File too large (max {_LMS_DOC_MAX_BYTES // (1024*1024)} MB).")
     root = _P(__file__).resolve().parent.parent
     safe = (_re.sub(r"[^A-Za-z0-9._-]", "_", filename)[:120]) or "memo"
     ddir = root / "data" / "uploads" / "credit_docs" / ("lms_" + _re.sub(r"[^A-Za-z0-9._-]", "_", app_id))
