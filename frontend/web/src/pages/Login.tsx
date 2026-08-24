@@ -21,7 +21,16 @@ export function Login() {
   // still working rather than stuck.
   const [showSlowHint, setShowSlowHint] = useState(false);
 
-  const redirectTarget = (location.state as RedirectState | null)?.from?.pathname || '/';
+  // Hiding a route from the Sidebar's nav list (org_config.json's
+  // hidden_modules) does not change what the router mounts at that path -
+  // so without this, a fresh login (no prior "from" location) always fell
+  // through to the '/' default and rendered Dashboard even when it's hidden.
+  // '/pipeline' has no visibleFor gate in Sidebar.tsx, so it's a safe
+  // fallback landing page for every authenticated role.
+  const requestedTarget = (location.state as RedirectState | null)?.from?.pathname;
+  const hiddenModules = new Set(branding?.hidden_modules ?? []);
+  const fallbackHome = hiddenModules.has('/') ? '/pipeline' : '/';
+  const redirectTarget = (requestedTarget && !hiddenModules.has(requestedTarget)) ? requestedTarget : fallbackHome;
   const isExpired = status === 'expired';
 
   useEffect(() => {
