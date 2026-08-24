@@ -30,7 +30,6 @@ from utils.config import (
 router = APIRouter(prefix="/api", tags=["branding"])
 
 
-@router.get("/branding")
 def hidden_modules() -> list:
     """Module paths this deployment should not show.
 
@@ -48,6 +47,7 @@ def hidden_modules() -> list:
     return []
 
 
+@router.get("/branding")
 def get_branding() -> dict:
     """Return the current tenant's branding identity.
 
