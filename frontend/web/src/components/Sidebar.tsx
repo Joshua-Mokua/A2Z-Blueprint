@@ -128,7 +128,16 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   // treasury/disbursement, recovery) + admin/MD. Front-line RMs/branch see the
   // pipeline instead, and track their own cases there.
   // Credit risk works at the credit stage, not the department stage.
-  const isCreditStaff = isAdminOrMd || /credit|analys|underwrit|recover|collection|treasur|disburs/i.test(user?.role ?? '');
+  //
+  // isCommitteeMember (diag_committee_sight.py, 2026-08-24): a role-text regex
+  // has no idea who is actually seated on a credit committee. Every branch
+  // committee member whose day-job title isn't itself credit-flavoured
+  // (Branch Operations Officer, Customer Service Manager, ...) could never
+  // reach the module their own committee's cases live in — seated, but with
+  // no way to get to the door. Committee membership grants the same access a
+  // credit-titled role would, regardless of primary role text.
+  const isCreditStaff = isAdminOrMd || (user?.is_committee_member ?? false)
+    || /credit|analys|underwrit|recover|collection|treasur|disburs/i.test(user?.role ?? '');
 
   return (
     <aside className="sidebar">

@@ -66,6 +66,7 @@ export interface UserIdentity {
   // Capability flags
   is_admin:      boolean;
   can_view_all:  boolean;
+  is_committee_member: boolean;
 
   // Streamlit RBAC migration-compat (React will phase these out)
   accessible_modules: string[];

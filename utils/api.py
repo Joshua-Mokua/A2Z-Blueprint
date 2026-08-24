@@ -1169,6 +1169,7 @@ def whoami_detailed(user: dict = Depends(get_current_user)):
 
     role_raw = full_user.get("role") or user.get("role") or "Staff"
     classification = classify_role(role_raw)
+    staff_code = str(full_user.get("staff_code") or "").strip()
 
     response = {
         # Identity (from users.json — never trust JWT for these)
@@ -1191,6 +1192,15 @@ def whoami_detailed(user: dict = Depends(get_current_user)):
         # Capability flags
         "is_admin":         bool(full_user.get("is_admin") or full_user.get("role", "").lower() == "admin"),
         "can_view_all":     bool(full_user.get("can_view_all")),
+        # DIAG (2026-08-24, diag_committee_sight.py): the frontend sidebar's
+        # "Department Review" gate is a role-text regex with no idea who is
+        # actually seated on a committee — every branch committee member
+        # whose day-job title isn't itself credit-flavoured (Branch Operations
+        # Officer, Customer Service Manager, ...) cannot reach the module
+        # their own committee's cases live in. This flag lets the sidebar
+        # also grant it to anyone actually seated (member or chair) on any
+        # committee in the palette, regardless of their primary role text.
+        "is_committee_member": _is_on_any_committee(staff_code) if staff_code else False,
 
         # Streamlit RBAC (migration compat — React will phase these out)
         "accessible_modules":  full_user.get("accessible_modules", []),
@@ -13194,6 +13204,25 @@ def _committee_by_code(code: str) -> dict:
         if str(c.get("code")) == code:
             return c
     return {}
+
+
+def _is_on_any_committee(staff_code: str) -> bool:
+    """True if staff_code sits on ANY committee in the palette — as a member
+    or as the chair (chair_staff_code, when set). Used by whoami-detailed's
+    is_committee_member flag so a seated member can reach Department Review
+    regardless of their primary role text. Tolerant of KE0439/KE439/439
+    padding variants, same as the rest of committee-code matching."""
+    from utils.staff_code import canon
+    target = canon(staff_code)
+    if not target:
+        return False
+    for c in _read_committee_palette():
+        if canon(c.get("chair_staff_code", "")) == target:
+            return True
+        for m in (c.get("members") or []):
+            if isinstance(m, dict) and canon(m.get("staff_code", "")) == target:
+                return True
+    return False
 
 
 @app.get("/api/pipeline/deals/{deal_id}/committee-records", tags=["pipeline"])

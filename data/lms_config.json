@@ -278,7 +278,7 @@
       {
         "code": "B1",
         "name": "Consumer Banking Credit Committee",
-        "chaired_by": "Jane Jelagat Atugah",
+        "chaired_by": "JELAGAT Jane [EKE-Consumer Banking]",
         "branch": "",
         "kind": "",
         "recording_mode": "voting",
@@ -289,24 +289,24 @@
             "name": "JELAGAT Jane [EKE-Consumer Banking]",
             "role": "Head of Consumer",
             "staff_code": "KE1158",
-            "full_funnel": true
+            "full_funnel": false
           },
           {
-            "name": "Lunar Magero",
+            "name": "Robert Githaiga Maingi",
+            "role": "Head, Digital Channels & Agency Network",
+            "staff_code": "KE1159",
+            "full_funnel": false
+          },
+          {
+            "name": "MAGERO Lunar [EKE-Consumer Banking]",
             "role": "Head of Sales",
             "staff_code": "KE1136",
             "full_funnel": false
           },
           {
-            "name": "KAMERE Annette [EKE-Consumer Banking]",
-            "role": "Head, Consumer Products",
-            "staff_code": "KE816",
-            "full_funnel": false
-          },
-          {
-            "name": "LEIN Fiona [EKE-Consumer]",
-            "role": "Head Premier Banking",
-            "staff_code": "KE1269",
+            "name": "MBANO Esther [EKE-Consumer]",
+            "role": "Asset Product Manager",
+            "staff_code": "KE1319",
             "full_funnel": false
           }
         ]
@@ -325,12 +325,6 @@
             "name": "Victor Mutabari Mbaabu",
             "role": "Head EFS",
             "staff_code": "KE959",
-            "full_funnel": true
-          },
-          {
-            "name": "Livingstone Maina Kagio",
-            "role": "Head, Local Corporates",
-            "staff_code": "KE1252",
             "full_funnel": false
           },
           {
@@ -340,9 +334,15 @@
             "full_funnel": false
           },
           {
-            "name": "ONTITA Brian [EKE-Commercial Banking]",
-            "role": "Credit Analyst",
-            "staff_code": "KE1305",
+            "name": "Livingstone Maina Kagio",
+            "role": "Head, Local Corporates",
+            "staff_code": "KE1252",
+            "full_funnel": false
+          },
+          {
+            "name": "MUTHAMA Joshua",
+            "role": "Staff",
+            "staff_code": "KE1533",
             "full_funnel": false
           }
         ]

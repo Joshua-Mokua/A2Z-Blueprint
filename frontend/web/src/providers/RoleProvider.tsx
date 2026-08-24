@@ -42,6 +42,7 @@ interface RoleContextValue {
   isAdmin:        boolean;
   canViewAll:     boolean;
   canBeTagged:    boolean;
+  isCommitteeMember: boolean;
   isAuthenticated: boolean;
 
   // Derived helpers
@@ -61,6 +62,7 @@ export const RoleContext = createContext<RoleContextValue>({
   isAdmin:         false,
   canViewAll:      false,
   canBeTagged:     false,
+  isCommitteeMember: false,
   isAuthenticated: false,
 
   userHasTier:    () => false,
@@ -128,6 +130,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const isAdmin         = user?.is_admin     ?? false;
   const canViewAll      = user?.can_view_all ?? false;
   const canBeTagged     = user?.can_be_tagged ?? false;
+  const isCommitteeMember = user?.is_committee_member ?? false;
   const isAuthenticated = user !== null && error === null;
 
   const userHasTier = (tier: Tier): boolean => {
@@ -148,6 +151,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     isAdmin,
     canViewAll,
     canBeTagged,
+    isCommitteeMember,
     isAuthenticated,
     userHasTier,
     userHasAnyRole,
