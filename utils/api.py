@@ -7380,6 +7380,39 @@ def pipeline_deal_create(
     # SLA S2b: seed the initial step stamp from the create stage.
     _stamp_sla_step(pm, new_id, created, user.get("username", ""))
     created = pm.get_deal(new_id) or created
+
+    # Real-time email: tell the deal owner's line manager a new deal needs
+    # their attention (it will sit in their validation queue). Best-effort;
+    # a notification failure never breaks deal creation. Mirrors the
+    # referral/validation hooks — same notify_staff path, same logging on
+    # failure (previously silent, see referral/validation hooks above).
+    try:
+        from utils.notifications import notify_staff
+        from utils.org_validator import line_manager_of
+        mgr = line_manager_of(str(created.get("staff_code") or ""))
+        _mgr_code = str(mgr.get("validator_code") or "").strip()
+        if mgr.get("resolved") and _mgr_code:
+            _owner_name = str(created.get("staff_name") or "your team")
+            _client = str(created.get("client_name") or "a client")
+            _value = created.get("deal_value")
+            notify_staff(
+                _mgr_code,
+                "A2Z MIS 360 — a new deal needs your validation",
+                f"<html><body style='font-family:Arial,sans-serif;max-width:520px;margin:auto'>"
+                f"<div style='background:#0082BB;padding:16px;border-radius:8px 8px 0 0'>"
+                f"<h2 style='color:#fff;margin:0'>A2Z MIS 360</h2></div>"
+                f"<div style='padding:20px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px'>"
+                f"<p>Hi {mgr.get('validator_name') or ''},</p>"
+                f"<p><strong>{_owner_name}</strong> created a new deal for "
+                f"<strong>{_client}</strong>"
+                f"{f' (KES {_value:,.0f})' if isinstance(_value, (int, float)) else ''}. "
+                f"It is now in your validation queue.</p>"
+                f"<p style='font-size:12px;color:#999'>Automated message — do not reply.</p>"
+                f"</div></body></html>",
+            )
+    except Exception as _notify_exc:
+        logger.warning("deal-create notify_staff failed for deal %s: %s", new_id, _notify_exc)
+
     return PipelineDealMutationResponse(
         deal=PipelineDeal.model_validate(created),
         status="created",
