@@ -58,7 +58,7 @@ def main():
         if c:
             by_code[c] = dict(rec, username=login)
 
-    disagree = []
+    disagree, unknown = [], []
     for c in seated:
         code = str(c.get("code"))
         name = str(c.get("name"))
@@ -94,19 +94,38 @@ def main():
         shown = "?"
         if u:
             try:
-                from utils.api import pipeline_manager_queues as _q
+                from utils.api import pipeline_queue_committee as _q
                 r = _q(user=u)
-                shown = str(len(r.get("committee") or r.get("committee_queue") or []))
+                rows = (r.get("items") or r.get("deals")
+                        or r.get("committee") or r.get("rows") or [])
+                shown = str(len(rows))
             except Exception as exc:
                 shown = "err %s" % str(exc)[:26]
         print("     the queue would show     %s   (as %s)"
               % (shown, (first or {}).get("name", "?")))
-        if shown.isdigit() and int(shown) != len(waiting):
+        # A CHECK THAT COULD NOT CHECK MUST NOT REPORT AGREEMENT.
+        # The first version compared "0 waiting" against "err cannot import"
+        # and printed THE QUEUE AGREES WITH THE DEAL STORE - while Jane could
+        # plainly see two cases on her screen. An all-clear from a check that
+        # never ran is worse than no check.
+        if not shown.isdigit():
+            unknown.append((code, shown))
+            print("     *** COULD NOT ASK THE QUEUE - this proves nothing")
+        elif int(shown) != len(waiting):
             disagree.append((code, len(waiting), int(shown)))
             print("     *** THESE DISAGREE")
         print("")
 
     print("=" * 84)
+    if unknown:
+        print("THIS CHECK DID NOT RUN")
+        print("=" * 84)
+        for code, why in unknown:
+            print("  * %s: %s" % (code, why))
+        print("\n  Nothing is proved either way. Fix the call before believing")
+        print("  any number above - Jane can see two cases on her screen, so a")
+        print("  zero here means this script is wrong, not the pipeline.")
+        return 1
     if disagree:
         print("THE QUEUE DOES NOT MATCH THE DEAL STORE")
         print("=" * 84)
