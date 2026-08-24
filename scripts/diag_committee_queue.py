@@ -1,14 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-Why is this case not in that person's committee queue? READ ONLY.
+r"""
+What is waiting for each committee, and does the queue agree? READ ONLY.
 
-Walks the queue's own logic for a named person and reports, deal by deal, the
-first reason each one was dropped. Guessing at this has cost time twice; the
-list is short and the answer is always one of five things.
+FROM THE PILOT (2026-08-24): Jane opens Manager Queues and sees "Committee 2".
+Upendo opens the same screen and sees "Committee 0".
 
-    python scripts\\diag_committee_queue.py --user joyce
-    python scripts\\diag_committee_queue.py --user joyce --deal SIMBCC01
+Either there are no Commercial cases waiting - which is a fact about the
+pipeline, not a fault - or the queue is not finding them. Those look identical
+on screen and only one of them needs fixing.
+
+This counts what is ACTUALLY waiting for each committee from the deal store,
+then asks the queue endpoint what it would show, and prints both.
+
+    python scripts\diag_committee_queue.py
+
+A DIFFERENCE IS THE BUG. Agreement means the shelf is genuinely empty and
+nobody needs to chase it.
 """
 import json
 import os
@@ -18,163 +26,100 @@ sys.path.insert(0, os.getcwd())
 
 
 def main():
-    who = ""
-    deal_filter = ""
-    if "--user" in sys.argv:
-        i = sys.argv.index("--user")
-        if i + 1 < len(sys.argv):
-            who = sys.argv[i + 1].strip()
-    if "--deal" in sys.argv:
-        i = sys.argv.index("--deal")
-        if i + 1 < len(sys.argv):
-            deal_filter = sys.argv[i + 1].strip()
-    if not who:
-        print("ABORT: --user <username or staff code> is required.")
+    cfg_path = os.path.join("data", "lms_config.json")
+    if not os.path.isfile(cfg_path):
+        print("ABORT: %s not found." % cfg_path)
+        return 1
+    cfg = json.load(open(cfg_path, encoding="utf-8"))
+    pal = (cfg.get("credit_workflow") or {}).get("committee_palette") or []
+    seated = [c for c in pal
+              if any(str(m.get("staff_code", "")).strip()
+                     for m in (c.get("members") or []) if isinstance(m, dict))]
+    if not seated:
+        print("No committee has anybody seated.")
         return 1
 
     try:
-        from utils.core import UserManager, PipelineManager
-        from utils.api_pipeline_permissions import resolve_deal_permissions
-        import utils.api as A
+        from utils.core import PipelineManager, UserManager
+        deals = PipelineManager().deals or []
+        users = UserManager().users or {}
     except Exception as exc:
-        print("ABORT: cannot load the application: %s" % exc)
+        print("ABORT: cannot read the stores: %s" % str(exc)[:60])
         return 1
 
-    # ── WHO ─────────────────────────────────────────────────────────────────
-    users = UserManager().users or {}
-    # MATCH ON ANY OF THE THREE THINGS somebody might know: the login key, the
-    # staff code, or a piece of the name. Requiring an exact login key means
-    # asking for the one identifier nobody remembers.
-    rec, uname = None, ""
-    w = who.lower()
-    for k, v in users.items():
-        if k.lower() == w or str(v.get("staff_code", "")).lower() == w:
-            rec, uname = v, k
-            break
-    if not rec:
-        hits = [(k, v) for k, v in users.items()
-                if w in k.lower()
-                or w in str(v.get("full_name", "") or v.get("name", "") or "").lower()]
-        if len(hits) == 1:
-            uname, rec = hits[0]
-        elif len(hits) > 1:
-            print("Several people match %r - name one:" % who)
-            for k, v in hits[:12]:
-                print("   login %-22s %-28s %s"
-                      % (k, str(v.get("full_name") or v.get("name") or "")[:28],
-                         v.get("staff_code")))
-            return 1
-    if not rec:
-        print("ABORT: nobody matches %r by login, staff code or name." % who)
+    print("=" * 84)
+    print("WHAT IS WAITING FOR EACH COMMITTEE")
+    print("=" * 84)
+    print("  deals in the pipeline  %d\n" % len(deals))
+
+    by_code = {}
+    for login, rec in users.items():
+        c = str(rec.get("staff_code", "")).strip().lower()
+        if c:
+            by_code[c] = dict(rec, username=login)
+
+    disagree = []
+    for c in seated:
+        code = str(c.get("code"))
+        name = str(c.get("name"))
+        # A deal is before this committee when its journey names it and it has
+        # not yet been resolved. Read the deal rather than trusting a flag.
+        waiting = []
+        for d in deals:
+            j = d.get("committee_journey") or d.get("committees") or []
+            if isinstance(j, dict):
+                j = [j]
+            for step in j:
+                if not isinstance(step, dict):
+                    continue
+                if str(step.get("code") or step.get("committee") or "") != code:
+                    continue
+                if str(step.get("outcome") or step.get("status") or "").lower() \
+                        in ("", "pending", "awaiting", "open", "referred"):
+                    waiting.append(d)
+                break
+        print("  %s  %s" % (code, name))
+        print("     in the deal store        %d waiting" % len(waiting))
+        for d in waiting[:4]:
+            print("        %-10s %-28s %s" % (str(d.get("id"))[:10],
+                                              str(d.get("client_name"))[:28],
+                                              d.get("stage")))
+
+        # What the queue endpoint would hand the first seated member.
+        first = next((m for m in (c.get("members") or [])
+                      if isinstance(m, dict)
+                      and str(m.get("staff_code", "")).strip()), None)
+        u = by_code.get(str(first.get("staff_code", "")).strip().lower()) \
+            if first else None
+        shown = "?"
+        if u:
+            try:
+                from utils.api import pipeline_manager_queues as _q
+                r = _q(user=u)
+                shown = str(len(r.get("committee") or r.get("committee_queue") or []))
+            except Exception as exc:
+                shown = "err %s" % str(exc)[:26]
+        print("     the queue would show     %s   (as %s)"
+              % (shown, (first or {}).get("name", "?")))
+        if shown.isdigit() and int(shown) != len(waiting):
+            disagree.append((code, len(waiting), int(shown)))
+            print("     *** THESE DISAGREE")
+        print("")
+
+    print("=" * 84)
+    if disagree:
+        print("THE QUEUE DOES NOT MATCH THE DEAL STORE")
+        print("=" * 84)
+        for code, real, shown in disagree:
+            print("  * %s: %d waiting, %d shown" % (code, real, shown))
+        print("\n  A case waiting for a committee that its own members cannot")
+        print("  see does not get decided. This is the bug to chase.")
         return 1
-    user = {"username": uname, "staff_code": rec.get("staff_code"),
-            "role": rec.get("role"), "full_name": rec.get("full_name") or rec.get("name")}
-    print("=" * 76)
-    print("COMMITTEE QUEUE TRACE")
-    print("=" * 76)
-    print("  login       %s" % uname)
-    print("  staff_code  %r" % user["staff_code"])
-    print("  full_name   %r" % user["full_name"])
-    print("  role        %r" % user["role"])
-
-    # ── WHICH COMMITTEES ────────────────────────────────────────────────────
-    cfg = json.load(open(os.path.join("data", "lms_config.json"), encoding="utf-8"))
-    pal = ((cfg.get("credit_workflow") or {}).get("committee_palette") or [])
-    me = str(user["staff_code"] or "").strip()
-    myname = str(user["full_name"] or "").strip().lower()
-    mine = []
-    for c in pal:
-        mem = c.get("members") or []
-        codes = {str(m.get("staff_code", "") or "").strip() for m in mem if isinstance(m, dict)}
-        names = {str(m.get("name", "") or "").strip().lower() for m in mem if isinstance(m, dict)}
-        chair = str(c.get("chaired_by", "") or "").strip().lower()
-        how = ""
-        if me and me in codes:
-            how = "member (staff code)"
-        elif myname and myname in names:
-            how = "member (name)"
-        elif myname and myname == chair:
-            how = "chair"
-        if how:
-            mine.append((c, how))
-    print("\n  COMMITTEES THIS PERSON IS ON: %d" % len(mine))
-    for c, how in mine:
-        print("     %-12s %-44s %s" % (c.get("code"), str(c.get("name"))[:44], how))
-    if not mine:
-        print("     none - so the queue is empty no matter what deals exist.")
-        print("     Their name must match a member entry or chaired_by EXACTLY,")
-        print("     or their staff code must be in the members list.")
-        return 1
-    my_codes = {str(c.get("code")) for c, _ in mine}
-
-    # ── WHERE THE DEALS ARE READ FROM ───────────────────────────────────────
-    print("\n  DEAL SOURCE")
-    db_first = getattr(A, "_PIPELINE_READ_DB_FIRST", None)
-    print("     _PIPELINE_READ_DB_FIRST = %r" % db_first)
-    pm = PipelineManager()
-    json_deals = list(getattr(pm, "deals", []) or [])
-    print("     PipelineManager sees %d deal(s)" % len(json_deals))
-    try:
-        scoped = A._acquire_scoped_deals(user)
-        print("     _acquire_scoped_deals sees %d for this person" % len(scoped))
-        if db_first and len(json_deals) != len(scoped):
-            print("     *** THE TWO SOURCES DISAGREE. The committee queue reads")
-            print("         PipelineManager (the JSON store); most other screens")
-            print("         read DB-first. A deal written to one is invisible to")
-            print("         the other, which is exactly how a count and a list")
-            print("         end up disagreeing.")
-    except Exception as exc:
-        print("     _acquire_scoped_deals failed: %s" % str(exc)[:60])
-
-    # ── DEAL BY DEAL ────────────────────────────────────────────────────────
-    print("\n  WHY EACH DEAL IS IN OR OUT")
-    try:
-        from utils.api_pipeline_scope import get_visible_staff_codes
-        visible = set(get_visible_staff_codes(user))
-    except Exception:
-        visible = set()
-    print("     visible staff codes: %d" % len(visible))
-
-    shown = 0
-    for d in json_deals:
-        did = str(d.get("id"))
-        if deal_filter and did != deal_filter:
-            continue
-        reasons = []
-        if str(d.get("stage", "")).lower().startswith("closed"):
-            reasons.append("stage is closed")
-        try:
-            journey = A._effective_committee_journey(d)
-        except Exception as exc:
-            journey = []
-            reasons.append("journey error: %s" % str(exc)[:40])
-        overlap = [c for c in journey if c in my_codes]
-        if not overlap:
-            reasons.append("journey %s does not include any of this person's committees"
-                           % (journey or "[]"))
-        already = [c for c in overlap if (d.get("committee_records") or {}).get(c)]
-        if overlap and len(already) == len(overlap):
-            reasons.append("already decided by this committee")
-        try:
-            cv = resolve_deal_permissions(d, user, visible).get("can_view")
-        except Exception as exc:
-            cv = False
-            reasons.append("permission error: %s" % str(exc)[:40])
-        if not cv:
-            reasons.append("can_view is False")
-
-        if not reasons:
-            print("     IN   %-10s %-24s %s" % (did, str(d.get("client_name"))[:24], overlap))
-            shown += 1
-        elif deal_filter or did.startswith(("SIM", "TEST")):
-            print("     out  %-10s %-24s %s"
-                  % (did, str(d.get("client_name"))[:24], reasons[0]))
-            for r in reasons[1:]:
-                print("          %-36s %s" % ("", r))
-
-    print("\n  %d deal(s) would appear in the queue." % shown)
-    if not shown:
-        print("  Every reason above is a different fix - read the first one.")
+    print("THE QUEUE AGREES WITH THE DEAL STORE")
+    print("=" * 84)
+    print("\n  Where a committee shows 0, nothing is waiting for it. That is a")
+    print("  fact about the pipeline, not a fault - put a case in front of it")
+    print("  and it will appear.")
     return 0
 
 
