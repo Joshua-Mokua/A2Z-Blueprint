@@ -83,10 +83,11 @@ from utils.api_lms_permissions import resolve_application_permissions
 # Kept equal to utils.api._DOC_MAX_BYTES (not imported directly — api.py
 # imports THIS module, so importing back would be circular). The two case-
 # document attach points below used to cap at 20MB/30MB, well under the
-# pipeline side's 200MB, for no documented reason — an LMS case document is
+# pipeline side's limit, for no documented reason — an LMS case document is
 # not smaller than a pipeline one. Aligned so the limit doesn't depend on
 # which screen someone happens to be attaching from.
-_LMS_DOC_MAX_BYTES = 200 * 1024 * 1024  # 200 MB
+_LMS_DOC_MAX_BYTES = 300 * 1024 * 1024  # 300 MB — see utils.api._DOC_MAX_BYTES for the
+# base64/nginx wire-size caveat (a 300MB file is ~400MB on the wire).
 
 
 # ─────────────────────────────────────────────────────────────────────

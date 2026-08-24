@@ -12390,9 +12390,12 @@ import re as _re_docup
 from datetime import datetime as _dt_docup
 
 _DOC_UPLOAD_ROOT = Path(__file__).resolve().parent.parent / "data" / "uploads" / "credit_docs"
-_DOC_MAX_BYTES = 200 * 1024 * 1024  # 200 MB (several documents per deal). NOTE: base64
-# inflates the request body ~33%, so a 200MB file is ~267MB on the wire — ensure uvicorn and any
-# reverse proxy (nginx client_max_body_size etc.) allow at least ~300MB, else the proxy 413s first.
+_DOC_MAX_BYTES = 300 * 1024 * 1024  # 300 MB (several documents per deal). NOTE: base64
+# inflates the request body ~33%, so a 300MB file is ~400MB on the wire — nginx's
+# client_max_body_size is set to 300MB on the live server, which is BELOW that. A file
+# over ~225MB actual size will 413 at nginx before this check ever runs. If the intent
+# is to truly allow up to 300MB of file content, client_max_body_size needs to go to
+# ~400MB too — this constant alone does not guarantee what its value implies.
 
 
 class _DocUploadBody(BaseModel):
