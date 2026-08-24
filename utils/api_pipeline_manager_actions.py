@@ -59,7 +59,15 @@ from typing import Any, Dict, Tuple
 MANAGER_ROLE_KEYWORDS: Tuple[str, ...] = (
     "managing",         # MD
     "director",         # Director CCB / Director CIB
-    "head of",          # Head of Retail / Head of SME / Head of Corporate
+    # "head" not "head of" (2026-08-24). The register writes the same rank
+    # three ways - "Head of Sales", "Head, SME", "Head EFS" - and only the
+    # first matched. Four of the eight people seated on the Consumer and
+    # Commercial credit committees were not managers by this test, so they had
+    # no Manager Queues, which is where the committee bench lives.
+    #
+    # Nothing junior is let in by this: there is no role in the register where
+    # "head" appears and the person is not senior.
+    "head",             # Head of Retail / Head, SME / Head EFS
     "regional",         # Regional Head
     "branch manager",   # Branch Manager
     "chief",            # Chief Risk Officer, etc.

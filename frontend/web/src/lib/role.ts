@@ -30,7 +30,13 @@ import type { UserIdentity } from '@/types/role';
 export const MANAGER_ROLE_KEYWORDS: readonly string[] = [
   'managing',           // MD
   'director',           // Director Retail / Director Commercial
-  'head of',            // Head of Retail / Head of SME / Head of Corporate
+  // "head" not "head of" (2026-08-24) - see the matching change in
+  // utils/api_pipeline_manager_actions.py. The register writes the same rank
+  // as "Head of Sales", "Head, SME" and "Head EFS", and only the first
+  // matched. This file and that tuple must change together: this one decides
+  // whether the menu appears, that one decides whether the request is allowed,
+  // and a change in one alone produces a menu that leads to a 403.
+  'head',              // Head of Retail / Head, SME / Head EFS
   'regional',           // Regional Head
   'branch manager',     // Branch Manager
   'chief',              // Chief Risk Officer, etc.
