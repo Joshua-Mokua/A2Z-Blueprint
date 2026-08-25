@@ -77,16 +77,23 @@ def main():
         print("  in the system, not only this one.")
         return 1
 
+    # LoanApplicationManager keeps them in .apps, a plain list. The first
+    # version guessed .all() and died on the one run that mattered - the same
+    # mistake as calling a queue function that does not exist. Read the
+    # attribute the class actually has.
+    apps = None
     try:
-        from utils.api_lms_models import load_applications as _load
-        apps = _load()
-    except Exception:
-        try:
-            from utils.api_lms_routes import _lam
-            apps = list((_lam().all() or {}).values())
-        except Exception as exc:
-            print("ABORT: cannot read the applications: %s" % str(exc)[:60])
-            return 1
+        from utils.api_lms_routes import _lam
+        lam = _lam()
+        apps = getattr(lam, "apps", None)
+        if apps is None and hasattr(lam, "_load"):
+            apps = lam._load()
+    except Exception as exc:
+        print("ABORT: cannot read the applications: %s" % str(exc)[:60])
+        return 1
+    if apps is None:
+        print("ABORT: the application store exposed no list to read.")
+        return 1
     if isinstance(apps, dict):
         apps = list(apps.values())
     if app_id:
