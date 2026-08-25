@@ -1634,6 +1634,31 @@ def lms_application_document_upload(
                                   str(user.get("staff_code", "") or "")) or "")
         _theirs = (_app_segment(app) or "")
         _seg_ok = bool(_mine) and bool(_theirs) and _mine == _theirs
+
+        # ── CREDIT RISK MEETS EVERY SEGMENT ─────────────────────────────────
+        # RULING (2026-08-25): "those with no segment belong to credit risk,
+        # and for them they have visibility across all the segments."
+        #
+        # Credit risk, credit administration and remedial are not segment
+        # functions. They meet every case in the bank at their own stage,
+        # which is precisely why _analyst_segment returns "" for them.
+        #
+        # THE TEST IS ON THE ROLE, NOT ON THE EMPTY SEGMENT. "" also means the
+        # register could not place somebody - a Quality Analyst, a Business
+        # Analyst, a title spelled unusually. Treating a blank segment as a
+        # licence would hand every case in the bank to anybody the register
+        # failed to classify.
+        #
+        # The list is named so it can be audited and argued with. Adding to it
+        # is a decision somebody makes, not a side effect of a blank field.
+        _CROSS_SEGMENT = (
+            "credit risk", "credit administration", "credit admin",
+            "remedial", "recover", "chief credit", "director credit",
+            "director, credit", "head of credit",
+        )
+        _role = str(user.get("role", "") or "").lower()
+        if not _seg_ok and any(w in _role for w in _CROSS_SEGMENT):
+            _seg_ok = True
     except Exception as exc:  # surfaced, never silent (CGR1)
         logger.warning("segment check failed while attaching to %s: %s",
                        app_id, exc)
