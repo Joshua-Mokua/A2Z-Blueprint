@@ -835,5 +835,8 @@
   "excluded_from_ranking": [
     "Business Manager",
     "Personal Assistant"
+  ],
+  "hidden_modules": [
+    "/"
   ]
 }
