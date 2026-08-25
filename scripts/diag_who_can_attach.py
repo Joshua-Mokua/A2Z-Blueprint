@@ -112,6 +112,16 @@ def main():
             why.append("decide")
         if mine and seg and mine == seg:
             why.append("segment")
+        # AT2: credit risk, credit administration and remedial meet every
+        # segment. This diagnostic was written before AT2 and went on
+        # reporting them as 403 after the fix landed - a stale check that
+        # contradicts the code it is checking is worse than no check, because
+        # it sends somebody looking for a bug that is already fixed.
+        _CROSS = ("credit risk", "credit administration", "credit admin",
+                  "remedial", "recover", "chief credit", "director credit",
+                  "director, credit", "head of credit")
+        if not why and any(w in role.lower() for w in _CROSS):
+            why.append("credit risk (any segment)")
         may = bool(why)
         if not may:
             blocked.append((u.get("full_name"), role))
