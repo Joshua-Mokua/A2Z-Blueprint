@@ -142,8 +142,21 @@ def main():
             print("  * %s" % f)
         return 1
 
-    print("\n  replaying %d patchers against a copy of origin/alex-dev ..."
-          % len(chain))
+    # ── FETCH FIRST. ────────────────────────────────────────────────────────
+    # This checked a STALE origin/alex-dev on 2026-08-25: it passed, the build
+    # then fetched, found Alex had merged and pushed (62cf4429 -> 4087eb09),
+    # and a patcher whose anchor had moved failed on the real branch.
+    #
+    # A preflight that checks yesterday's tree is worse than none - it spends
+    # the caller's confidence on a question it did not ask.
+    print("\n  fetching origin/alex-dev ...")
+    f = sh("git", "fetch", "-q", "origin", "alex-dev")
+    if f.returncode:
+        print("  *** could not fetch: %s" % (f.stderr or "").strip()[:60])
+        print("      This check would be against a possibly stale branch.")
+    head = sh("git", "rev-parse", "--short", "origin/alex-dev").stdout.strip()
+    print("  alex-dev is at %s" % (head or "?"))
+    print("\n  replaying %d patchers against a copy of it ..." % len(chain))
     tmp = tempfile.mkdtemp(prefix="preflight_build_")
     applied = 0
     try:
@@ -173,7 +186,11 @@ def main():
 
         note(not failed, "every patcher replays cleanly onto alex-dev",
              "%d applied" % applied if not failed else "%d failed" % len(failed))
-        for name, why in failed[:8]:
+        # EVERY failure, not the first eight. The builder stops at the first
+        # because it must not stack patches onto a half-written file; this does
+        # not write anything, so it has no reason to stop and every reason to
+        # show the whole list.
+        for name, why in failed:
             print("             %-40s %s" % (name, why))
 
         pyf = [os.path.join(tmp, f) for f in

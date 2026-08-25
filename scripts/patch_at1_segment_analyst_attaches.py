@@ -53,16 +53,18 @@ import sys
 MOD = os.path.join("utils", "api_lms_routes.py")
 BACKUP_SUFFIX = ".pre_at1"
 
-OLD = '''    perms = resolve_application_permissions(user, app)
-    if not (perms.get("can_edit") or perms.get("can_submit_to_dcc")
-            or perms.get("can_decide") or perms.get("is_assigned_analyst")):
-        raise HTTPException(
-            status_code=403,
-            detail="Only somebody working this case can attach documents to it.")'''
+# THE ANCHOR IS READ FROM THE FILE, NOT ASSUMED.
+# The first version hardcoded `can_edit` / `can_decide` / `is_assigned_analyst`,
+# which is how the gate reads on the developer's box. On the pilot it reads
+# `can_update` / `can_record_decision` and computes `_is_assigned_analyst` into
+# a local. The patch matched zero times and stopped a release mid-replay.
+#
+# Two trees, one patch: match on the ONE line that is identical in both - the
+# 403 detail string - and insert above the `if not (` that precedes it.
+DETAIL = 'detail="Only somebody working this case can attach documents to it."'
 
-NEW = '''    perms = resolve_application_permissions(user, app)
 
-    # ── THE SEGMENT'S ANALYST MAY BRING PAPERS ──────────────────────────────
+BLOCK = '''    # ── THE SEGMENT'S ANALYST MAY BRING PAPERS ──────────────────────────────
     # RULING: "the analysts should be allowed to introduce and upload documents
     # along the journey in case they are there."
     #
@@ -73,11 +75,11 @@ NEW = '''    perms = resolve_application_permissions(user, app)
     # colleague covering, or not yet assigned at all.
     #
     # BOTH SIDES MUST RESOLVE. An analyst the register cannot place returns ""
-    # from _analyst_segment, and a case whose client_type is "Business"
-    # returns "" from _app_segment - deliberately, because a business customer
-    # may be Commercial or CIB and guessing would put a corporate case in front
-    # of a consumer analyst. Neither empty string may match, or the gate would
-    # open every case in the bank to somebody it could not identify.
+    # from _analyst_segment, and a case whose client_type is "Business" returns
+    # "" from _app_segment - deliberately, because a business customer may be
+    # Commercial or CIB and guessing would put a corporate case in front of a
+    # consumer analyst. Neither empty string may match, or the gate would open
+    # every case in the bank to somebody it could not identify.
     _seg_ok = False
     try:
         from utils.api_lms_scope import _analyst_segment, _app_segment
@@ -89,13 +91,8 @@ NEW = '''    perms = resolve_application_permissions(user, app)
         logger.warning("segment check failed while attaching to %s: %s",
                        app_id, exc)
 
-    if not (perms.get("can_edit") or perms.get("can_submit_to_dcc")
-            or perms.get("can_decide") or perms.get("is_assigned_analyst")
-            or _seg_ok):
-        raise HTTPException(
-            status_code=403,
-            detail="Only somebody working this case, or the analyst for its "
-                   "segment, can attach documents to it.")'''
+'''
+
 
 
 def main():
@@ -108,28 +105,41 @@ def main():
     if "THE SEGMENT'S ANALYST MAY BRING PAPERS" in s:
         print("ABORT: AT1 looks applied.")
         return 1
-    if s.count(OLD) != 1:
-        print("ABORT: the attach gate matched %d times." % s.count(OLD))
+    if s.count(DETAIL) != 1:
+        print("ABORT: the 403 message appears %d times - expected exactly one."
+              % s.count(DETAIL))
         return 1
 
-    s = s.replace(OLD, NEW, 1)
-    print("  ok  the segment's analyst may attach to the segment's cases")
-
-    # An empty segment must never match. This is the check that stops the
-    # patch opening every case to anybody the register cannot place.
-    if 'bool(_mine) and bool(_theirs)' not in NEW:
-        print("ABORT: an unplaced analyst or an unsegmented case would match,")
-        print("       which would open every case in the bank.")
+    # Walk BACK from the message to the `if not (` that guards it, and insert
+    # above that. This works whichever names the permissions have.
+    i = s.index(DETAIL)
+    j = s.rfind("\n    if not (", 0, i)
+    if j < 0:
+        print("ABORT: could not find the guard above the 403 message.")
         return 1
-    # It must widen ATTACHMENT only.
-    for verb in ("can_decide", "can_submit_to_dcc", "can_edit"):
-        if NEW.count(verb) != OLD.count(verb):
-            print("ABORT: %r changed - this grants attachment only." % verb)
-            return 1
-    if "logger.warning" not in NEW:
-        print("ABORT: a failed segment check must say so. A silent except")
-        print("       here would refuse a legitimate analyst and look like a")
-        print("       permission decision.")
+    guard = s[j:i]
+    if "raise HTTPException" not in guard:
+        print("ABORT: the text between the guard and the message is not what")
+        print("       was expected - refusing to insert blind.")
+        return 1
+
+    s = s[:j + 1] + BLOCK + s[j + 1:]
+    print("  ok  the segment check is inserted above the attach guard")
+
+    # And the guard itself must now consult it.
+    i2 = s.index(DETAIL)
+    j2 = s.rfind("\n    if not (", 0, i2)
+    k2 = s.index("):", j2)
+    cond = s[j2:k2]
+    if "_seg_ok" not in cond:
+        s = s[:k2] + "\n            or _seg_ok" + s[k2:]
+        print("  ok  the guard consults it")
+
+    if 'bool(_mine) and bool(_theirs)' not in BLOCK:
+        print("ABORT: an unplaced analyst or an unsegmented case would match.")
+        return 1
+    if "logger.warning" not in BLOCK:
+        print("ABORT: a failed segment check must say so.")
         return 1
     import ast
     try:
@@ -137,7 +147,7 @@ def main():
     except SyntaxError as exc:
         print("ABORT: the result would not parse - line %s: %s" % (exc.lineno, exc.msg))
         return 1
-    print("  ok  post-checks: empty never matches, attachment only, logged")
+    print("  ok  post-checks: empty never matches, logged, parses")
 
     if not apply:
         print("\nDRY RUN - nothing written. Re-run with --apply.")
@@ -154,8 +164,7 @@ def main():
     except Exception as exc:
         print("  FAIL %s" % exc)
         return 1
-    print("\nRESTART UVICORN. Confirm with a real case:")
-    print("   python scripts\\diag_attach_403.py --user <analyst code>")
+    print("\nRESTART UVICORN.")
     return 0
 
 
