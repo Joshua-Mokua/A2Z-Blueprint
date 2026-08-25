@@ -151,6 +151,11 @@ CHAIN = [
     "patch_cl1_condition_library",
     "patch_wn1_disbursed_closes_won",
     "patch_ui2_credit_frontend",
+    "patch_hd2_head_is_a_manager",
+    "patch_at1_segment_analyst_attaches",
+    "patch_at2_credit_risk_across_segments",
+    "patch_cs1_committee_sidebar",
+    "patch_cn2_committee_tab_name",
     "patch_rt2_rate_desk_route",
 ]
 
