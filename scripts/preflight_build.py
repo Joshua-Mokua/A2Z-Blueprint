@@ -175,8 +175,22 @@ def main():
             r = sh(sys.executable, os.path.join("scripts", "%s.py" % name),
                    "--apply", cwd=tmp)
             out = (r.stdout or "") + (r.stderr or "")
+            # ── A PATCHER THAT EXITS 0 AND DOES NOT ABORT HAS SUCCEEDED ──────
+            # This looked only for the word "APPLIED", so a patcher reporting
+            # "Nothing to remove - the tick endpoint is not here" was counted
+            # as a FAILURE. Two of them stopped a release that the builder
+            # would have run without complaint.
+            #
+            # A preflight whose verdict differs from the builder's is worse
+            # than none: it either blocks a good release or waves through a bad
+            # one, and both cost more than the check saves. It now classifies
+            # the way the builder does - on the exit code and the absence of an
+            # explicit refusal.
             if "APPLIED" in out or "CREATED" in out:
                 applied += 1
+            elif r.returncode == 0 and "ABORT" not in out:
+                # Did its job and found nothing to do. That is success.
+                pass
             elif "looks applied" in out or "already" in out:
                 pass
             else:
