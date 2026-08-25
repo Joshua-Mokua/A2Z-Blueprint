@@ -1610,11 +1610,41 @@ def lms_application_document_upload(
     if not app:
         raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
     perms = resolve_application_permissions(user, app)
+
+    # ── THE SEGMENT'S ANALYST MAY BRING PAPERS ──────────────────────────────
+    # RULING: "the analysts should be allowed to introduce and upload documents
+    # along the journey in case they are there."
+    #
+    # The tests below ask whether this person is working THIS case. That is
+    # right for deciding and submitting, and wrong for evidence: a CRB report
+    # or a call memo is not a decision, and the Consumer analyst should not be
+    # refused her own segment's paperwork because the case is assigned to a
+    # colleague covering, or not yet assigned at all.
+    #
+    # BOTH SIDES MUST RESOLVE. An analyst the register cannot place returns ""
+    # from _analyst_segment, and a case whose client_type is "Business"
+    # returns "" from _app_segment - deliberately, because a business customer
+    # may be Commercial or CIB and guessing would put a corporate case in front
+    # of a consumer analyst. Neither empty string may match, or the gate would
+    # open every case in the bank to somebody it could not identify.
+    _seg_ok = False
+    try:
+        from utils.api_lms_scope import _analyst_segment, _app_segment
+        _mine = (_analyst_segment(str(user.get("role", "") or ""),
+                                  str(user.get("staff_code", "") or "")) or "")
+        _theirs = (_app_segment(app) or "")
+        _seg_ok = bool(_mine) and bool(_theirs) and _mine == _theirs
+    except Exception as exc:  # surfaced, never silent (CGR1)
+        logger.warning("segment check failed while attaching to %s: %s",
+                       app_id, exc)
+
     if not (perms.get("can_edit") or perms.get("can_submit_to_dcc")
-            or perms.get("can_decide") or perms.get("is_assigned_analyst")):
+            or perms.get("can_decide") or perms.get("is_assigned_analyst")
+            or _seg_ok):
         raise HTTPException(
             status_code=403,
-            detail="Only somebody working this case can attach documents to it.")
+            detail="Only somebody working this case, or the analyst for its "
+                   "segment, can attach documents to it.")
 
     doc_name = str(body.doc_name or "").strip()
     if not doc_name:
