@@ -109,13 +109,14 @@ CHAIN = [
     "patch_dp1_named_deputy_chairs",
     "patch_fn1_funnel_follows_selection",
     "patch_hd1_cards_follow_selection",
-    "patch_mv1_committee_votes_persist",
+    "patch_mv1_committee_votes_persist_v2",
     "patch_vf1_vote_recorded_and_final",
     "patch_aa1_auto_advance_on_decision",
     "patch_aj1_auto_advance_journey",
     "patch_vs1_vote_syncs_to_db",
     "patch_pg1_all_writes_reach_postgres",
     "patch_sg1_analyst_sees_own_segment",
+    "patch_mv2_committee_sees_its_cases",
     "patch_rw1_return_for_rework",
     "patch_rb1_rework_returns_case",
     "patch_rj1_rework_in_journey",
@@ -123,18 +124,39 @@ CHAIN = [
     "fix_readiness_overwrite",
     "patch_dc1_supported_case_goes_on",
     "patch_dj1_dcc_votes_in_journey",
-    "patch_ui1_credit_frontend",
     "patch_gt1_committee_gate_position",
     "patch_cr1_memo_before_analysis",
+    "patch_gv1_gate_carries_voting",
+    "patch_lk1_branch_keeps_its_case",
+    "patch_br2_branch_from_unit_or_owner",
+    "patch_lg1_legal_officers",
+    "patch_sc1_staff_code_zeros",
+    "patch_qc1_committee_queue_only_committees",
+    "patch_cdoc1_committee_reads_the_case",
+    "patch_cv2_voters_see_the_case",
+    "patch_tr1_treasury_rate_desk",
     "patch_dm1_decision_moves_case",
     "patch_cd1_conditions_and_tick",
     "remove_cd1_tick",
     "patch_ac1_accept_decline",
     "patch_ec1_escalate_to_chief",
     "patch_dr2_committee_per_case",
+    "patch_rq1_required_documents",
+    "patch_mc1_management_credit_committee",
+    "patch_bc1_business_credit_committee",
+    "patch_mp1_business_committee_panel",
+    "patch_vp1_vote_is_personal",
+    "patch_bv1_committee_vote_integrity",
+    "patch_cv1_credit_voice",
+    "patch_cl1_condition_library",
     "patch_wn1_disbursed_closes_won",
-    "patch_sf1_pool_segment_filter",
-    "patch_ap1_approval_panel",
+    "patch_ui2_credit_frontend",
+    "patch_hd2_head_is_a_manager",
+    "patch_at1_segment_analyst_attaches",
+    "patch_at2_credit_risk_across_segments",
+    "patch_cs1_committee_sidebar",
+    "patch_cn2_committee_tab_name",
+    "patch_rt2_rate_desk_route",
 ]
 
 # Patchers that deliberately do NOT ship to the pilot. Anything in scripts/ that
@@ -147,6 +169,35 @@ CHAIN = [
 # datetime.parseTs). Re-running them would only abort as "already applied", but
 # listing them keeps the guard meaningful instead of crying wolf every build.
 NOT_FOR_RELEASE = {
+    # ── THE WAREHOUSE STORE (2026-08-20/21) ────────────────────────────────
+    # Postgres-backed store, registered table, audible failures, columns wide
+    # enough for what a register publishes, paged reads, and import
+    # provenance. All of it belongs to the warehouse, which is held back until
+    # it is well built - and the pilot has no warehouse page, route or backend
+    # to use any of it.
+    "patch_wh1_warehouse_on_postgres",
+    "patch_wh2_register_and_speak_up",
+    "patch_wh3_columns_take_the_register",
+    "patch_wp1_warehouse_paging",
+    "patch_im1_import_provenance",
+
+    # ── THE BUILDER ITSELF ─────────────────────────────────────────────────
+    # WHS teaches THIS script to strip the Deals Warehouse menu entry before
+    # staging. It cannot be replayed onto the pilot: it is the tool doing the
+    # replaying, and it lives on this box only.
+    "patch_whs_strip_at_build",
+    # And THIS patcher, which is what wrote the lines above. A patcher that
+    # edits the release builder can never be replayed onto the pilot - and if
+    # it is not named here, the very next build refuses because IT is now the
+    # thing that is unplaced. WHS taught us that; this is the same lesson
+    # applied to itself.
+    "patch_nfr_six",
+    # RTN edits the builder too: a failed build now discards the partial
+    # replay and returns you to the branch you started from. It cannot be
+    # replayed onto the pilot for the same reason as WHS and NFR - it IS the
+    # tool doing the replaying.
+    "patch_rtn_return_home",
+
     # THE WAREHOUSE IS HELD BACK (ruling 2026-08-11): "anything on the
     # warehouse is not to be released to Alex until I am certain it is well
     # built."
@@ -196,6 +247,16 @@ NOT_FOR_RELEASE = {
     "patch_wc2b_wiring",
     "patch_wh3_shelf_polish",
     "patch_pie1_origin_donut",
+    "patch_ui1_credit_frontend",
+    "patch_sf1_pool_segment_filter",
+    "patch_ap1_approval_panel",
+    "patch_lb2_stage_labels",
+    "patch_pv1_pool_access_panel",
+    "patch_cr2_credit_risk_review",
+    "patch_cr3_credit_risk_page",
+    "patch_cn1_condition_library",
+    "patch_cfgblock_release",
+    "patch_mv1_committee_votes_persist",
     "patch_vu1_voting_panel",
     "patch_vu2_api_client_anchored",
     "patch_hk1_hooks_before_return",
@@ -211,7 +272,6 @@ NOT_FOR_RELEASE = {
     "patch_br1_a2z_and_committee_tab",
     "patch_lb1_cancellation_labels",
     "patch_dq2_committee_fallback",
-    "patch_cfgblock_release",
 }
 
 # Must be IDENTICAL to alex-dev when this finishes.
@@ -350,7 +410,35 @@ def main():
     import glob
     on_disk = {os.path.splitext(os.path.basename(f))[0]
                for f in glob.glob(os.path.join("scripts", "patch_*.py"))}
-    unlisted = sorted(on_disk - set(CHAIN) - NOT_FOR_RELEASE)
+    # ── A PATCHER THAT EDITS THIS FILE EXCLUDES ITSELF ──────────────────────
+    # WHS, NFR, RTN and RTN_NAMED each refused a build by existing, and each
+    # was fixed by naming the previous one - a regress that ends only when the
+    # RULE is written down instead of the names.
+    #
+    # A patcher that writes to build_alex_release.py cannot be replayed onto
+    # the pilot: the pilot has no release builder. That is a fact about the
+    # file, not a judgement anybody should have to remember.
+    #
+    # The explicit NOT_FOR_RELEASE list stays for the warehouse and anything
+    # else held back for a REASON - a reason belongs in writing where somebody
+    # can disagree with it. Only the mechanical case is automatic.
+    _edits_builder = set()
+    for _f in glob.glob(os.path.join("scripts", "patch_*.py")):
+        try:
+            _src = open(_f, encoding="utf-8", errors="ignore").read()
+        except OSError:
+            continue
+        if "build_alex_release" in _src:
+            _edits_builder.add(os.path.splitext(os.path.basename(_f))[0])
+    if _edits_builder:
+        print("  %d patcher(s) edit the release builder and cannot reach the"
+              % len(_edits_builder))
+        print("  pilot - excluded automatically:")
+        for _b in sorted(_edits_builder):
+            print("     %s" % _b)
+        print("")
+
+    unlisted = sorted(on_disk - set(CHAIN) - NOT_FOR_RELEASE - _edits_builder)
     if unlisted:
         print("")
         print("  *** %d patcher(s) exist but are NOT in the release chain:" % len(unlisted))
@@ -421,8 +509,28 @@ def main():
             print("\nABORT: stopping at the first failure - continuing would")
             print("       stack patches onto a partly-written file.")
             print("       %s" % why)
+            # ── PUT THE DEVELOPER BACK WHERE THEY STARTED ───────────────
+            # The half-applied patches must be DISCARDED first. Git refuses to
+            # switch branches over modified files, so without this the
+            # checkout silently fails, the branch delete silently fails
+            # (you cannot delete the branch you are standing on), and the next
+            # commit lands on a half-built release branch.
+            #
+            # That happened three times in a row before anybody noticed.
+            #
+            # Discarding is correct: this branch is about to be deleted, and a
+            # half-replayed tree is worth nothing. Nothing on the ORIGINAL
+            # branch is touched.
+            sh("git", "reset", "--hard", "-q", check=False)
             sh("git", "checkout", "-q", here, check=False)
             sh("git", "branch", "-D", branch, check=False)
+            _now = sh("git", "rev-parse", "--abbrev-ref", "HEAD").strip()
+            if _now == here:
+                print("\n  you are back on %s - nothing was left behind." % here)
+            else:
+                print("\n  *** COULD NOT RETURN TO %s - you are on %s."
+                      % (here, _now))
+                print("      Run:  git checkout -f %s" % here)
             return 1
 
     print("\napplied %d · already present %d · failed %d"
@@ -452,6 +560,31 @@ def main():
             print("  reverted %s (stays on Alex's side)" % f)
 
     # ── the guard that matters ───────────────────────────────────────────────
+    # ── THE WAREHOUSE MENU ENTRY DOES NOT TRAVEL ────────────────────────────
+    # The pilot has no warehouse page, route or backend - it is deliberately
+    # held back until it is well built. UI2 carries the menu entry because it
+    # is a REAL item on the developer's box, so it is stripped HERE, at build,
+    # rather than baked out of a patch that is applied in both places.
+    #
+    # An RM given a menu item that leads nowhere concludes the system is
+    # broken, not that a feature is pending.
+    _bar = os.path.join("frontend", "web", "src", "components", "Sidebar.tsx")
+    if os.path.isfile(_bar):
+        _txt = open(_bar, encoding="utf-8").read()
+        _had = _txt.count("Deals Warehouse")
+        if _had:
+            _kept = [l for l in _txt.split("\n")
+                     if "label: 'Deals Warehouse'" not in l]
+            open(_bar, "w", encoding="utf-8", newline="").write("\n".join(_kept))
+            _left = "\n".join(_kept).count("Deals Warehouse")
+            print("\n  stripped the Deals Warehouse menu entry (%d -> %d)"
+                  % (_had, _left))
+            if _left:
+                print("\nABORT: the entry survived the strip. The pilot would")
+                print("       get a menu item leading to a page that is not")
+                print("       there.")
+                return 1
+
     print("\n" + "=" * 72)
     print("SAFETY CHECK")
     print("=" * 72)

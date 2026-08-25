@@ -321,7 +321,7 @@ export function PipelineDealDetail() {
           { id: 'documents', label: 'Documentation and Credit Review', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} stageFlow={stageFlow} canEdit={canEditDocs} /> },
           { id: 'affordability', label: 'Affordability', color: '#00A65A', content: <AffordabilityAppraisal dealId={deal.id} /> },
           { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={canEditDocs} /> },
-          { id: 'committee', label: 'Branch Credit Committee', color: '#EF6C00', content: <CommitteeJourneyCard dealId={deal.id} canEdit={canEditDocs} /> },
+          { id: 'committee', label: 'Credit Committee', color: '#EF6C00',  /* not 'Branch': a case may sit before B1 Consumer, B2 Commercial, B3 CIB, B4 or a branch committee, and the panel inside names which. */ content: <CommitteeJourneyCard dealId={deal.id} canEdit={canEditDocs} /> },
           { id: 'forwarding', label: 'Forwarding Memo', color: '#5C6BC0', content: <ForwardingMemoCard dealId={deal.id} canEdit={canEditDocs} /> },
           { id: 'actions', label: 'Actions', color: '#C62828', content: (
             <div className="space-y-6">
