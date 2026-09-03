@@ -119,13 +119,44 @@ def main():
             print("\n  warn: the chair %r is not in the register, so their" % chair)
             print("        mandatory vote cannot be matched by staff code.")
 
-    members = [{
-        "id": p["staff_code"],
-        "member_id": p["staff_code"],
-        "staff_code": p["staff_code"],
-        "name": p["name"],
-        "role": p["role"],
-    } for p in resolved]
+    # ── FLAGS SET ON A MEMBER SURVIVE A RE-NAMING ───────────────────────────
+    # FOUND 2026-08-18: naming members to B4 rewrote the roster wholesale and
+    # silently destroyed `full_funnel` on two of them - so the Credit Risk
+    # Manager, who had been granted sight of the whole bank pipeline that
+    # morning, lost it again by lunchtime and nobody was told.
+    #
+    # Same shape as the release config overwriting the bank's committees: a
+    # wholesale write, and whatever somebody had carefully set is gone.
+    #
+    # A member's NAME and ROLE come from the register. Everything else on the
+    # entry - full_funnel, deputy_chair, anything added later - was set
+    # deliberately by an admin and is carried across.
+    _was = {}
+    for _m in (target.get("members") or []):
+        if isinstance(_m, dict):
+            _k = str(_m.get("staff_code", "") or "").strip()
+            if _k:
+                _was[_k] = _m
+
+    members = []
+    for p in resolved:
+        _prev = _was.get(str(p["staff_code"]).strip(), {})
+        _entry = {k: v for k, v in _prev.items()
+                  if k not in ("id", "member_id", "staff_code", "name", "role")}
+        _entry.update({
+            "id": p["staff_code"],
+            "member_id": p["staff_code"],
+            "staff_code": p["staff_code"],
+            "name": p["name"],
+            "role": p["role"],
+        })
+        members.append(_entry)
+
+    _kept = sorted({k for p in resolved
+                    for k in _was.get(str(p["staff_code"]).strip(), {})
+                    if k not in ("id", "member_id", "staff_code", "name", "role")})
+    if _kept:
+        print("\n  carried across from the existing roster: %s" % ", ".join(_kept))
 
     print("\n  WILL WRITE %d member(s) to the palette AND the LMS roster."
           % len(members))

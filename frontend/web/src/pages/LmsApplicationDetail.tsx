@@ -20,7 +20,7 @@ import { FacilitiesTable, facilitiesToPrintHtml } from '@/components/FacilitiesT
 import { useState, useEffect } from 'react';
 import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
-import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, resubmitAfterRework, escalateToChief, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse,
+import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, escalateToChief, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse,
   getConditionLibrary,
 } from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
@@ -198,9 +198,6 @@ export function LmsApplicationDetail() {
   // Panel toggles
   const [assignOpen,   setAssignOpen]   = useState(false);
   const [updateOpen,   setUpdateOpen]   = useState(false);
-  // The rework button lives on the Department Review tab, which renders inside
-  // THIS component - so its state belongs here, above every early return.
-  const [reworkBusy, setReworkBusy] = useState(false);
   const [decisionOpen, setDecisionOpen] = useState(false);
 
   const currencySymbol = branding?.currency_symbol ?? 'KES';
@@ -358,69 +355,7 @@ export function LmsApplicationDetail() {
           ) },
           { id: 'documents', label: 'Department Review', color: '#0097A7', content: (
             <>
-              {/* ─────────── The rework is done ───────────
-            RULING (2026-08-14): "it is extremely important to have the rework
-            submit, and it should send it right back. The rework submit should
-            also be on the department analyst side."
-
-            RB1 sends a case back to the branch with what needs fixing, and
-            nothing sent it on again - so a returned case could only move by
-            API. That is the half of a loop that makes the other half useless.
-
-            SHOWN TO WHOEVER OPENS A RETURNED CASE. The owner at the branch
-            does the work; the analyst may also send it back once they can see
-            it is done. Both need the same button, because a case waiting on
-            "who is allowed to press this" is a case not moving.
-
-            THE SERVER DECIDES WHERE IT GOES - back to the analyst who returned
-            it, or to the pool if that person cannot be identified. */}
-        {String(application.status || '') === 'returned' && (
-          <Card stripe="accent">
-            <Card.Header>
-              <h3 className="text-sm font-semibold text-gray-900">Returned for rework</h3>
-            </Card.Header>
-            <Card.Body>
-              <p className="mb-2 text-sm text-gray-800">
-                {String((application as unknown as Record<string, unknown>).rework_reasons ?? '')
-                  || 'This case was returned for correction.'}
-              </p>
-              {(() => {
-                const back = String((application as unknown as
-                  { returned_by_name?: string }).returned_by_name ?? '');
-                return back ? (
-                  <p className="mb-2 text-xs text-gray-500">
-                    Returned by {back} — it goes back to them when you send it.
-                  </p>
-                ) : null;
-              })()}
-              <div className="flex justify-end">
-                <Button
-                  size="sm"
-                  disabled={reworkBusy}
-                  onClick={() => {
-                    void (async () => {
-                      setReworkBusy(true);
-                      try {
-                        const r = await resubmitAfterRework(appId ?? '', {});
-                        const to = (r as unknown as { back_to?: string }).back_to;
-                        toast({ tone: 'success',
-                          message: `Sent back to ${to || 'credit'}.` });
-                        await refetch();
-                      } catch (e) {
-                        toast({ tone: 'danger',
-                          message: e instanceof Error ? e.message : 'Could not send it back' });
-                      } finally { setReworkBusy(false); }
-                    })();
-                  }}
-                >
-                  {reworkBusy ? 'Sending…' : 'Rework done — send it back'}
-                </Button>
-              </div>
-            </Card.Body>
-          </Card>
-        )}
-
-        {/* PICKING BELONGS WHERE THE WORK IS (ruling 2026-08-14):
+              {/* PICKING BELONGS WHERE THE WORK IS (ruling 2026-08-14):
                   "this should not have come on the Actions but on the
                   analysis." An analyst opening a case to work it should not
                   have to find another tab to claim it first - and Actions said
@@ -1457,10 +1392,7 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
               placeholder="Board resolution&#10;Debenture&#10;Insurance certificate"
               className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Cleared by credit admin before the case moves on. The last one
-              ticked releases it to Trops.
-            </p>
+
           </div>
         )}
         {verdict === 'approved' && (
@@ -1490,9 +1422,7 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
               placeholder="Charge registered&#10;Insurance assigned&#10;Valuation within 90 days"
               className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 resize-y"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Cleared by Trops before money moves. Leave blank if there are none.
-            </p>
+
           </div>
         )}
 
@@ -1506,91 +1436,6 @@ function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast
 
             The case does not change hands: escalation asks a question of
             somebody senior, and the analyst still owns it. */}
-        {/* ─────────── Refer it on ───────────
-            RULING (2026-08-18): "give these two items a bigger button, and at
-            least above there. Remove 'above my authority' and just have Refer
-            to Director Credit."
-
-            They were small text links at the foot of the panel, under the
-            comments box - so the two things an analyst does when a case is
-            beyond them were the least visible things on the page, below
-            everything they would do if it were not.
-
-            And "above my authority" was the wrong words. Referring a large
-            case upward is the process working, not an admission - the phrasing
-            made a routine act sound like a confession. */}
-        <div className="mb-4 rounded-lg border border-[#005B82]/20 bg-[#005B82]/5 p-3">
-          {!escalateOpen ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => { setEscalateTarget('chief'); setEscalateOpen(true); }}
-                disabled={mutations.loading}
-                className="rounded-md border border-[#005B82] bg-white px-4 py-2 text-sm font-semibold text-[#005B82] transition hover:bg-[#005B82] hover:text-white disabled:opacity-50"
-              >
-                Refer to Director Credit
-              </button>
-              <button
-                type="button"
-                onClick={() => { setEscalateTarget('mcc'); setEscalateOpen(true); }}
-                disabled={mutations.loading}
-                className="rounded-md border border-[#005B82] bg-white px-4 py-2 text-sm font-semibold text-[#005B82] transition hover:bg-[#005B82] hover:text-white disabled:opacity-50"
-              >
-                Refer to the Management Credit Committee
-              </button>
-            </div>
-          ) : (
-            <div className="rounded-md border border-[#005B82]/30 bg-[#005B82]/5 p-3">
-              <label className="text-sm font-medium text-gray-800">
-                {escalateTarget === 'mcc'
-                  ? 'Why does this need the Management Credit Committee?'
-                  : 'Why does this need Director Credit?'}
-              </label>
-              <textarea
-                value={escalateReason}
-                onChange={(e) => setEscalateReason(e.target.value)}
-                rows={2}
-                placeholder="Exposure above my limit; concentration in one sector…"
-                className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:border-brand-primary resize-y"
-              />
-              <p className="mt-1 text-xs text-gray-600">
-                A case arriving with no question attached wastes the trip.
-              </p>
-              <div className="mt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => { setEscalateOpen(false); setEscalateReason(''); }}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={mutations.loading || !escalateReason.trim()}
-                  onClick={() => {
-                    void (async () => {
-                      try {
-                        const r = await escalateToChief(appId, { reason: escalateReason.trim(), to: escalateTarget });
-                        const to = (r as unknown as { escalated_to?: string }).escalated_to;
-                        setError(null);
-                        setEscalateOpen(false);
-                        setEscalateReason('');
-                        setEscalateTarget('chief');
-                        toast({ tone: 'success',
-                          message: `Sent to ${to || 'the Chief Credit Risk'}. The case stays with you.` });
-                      } catch (e) {
-                        setError(e instanceof Error ? e.message : 'Could not escalate');
-                      }
-                    })();
-                  }}
-                  className="rounded-md bg-[#005B82] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  {escalateTarget === 'mcc' ? 'Refer to the committee' : 'Refer to Director Credit'}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
         <div className="mt-3">
           <label className="text-sm font-medium text-gray-700">Comments</label>
           <textarea
@@ -2902,20 +2747,6 @@ function CorrectnessPanel({ appId, onDone, toast }: {
   }, []);
   const toggleReason = (r: string) =>
     setReasons((p) => (p.includes(r) ? p.filter((x) => x !== r) : [...p, r]));
-  // ── ASK BEFORE SUBMITTING ────────────────────────────────────────────────
-  // RULING (2026-08-14): "it submitted without asking if there are documents
-  // required for her to attach ... it can allow without, but the question
-  // where she selects Yes or No should come up for confirmation on her side."
-  //
-  // Recommending now SENDS the case, and a click that sends something should
-  // ask once. The question is the useful one - is anything still to attach -
-  // rather than a bare "are you sure", which people learn to click through.
-  //
-  // ANSWERING "yes, something is missing" does not block: it closes the
-  // dialogue and leaves her on the page with the attach control, because the
-  // remedy for a missing paper is to attach it, not to be told off.
-  const [confirmReady, setConfirmReady] = useState(false);
-
   const act = async (decision: 'ready' | 'rework') => {
     if (decision === 'rework' && reasons.length === 0) {
       toast({ tone: 'danger', message: 'Select at least one rework reason before returning the case.' });
@@ -2965,28 +2796,7 @@ function CorrectnessPanel({ appId, onDone, toast }: {
               the committee in the same act. The label should say so, because
               somebody who thinks they are ticking a box will press it more
               casually than somebody who knows they are submitting. */}
-          {confirmReady && (
-            <div className="mb-3 w-full rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5">
-              <p className="text-sm font-medium text-amber-900">
-                Is there any document still to be attached to this case?
-              </p>
-              <p className="mt-1 text-xs text-amber-800">
-                Recommending sends it straight to the department committee — they
-                will vote on the papers as they stand.
-              </p>
-              <div className="mt-2 flex items-center gap-2">
-                <Button size="sm" variant="secondary"
-                  onClick={() => setConfirmReady(false)}>
-                  Yes — let me attach it first
-                </Button>
-                <Button size="sm" disabled={busy}
-                  onClick={() => { setConfirmReady(false); void act('ready'); }}>
-                  No — recommend it now
-                </Button>
-              </div>
-            </div>
-          )}
-          <Button variant="primary" onClick={() => setConfirmReady(true)} disabled={busy}>Recommend to committee</Button>
+          <Button variant="primary" onClick={() => void act('ready')} disabled={busy}>Recommend to committee</Button>
           <Button variant="ghost" onClick={() => void act('rework')} disabled={busy}>Return for rework</Button>
         </div>
       </Card.Body>

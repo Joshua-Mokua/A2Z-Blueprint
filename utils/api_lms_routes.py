@@ -1636,8 +1636,61 @@ def lms_application_document_upload(
     _analyst = app.get("analyst") or {}
     _is_assigned_analyst = bool(user.get("staff_code")) and (
         str(_analyst.get("code", "") or "") == str(user.get("staff_code", "") or ""))
+    # ── THE SEGMENT'S ANALYST MAY BRING PAPERS ──────────────────────────────
+    # RULING: "the analysts should be allowed to introduce and upload documents
+    # along the journey in case they are there."
+    #
+    # The tests below ask whether this person is working THIS case. That is
+    # right for deciding and submitting, and wrong for evidence: a CRB report
+    # or a call memo is not a decision, and the Consumer analyst should not be
+    # refused her own segment's paperwork because the case is assigned to a
+    # colleague covering, or not yet assigned at all.
+    #
+    # BOTH SIDES MUST RESOLVE. An analyst the register cannot place returns ""
+    # from _analyst_segment, and a case whose client_type is "Business" returns
+    # "" from _app_segment - deliberately, because a business customer may be
+    # Commercial or CIB and guessing would put a corporate case in front of a
+    # consumer analyst. Neither empty string may match, or the gate would open
+    # every case in the bank to somebody it could not identify.
+    _seg_ok = False
+    try:
+        from utils.api_lms_scope import _analyst_segment, _app_segment
+        _mine = (_analyst_segment(str(user.get("role", "") or ""),
+                                  str(user.get("staff_code", "") or "")) or "")
+        _theirs = (_app_segment(app) or "")
+        _seg_ok = bool(_mine) and bool(_theirs) and _mine == _theirs
+
+        # ── CREDIT RISK MEETS EVERY SEGMENT ─────────────────────────────────
+        # RULING (2026-08-25): "those with no segment belong to credit risk,
+        # and for them they have visibility across all the segments."
+        #
+        # Credit risk, credit administration and remedial are not segment
+        # functions. They meet every case in the bank at their own stage,
+        # which is precisely why _analyst_segment returns "" for them.
+        #
+        # THE TEST IS ON THE ROLE, NOT ON THE EMPTY SEGMENT. "" also means the
+        # register could not place somebody - a Quality Analyst, a Business
+        # Analyst, a title spelled unusually. Treating a blank segment as a
+        # licence would hand every case in the bank to anybody the register
+        # failed to classify.
+        #
+        # The list is named so it can be audited and argued with. Adding to it
+        # is a decision somebody makes, not a side effect of a blank field.
+        _CROSS_SEGMENT = (
+            "credit risk", "credit administration", "credit admin",
+            "remedial", "recover", "chief credit", "director credit",
+            "director, credit", "head of credit",
+        )
+        _role = str(user.get("role", "") or "").lower()
+        if not _seg_ok and any(w in _role for w in _CROSS_SEGMENT):
+            _seg_ok = True
+    except Exception as exc:  # surfaced, never silent (CGR1)
+        logger.warning("segment check failed while attaching to %s: %s",
+                       app_id, exc)
+
     if not (perms.get("can_update") or perms.get("can_submit_to_dcc")
-            or perms.get("can_record_decision") or _is_assigned_analyst):
+            or perms.get("can_record_decision") or _is_assigned_analyst
+            or _seg_ok):
         raise HTTPException(
             status_code=403,
             detail="Only somebody working this case can attach documents to it.")
@@ -2471,6 +2524,63 @@ def lms_application_cr_save(
 # GET  /committee/tiers                         — the ordered tier ladder
 # POST /applications/{id}/committee/submit-upward — push case to next tier
 # ─────────────────────────────────────────────────────────────────────
+
+
+@router.get("/committee/mine")
+def lms_my_committees(
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Which credit committees, if any, this person sits on.
+
+    The sidebar needs this because the Department Review entry was gated on
+    the ROLE STRING - credit, analyst, underwriter and so on - and the eight
+    people the bank actually seated are business heads: Head of Consumer, Head
+    of SME, Head of Branches. Not one of them could open the screen where the
+    committee lives.
+
+    A committee is a governance body drawn from the business. Asking what
+    somebody's job is called is the wrong question; whether they have been
+    seated is the right one, and it is a fact in the config rather than a
+    guess about a title.
+
+    This grants no permission. The vote endpoint refuses a non-member with a
+    403 and continues to.
+    """
+    from utils.api_lms_config import get_lms_config
+    cfg = get_lms_config() or {}
+    pal = (cfg.get("credit_workflow") or {}).get("committee_palette") or []
+
+    code = str(user.get("staff_code", "") or "").strip().lower()
+    name = str(user.get("full_name", "") or "").strip().lower()
+
+    def _digits(v):
+        import re as _re
+        m = _re.match(r"^([A-Za-z]*)0*(\d+)$", str(v or "").strip())
+        return ("%s%s" % (m.group(1).upper(), m.group(2))) if m else ""
+
+    want = _digits(code)
+    mine = []
+    for c in pal:
+        for m in (c.get("members") or []):
+            if not isinstance(m, dict):
+                continue
+            mc = str(m.get("staff_code", "") or "").strip()
+            mn = str(m.get("name", "") or "").strip().lower()
+            # KE0539 and KE539 are the same person - the padding was for DSA
+            # codes and was never meant to split anybody in two.
+            same = ((code and mc.lower() == code)
+                    or (want and _digits(mc) == want)
+                    or (name and mn == name))
+            if same:
+                mine.append({
+                    "code": c.get("code"),
+                    "name": c.get("name"),
+                    "is_chair": (str(c.get("chaired_by", "") or "").strip().lower()
+                                 == mn),
+                })
+                break
+
+    return {"on_committee": bool(mine), "committees": mine}
 
 
 @router.get("/committee/tiers")

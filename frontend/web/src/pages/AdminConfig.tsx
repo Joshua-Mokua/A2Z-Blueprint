@@ -60,6 +60,10 @@ const REQUIRABLE_FIELDS: { key: string; label: string }[] = [
   { key: 'relationship_status', label: 'Relationship status (NTB / Existing)' },
   { key: 'mou_id', label: 'Partnership / MOU' },
   { key: 'sector', label: 'CBK sector (business)' },
+  // Added 2026-09-01. The bank asked for branch to be compulsory and found no
+  // toggle for it - so the instruction could not be carried out from the screen
+  // built to carry it out. Ninety per cent of deals were arriving unassigned.
+  { key: 'branch', label: 'Originating branch' },
 ];
 
 function isConfigAdminRole(role: string | undefined, isAdmin: boolean): boolean {

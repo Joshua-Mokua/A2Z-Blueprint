@@ -52,6 +52,7 @@ WHAT IT DELIBERATELY LEAVES OUT
         --source "CompanyData BRS extract" --licence "commercial, 2026 seat"
 """
 import csv
+import re
 import os
 import sys
 
@@ -83,14 +84,26 @@ PERSONAL_HINTS = ("director", "owner_name", "contact_person", "first_name",
 # Free-text industry -> the warehouse's own sectors. Anything unmatched goes to
 # "Other" rather than inventing a sector nobody browses.
 SECTOR_MAP = [
-    (("agri", "farm", "horticult", "coffee", "tea", "livestock"), "Agriculture & Agribusiness"),
-    (("manufact", "factory", "processing", "industrial", "assembl"), "Manufacturing"),
+    # "tea" put Kenyatta National Hospital under Agriculture, because it is
+    # inside "TEAching". Whole-word matching fixes that, and the plurals a
+    # register actually writes are listed rather than relied on by prefix.
+    (("agri", "agriculture", "agribusiness", "farm", "farms", "farming",
+      "horticult", "horticulture", "coffee", "tea", "livestock", "dairy",
+      "fisheries", "irrigation"), "Agriculture & Agribusiness"),
+    (("manufact", "manufacturing", "factory", "factories", "processing",
+      "industrial", "industries", "assembl", "engineering", "steam",
+      "boiler", "millers", "mills"), "Manufacturing"),
     (("retail", "wholesale", "trading", "supermarket", "shop", "distribut"), "Wholesale & Retail Trade"),
     (("transport", "logistic", "freight", "haulage", "courier", "shipping"), "Transport & Logistics"),
     (("construct", "real estate", "property", "building", "contractor"), "Construction & Real Estate"),
     (("hotel", "restaurant", "tourism", "travel", "lodge", "hospitality", "safari"), "Hospitality & Tourism"),
     (("school", "college", "university", "educat", "training", "academy"), "Education"),
-    (("hospital", "clinic", "pharmac", "health", "medical", "diagnost"), "Health & Pharmaceuticals"),
+    # WHOLE-WORD matching means a keyword must be complete. "health" no longer
+    # catches "healthcare", so the words a register actually uses are listed.
+    (("hospital", "hospitals", "clinic", "clinics", "pharmac", "pharmacy",
+      "health", "healthcare", "medical", "diagnost", "dispensary",
+      "dispensaries", "laboratory", "nursing", "maternity", "dental",
+      "eye", "vct", "hospice"), "Health & Pharmaceuticals"),
     (("bank", "sacco", "microfinance", "insur", "financ", "invest", "fund"), "Financial Services"),
     (("software", "ict", "telecom", "technolog", "computer", "internet", "data"), "ICT & Telecommunications"),
     (("energy", "petrol", "oil", "gas", "solar", "power", "mining", "quarry"), "Energy & Extractives"),
@@ -122,9 +135,39 @@ def _match_columns(headers):
 
 
 def _sector_for(raw, sectors):
+    """Which shelf this business belongs on.
+
+    FOUND 2026-08-20: Kenyatta National Hospital landed under "Agriculture &
+    Agribusiness". The keyword "tea" matched inside "TEAching Referral
+    Hospital", and because Agriculture is first in the map it won.
+
+    A SUBSTRING TEST ON A SHORT WORD IS NOT A MATCH. "tea" is inside teaching,
+    steam, protea and instead; "oil" is inside boiler and toilet; "gas" is
+    inside gasket. Every one of those would have quietly filed a business on
+    the wrong shelf, where the RM who works that sector never sees it.
+
+    So a keyword must match a WHOLE WORD. "tea processing" still matches; "tea"
+    inside "teaching" does not.
+
+    AND THE EXPLICIT SECTOR WINS. These files carry "Hospital - Healthcare",
+    where the part after the dash is the sector somebody already decided. That
+    is better evidence than any keyword guess, so it is tried first.
+    """
     t = str(raw or "").lower()
+
+    # "Comprehensive Teaching Hospital - Healthcare": the part after the last
+    # dash was named deliberately upstream. Trust it before guessing.
+    if " - " in t:
+        tail = t.rsplit(" - ", 1)[1].strip()
+        for label in sectors:
+            if tail == label.lower():
+                return label
+        for keys, label in SECTOR_MAP:
+            if any(re.search(r"\b%s\b" % re.escape(k), tail) for k in keys):
+                return label if label in sectors else "Other"
+
     for keys, label in SECTOR_MAP:
-        if any(k in t for k in keys):
+        if any(re.search(r"\b%s\b" % re.escape(k), t) for k in keys):
             return label if label in sectors else "Other"
     return "Other"
 
@@ -167,7 +210,7 @@ def main():
 
     try:
         from utils.deals_warehouse import sectors as _sectors, towns as _towns, \
-            all_prospects, create, canonical_key
+            all_prospects, create, canonical_key, find_by_source_ref
     except Exception as exc:
         print("ABORT: %s  (apply patch_dw1_warehouse.py first)" % exc)
         return 1
@@ -176,13 +219,38 @@ def main():
     # THE CANONICAL KEY, not the raw name. "Mwalimu National Sacco Society Ltd"
     # and "MWALIMU NATIONAL SACCO SOCIETY LIMITED" are one business, and a
     # register will spell it both ways across two documents.
-    existing = {canonical_key(p.get("name", "")) for p in all_prospects()}
+    # ONE READ for both indexes. Everything already on the shelf, keyed by name
+    # and by where it came from. find_by_source_ref reads the WHOLE store on
+    # every call - fine for one lookup, quadratic inside a loop of 31,230.
+    _already = all_prospects() or []
+    existing = {"%s|%s" % (canonical_key(p.get("name", "")),
+                           canonical_key(" ".join(x for x in
+                                                  (p.get("town", ""),
+                                                   p.get("physical_location", ""))
+                                                  if x)))
+                for p in _already}
+    existing_refs = {str(p.get("source_ref", "") or "").strip()
+                     for p in _already
+                     if str(p.get("source_ref", "") or "").strip()}
 
     with open(path, encoding="utf-8-sig", newline="") as fh:
         sample = fh.read(8192)
         fh.seek(0)
         try:
-            dialect = csv.Sniffer().sniff(sample)
+            # THE HEADER DECIDES, NOT THE SNIFFER. A pipe inside a value -
+            # source_ref is "register|name" - made Sniffer choose "|" as the
+            # delimiter, and every row arrived as ONE field whose name was the
+            # whole line. It reported "1 column found" and carried on.
+            #
+            # A comma in the header line means a comma-separated file. That is
+            # not a guess, and it cannot be fooled by what is inside a value.
+            _first = sample.split("\n", 1)[0]
+            if _first.count(",") >= 2:
+                dialect = csv.excel
+            elif _first.count("\t") >= 2:
+                dialect = csv.excel_tab
+            else:
+                dialect = csv.Sniffer().sniff(sample)
         except csv.Error:
             dialect = csv.excel
         reader = csv.DictReader(fh, dialect=dialect)
@@ -212,6 +280,12 @@ def main():
             print("       'company_name' and re-run.")
             return 1
 
+        # The register this row belongs to. Derived from --source so two
+        # registers never collide, and stable across years so re-importing an
+        # updated edition recognises what it already holds.
+        source_ref_base = canonical_key(source) or os.path.basename(path)
+        updates = {}
+
         rows, skipped_noname, skipped_dupe = [], 0, 0
         bysector = {}
         for r in reader:
@@ -219,11 +293,70 @@ def main():
             if not name:
                 skipped_noname += 1
                 continue
-            key = canonical_key(name)
+            # ── MATCHED ON THE ROW, NOT THE NAME ────────────────────────
+            # A record cleaned by hand must not come back as a duplicate on
+            # the next import. The reference is the register plus the name AS
+            # PUBLISHED, so the name in the warehouse is free to be corrected.
+            # An enriched file coming back carries its own reference; a fresh
+            # register does not, so one is derived.
+            # ── A NAME IS NOT UNIQUE IN KENYA ───────────────────────────
+            # "Iiani Pri Sch" appears TWELVE times in the school register -
+            # twelve different schools in twelve different places. Keying on
+            # the name alone threw away 3,754 of them, and they looked like
+            # duplicates rather than losses.
+            #
+            # The place disambiguates: a school in Kiambu and a school of the
+            # same name in Kisii are different customers. Where a register
+            # gives a street address too, that is used - two clinics can share
+            # a name AND a county.
+            #
+            # A re-import still matches, because the same row produces the same
+            # key. Only genuinely different businesses now get their own.
+            # THE RAW ROW, because the dedupe runs BEFORE town is resolved.
+            # r here is the CSV row, so the mapped column names are needed -
+            # r.get("town") is empty at this point and every school looked
+            # like it was in the same place, which is why they still collapsed.
+            _place = " ".join(x for x in (
+                str(r.get(cols.get("town", "")) or "").strip(),
+                str(r.get("physical_location") or "").strip(),
+                str(r.get(cols.get("address", "")) or "").strip()) if x)
+            ref = str(r.get("source_ref") or "").strip() or (
+                "%s|%s|%s" % (source_ref_base, canonical_key(name),
+                              canonical_key(_place)))
+            # LOOK IT UP IN THE INDEX, NOT THE STORE. 31,230 rows against a
+            # 13,000-record shelf, each doing a full read, is four hundred
+            # million comparisons - the symptom is an import that hangs.
+            if ref in existing_refs:
+                if "--update" in sys.argv:
+                    # ── THE RETURN LEG ──────────────────────────────────────
+                    # ONLY BLANKS are filled. A value already in the warehouse
+                    # was put there by somebody who looked, and a spreadsheet
+                    # round trip must not overwrite that. The NAME is never
+                    # touched: correcting names is deliberate work done in the
+                    # record card, and a bulk update must not undo it.
+                    updates[ref] = {
+                        "contact_phone": str(r.get(cols.get("phone", "")) or "").strip(),
+                        "contact_email": str(r.get(cols.get("email", "")) or "").strip(),
+                        "contact_name": str(r.get("contact_name") or "").strip(),
+                        "town": str(r.get(cols.get("town", "")) or "").strip(),
+                        "physical_location": str(r.get("physical_location") or "").strip(),
+                        "website": str(r.get("website") or "").strip(),
+                    }
+                skipped_dupe += 1
+                continue
+            # The NAME index is now keyed on name AND place, for the same
+            # reason. Left on the name alone it would reject the eleven other
+            # Iiani schools before the ref check ever ran.
+            key = "%s|%s" % (canonical_key(name), canonical_key(_place))
             if key in existing:
                 skipped_dupe += 1
                 continue
             existing.add(key)
+            r["_ref"] = ref
+            # A register that lists the same business twice must not create
+            # two, so this batch's refs join the index as they are used.
+            if ref:
+                existing_refs.add(ref)
             raw_sector = str(r.get(cols.get("sector", "")) or "")
             sector = _sector_for(raw_sector, sectors)
             # "SACCO - Financial Services" carries both: the top-level sector
@@ -235,11 +368,19 @@ def main():
                 " ".join(str(r.get(cols.get(k, "")) or "") for k in ("town", "address")),
                 towns)
             rows.append({
+                # THE KEY THE DEDUPE USED, carried onto the record so the
+                # stored source_ref is the thing it was matched on rather than
+                # a second, different guess computed later.
+                "_ref": ref,
                 "name": name, "sector": sector, "subsector": subsector, "town": town,
                 "phone": str(r.get(cols.get("phone", "")) or "").strip(),
                 "email": str(r.get(cols.get("email", "")) or "").strip(),
                 "reg_no": str(r.get(cols.get("reg_no", "")) or "").strip(),
-            })
+                            "contact_name": str(r.get("contact_name") or "").strip(),
+                "website": str(r.get("website") or "").strip(),
+                "physical_location": str(r.get("physical_location") or "").strip(),
+                "postal_address": str(r.get("postal_address") or "").strip(),
+})
             bysector[sector] = bysector.get(sector, 0) + 1
 
     print("\n  READY        %d" % len(rows))
@@ -258,34 +399,76 @@ def main():
         print("\nDRY RUN - nothing written. Re-run with --apply --source ... ")
         return 0
 
+    # One id per import, so a bad run can be found and undone rather than
+    # picked out of the shelf by eye.
+    import datetime as _dt
+    run_id = "%s %s" % (source[:40], _dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
     made = failed = 0
+    # ── ONE READ, ONE WRITE ─────────────────────────────────────────────────
+    # This used to call create() per row, and create() reads and writes the
+    # WHOLE store each time. 973 health facilities meant 973 full reads and 973
+    # full writes - roughly a million record-operations - and Windows refused
+    # one of the temp-file replaces halfway through with "Access is denied",
+    # because nothing should replace a file a thousand times in a few seconds.
+    #
+    # The warehouse is aiming at a million records. Quadratic does not get
+    # there, and the failure would not be a clear error - it would be an import
+    # that stopped partway and left the shelf half-filled.
+    from utils.deals_warehouse import create_many
+    batch = []
     for r in rows:
-        try:
-            create(
-                name=r["name"],
-                created_by_code="import",
-                created_by_name=source[:60],
-                sector=r["sector"], subsector=r.get("subsector", ""), town=r["town"],
-                contact_phone=r["phone"], contact_email=r["email"],
-                notes=("Registered no. %s" % r["reg_no"]) if r["reg_no"] else "",
-                # Provenance on every record: a year from now anybody can ask
-                # where this came from and whether we were allowed to have it.
-                source_event="%s%s" % (source, " (%s)" % licence if licence else ""),
-            )
-            made += 1
-        except ValueError as exc:
-            # The store checks for duplicates too, inside its lock. Reaching
-            # here means another writer got in first - a skip, not a failure.
-            if "Already on the shelf" in str(exc):
-                skipped_dupe += 1
-            else:
-                failed += 1
-                if failed == 1:
-                    print("  first failure: %s" % str(exc)[:70])
-        except Exception as exc:
-            failed += 1
-            if failed == 1:
-                print("  first failure: %s" % str(exc)[:70])
+        batch.append({
+            "name": r["name"],
+            "sector": r["sector"], "subsector": r.get("subsector", ""),
+            "town": r["town"],
+            "contact_phone": r["phone"], "contact_email": r["email"],
+            "contact_name": r.get("contact_name", ""),
+            "website": r.get("website", ""),
+            "physical_location": r.get("physical_location", ""),
+            "postal_address": r.get("postal_address", ""),
+            "notes": ("Registered no. %s" % r["reg_no"]) if r["reg_no"] else "",
+            # Provenance on every record: a year from now anybody can ask where
+            # this came from and whether we were allowed to have it.
+            "source_event": "%s%s" % (source, " (%s)" % licence if licence else ""),
+            # The same key the dedupe used, so the record carries the thing
+            # it was matched on rather than a second, different guess.
+            "source_ref": r.get("_ref", ""),
+            "import_run": run_id,
+        })
+    try:
+        made, dupes_in_store, blanks = create_many(batch, "import", source[:60])
+        skipped_dupe += dupes_in_store
+        failed = 0
+    except Exception as exc:
+        print("\nABORT: the batch write failed: %s" % str(exc)[:80])
+        print("       Nothing was written - the store is as it was.")
+        return 1
+
+    filled = 0
+    updates = locals().get('updates') or {}
+    if ("--update" in sys.argv) and updates:
+        from utils.deals_warehouse import _read as _wh_read, _write as _wh_write
+        data = _wh_read()
+        by_ref = {}
+        for pid, rec in data.items():
+            rr = str(rec.get("source_ref", "") or "").strip()
+            if rr:
+                by_ref[rr] = pid
+        for ref, vals in updates.items():
+            pid = by_ref.get(ref)
+            if not pid:
+                continue
+            touched = False
+            for k, v in vals.items():
+                if v and not str(data[pid].get(k, "") or "").strip():
+                    data[pid][k] = v
+                    touched = True
+            if touched:
+                filled += 1
+        if filled:
+            _wh_write(data)
+        print("\nfilled blanks on %d record(s) from the enriched file." % filled)
+
     print("\nlisted %d prospects (%d duplicates skipped, %d failed)"
           % (made, skipped_dupe, failed))
     print("Restart uvicorn. Pipeline Intelligence > Deals Warehouse.")

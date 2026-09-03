@@ -1074,6 +1074,23 @@ export async function fetchWarehouseTaxonomy(): Promise<{ sectors: string[]; tow
 /** A PAGE of the shelf. `total` is what the filter matches; `shown` is what
  *  came back in this page. At 12,591 records the endpoint can no longer send
  *  everything, so the page asks for a window and moves through it. */
+/** Which credit committees this person sits on.
+ *
+ *  The sidebar needs it because the Department Review entry is gated on the
+ *  role string, and the eight people the bank seated on its Consumer and
+ *  Commercial committees are business heads whose titles contain no credit
+ *  word at all. Membership is a fact; a job title is a guess about it.
+ */
+export async function fetchMyCommittees(): Promise<{
+  on_committee: boolean;
+  committees: { code: string; name: string; is_chair: boolean }[];
+}> {
+  return getJson<{
+    on_committee: boolean;
+    committees: { code: string; name: string; is_chair: boolean }[];
+  }>('/lms/committee/mine');
+}
+
 export async function fetchWarehouseShelves(
   opts: { town?: string; sector?: string; q?: string;
           limit?: number; offset?: number } = {},
