@@ -388,6 +388,19 @@ def field_bounds() -> dict:
     return out
 
 
+# ── WHAT AN UNLISTED METRIC IS ALLOWED TO BE ────────────────────────────────
+# Every activity an admin adds arrives with no entry in _DEFAULT_BOUNDS, and
+# check_bounds used to skip anything it had no bound for. These are the fallback
+# ceilings, chosen so that a real day never meets them and a shilling figure
+# always does.
+#
+# Requiring the admin to set a bound on every new activity was the alternative,
+# and it is worse: the screen would refuse to save until somebody guessed a
+# number, and the guess would be less reliable than a sensible default.
+_UNLISTED_COUNT = 10000
+_UNLISTED_AMOUNT = 500000000
+
+
 def check_bounds(metrics: dict) -> list:
     """Human-readable breaches; empty when the entry is plausible.
 
@@ -402,8 +415,19 @@ def check_bounds(metrics: dict) -> list:
             val = float(v or 0)
         except (TypeError, ValueError):
             continue
+        # ── AN UNLISTED METRIC IS NOT AN UNBOUNDED ONE ──────────────────────
+        # This used to `continue` when a metric had no configured bound, so
+        # every activity an admin adds accepted any number at all. A shilling
+        # figure typed into one of those scored millions of points on the
+        # index.
+        #
+        # The catalogue has always declared whether a metric is a count or an
+        # amount. Where nobody has set a bound, that type decides one.
         cap = bounds.get(k)
-        if cap is None or val <= float(cap):
+        if cap is None:
+            _kind = str((schema.get(k, {}) or {}).get("type", "int") or "int")
+            cap = _UNLISTED_AMOUNT if _kind == "amount" else _UNLISTED_COUNT
+        if val <= float(cap):
             continue
         f = schema.get(k, {})
         out.append("%s: %s %s exceeds the daily maximum of %s"
