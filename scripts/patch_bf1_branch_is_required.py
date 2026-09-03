@@ -88,15 +88,31 @@ def main():
 
     a = open(ADMIN, encoding="utf-8").read()
     c = open(CREATE, encoding="utf-8").read()
-    if "'branch', label: 'Originating branch'" in a:
-        print("ABORT: BF1 looks applied.")
+
+    # ── EACH FILE IS ASKED ITS OWN QUESTION ─────────────────────────────────
+    # These two files are NOT in the same state on the pilot. UI2 carries
+    # AdminConfig.tsx and replays a copy captured before BF1 existed, so the
+    # toggle is removed and must be put back. UI2 does NOT carry
+    # PipelineCreate.tsx, so once the pilot has merged BF1 the change is
+    # already there and its anchor is gone.
+    #
+    # Asking one question of both meant one answer had to be wrong. The build
+    # stopped at "the branch validation matched 0 times".
+    admin_done = "'branch', label: 'Originating branch'" in a
+    create_done = "requiredFields.includes('branch')" in c
+    if admin_done and create_done:
+        print("ABORT: BF1 looks applied to both files.")
         return 1
-    for nm, src, anchor in (("the admin field list", a, ADMIN_OLD),
-                            ("the branch validation", c, CREATE_OLD),
-                            ("the payload", c, SEND_OLD)):
-        if src.count(anchor) != 1:
-            print("ABORT: %s matched %d times." % (nm, src.count(anchor)))
-            return 1
+
+    if not admin_done and a.count(ADMIN_OLD) != 1:
+        print("ABORT: the admin field list matched %d times." % a.count(ADMIN_OLD))
+        return 1
+    if not create_done:
+        for nm, anchor in (("the branch validation", CREATE_OLD),
+                           ("the payload", SEND_OLD)):
+            if c.count(anchor) != 1:
+                print("ABORT: %s matched %d times." % (nm, c.count(anchor)))
+                return 1
 
     # The form must be able to see the configured list.
     if "requiredFields" not in c:
@@ -104,11 +120,18 @@ def main():
         print("       form cannot know whether the bank turned branch on.")
         return 1
 
-    a = a.replace(ADMIN_OLD, ADMIN_NEW, 1)
-    c = c.replace(CREATE_OLD, CREATE_NEW, 1).replace(SEND_OLD, SEND_NEW, 1)
-    print("  ok  the admin offers branch; the form asks everybody")
+    if not admin_done:
+        a = a.replace(ADMIN_OLD, ADMIN_NEW, 1)
+        print("  ok  the admin offers a branch toggle")
+    else:
+        print("  ok  the admin already offers it - left alone")
+    if not create_done:
+        c = c.replace(CREATE_OLD, CREATE_NEW, 1).replace(SEND_OLD, SEND_NEW, 1)
+        print("  ok  the form asks everybody")
+    else:
+        print("  ok  the form already asks everybody - left alone")
 
-    if "creatorIsHeadOffice && originatingBranch" in c:
+    if not create_done and "creatorIsHeadOffice && originatingBranch" in c:
         print("ABORT: the payload still withholds the branch from a branch")
         print("       officer, which is the whole fault.")
         return 1
