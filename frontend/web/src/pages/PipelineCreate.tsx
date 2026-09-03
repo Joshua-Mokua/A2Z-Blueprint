@@ -103,6 +103,27 @@ function classifyProduct(
   return 'other';
 }
 
+/** KE0539 and KE539 are the same person.
+ *
+ *  The padding was introduced for DSA codes, which need four digits. It was
+ *  never meant to turn a three-digit staff code into a different person - but
+ *  a string comparison cannot tell a leading zero from a different number.
+ *
+ *  The backend learned this in SC1. The screen did not, so a portfolio owner
+ *  the server had just identified was still reported as somebody else and the
+ *  officer was asked to refer a deal to themselves.
+ *
+ *  KE5390 is NOT KE539: the digits differ, and that distinction survives.
+ */
+function sameStaff(a: string | undefined, b: string | undefined): boolean {
+  const norm = (v: string | undefined) => {
+    const m = /^([A-Za-z]*)0*(\d+)$/.exec((v ?? '').trim());
+    return m ? `${m[1].toUpperCase()}${m[2]}` : '';
+  };
+  const x = norm(a);
+  return x !== '' && x === norm(b);
+}
+
 export function PipelineCreate() {
   const navigate = useNavigate();
   const { branding } = useBranding();
@@ -541,7 +562,8 @@ export function PipelineCreate() {
         if (cancelled) return;
         setDetectedOwner(po);
         const me = (user?.staff_code || '').trim();
-        if (po.is_mapped && po.portfolio_owner_code && po.portfolio_owner_code !== me) {
+        if (po.is_mapped && po.portfolio_owner_code
+            && !sameStaff(po.portfolio_owner_code, me)) {
           setHasConflict(true);
           setPortfolioOwnerCode(po.portfolio_owner_code);
           setPortfolioOwnerName(po.portfolio_owner_name || '');
@@ -628,7 +650,14 @@ export function PipelineCreate() {
     const errors: Record<string, string> = {};
 
     if (!clientName.trim()) errors.clientName = 'Client name is required.';
-    if (creatorIsHeadOffice && !originatingBranch.trim()) errors.originatingBranch = 'Please select the originating branch.';
+    // BRANCH IS ASKED OF EVERYBODY when the bank has configured it as
+    // required. It used to be asked only of head office, on the reasoning
+    // that a branch officer's own posting was obvious - but the deal then
+    // carried no branch at all and had to be inferred from the register.
+    // Where the register was thin, the deal was left unassigned.
+    if ((creatorIsHeadOffice || requiredFields.includes('branch'))
+        && !originatingBranch.trim())
+      errors.originatingBranch = 'Please select the originating branch.';
 
     // Refer mode: only the client and the recipient are required; everything
     // else is optional (the recipient completes the deal after accepting).
@@ -656,7 +685,7 @@ export function PipelineCreate() {
     const me = (user?.staff_code || '').trim();
     const detectedConflict = !isNtb && !!detectedOwner?.is_mapped
       && !!detectedOwner.portfolio_owner_code
-      && detectedOwner.portfolio_owner_code !== me;
+      && !sameStaff(detectedOwner.portfolio_owner_code, me);
     if (detectedConflict && !hasConflict) {
       errors.hasConflict = `This customer is in ${detectedOwner?.portfolio_owner_name || 'another RM'}\u2019s portfolio — choose how to proceed (refer, seek permission, or override).`;
     }
@@ -906,7 +935,10 @@ export function PipelineCreate() {
       source:             source,
       // Item 1: Head-Office RMs pick an originating branch; send it as unit.
       // Branch staff omit it and the backend auto-derives from their own branch.
-      unit:               creatorIsHeadOffice && originatingBranch ? originatingBranch : undefined,
+      // Sent whoever the creator is. Withholding a branch the
+      // officer has just chosen, because of who they are, is how
+      // the deal ended up with none.
+      unit:               originatingBranch || undefined,
       // Server resolves unit from staff_code if needed.
       account_number:     accountNumber.trim() || undefined,
       phone:              contactPhone.trim() || undefined,
