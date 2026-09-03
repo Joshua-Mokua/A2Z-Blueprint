@@ -1181,7 +1181,14 @@ export function PipelineCreate() {
                   <p className="text-xs text-red-700 mt-1">{fieldErrors.segment}</p>
                 )}
               </div>
-              {creatorIsHeadOffice && (
+              {/* SHOWN TO WHOEVER MUST FILL IT. This used to be head office
+                  only, which was fine while only head office had to supply a
+                  branch. BF1 now asks EVERYBODY when the bank configures it as
+                  required - and an officer who cannot see the field cannot
+                  fill it, so they met "Please fix 1 field below" pointing at
+                  nothing. A required field that is not rendered is worse than
+                  no requirement at all. */}
+              {(creatorIsHeadOffice || requiredFields.includes('branch')) && (
                 <div data-field="originatingBranch">
                   <label className="text-sm font-medium text-gray-700">
                     Originating branch<RedStar />
