@@ -2582,6 +2582,63 @@ def lms_my_committees(
     return {"on_committee": bool(mine), "committees": mine}
 
 
+@router.get("/committee/mine")
+def lms_my_committees(
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Which credit committees, if any, this person sits on.
+
+    The sidebar needs this because the Department Review entry was gated on
+    the ROLE STRING - credit, analyst, underwriter and so on - and the eight
+    people the bank actually seated are business heads: Head of Consumer, Head
+    of SME, Head of Branches. Not one of them could open the screen where the
+    committee lives.
+
+    A committee is a governance body drawn from the business. Asking what
+    somebody's job is called is the wrong question; whether they have been
+    seated is the right one, and it is a fact in the config rather than a
+    guess about a title.
+
+    This grants no permission. The vote endpoint refuses a non-member with a
+    403 and continues to.
+    """
+    from utils.api_lms_config import get_lms_config
+    cfg = get_lms_config() or {}
+    pal = (cfg.get("credit_workflow") or {}).get("committee_palette") or []
+
+    code = str(user.get("staff_code", "") or "").strip().lower()
+    name = str(user.get("full_name", "") or "").strip().lower()
+
+    def _digits(v):
+        import re as _re
+        m = _re.match(r"^([A-Za-z]*)0*(\d+)$", str(v or "").strip())
+        return ("%s%s" % (m.group(1).upper(), m.group(2))) if m else ""
+
+    want = _digits(code)
+    mine = []
+    for c in pal:
+        for m in (c.get("members") or []):
+            if not isinstance(m, dict):
+                continue
+            mc = str(m.get("staff_code", "") or "").strip()
+            mn = str(m.get("name", "") or "").strip().lower()
+            # KE0539 and KE539 are the same person - the padding was for DSA
+            # codes and was never meant to split anybody in two.
+            same = ((code and mc.lower() == code)
+                    or (want and _digits(mc) == want)
+                    or (name and mn == name))
+            if same:
+                mine.append({
+                    "code": c.get("code"),
+                    "name": c.get("name"),
+                    "is_chair": (str(c.get("chaired_by", "") or "").strip().lower()
+                                 == mn),
+                })
+                break
+
+    return {"on_committee": bool(mine), "committees": mine}
+
+
 @router.get("/committee/tiers")
 def lms_committee_tiers(
     user: Dict[str, Any] = Depends(get_current_user),

@@ -155,6 +155,7 @@ CHAIN = [
     "patch_pi1_unbounded_metric",
     "patch_dv2_delegated_validators",
     "patch_bf1_branch_is_required",
+    "patch_bf2_refer_needs_no_branch",
     "patch_sc2_frontend_staff_code_zeros",
     "patch_hd2_head_is_a_manager",
     "patch_at1_segment_analyst_attaches",
@@ -191,6 +192,18 @@ NOT_FOR_RELEASE = {
     # staging. It cannot be replayed onto the pilot: it is the tool doing the
     # replaying, and it lives on this box only.
     "patch_whs_strip_at_build",
+    # ── HELD FOR THE EVENTS RELEASE (2026-09-03) ───────────────────────────
+    # EV1X makes patch_ev1_origin_sources idempotent: EV1 was adding a second
+    # copy of an interface the pilot already had - it arrived through UI2,
+    # which carries whole frontend files - and that duplicate blocked the
+    # whole events and channels graph at patch_ev2_events_page.
+    #
+    # The fix is sound and stays on main. It goes out with the events release,
+    # where the patcher it corrects is actually run. Shipping it with a
+    # referral fix would put an unexplained edit in the diff.
+    "patch_ev1x_idempotent",
+    # BF1X edits patch_bf1_branch_is_required, a patcher - not the pilot.
+    "patch_bf1x_idempotent",
     # And THIS patcher, which is what wrote the lines above. A patcher that
     # edits the release builder can never be replayed onto the pilot - and if
     # it is not named here, the very next build refuses because IT is now the

@@ -650,21 +650,28 @@ export function PipelineCreate() {
     const errors: Record<string, string> = {};
 
     if (!clientName.trim()) errors.clientName = 'Client name is required.';
-    // BRANCH IS ASKED OF EVERYBODY when the bank has configured it as
-    // required. It used to be asked only of head office, on the reasoning
-    // that a branch officer's own posting was obvious - but the deal then
-    // carried no branch at all and had to be inferred from the register.
-    // Where the register was thin, the deal was left unassigned.
-    if ((creatorIsHeadOffice || requiredFields.includes('branch'))
-        && !originatingBranch.trim())
-      errors.originatingBranch = 'Please select the originating branch.';
 
     // Refer mode: only the client and the recipient are required; everything
     // else is optional (the recipient completes the deal after accepting).
+    //
+    // THIS RETURNS BEFORE THE BRANCH CHECK, DELIBERATELY. The refer form shows
+    // no branch selector - the recipient chooses it when they accept - so a
+    // branch error here has no input to attach itself to. The officer saw
+    // "fix 1 field below" with nothing marked red, and could not send a
+    // referral they had filled in correctly.
     if (referMode) {
       if (!referRecipient) errors.referRecipient = 'Choose a colleague to refer this to.';
       return errors;
     }
+
+    // BRANCH IS ASKED OF EVERYBODY RAISING A DEAL when the bank has configured
+    // it as required. It used to be asked only of head office, on the
+    // reasoning that a branch officer's own posting was obvious - but the deal
+    // then carried no branch at all and had to be inferred from the register.
+    // Where the register was thin, the deal was left unassigned.
+    if ((creatorIsHeadOffice || requiredFields.includes('branch'))
+        && !originatingBranch.trim())
+      errors.originatingBranch = 'Please select the originating branch.';
 
     if (isReferPath) {
       // Refer path has different required fields
