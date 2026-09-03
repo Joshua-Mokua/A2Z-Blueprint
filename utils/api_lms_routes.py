@@ -2546,9 +2546,8 @@ def lms_my_committees(
     This grants no permission. The vote endpoint refuses a non-member with a
     403 and continues to.
     """
-    from utils.api_lms_config import get_lms_config
-    cfg = get_lms_config() or {}
-    pal = (cfg.get("credit_workflow") or {}).get("committee_palette") or []
+    cw = get_credit_workflow_config() or {}
+    pal = cw.get("committee_palette") or []
 
     code = str(user.get("staff_code", "") or "").strip().lower()
     name = str(user.get("full_name", "") or "").strip().lower()
