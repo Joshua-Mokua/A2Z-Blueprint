@@ -350,6 +350,56 @@ def staff_validated_by(validator_code: str) -> dict:
     return {"mode": "line_manager", "codes": []}
 
 
+def _delegated_branches(validator_code: str) -> list:
+    """Branches this person may validate by DELEGATION, not by reporting line.
+
+    Validation authority is derived from the register - you validate the
+    branches whose Branch Manager reports to you. That is right, and it has no
+    answer for cover: when the people who normally validate a branch are away,
+    the work stops, and the only way to move it is to change a reporting line,
+    which is a lie that outlives the absence.
+
+    A delegation is an explicit, dated, reasoned exception. It ADDS branches
+    and never removes them.
+
+    EVERY DELEGATION EXPIRES. One with no `until`, or one that has passed,
+    grants nothing - cover for an absence that quietly becomes permanent
+    authority nobody remembers granting is what an auditor asks about.
+    """
+    import datetime as _dt
+    vc = _s(validator_code)
+    if not vc:
+        return []
+    try:
+        from utils.api_branding import load_org_config
+        rows = (load_org_config() or {}).get("delegated_validators") or []
+    except Exception as exc:
+        try:
+            import logging
+            logging.getLogger(__name__).warning(
+                "could not read delegated_validators: %s", exc)
+        except Exception:
+            pass
+        return []
+
+    today = _dt.date.today().isoformat()
+    out = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        if _s(r.get("staff_code")) != vc:
+            continue
+        until = str(r.get("until") or "").strip()
+        # No end date is not "for ever" - it is an incomplete delegation.
+        if not until or until < today:
+            continue
+        for b in (r.get("branches") or []):
+            b = str(b or "").strip()
+            if b and b not in out:
+                out.append(b)
+    return out
+
+
 def branches_validated_by(validator_code: str) -> dict:
     """TIER 2: which BRANCHES may this person validate (not individuals)?
 
@@ -403,6 +453,15 @@ def branches_validated_by(validator_code: str) -> dict:
     reports = df["Reports To"].astype(str).str.strip()
     mask = (roles == head_role) & (reports == vc)
     mine = sorted({b for b in bcol[mask].tolist() if b})
+
+    # ── PLUS ANYTHING DELEGATED WHILE COLLEAGUES ARE AWAY ───────────────────
+    # Added, never removed: a delegation cannot take a branch away from the
+    # person whose reporting line gives it to them.
+    for _b in _delegated_branches(vc):
+        if _b not in mine:
+            mine.append(_b)
+    mine = sorted(mine)
+
     return {"mode": "branch" if mine else "", "branches": mine, "all_view": False}
 
 
