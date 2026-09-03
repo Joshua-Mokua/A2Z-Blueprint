@@ -12758,9 +12758,57 @@ def download_deal_document(deal_id: str, doc_name: str,
         raise HTTPException(status_code=404, detail="stored file missing")
     data = fpath.read_bytes()
     _audit("API_DEAL_DOC_DOWNLOAD", user, f"deal={deal_id}|doc={doc_name}")
+    # ── SERVE IT AS WHAT IT IS ──────────────────────────────────────────────
+    # Everything used to go out as application/octet-stream with
+    # Content-Disposition: attachment - "a stream of bytes, I will not say what
+    # kind, and download it". Nothing previewed, and the viewer errored on the
+    # Word files it was never going to be able to render.
+    #
+    # A browser cannot preview a .docx whatever we send. What changes for Word
+    # is that it downloads cleanly with the right type instead of failing in a
+    # viewer. What changes for PDFs and images is that they now display.
+    _fname = str(meta.get("filename", "") or "file")
+    _ext = os.path.splitext(_fname)[1].lower()
+    _INLINE = {
+        ".pdf":  "application/pdf",
+        ".png":  "image/png",
+        ".jpg":  "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif":  "image/gif",
+        ".webp": "image/webp",
+        ".bmp":  "image/bmp",
+        ".txt":  "text/plain; charset=utf-8",
+        ".csv":  "text/csv; charset=utf-8",
+    }
+    _DOWNLOAD = {
+        ".doc":  "application/msword",
+        ".docx": ("application/vnd.openxmlformats-officedocument"
+                  ".wordprocessingml.document"),
+        ".xls":  "application/vnd.ms-excel",
+        ".xlsx": ("application/vnd.openxmlformats-officedocument"
+                  ".spreadsheetml.sheet"),
+        ".ppt":  "application/vnd.ms-powerpoint",
+        ".pptx": ("application/vnd.openxmlformats-officedocument"
+                  ".presentationml.presentation"),
+        ".zip":  "application/zip",
+    }
+    if _ext in _INLINE:
+        _type, _disp = _INLINE[_ext], "inline"
+    else:
+        _type = _DOWNLOAD.get(_ext, "application/octet-stream")
+        _disp = "attachment"
+
+    # A filename with a quote or a newline in it could break out of the header.
+    # That is a header-injection hole as well as a broken download.
+    _safe = _fname.replace('"', "").replace("\r", "").replace("\n", "").strip()
+    if not _safe:
+        _safe = "document%s" % (_ext or "")
+
+    _audit("API_DEAL_DOC_SERVED", user,
+           f"deal={deal_id}|doc={doc_name}|type={_type}|{_disp}")
     return StreamingResponse(_io_docup.BytesIO(data),
-        media_type="application/octet-stream",
-        headers={"Content-Disposition": f'attachment; filename="{meta.get("filename","file")}"'})
+        media_type=_type,
+        headers={"Content-Disposition": f'{_disp}; filename="{_safe}"'})
 
 
 @app.delete("/api/pipeline/deals/{deal_id}/documents/{doc_name:path}", tags=["pipeline"])
