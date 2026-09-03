@@ -156,6 +156,7 @@ CHAIN = [
     "patch_dv2_delegated_validators",
     "patch_bf1_branch_is_required",
     "patch_bf2_refer_needs_no_branch",
+    "patch_bf3_branch_field_is_shown",
     "patch_sc2_frontend_staff_code_zeros",
     "patch_hd2_head_is_a_manager",
     "patch_at1_segment_analyst_attaches",
