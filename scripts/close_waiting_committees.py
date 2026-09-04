@@ -144,14 +144,46 @@ def main():
                           "closed_by": "sweep",
                           "closed_at": datetime.now().isoformat(timespec="seconds")}
             d["committee_records"] = recs
+
+            # ── AND MOVE IT ON, THE WAY A VOTE WOULD ─────────────────────────
+            # The first version of this script recorded the outcome and left
+            # the deal where it stood. The real vote endpoint does BOTH - it
+            # closes the decision AND advances the stage - so a case closed by
+            # the sweep kept its committee stage and looked, to everybody, as
+            # though it had gone back to the branch.
+            #
+            # Recording a decision without acting on it is not half a job, it
+            # is a misleading one.
+            _moved_to = ""
+            if str(outcome).upper() in ("APPROVED", "RECOMMENDED", "SUPPORTED"):
+                try:
+                    _flow = [str(x) for x in (A._stage_flow_for(
+                        d.get("product_type") or d.get("product", "")) or [])]
+                    _cur = str(d.get("stage", "") or "")
+                    if _cur in _flow:
+                        _at = _flow.index(_cur)
+                        _next = _flow[_at + 1] if _at + 1 < len(_flow) else ""
+                        if _next and not _next.lower().startswith("closed"):
+                            d["stage"] = _next
+                            d["auto_advanced_by"] = "sweep:%s" % code
+                            _moved_to = _next
+                except Exception as _exc:
+                    print("     could not advance %s: %s"
+                          % (str(d.get("id"))[:10], str(_exc)[:40]))
             closed += 1
-            print("     closed %-10s %-5s -> %s" % (str(d.get("id"))[:10], code, outcome))
+            print("     closed %-10s %-5s -> %-10s %s"
+                  % (str(d.get("id"))[:10], code, outcome,
+                     ("moved to %s" % _moved_to) if _moved_to
+                     else "stage unchanged"))
         except Exception as exc:
             print("     FAILED %-10s %-5s %s" % (str(d.get("id"))[:10], code,
                                                  str(exc)[:44]))
     if closed:
         pm._save_deals()
     print("\nclosed %d case(s). RESTART UVICORN." % closed)
+    print("\nAn APPROVED case is advanced to the next stage of its flow, the")
+    print("same as a vote would. A rejected one is not moved - a rejection is")
+    print("not a step forward.")
     print("\nEach is recorded as closed_by 'sweep', so it is distinguishable")
     print("from one closed by somebody pressing a button.")
     return 0
