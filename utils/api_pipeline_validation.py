@@ -168,6 +168,47 @@ def pipeline_validation_queue(date: str = "", branch: str = "",
                     can_act = str(v.get("validator_code") or "") == my_code
                 except Exception:
                     can_act = False
+
+                # ── OR A MANAGER AT THE OWNER'S BRANCH ──────────────────────
+                # RULING (2026-09-04): a branch's work must not stop because
+                # one person is away. The validate endpoint already accepts a
+                # manager at the deal's branch; this screen did not, so it
+                # showed three deals and said "not yours to validate" about
+                # every one of them.
+                #
+                # Exactly one person in the bank could act on each deal - that
+                # owner's line manager - and the day could not close without
+                # them.
+                #
+                # BOTH SIDES MUST HAVE A BRANCH. A blank matches nothing, or
+                # any manager could act on any deal in the bank.
+                if not can_act:
+                    try:
+                        from utils.api_pipeline_manager_actions import (
+                            is_manager as _is_mgr)
+                        if _is_mgr(user):
+                            from utils.api_pipeline_scope import (
+                                get_staff_roster as _gsr)
+                            _r = _gsr()
+                            _col = "Branch" if "Branch" in _r.columns else "Unit"
+                            _mine = str(user.get("branch", "") or "").strip()
+                            if not _mine and my_code:
+                                _me_row = _r[_r["Staff Code"].astype(str)
+                                             .str.strip() == my_code]
+                                if not _me_row.empty:
+                                    _mine = str(_me_row.iloc[0].get(_col) or "").strip()
+                            _theirs = str(d.get("branch", "") or "").strip()
+                            if not _theirs:
+                                _ow = _r[_r["Staff Code"].astype(str).str.strip()
+                                         == str(d.get("staff_code") or "").strip()]
+                                if not _ow.empty:
+                                    _theirs = str(_ow.iloc[0].get(_col) or "").strip()
+                            can_act = (bool(_mine) and bool(_theirs)
+                                       and _mine.lower() == _theirs.lower())
+                    except Exception:
+                        # Never widen on an error - a failed lookup leaves the
+                        # caller with exactly what the line-manager test gave.
+                        pass
         if can_act:
             pending += 1
         rows.append({
