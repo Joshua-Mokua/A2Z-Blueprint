@@ -13718,7 +13718,37 @@ def cast_committee_vote(deal_id: str, code: str,
     #
     # QUORUM STILL APPLIES. This drops the requirement that a PARTICULAR person
     # voted, not the requirement that ENOUGH people did.
-    _chair_required = committee.get("chair_vote_required", True)
+    # ── A CHAIR WHO IS NOT ON THE COMMITTEE CANNOT BE WAITED FOR ────────────
+    # RULING (2026-09-04): "Jane still has to recommend at committee level even
+    # after removing her from the committee."
+    #
+    # chaired_by is a NAME on the committee and nothing tied it to membership.
+    # Removing her from members left it naming her, so the decision waited for
+    # a vote she could no longer cast - by any route, since a deputy stands in
+    # for an ABSENT chair, not a departed one.
+    #
+    # Failing OPEN is deliberate. Removing somebody from a committee is normal;
+    # the system must not deadlock every case in front of it until an admin
+    # notices there is a second field to clear.
+    _chair_on_committee = True
+    if _chair_name:
+        _mem_names = {str(_m.get("name", "") or "").strip().lower()
+                      for _m in (committee.get("members") or [])
+                      if isinstance(_m, dict)}
+        _mem_codes = {str(_m.get("staff_code", "") or "").strip()
+                      for _m in (committee.get("members") or [])
+                      if isinstance(_m, dict)}
+        _chair_on_committee = (_chair_name in _mem_names
+                               or (_chair_code and _chair_code in _mem_codes))
+        if not _chair_on_committee:
+            logger.warning(
+                "committee %s names %r as chair but they are not a member - "
+                "the chair requirement is dropped, or no case before this "
+                "committee could ever close",
+                committee.get("code"), committee.get("chaired_by"))
+
+    _chair_required = (committee.get("chair_vote_required", True)
+                       and _chair_on_committee)
     if isinstance(_chair_required, str):
         _chair_required = _chair_required.strip().lower() not in (
             "false", "no", "0", "off")
