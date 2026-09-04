@@ -13211,6 +13211,40 @@ def upsert_committee_palette(payload: dict = Body(default_factory=dict),
             for m in (c.get("members", []) or []) if isinstance(m, dict)
         ],
     }
+
+    # ── KEEP WHAT THIS FUNCTION DOES NOT KNOW ABOUT ─────────────────────────
+    # FOUND 2026-09-04: a sweep would not close D0682 because B1's
+    # chair_vote_required had reverted to unset. Nobody changed it. The rebuild
+    # above names eight fields and writes the result over the stored committee,
+    # so ANY field it does not name is dropped - and an admin editing something
+    # unrelated erased, silently:
+    #
+    #     chair_vote_required   the committee could no longer close without
+    #                           its chair
+    #     deputy_chair          on every member - the named deputy vanished
+    #     min_quorum_count      a quorum override went back to the default
+    #
+    # A whitelist that is not updated when a feature is added quietly deletes
+    # that feature's settings. The named fields above are still normalised;
+    # what changes is that an unnamed one survives.
+    _prev = next((x for x in palette
+                  if str(x.get("code")) == code and isinstance(x, dict)), None)
+    if _prev:
+        for _k, _v in _prev.items():
+            if _k not in norm:
+                norm[_k] = _v
+        # And per member, keyed on staff code, so deputy_chair travels with the
+        # person it belongs to rather than with their position in a list.
+        _was = {str(m.get("staff_code", "") or "").strip(): m
+                for m in (_prev.get("members") or []) if isinstance(m, dict)}
+        for _m in norm["members"]:
+            _old = _was.get(str(_m.get("staff_code", "") or "").strip())
+            if not isinstance(_old, dict):
+                continue
+            for _k, _v in _old.items():
+                if _k not in _m:
+                    _m[_k] = _v
+
     replaced = False
     for i, existing in enumerate(palette):
         if str(existing.get("code")) == code:
