@@ -315,7 +315,8 @@
             "staff_code": "KE1319",
             "full_funnel": false
           }
-        ]
+        ],
+        "chair_vote_required": false
       },
       {
         "code": "B2",
@@ -349,7 +350,8 @@
             "staff_code": "KE1354",
             "full_funnel": false
           }
-        ]
+        ],
+        "chair_vote_required": false
       },
       {
         "code": "B3",
