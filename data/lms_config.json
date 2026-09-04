@@ -73,7 +73,15 @@
     "Business registration expired",
     "Land search required",
     "Additional security required",
-    "Revised repayment schedule needed"
+    "Revised repayment schedule needed",
+    "1/3 rule violation",
+    "Loan limit - multiplier exceeded",
+    "CRB report - adverse listing or score",
+    "Tenor outside product terms",
+    "Statements not certified or confirmed",
+    "DSR outside policy",
+    "Payslip and salary statement do not match",
+    "Pricing outside approved band"
   ],
   "condition_types": [
     "Insurance certificate",
