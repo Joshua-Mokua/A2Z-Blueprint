@@ -417,6 +417,13 @@ class PipelineDealRefer(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     client_name: str = Field(description="Customer display name")
+    # Optional: the refer form asks for the minimum, and the recipient
+    # completes the deal on acceptance. But when the officer HAS chosen a
+    # customer type it must reach the record - it decides which segment
+    # analyst owns the case, and the endpoint used to overwrite it with
+    # "Existing", which is a relationship status and matches no segment.
+    client_type: Optional[str] = Field(
+        default=None, description="Consumer / Commercial / CIB, when known")
     staff_code: Optional[str] = Field(
         default=None,
         description="Referring RM staff code. Server-derived when omitted (H1).",
