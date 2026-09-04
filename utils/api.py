@@ -12898,7 +12898,12 @@ def delete_deal_document(deal_id: str, doc_name: str,
 
 # === COMMITTEE PALETTE ENDPOINTS (4b-1) ===
 _COMMITTEE_RECORDING_MODES = ("single", "voting")
-_COMMITTEE_VOTING_RULES = ("SIMPLE_MAJORITY", "SUPERMAJORITY_TWO_THIRDS", "UNANIMOUS")
+_COMMITTEE_VOTING_RULES = ("SIMPLE_MAJORITY", "SUPERMAJORITY_TWO_THIRDS",
+                           "UNANIMOUS", "CHAIR_TIEBREAKER",
+                           # One YES approves. Requested for the department
+                           # committee; not to be set on the body that grants
+                           # final authority without a separate decision.
+                           "SINGLE_APPROVER")
 
 _DEFAULT_COMMITTEE_PALETTE = [
     {"code": "BCC1", "name": "Branch Credit Committee", "chaired_by": "",

@@ -79,6 +79,15 @@ class VotingRule(Enum):
     SUPERMAJORITY_TWO_THIRDS = "SUPERMAJORITY_TWO_THIRDS"  # ≥ 66.67%
     UNANIMOUS = "UNANIMOUS"                        # 100% of present
     CHAIR_TIEBREAKER = "CHAIR_TIEBREAKER"          # majority + chair tiebreak
+    # Requested for the DEPARTMENT committee (2026-09-04): "the option of
+    # having at least one approving". One YES carries it - but a NO is still
+    # recorded, and the reason names the dissent, so a single approval never
+    # quietly erases an objection.
+    #
+    # This is a real reduction in control and belongs on a screening committee
+    # that is one step in a longer chain - not on the body that grants final
+    # authority.
+    SINGLE_APPROVER = "SINGLE_APPROVER"            # one YES is enough
 
 
 class VoteValue(Enum):
@@ -329,6 +338,20 @@ class CreditCommitteeEngine:
             return (
                 DecisionOutcome.DEFERRED,
                 "No YES/NO votes cast (all abstained or recused)")
+
+        if rule == VotingRule.SINGLE_APPROVER:
+            if tally.yes_count > 0:
+                _why = "One approval is sufficient for this committee"
+                if tally.no_count:
+                    # A dissent is not lost because somebody else approved.
+                    _why += (" (%d YES, %d NO - the objection is recorded)"
+                             % (tally.yes_count, tally.no_count))
+                else:
+                    _why += " (%d YES)" % tally.yes_count
+                return (DecisionOutcome.APPROVED, _why)
+            return (
+                DecisionOutcome.REJECTED,
+                "No member approved (%d NO)" % tally.no_count)
 
         if rule == VotingRule.UNANIMOUS:
             if tally.no_count == 0 and tally.yes_count > 0:
