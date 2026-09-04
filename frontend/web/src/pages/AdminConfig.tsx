@@ -436,7 +436,29 @@ export default function AdminConfig() {
             ? { win_probability: wpNum } : {}),
         };
       })
-      .filter((s) => s.stage && Number.isFinite(s.target_days) && s.target_days > 0);
+      .filter((s) => s.stage);
+
+    // ── A STAGE WITH NO TARGET IS REPORTED, NOT THROWN AWAY ─────────────────
+    // This used to drop any stage whose target was blank or zero. Closing
+    // stages are the likeliest to be blank - nothing is "due" after a deal
+    // closes - so Closed Won and Closed Lost disappeared from the payload and
+    // the server replied that the flow had no closing stage. The admin was
+    // looking straight at them.
+    //
+    // They are not invented a target here: a target is a service-level
+    // promise, and a number nobody chose would end up in the bank's SLA
+    // report. The admin is asked for it instead.
+    const untargeted = stages
+      .filter((s) => !Number.isFinite(s.target_days) || s.target_days <= 0)
+      .map((s) => s.stage);
+    if (untargeted.length > 0) {
+      toast({
+        tone: 'danger',
+        message: `Give a target in days for: ${untargeted.join(', ')}. `
+               + 'Every stage needs one, including the closing stages.',
+      });
+      return;
+    }
     if (stages.length === 0) {
       toast({ tone: 'danger', message: 'Add at least one stage with a positive target.' });
       return;

@@ -8164,15 +8164,64 @@ def pipeline_deal_validate(
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
 
-    # Scope check — manager can only validate deals under their cascade
+    # Scope check — the cascade, OR the caller's own branch.
     visible_codes = get_visible_staff_codes(user)
     sc = str(deal.get("staff_code", "") or "")
+
+    # ── A MANAGER AT A BRANCH MAY VALIDATE THAT BRANCH'S DEALS ──────────────
+    # RULING (2026-09-04): "not only the branch manager ... essentially anyone
+    # in management at the branch. Just open it up fully, we will tighten as we
+    # progress."
+    #
+    # A branch splits under two managers - tellers, CSOs and BOS report to
+    # operations; relationship officers report to credit. Following the cascade
+    # alone meant a Customer Service Manager covering for an absent Branch
+    # Manager could validate half the branch and was refused the other half,
+    # with a message about "cascade scope" that means nothing to somebody
+    # standing in a banking hall.
+    #
+    # THIS IS DELIBERATELY BROAD and the bank asked for it knowing so: it lets
+    # a Customer Service Manager validate a relationship officer's credit deal.
+    # The alternative was branches unable to work while managers are away.
+    #
+    # It ADDS to the cascade and never subtracts. It does not make a
+    # non-manager a validator, and it does not cross branches: a caller with no
+    # branch of their own matches nothing new.
+    _same_branch = False
     if sc not in visible_codes:
+        try:
+            from utils.api_pipeline_scope import get_staff_roster as _gsr
+            _r = _gsr()
+            _mine = str(user.get("branch", "") or "").strip()
+            if not _mine:
+                _me = _r[_r["Staff Code"].astype(str).str.strip()
+                         == str(user.get("staff_code", "") or "").strip()]
+                if not _me.empty:
+                    _mine = str(_me.iloc[0].get("Branch")
+                                or _me.iloc[0].get("Unit") or "").strip()
+            _them = str(deal.get("branch", "") or "").strip()
+            if not _them and sc:
+                _o = _r[_r["Staff Code"].astype(str).str.strip() == sc]
+                if not _o.empty:
+                    _them = str(_o.iloc[0].get("Branch")
+                                or _o.iloc[0].get("Unit") or "").strip()
+            # Both sides must be known. An empty branch is not a wildcard - it
+            # would let anybody validate anybody.
+            _same_branch = bool(_mine) and bool(_them) and _mine.lower() == _them.lower()
+            if _same_branch:
+                logger.info(
+                    "validate: %s is outside the cascade but at the same "
+                    "branch (%s) - allowed per the 2026-09-04 ruling",
+                    sc, _mine)
+        except Exception as exc:  # surfaced, never silent (CGR1)
+            logger.warning("branch check failed validating %s: %s", deal_id, exc)
+
+    if sc not in visible_codes and not _same_branch:
         _audit("API_PIPELINE_VALIDATE_FORBIDDEN", user,
                f"deal_id={deal_id} out of scope")
         raise HTTPException(
             status_code=403,
-            detail="Deal is outside your cascade scope",
+            detail="This deal belongs to another branch and is not in your team.",
         )
 
     pm.validate_deal(
