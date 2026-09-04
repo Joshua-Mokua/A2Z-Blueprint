@@ -7334,6 +7334,28 @@ def pipeline_deal_advance(
         invalidate_pipeline_caches,
         handle_lms_handoff,
     )
+    # ── ENTERING CREDIT IS A SUBMISSION, NOT A STAGE CHANGE ─────────────────
+    # RULING (2026-09-04), from one deal's audit trail: an RM walked a returned
+    # case from Documentation to Credit Analysis in thirty-two seconds - no
+    # committee sat, no analyst was assigned, nobody submitted it.
+    #
+    # submit-to-credit exists for this: it checks the document checklist,
+    # creates the credit application, records who submitted, and advances the
+    # stage itself. Walking the same distance by hand skips all of it.
+    #
+    # An admin is unaffected, and the credit workflow's own advances do not
+    # come through this endpoint.
+    _CREDIT_SIDE = (
+        "branch credit committee", "department credit", "credit analysis",
+        "credit administration", "credit administarion", "trops",
+        "management credit committee", "board credit committee",
+        "legal - security perfection", "offer letter", "disbursement",
+    )
+
+    def _is_credit_side(_s):
+        _t = str(_s or "").strip().lower()
+        return bool(_t) and any(_w in _t for _w in _CREDIT_SIDE)
+
     from utils.api_pipeline_scope import get_visible_staff_codes
 
     # Stage validation (post-α4: LMS stages now permitted; handoff
@@ -7348,6 +7370,29 @@ def pipeline_deal_advance(
     deal = _get_or_hydrate_deal(pm, deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    # Refuse to ENTER a credit-side stage by hand. Leaving one is not blocked -
+    # a case can still be closed or returned from where it stands.
+    _target = str(getattr(payload, "stage", "") or getattr(payload, "to_stage", "")
+                  or "").strip()
+    _from = str(deal.get("stage", "") or "").strip()
+    # INTO a credit stage FROM ANYWHERE - not only from outside. The audit
+    # trail that prompted this shows the last hop as Department Credit Analysis
+    # -> Credit Analysis, also by the RM: blocking only the way in would have
+    # stopped three of the four moves and left the one that mattered most.
+    #
+    # A CLOSING STAGE IS ALWAYS ALLOWED. A case must be closable from wherever
+    # it stands, including from inside credit.
+    _closing = _target.strip().lower().startswith("closed")
+    if (_target and _is_credit_side(_target) and not _closing
+            and not user.get("is_admin")):
+        _audit("API_PIPELINE_ADVANCE_INTO_CREDIT_REFUSED", user,
+               f"deal_id={deal_id} from={_from!r} to={_target!r}")
+        raise HTTPException(
+            status_code=400,
+            detail=("A deal enters credit by being submitted, not by changing "
+                    "its stage. Use Submit to Credit - it checks the documents, "
+                    "opens the credit case and moves the stage for you."))
 
     # Cascade scope check
     visible_codes = get_visible_staff_codes(user)
