@@ -160,6 +160,7 @@ CHAIN = [
     "patch_bv2_branch_manager_validates_branch",
     "patch_cf1_no_silent_stage_drop",
     "patch_sc3_deal_owner_digits",
+    "patch_rc2_referral_carries_client_type",
     "patch_sc2_frontend_staff_code_zeros",
     "patch_hd2_head_is_a_manager",
     "patch_at1_segment_analyst_attaches",

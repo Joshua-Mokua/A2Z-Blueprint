@@ -879,6 +879,10 @@ export function PipelineCreate() {
         referred_to:           referredTo.trim(),
         referral_note:         referralNote.trim() || undefined,
         account_number:        accountNumber.trim() || undefined,
+        // The officer answers "Customer type" on this form. It used to be
+        // discarded here and the server wrote "Existing" - a relationship
+        // status - so no segment analyst ever owned a referred deal.
+        client_type:           clientType || undefined,
         // Note: unit not sent from client — UserIdentity surfaces
         // department, not unit. Server can resolve unit from staff_code
         // if needed (the create endpoint already does this for other

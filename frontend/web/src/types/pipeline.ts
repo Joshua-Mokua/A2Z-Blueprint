@@ -510,6 +510,11 @@ export interface ReferDealRequest {
   referral_note?:         string;
   account_number?:        string;
   unit?:                  string;
+  // The customer type the officer chose on the refer form. Optional, because
+  // the refer form asks for the minimum - but when it IS chosen it must reach
+  // the record: the endpoint used to overwrite it with "Existing", which is a
+  // relationship status and matches no segment, so no analyst owned the case.
+  client_type?:           string;
 }
 
 export interface ReferDealResponse {
