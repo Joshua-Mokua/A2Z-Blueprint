@@ -140,7 +140,19 @@
       "Mobile Banking",
       "Debit Card",
       "Credit Card",
-      "Prepaid Card"
+      "Prepaid Card",
+      "API Integrations",
+      "Mpesa Collections",
+      "Regional Collections",
+      "Remote Cheque Scanner",
+      "Pesalink For Fintech",
+      "Acquiring",
+      "Direct Debits Instructions",
+      "CIT",
+      "Teller Implants",
+      "BPO",
+      "Virtual Accounts and Wallets",
+      "Float Purchase"
     ],
     "Insurance": [
       "Bancassurance",
@@ -433,41 +445,39 @@
   },
   "stage_flows": {
     "asset": [
-      "Lead",
-      "Contacted",
-      "Qualified",
-      "Application",
-      "Credit Assessment",
-      "Offer / Proposal",
-      "Negotiation",
-      "Compliance",
+      "Initiation",
+      "Documentation",
+      "Branch Credit Committee",
+      "Department Analyst",
+      "Department Business Committee",
+      "Credit Analysis",
+      "Offer Letter",
+      "Legal - Security Perfection",
+      "Disbursement",
       "Closed Won",
       "Closed Lost"
     ],
     "liability": [
-      "Lead",
-      "Contacted",
-      "Proposal",
-      "Negotiation",
+      "Initiation",
       "Documentation",
+      "Approval",
+      "Opening",
       "Closed Won",
       "Closed Lost"
     ],
     "insurance": [
-      "Lead",
-      "Contacted",
-      "Proposal",
-      "Negotiation",
+      "Initiation",
       "Documentation",
+      "Approval",
+      "Opening",
       "Closed Won",
       "Closed Lost"
     ],
     "other": [
-      "Lead",
-      "Contacted",
-      "Qualified",
-      "Proposal",
-      "Negotiation",
+      "Initiation",
+      "Documentation",
+      "Approval",
+      "Opening",
       "Closed Won",
       "Closed Lost"
     ]
@@ -1885,7 +1895,7 @@
           "win_probability": 30
         },
         {
-          "stage": "Consumer Credit Analysis",
+          "stage": "Department Credit Analysis",
           "target_days": 1,
           "win_probability": 40
         },
@@ -1915,20 +1925,31 @@
         },
         {
           "stage": "Closed Won",
-          "target_days": 0
+          "target_days": 1,
+          "win_probability": 100
         },
         {
           "stage": "Closed Lost",
-          "target_days": 0
+          "target_days": 1,
+          "win_probability": 100
         }
       ],
       "required_documents": [
         "Bank Statements (6 months)",
         "Branch Committee Decision",
         "ID/Passport",
-        "Credit Report",
         "CRB Report",
-        "KRA PIN"
+        "KRA PIN",
+        {
+          "name": "3 Months Payslip",
+          "attached_by": "owner",
+          "mandatory": false
+        },
+        {
+          "name": "Employer Introduction Letter",
+          "attached_by": "owner",
+          "mandatory": false
+        }
       ],
       "documents_required_at_stage": "Documentation",
       "committee_journey": []
@@ -2188,9 +2209,7 @@
     "Consumer": [
       "Direct Banking",
       "Premier Banking",
-      "Advantage Banking",
-      "Premier",
-      "Advantage"
+      "Advantage Banking"
     ],
     "Commercial": [
       "SME",
@@ -2428,6 +2447,12 @@
       },
       {
         "name": "Business Plan"
+      },
+      {
+        "name": "{'name': '3 Months Payslip', 'attached_by': 'owner', 'mandatory': False}"
+      },
+      {
+        "name": "{'name': 'Employer Introduction Letter', 'attached_by': 'owner', 'mandatory': False}"
       }
     ]
   },
@@ -2440,6 +2465,178 @@
     "currency",
     "relationship_status",
     "mou_id",
-    "sector"
-  ]
+    "sector",
+    "branch"
+  ],
+  "custom_document_types": [
+    "Credit Transaction Memo",
+    "Employer Introduction Letter",
+    "3 Months Payslip"
+  ],
+  "stage_buckets": {
+    "asset": [
+      {
+        "key": "initiation",
+        "label": "Initiation",
+        "weight": 10,
+        "steps": [
+          "Initiation"
+        ]
+      },
+      {
+        "key": "documentation",
+        "label": "Documentation",
+        "weight": 15,
+        "steps": [
+          "Documentation"
+        ]
+      },
+      {
+        "key": "unit_review",
+        "label": "Unit Review",
+        "weight": 25,
+        "steps": [
+          "Branch Credit Committee",
+          "Department Analyst",
+          "Department Business Committee",
+          "Branch Credit Committee Review",
+          "Department Credit Analysis",
+          "Department Credit Committee",
+          "Department Credit Committee Review"
+        ]
+      },
+      {
+        "key": "credit_analysis",
+        "label": "Credit Analysis",
+        "weight": 20,
+        "steps": [
+          "Credit Analysis"
+        ]
+      },
+      {
+        "key": "credit_admin",
+        "label": "Credit Administration",
+        "weight": 15,
+        "steps": [
+          "Offer Letter",
+          "Legal - Security Perfection",
+          "Credit Administration",
+          "Credit Administarion"
+        ]
+      },
+      {
+        "key": "trops",
+        "label": "TROPS",
+        "weight": 15,
+        "steps": [
+          "Disbursement",
+          "Trops"
+        ]
+      }
+    ],
+    "liability": [
+      {
+        "key": "initiation",
+        "label": "Initiation",
+        "weight": 20,
+        "steps": [
+          "Initiation"
+        ]
+      },
+      {
+        "key": "documentation",
+        "label": "Documentation",
+        "weight": 30,
+        "steps": [
+          "Documentation"
+        ]
+      },
+      {
+        "key": "approval",
+        "label": "Approval",
+        "weight": 25,
+        "steps": [
+          "Approval"
+        ]
+      },
+      {
+        "key": "opening",
+        "label": "Opening",
+        "weight": 25,
+        "steps": [
+          "Opening",
+          "Account Openned",
+          "Fixed Deposit Openned"
+        ]
+      }
+    ],
+    "insurance": [
+      {
+        "key": "initiation",
+        "label": "Initiation",
+        "weight": 20,
+        "steps": [
+          "Initiation"
+        ]
+      },
+      {
+        "key": "documentation",
+        "label": "Documentation",
+        "weight": 30,
+        "steps": [
+          "Documentation"
+        ]
+      },
+      {
+        "key": "approval",
+        "label": "Approval",
+        "weight": 25,
+        "steps": [
+          "Approval"
+        ]
+      },
+      {
+        "key": "opening",
+        "label": "Opening",
+        "weight": 25,
+        "steps": [
+          "Opening"
+        ]
+      }
+    ],
+    "other": [
+      {
+        "key": "initiation",
+        "label": "Initiation",
+        "weight": 20,
+        "steps": [
+          "Initiation"
+        ]
+      },
+      {
+        "key": "documentation",
+        "label": "Documentation",
+        "weight": 30,
+        "steps": [
+          "Documentation"
+        ]
+      },
+      {
+        "key": "approval",
+        "label": "Approval",
+        "weight": 25,
+        "steps": [
+          "Approval"
+        ]
+      },
+      {
+        "key": "opening",
+        "label": "Opening",
+        "weight": 25,
+        "steps": [
+          "Opening"
+        ]
+      }
+    ]
+  }
 }
