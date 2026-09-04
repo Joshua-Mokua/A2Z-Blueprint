@@ -201,7 +201,26 @@ export function PipelineDealDetail() {
   // role-capability), NOT senior bankers like Heads/Directors — they view-only on deals
   // they don't own. Admin edits remain audit-logged server-side.
   const _viewerIsAdmin = String(viewer?.role ?? '').trim().toLowerCase() === 'admin';
-  const canEditDocs = (!!viewer?.staff_code && String(viewer.staff_code) === String(deal.staff_code)) || _viewerIsAdmin;
+  // ── THE OWNER IS THE OWNER, HOWEVER THEIR CODE IS PADDED ────────────────
+  // This was an exact string comparison, so "KE0539" was not "KE539" and the
+  // person who raised the deal was not recognised as its owner. Every upload
+  // control, the transaction memo, the committee card, the forwarding memo and
+  // the rate request are all gated on this one line - so a padded code
+  // silently removed five panels' worth of controls from the deal's owner.
+  //
+  // A credit analyst returned a case asking for more documents and the owner
+  // could not attach them.
+  //
+  // KE5390 is still NOT KE539: the digits differ, and that distinction stands.
+  const sameStaffCode = (a?: string | null, b?: string | null): boolean => {
+    const norm = (v?: string | null) => {
+      const m = /^([A-Za-z]*)0*(\d+)$/.exec((v ?? '').trim());
+      return m ? `${m[1].toUpperCase()}${m[2]}` : '';
+    };
+    const x = norm(a);
+    return x !== '' && x === norm(b);
+  };
+  const canEditDocs = sameStaffCode(viewer?.staff_code, deal.staff_code) || _viewerIsAdmin;
 
 
   return (
