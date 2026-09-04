@@ -2498,7 +2498,11 @@
         "steps": [
           "Branch Credit Committee",
           "Department Analyst",
-          "Department Business Committee"
+          "Department Business Committee",
+          "Branch Credit Committee Review",
+          "Department Credit Analysis",
+          "Department Credit Committee",
+          "Department Credit Committee Review"
         ]
       },
       {
@@ -2515,7 +2519,9 @@
         "weight": 15,
         "steps": [
           "Offer Letter",
-          "Legal - Security Perfection"
+          "Legal - Security Perfection",
+          "Credit Administration",
+          "Credit Administarion"
         ]
       },
       {
@@ -2523,7 +2529,8 @@
         "label": "TROPS",
         "weight": 15,
         "steps": [
-          "Disbursement"
+          "Disbursement",
+          "Trops"
         ]
       }
     ],
@@ -2557,7 +2564,9 @@
         "label": "Opening",
         "weight": 25,
         "steps": [
-          "Opening"
+          "Opening",
+          "Account Openned",
+          "Fixed Deposit Openned"
         ]
       }
     ],
