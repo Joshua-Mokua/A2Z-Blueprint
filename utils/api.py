@@ -4304,6 +4304,8 @@ def pipeline_submit_to_credit(
     # has moved into the credit/offer phase rather than sitting frozen at
     # Credit Assessment while its loan progresses. Config-driven via stage_flows;
     # never auto-advances into a terminal Closed stage.
+    _moved = False
+    _why = ""
     try:
         _flow = _stage_flow_for(deal.get("product_type") or deal.get("product", ""))
         _cur = str(deal.get("stage", "") or "")
@@ -4315,9 +4317,42 @@ def pipeline_submit_to_credit(
                     pm.update_stage(deal_id, _next,
                                     f"Auto-advanced on submit to credit (app {app_id}).",
                                     str(user.get("username", "")))
-    except Exception:
+                    _moved = True
+                else:
+                    _why = ("the next stage is %r, which is a closing stage"
+                            % _next)
+            else:
+                _why = ("the deal is already at the last stage of its flow "
+                        "(%r)" % _cur)
+        else:
+            # THE LIKELIEST ONE. A deal sitting on a stage its product's flow
+            # does not define cannot be advanced - the next stage cannot be
+            # computed from a position that is not on the map. It is the same
+            # state that stops some deals being closed.
+            _why = ("the deal's stage %r is not in the %r flow"
+                    % (_cur, deal.get("product_type") or deal.get("product", "")))
+    except Exception as exc:
         # Stage sync is best-effort — never fail a successful submission on it.
-        pass
+        # But "best-effort" is not "unrecorded": a deal that reached credit and
+        # did not move in the funnel leaves two screens telling a manager
+        # different things about the same case.
+        _why = "the stage sync raised: %s" % str(exc)[:120]
+        logger.warning("submit-to-credit stage sync failed for %s: %s",
+                       deal_id, exc)
+
+    # ── SAY SO WHEN THE FUNNEL DID NOT MOVE ─────────────────────────────────
+    # RULING (2026-09-04): "I have several cases submitted to the department
+    # credit analyst but the funnel is not displaying as such."
+    #
+    # It was failing in three different ways and saying nothing in any of them.
+    # The advance is still best-effort - a case must not fail to reach credit
+    # because its funnel position could not be worked out - but it is no longer
+    # silent, and the audit names the deal so it can be corrected.
+    if not _moved:
+        _audit("API_PIPELINE_STAGE_NOT_ADVANCED", user,
+               f"deal_id={deal_id} app={app_id} reason={_why or 'unknown'}")
+        logger.info("deal %s reached credit but did not advance: %s",
+                    deal_id, _why or "unknown")
     deal = _get_or_hydrate_deal(pm, deal_id)
     _db_sync_pipeline_deal(deal)
     _audit("API_PIPELINE_SUBMIT_TO_CREDIT_OK", user, f"deal_id={deal_id} app={app_id}")
@@ -12728,7 +12763,12 @@ def delete_deal_document(deal_id: str, doc_name: str,
 
 # === COMMITTEE PALETTE ENDPOINTS (4b-1) ===
 _COMMITTEE_RECORDING_MODES = ("single", "voting")
-_COMMITTEE_VOTING_RULES = ("SIMPLE_MAJORITY", "SUPERMAJORITY_TWO_THIRDS", "UNANIMOUS")
+_COMMITTEE_VOTING_RULES = ("SIMPLE_MAJORITY", "SUPERMAJORITY_TWO_THIRDS",
+                           "UNANIMOUS", "CHAIR_TIEBREAKER",
+                           # One YES approves. Requested for the department
+                           # committee; not to be set on the body that grants
+                           # final authority without a separate decision.
+                           "SINGLE_APPROVER")
 
 _DEFAULT_COMMITTEE_PALETTE = [
     {"code": "BCC1", "name": "Branch Credit Committee", "chaired_by": "",
