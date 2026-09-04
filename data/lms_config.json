@@ -282,7 +282,7 @@
         "branch": "",
         "kind": "",
         "recording_mode": "voting",
-        "voting_rule": "SIMPLE_MAJORITY",
+        "voting_rule": "SINGLE_APPROVER",
         "amount_threshold_kes": 0.0,
         "members": [
           {
@@ -309,7 +309,8 @@
             "staff_code": "KE1319",
             "full_funnel": false
           }
-        ]
+        ],
+        "chair_vote_required": false
       },
       {
         "code": "B2",
@@ -318,7 +319,7 @@
         "branch": "",
         "kind": "",
         "recording_mode": "voting",
-        "voting_rule": "SIMPLE_MAJORITY",
+        "voting_rule": "SINGLE_APPROVER",
         "amount_threshold_kes": 0.0,
         "members": [
           {
@@ -345,7 +346,8 @@
             "staff_code": "KE1533",
             "full_funnel": false
           }
-        ]
+        ],
+        "chair_vote_required": false
       },
       {
         "code": "B3",
@@ -591,46 +593,49 @@
         "code": "BCC_BRN005",
         "name": "Kisumu Branch Credit Committee",
         "chaired_by": "OKWARO Thaddeus  [EKE-commercial Banking]",
+        "branch": "Kisumu",
+        "kind": "branch",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
-        "branch": "Kisumu",
-        "kind": "branch",
         "members": [
           {
-            "staff_code": "KE322",
             "name": "OKWARO Thaddeus  [EKE-commercial Banking]",
             "role": "Branch Manager",
-            "id": "KE322",
-            "member_id": "KE322"
+            "staff_code": "KE322",
+            "full_funnel": false
           },
           {
-            "staff_code": "KE801",
             "name": "Hilda Nyaboke Osoro",
-            "role": "Assistant Branch Service & Operations Manager"
+            "role": "Assistant Branch Service & Operations Manager",
+            "staff_code": "KE801",
+            "full_funnel": false
           },
           {
-            "staff_code": "KE1352",
             "name": "Eric Odhiambo Onyango",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "staff_code": "KE1352",
+            "full_funnel": false
           },
           {
-            "staff_code": "KE1244",
             "name": "AJOCK Jackline [EKE-Commercial]",
-            "role": "Relationship Manager, SME"
+            "role": "Relationship Manager, SME",
+            "staff_code": "KE1244",
+            "full_funnel": false
           },
           {
-            "staff_code": "KE1285",
             "name": "Jackson Nyakang'o",
-            "role": "Relationship Officer"
+            "role": "Relationship Officer",
+            "staff_code": "KE1285",
+            "full_funnel": false
           },
           {
-            "staff_code": "KE1335",
             "name": "Geoffrey Kerandi Onywoki",
-            "role": "Relationship Manager, SME"
+            "role": "Relationship Manager, SME",
+            "staff_code": "KE1335",
+            "full_funnel": false
           }
-        ],
-        "chair_staff_code": "KE322"
+        ]
       },
       {
         "code": "BCC_BRN006",
@@ -970,67 +975,80 @@
       {
         "code": "BCC_BRN014",
         "name": "Karatina Branch Credit Committee",
-        "chaired_by": "MIANO ELIZABETH [EKE-Operations]",
+        "chaired_by": "GICHUHI Robert [EKE-Commercial Banking]",
+        "branch": "Karatina",
+        "kind": "branch",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
-        "branch": "Karatina",
-        "kind": "branch",
         "members": [
           {
-            "staff_code": "KE546",
             "name": "MIANO ELIZABETH [EKE-Operations]",
             "role": "Customer Service Manager",
-            "id": "KE546",
-            "member_id": "KE546"
+            "staff_code": "KE546",
+            "full_funnel": false
           },
           {
-            "staff_code": "KE1044",
             "name": "MWIRIGI Esther [EKE-Operations]",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "staff_code": "KE1044",
+            "full_funnel": false
           },
           {
-            "staff_code": "KE1262",
             "name": "KENDI Glory [EKE-Consumer]",
-            "role": "Relationship Officer"
+            "role": "Relationship Officer",
+            "staff_code": "KE1262",
+            "full_funnel": false
+          },
+          {
+            "name": "GICHUHI Robert [EKE-Commercial Banking]",
+            "role": "Branch Manager",
+            "staff_code": "KE1363",
+            "full_funnel": false
           }
-        ],
-        "chair_staff_code": "KE546"
+        ]
       },
       {
         "code": "BCC_BRN015",
         "name": "Thika Branch Credit Committee",
-        "chaired_by": "RONO Brenda [EKE-Operations]",
+        "chaired_by": "WAGURA Fredrick [EKE-Commercial Banking]",
+        "branch": "Thika",
+        "kind": "branch",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
-        "branch": "Thika",
-        "kind": "branch",
         "members": [
           {
-            "staff_code": "KE637",
             "name": "RONO Brenda [EKE-Operations]",
             "role": "Customer Service Manager",
-            "id": "KE637",
-            "member_id": "KE637"
+            "staff_code": "KE637",
+            "full_funnel": false
           },
           {
-            "staff_code": "KE1032",
             "name": "Ursula Wanjira Muthee",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "staff_code": "KE1032",
+            "full_funnel": false
           },
           {
-            "staff_code": "KE1344",
             "name": "Kennedy Luseno Voreza",
-            "role": "Relationship Manager"
+            "role": "Relationship Manager",
+            "staff_code": "KE1344",
+            "full_funnel": false
           },
           {
-            "staff_code": "KE887",
             "name": "John Njogu Waithaka",
-            "role": "Relationship Officer"
+            "role": "Relationship Officer",
+            "staff_code": "KE887",
+            "full_funnel": false
+          },
+          {
+            "name": "WAGURA Fredrick [EKE-Commercial Banking]",
+            "role": "Branch Manager",
+            "staff_code": "KE1362",
+            "full_funnel": false
           }
-        ],
-        "chair_staff_code": "KE637"
+        ]
       },
       {
         "code": "BCC_BRN016",
