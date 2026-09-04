@@ -12980,6 +12980,10 @@ def upsert_committee_palette(payload: dict = Body(default_factory=dict),
     if not ok:
         raise HTTPException(status_code=400, detail=reason)
     code = str(c.get("code")).strip()
+    existing = next((x for x in palette if str(x.get("code")) == code), None) or {}
+    existing_members = {str(m.get("staff_code", "")).strip(): m
+                         for m in (existing.get("members") or [])
+                         if isinstance(m, dict) and m.get("staff_code")}
     norm = {
         "code": code,
         "name": str(c.get("name")).strip(),
@@ -12992,13 +12996,29 @@ def upsert_committee_palette(payload: dict = Body(default_factory=dict),
         "members": [
             {"name": str(m.get("name", "")).strip(), "role": str(m.get("role", "")).strip(),
              "staff_code": str(m.get("staff_code", "") or "").strip(),
-             "full_funnel": bool(m.get("full_funnel", False))}
+             "full_funnel": bool(m.get("full_funnel", False)),
+             # CV3/deputy-chair naming is set by its own scripts, not this
+             # form - an edit through this endpoint must not silently erase
+             # it just because the payload's member dict doesn't carry it.
+             "deputy_chair": bool(m.get(
+                 "deputy_chair",
+                 existing_members.get(str(m.get("staff_code", "") or "").strip(), {})
+                 .get("deputy_chair", False)))}
             for m in (c.get("members", []) or []) if isinstance(m, dict)
         ],
     }
+    # Same reasoning for committee-level extension fields set by their own
+    # scripts (set_chair_vote_required.py, quorum overrides): this form has
+    # no field for them, so silently dropping them on every other edit would
+    # undo a decision nobody touching this screen even knows exists.
+    for _carry in ("chair_vote_required", "min_quorum_count", "quorum"):
+        if _carry in c:
+            norm[_carry] = c[_carry]
+        elif _carry in existing:
+            norm[_carry] = existing[_carry]
     replaced = False
-    for i, existing in enumerate(palette):
-        if str(existing.get("code")) == code:
+    for i, ex in enumerate(palette):
+        if str(ex.get("code")) == code:
             palette[i] = norm; replaced = True; break
     if not replaced:
         palette.append(norm)
