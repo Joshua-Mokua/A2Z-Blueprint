@@ -5748,7 +5748,19 @@ def pipeline_deal_refer(
         "unit":                 payload.unit or "",
         "client_name":          payload.client_name,
         "account_number":       payload.account_number or "",
-        "client_type":          "Existing",
+        # ── NOT "Existing" ──────────────────────────────────────────────
+        # "Existing" is a RELATIONSHIP STATUS, not a customer type. It was
+        # copied from the Streamlit page this replaced, where it meant "this
+        # is an existing customer" - a different field that happened to share
+        # a name.
+        #
+        # _app_segment reads client_type to decide which analyst owns a case,
+        # and "Existing" matches none of Consumer / Commercial / CIB. Every
+        # one of the pilot's 33 unsegmented deals carried it.
+        #
+        # A BLANK IS HONEST ABOUT BEING UNKNOWN. A wrong value looks like data
+        # and silently routes the case to nobody.
+        "client_type":          str(getattr(payload, "client_type", "") or ""),
         "product_type":         "Referral",
         "deal_value":           0,
         "stage":                "Lead",
