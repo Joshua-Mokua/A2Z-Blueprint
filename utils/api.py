@@ -13638,7 +13638,26 @@ def cast_committee_vote(deal_id: str, code: str,
 
     _chair_spoke = any(_is_chair(v) for v in cast.values())
     _deputy_spoke = any(_is_deputy(v) for v in cast.values())
-    _authority = _chair_spoke or _deputy_spoke
+
+    # ── THE CHAIR'S VOTE IS REQUIRED UNLESS THE BANK SAYS OTHERWISE ─────────
+    # RULING (2026-09-04): "in consumer everybody has voted, but since Jane is
+    # away nothing has moved. I want to eliminate that rule of chair must vote
+    # for the department."
+    #
+    # The requirement (2026-08-13, "make the chair vote mandatory") is right
+    # for a body whose chair carries the authority, and wrong when it leaves a
+    # fully-voted committee still because one person is on leave.
+    #
+    # It is now per-committee and DEFAULTS TO REQUIRED - a committee that does
+    # not set chair_vote_required behaves exactly as before.
+    #
+    # QUORUM STILL APPLIES. This drops the requirement that a PARTICULAR person
+    # voted, not the requirement that ENOUGH people did.
+    _chair_required = committee.get("chair_vote_required", True)
+    if isinstance(_chair_required, str):
+        _chair_required = _chair_required.strip().lower() not in (
+            "false", "no", "0", "off")
+    _authority = (_chair_spoke or _deputy_spoke) if _chair_required else True
 
     if attended >= quorum and _authority:
         # Enough of the committee has spoken - decide, once, from all of it.
@@ -13726,6 +13745,9 @@ def cast_committee_vote(deal_id: str, code: str,
         # "waiting on the chair" is a different thing from "waiting on a body".
         "chair_voted": _chair_spoke,
         "deputy_voted": _deputy_spoke,
+        # A case decided without the chair must be VISIBLE as such, not
+        # indistinguishable from one they attended.
+        "chair_vote_required": bool(committee.get("chair_vote_required", True)),
         "awaiting_chair": bool(attended >= quorum and not _authority),
         "decided": bool(outcome),
         "outcome": outcome,
