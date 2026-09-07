@@ -38,7 +38,8 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, fetchNextStep, type NextStep, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, castCommitteeVote, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse,
+import { openProtectedFile,
+  fetchPipelineDealDetail, fetchCreditChecklist, fetchNextStep, type NextStep, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, castCommitteeVote, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse,
   fetchRateState, requestRate, acceptCounterRate, declineCounterRate, type RateRequestState,
 } from '@/lib/api';
 import { Timeline } from '@/components/Timeline';
@@ -2036,6 +2037,7 @@ function RateRequestPanel({ deal, canEdit, onChanged }: {
    card. Not the full documents panel: a committee needs to READ the papers,
    not manage them, and the upload controls belong to the branch. */
 function CommitteeDocumentStrip({ dealId }: { dealId: string }) {
+  const { toast } = useToast();
   const [files, setFiles] = useState<Record<string, { filename?: string }>>({});
   const [required, setRequired] = useState<string[]>([]);
   const [err, setErr] = useState('');
@@ -2079,13 +2081,26 @@ function CommitteeDocumentStrip({ dealId }: { dealId: string }) {
                   <span className="ml-2 text-gray-500">{files[n].filename}</span>
                 ) : null}
               </span>
-              <a
-                href={`/api/pipeline/deals/${encodeURIComponent(dealId)}/documents/${encodeURIComponent(n)}`}
-                target="_blank" rel="noopener noreferrer"
+              {/* NOT an <a href>. A browser link carries no Authorization
+                  header, so clicking View landed the tab on
+                  {"detail":"Missing or malformed Authorization header"}.
+                  openProtectedFile fetches with the token and opens the
+                  result. */}
+              <button
+                type="button"
+                onClick={() => {
+                  void openProtectedFile(
+                    `/pipeline/deals/${encodeURIComponent(dealId)}`
+                    + `/documents/${encodeURIComponent(n)}`,
+                  ).catch((e) => toast({
+                    tone: 'danger',
+                    message: `Could not open ${n}: ${e instanceof Error ? e.message : 'unknown error'}`,
+                  }));
+                }}
                 className="font-medium text-brand-primary hover:underline"
               >
                 View
-              </a>
+              </button>
             </div>
           ))}
           {required.filter((r) => !names.some((n) => n.toLowerCase() === r.toLowerCase()))
