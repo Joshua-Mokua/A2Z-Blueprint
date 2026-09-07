@@ -91,14 +91,26 @@ def main():
               % (q_eff, "" if q is not None else "  (bank default)"))
         print("  voting rule       %s" % rule)
         print("  chair must vote   %s" % ("yes" if chair_req else "no"))
-        if chair_req and not deps and chair:
+        # A branch committee finds its deputy BY ROLE - any member whose role
+        # mentions operations. Only a department committee needs one named,
+        # which is why B1 stalled when Jane went away and the branches did not.
+        role_deputy = [m for m in members
+                       if "operations" in str(m.get("role", "")).lower()]
+        if chair_req and chair:
             on = any(str(m.get("name", "")).strip().lower()
                      == str(chair).strip().lower() for m in members)
             if not on:
                 print("     the named chair is not a member - the requirement")
-                print("     is ignored, or nothing here could ever close")
+                print("     is ignored, so this does not stall, but it reads")
+                print("     oddly and is worth tidying")
+            elif deps:
+                pass
+            elif role_deputy:
+                print("     deputy by role: %s"
+                      % ", ".join(str(m.get("name")) for m in role_deputy[:2]))
             else:
-                print("     no deputy named - if the chair is away this stalls")
+                print("     no deputy, named or by role - if the chair is away")
+                print("     this stalls")
         print("  used at or above  %s" % (kes(thr) if thr is not None else "no limit set"))
 
         # What this combination actually means in practice.
