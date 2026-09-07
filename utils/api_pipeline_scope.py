@@ -131,6 +131,47 @@ def _load_staff_roster_fresh() -> "pd.DataFrame":  # type: ignore[name-defined]
     return df
 
 
+def row_for_staff_code(df, code, branch_col=None):
+    """The register row for a staff code, preferring one that has a branch.
+
+    FOUND 2026-09-07: CN205 has two rows in the user table - a complete one at
+    Kisumu and a stale one with no branch. A lookup by code took whichever came
+    first, got the blank, and every branch test on that officer's deals failed.
+
+    Two rows for one person is a data fault and should be cleaned up. Until it
+    is, taking the row that can answer the question is better than taking the
+    one that cannot - and where BOTH rows have a branch this still returns the
+    first, because that is a real ambiguity and a guess would be worse than a
+    refusal.
+    """
+    code = str(code or "").strip()
+    if not code:
+        return None
+    try:
+        hits = df[df["Staff Code"].astype(str).str.strip() == code]
+    except Exception:
+        return None
+    if hits.empty:
+        return None
+    if len(hits) == 1:
+        return hits.iloc[0]
+
+    col = branch_col or ("Branch" if "Branch" in df.columns else "Unit")
+    withb = [i for i in range(len(hits))
+             if str(hits.iloc[i].get(col) or "").strip()]
+    try:
+        import logging
+        logging.getLogger(__name__).warning(
+            "staff code %s appears %d times in the register - %d with a %s. "
+            "Using a complete row; the duplicate should be cleaned up.",
+            code, len(hits), len(withb), col.lower())
+    except Exception:
+        pass
+    if len(withb) == 1:
+        return hits.iloc[withb[0]]
+    return hits.iloc[0]
+
+
 def get_staff_roster() -> "pd.DataFrame":  # type: ignore[name-defined]
     """Return the staff roster, cached for ``_ROSTER_CACHE_TTL_SECONDS``.
 
