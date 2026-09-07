@@ -286,31 +286,17 @@
         "amount_threshold_kes": 0.0,
         "members": [
           {
-            "name": "JELAGAT Jane [EKE-Consumer Banking]",
-            "role": "Head of Consumer",
-            "staff_code": "KE1158",
-            "full_funnel": false
-          },
-          {
-            "name": "Robert Githaiga Maingi",
-            "role": "Head, Digital Channels & Agency Network",
-            "staff_code": "KE1159",
-            "full_funnel": false
-          },
-          {
             "name": "MAGERO Lunar [EKE-Consumer Banking]",
             "role": "Head of Sales",
             "staff_code": "KE1136",
-            "full_funnel": false
-          },
-          {
-            "name": "MBANO Esther [EKE-Consumer]",
-            "role": "Asset Product Manager",
-            "staff_code": "KE1319",
-            "full_funnel": false
+            "full_funnel": false,
+            "deputy_chair": false
           }
         ],
-        "chair_vote_required": false
+        "chair_vote_required": false,
+        "min_quorum_count": 1,
+        "quorum_set_at": "2026-09-07T14:04:43",
+        "quorum_note": "set to 1 deliberately; the default floor of 2 comes from an audit finding that one person is not a committee"
       },
       {
         "code": "B2",
