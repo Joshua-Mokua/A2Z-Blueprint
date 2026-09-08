@@ -1238,7 +1238,12 @@
       "offer_signed",
       "offer_validated",
       "analyst_confirmed"
-    ]
+    ],
+    "role_statuses": {
+      "credit risk": [
+        "approved"
+      ]
+    }
   },
   "committee_tiers": [
     {

@@ -250,6 +250,21 @@ def filter_apps_by_visibility(
     pool_cfg = get_pool_visibility_config()
     pool_ok = _role_sees_pool(caller_role, pool_cfg["roles"])
     pool_statuses = {s.strip().lower() for s in pool_cfg["statuses"]}
+
+    # ── SOME ROLES ONLY WANT PART OF THE POOL ────────────────────────────────
+    # One status list served every pool role. Adding Credit Risk gave that role
+    # everything on it, including cases still with the department analysts -
+    # not theirs to review, and enough of them to bury the ones that are.
+    #
+    # A role listed here sees only its own statuses. A role that is not listed
+    # keeps the shared list exactly as before.
+    _per_role = pool_cfg.get("role_statuses") or {}
+    if isinstance(_per_role, dict) and caller_role:
+        _cr = str(caller_role).strip().lower()
+        for _rk, _sts in _per_role.items():
+            if str(_rk).strip().lower() in _cr and isinstance(_sts, (list, tuple)):
+                pool_statuses = {str(x).strip().lower() for x in _sts if str(x).strip()}
+                break
     caller_segment = _analyst_segment(caller_role, caller_staff_code)  # '' unless segment-specific
 
     # ── A COMMITTEE MEMBER SEES WHAT IS BEFORE THEIR COMMITTEE ──────────────
