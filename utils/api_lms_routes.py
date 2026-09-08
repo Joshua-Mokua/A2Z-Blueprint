@@ -649,14 +649,31 @@ def lms_application_decision(
     taxonomy:
       LMS_DECISION_APPROVED / DECLINED / RETURNED
     """
-    # Tier check FIRST
-    if not is_manager(user):
+    # The assigned analyst, a manager, or an admin.
+    #
+    # This required manager authority while the permission engine granted
+    # can_record_decision to the ASSIGNED ANALYST - so the screen showed the
+    # Approve / Decline / Return panel and the endpoint refused it. An analyst
+    # picks a case and acts on it; there is no manager step in that flow.
+    #
+    # The scope check below still applies, so this does not let anybody decide
+    # a case that is not theirs.
+    lam = _lam()
+    _app_early = lam.get(app_id)
+    _mine = False
+    if _app_early:
+        _an = _app_early.get("analyst") or {}
+        if isinstance(_an, dict):
+            _mine = (str(_an.get("code", "") or "").strip()
+                     == str(user.get("staff_code", "") or "").strip()
+                     and bool(str(_an.get("code", "") or "").strip()))
+    if not (is_manager(user) or user.get("is_admin") or _mine):
         raise HTTPException(
             status_code=403,
-            detail="Manager authority required to record decisions",
+            detail=("This case is not assigned to you. Claim it from the pool "
+                    "first, or ask the analyst who has it."),
         )
 
-    lam = _lam()
     app = lam.get(app_id)
     if not app:
         raise HTTPException(
