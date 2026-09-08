@@ -5973,7 +5973,7 @@ def pipeline_deal_refer(
     Conflict resolution path #1 (audit Section 15.4): the referring
     RM defers pursuit to the portfolio owner. A new deal record is
     created with ``is_referral=True``, ``deal_value=0``,
-    ``product_type="Referral"``, ``stage="Lead"``. The portfolio
+    ``product_type="Referral"``, ``stage="Initiation"``. The portfolio
     owner can later pick this up via their own deal queue and either
     pursue or decline.
 
@@ -6041,7 +6041,10 @@ def pipeline_deal_refer(
         "client_type":          str(getattr(payload, "client_type", "") or ""),
         "product_type":         "Referral",
         "deal_value":           0,
-        "stage":                "Lead",
+        # Initiation, not Lead. The flows start at Initiation and
+        # nothing else uses Lead - a referral landing there sits
+        # outside every funnel bucket and every stage rule.
+        "stage":                "Initiation",
         "probability":          0.05,
         "next_action":          (
             f"Referred to {payload.referred_to}: {payload.referral_note}"
