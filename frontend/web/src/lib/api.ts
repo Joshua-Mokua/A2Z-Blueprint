@@ -3491,3 +3491,15 @@ export interface QualifyingResult {
 export async function computeQualifyingAmount(body: { affordable_installment: number; monthly_rate_pct?: number; annual_rate_pct?: number; tenor_months: number }): Promise<QualifyingResult> {
   return postJson('/credit/qualifying-amount', body);
 }
+
+/** Change a deal's value, with a reason. The server decides who may: the owner
+ *  before the deal goes to credit, a manager after that, an admin at any time.
+ *  The reason lands on the case journey. */
+export async function amendDealValue(
+  dealId: string, value: number, reason: string,
+): Promise<{ deal_id: string; was?: number; value: number; changed: boolean }> {
+  return postJson<{ deal_id: string; was?: number; value: number; changed: boolean },
+                  { value: number; reason: string }>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/amend-value`,
+    { value, reason });
+}
