@@ -144,9 +144,17 @@ def _load_staff_roster_fresh() -> "pd.DataFrame":  # type: ignore[name-defined]
             codes = df["Staff Code"].astype(str).str.strip()
             dupes = codes[codes.duplicated(keep=False) & (codes != "")]
             if not dupes.empty:
+                # THE FIELDS THAT DECIDE WHAT SOMEBODY SEES COUNT FOR MORE.
+                # Counting every column equally let a row full of incidental
+                # values beat the one carrying Department, Unit or Reports To -
+                # and scope is built from those. A head-office analyst sees
+                # their whole Department; lose it and their view empties.
+                SCOPE_COLS = ("Department", "Unit", "Branch", "Reports To",
+                              "Role", "Region")
                 filled = df.notna().sum(axis=1)
                 for col in df.columns:
-                    filled = filled + (df[col].astype(str).str.strip() != "").astype(int)
+                    has = (df[col].astype(str).str.strip() != "").astype(int)
+                    filled = filled + (has * (25 if col in SCOPE_COLS else 1))
                 df = (df.assign(_code=codes, _filled=filled)
                         .sort_values("_filled", ascending=False)
                         .drop_duplicates(subset="_code", keep="first")
