@@ -36,7 +36,16 @@ STATUSES_PERMITTING_DECISION: Set[str] = {'submitted', 'assigned'}
 # Analyst assignment permitted only from 'submitted'. Re-assigning an
 # already-assigned application would lose the prior analyst's audit
 # trail without an explicit "reassign" operation (not in α8).
-STATUSES_PERMITTING_ASSIGN: Set[str] = {'submitted'}
+# A case can be claimed when it is new, and again once a committee has
+# finished with it and it needs the next desk. Only 'submitted' was listed, so
+# a case back from committee could be seen in the pool but not picked up - and
+# readiness needs the claimant, so it could not be acted on at all.
+STATUSES_PERMITTING_ASSIGN: Set[str] = {
+    'submitted',
+    'referred_to_committee',
+    'approved',
+    'analyst_confirmed',
+}
 
 
 # ─────────────────────────────────────────────────────────────────────
