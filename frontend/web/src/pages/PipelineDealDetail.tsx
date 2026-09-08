@@ -38,7 +38,8 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { openProtectedFile,
+import { resubmitAfterRework,
+  openProtectedFile,
   amendDealValue,
   fetchPipelineDealDetail, fetchCreditChecklist, fetchNextStep, type NextStep, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, castCommitteeVote, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse,
   fetchRateState, requestRate, acceptCounterRate, declineCounterRate, type RateRequestState,
@@ -969,11 +970,25 @@ function CreditSubmissionPanel({ deal, onChanged, stageFlow, canEdit = true }: C
     setSubmitting(true);
     setError(null);
     try {
-      const res = await submitDealToCredit(deal.id, checklist.required.filter((d) => docFiles[d]));
-      toast({
-        tone: 'success',
-        message: `✓ Submitted to credit — application ${res.application_id}.`,
-      });
+      // Back with the owner for rework? Then this is a RESUBMISSION, and it
+      // belongs to the analyst who returned it - they asked for the documents
+      // and they have the context. submitDealToCredit would put it in the pool
+      // as a fresh case for anybody to claim.
+      const appId = String((deal as { lms_application_id?: string })
+        .lms_application_id ?? '');
+      if (reopenedForDocs && appId) {
+        await resubmitAfterRework(appId, {});
+        toast({
+          tone: 'success',
+          message: '✓ Sent back to the analyst who asked for the documents.',
+        });
+      } else {
+        const res = await submitDealToCredit(deal.id, checklist.required.filter((d) => docFiles[d]));
+        toast({
+          tone: 'success',
+          message: `✓ Submitted to credit — application ${res.application_id}.`,
+        });
+      }
       onChanged();
     } catch (e) {
       if (e instanceof ApiValidationError) setError(e.detail);
