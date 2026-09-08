@@ -128,6 +128,48 @@ def _load_staff_roster_fresh() -> "pd.DataFrame":  # type: ignore[name-defined]
     # comparisons fail silently otherwise.
     if "Staff Code" in df.columns:
         df["Staff Code"] = df["Staff Code"].astype(str)
+
+        # ── ONE ROW PER STAFF CODE, AND THE COMPLETE ONE ────────────────────
+        # Billy CN205, Josephat CN020 and Caroline all had deals nobody could
+        # validate because their code appears twice and one row has no branch.
+        # Whichever row a lookup reached first decided the answer; a blank
+        # branch matches nothing, so validation refused.
+        #
+        # Every lookup in the system reads this roster, so this is the one
+        # place worth fixing. The row with the most filled-in fields wins.
+        #
+        # This makes the system usable. It does not make the register correct -
+        # the duplicates are logged so they can be cleaned up properly.
+        try:
+            codes = df["Staff Code"].astype(str).str.strip()
+            dupes = codes[codes.duplicated(keep=False) & (codes != "")]
+            if not dupes.empty:
+                filled = df.notna().sum(axis=1)
+                for col in df.columns:
+                    filled = filled + (df[col].astype(str).str.strip() != "").astype(int)
+                df = (df.assign(_code=codes, _filled=filled)
+                        .sort_values("_filled", ascending=False)
+                        .drop_duplicates(subset="_code", keep="first")
+                        .drop(columns=["_code", "_filled"])
+                        .sort_index())
+                try:
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        "staff register has %d duplicate code(s) - keeping the "
+                        "most complete row for each: %s",
+                        dupes.nunique(),
+                        ", ".join(sorted(set(dupes))[:12]))
+                except Exception:
+                    pass
+        except Exception as exc:
+            # Never lose the roster over this. A duplicate is a nuisance; no
+            # register at all stops the bank.
+            try:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "could not de-duplicate the staff register: %s", exc)
+            except Exception:
+                pass
     return df
 
 
