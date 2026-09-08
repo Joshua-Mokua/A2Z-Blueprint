@@ -291,12 +291,31 @@
             "staff_code": "KE1136",
             "full_funnel": false,
             "deputy_chair": false
+          },
+          {
+            "name": "JELAGAT Jane [EKE-Consumer Banking]",
+            "role": "Head of Consumer",
+            "staff_code": "KE1158",
+            "full_funnel": false,
+            "deputy_chair": false
+          },
+          {
+            "name": "MAINGI Robert [EKE-Consumer Banking]",
+            "role": "Head, Digital Channels & Agency Network",
+            "staff_code": "KE1159",
+            "full_funnel": false,
+            "deputy_chair": false
+          },
+          {
+            "name": "MBANO Esther [EKE-Consumer]",
+            "role": "Asset Product Manager",
+            "staff_code": "KE1319",
+            "full_funnel": false,
+            "deputy_chair": false
           }
         ],
         "chair_vote_required": false,
-        "min_quorum_count": 1,
-        "quorum_set_at": "2026-09-07T14:04:43",
-        "quorum_note": "set to 1 deliberately; the default floor of 2 comes from an audit finding that one person is not a committee"
+        "min_quorum_count": 1
       },
       {
         "code": "B2",
@@ -1205,7 +1224,8 @@
       "chief credit officer",
       "branch credit manager",
       "head of credit",
-      "credit manager"
+      "credit manager",
+      "credit risk"
     ],
     "statuses": [
       "submitted",
