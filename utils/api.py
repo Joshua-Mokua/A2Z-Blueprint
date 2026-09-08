@@ -7739,8 +7739,9 @@ def pipeline_deal_advance(
 
     # Refuse to ENTER a credit-side stage by hand. Leaving one is not blocked -
     # a case can still be closed or returned from where it stands.
-    _target = str(getattr(payload, "stage", "") or getattr(payload, "to_stage", "")
-                  or "").strip()
+    # new_stage is what PipelineDealAdvance actually carries. Reading "stage"
+    # and "to_stage" left this empty and the guard below never fired.
+    _target = str(getattr(payload, "new_stage", "") or "").strip()
     _from = str(deal.get("stage", "") or "").strip()
     # INTO a credit stage FROM ANYWHERE - not only from outside. The audit
     # trail that prompted this shows the last hop as Department Credit Analysis
