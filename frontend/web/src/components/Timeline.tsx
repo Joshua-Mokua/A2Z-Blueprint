@@ -73,9 +73,28 @@ export function Timeline({ events, emptyHint }: TimelineProps) {
       </div>
     );
   }
-  // Newest first. The event people open this for is the last one, and a long
-  // journey buries it. Reversed on a copy so the caller's array is untouched.
-  const ordered = [...events].reverse();
+  // Newest first, BY TIME. Reversing assumed the list was already in order,
+  // and it is not: committee votes, stage changes and case events are appended
+  // by different paths, so one recorded late with an earlier timestamp sat in
+  // the wrong place and stayed there when reversed.
+  //
+  // An analyst should not have to reconstruct the order of a credit file in
+  // their head.
+  //
+  // Undated events keep their relative order and sit at the bottom, which is
+  // where an entry with no time belongs. Sorted on a copy, so the caller's
+  // array is untouched.
+  const ordered = [...events]
+    .map((e, i) => ({ e, i, t: Date.parse(String(e.at ?? '')) }))
+    .sort((a, b) => {
+      const av = Number.isNaN(a.t) ? null : a.t;
+      const bv = Number.isNaN(b.t) ? null : b.t;
+      if (av === null && bv === null) return a.i - b.i;
+      if (av === null) return 1;
+      if (bv === null) return -1;
+      return bv - av || a.i - b.i;
+    })
+    .map((x) => x.e);
 
   return (
     <ol className="relative border-l border-gray-200 ml-3 space-y-4 py-1">

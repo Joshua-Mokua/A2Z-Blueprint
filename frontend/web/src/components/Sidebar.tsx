@@ -176,7 +176,12 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               && !hidden.has(item.path)
               && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff, onCommittee))
               && !(/credit risk|credit admin|remedial|recover/i.test(user?.role ?? '')
-                   && item.label === 'Department Review'),
+                   && item.label === 'Department Review')
+              // And the mirror: Credit Analysis is credit risk's screen. A
+              // segment analyst seeing both could not tell which was theirs,
+              // and they have been working on each other's.
+              && !(!/credit risk/i.test(user?.role ?? '')
+                   && item.label === 'Credit Analysis'),
           );
           if (!items.length) return null;
           return (
