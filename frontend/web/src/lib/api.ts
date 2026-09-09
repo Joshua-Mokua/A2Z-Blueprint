@@ -3546,3 +3546,4 @@ export async function claimCase(
     `/lms/applications/${encodeURIComponent(appId)}/assign`,
     { analyst_code: analystCode, analyst_name: analystName });
 }
+

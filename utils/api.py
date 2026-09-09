@@ -13937,7 +13937,20 @@ def cast_committee_vote(deal_id: str, code: str,
         # simply stays put and somebody advances it by hand, which is the
         # behaviour that existed before this. A committee decision must never
         # fail to record because the case could not be moved afterwards.
-        if outcome == "APPROVED":
+        # ── NOT WITHOUT A CREDIT CASE ────────────────────────────────────────
+        # D0644: a branch committee voted on a deal that had never been
+        # submitted. The approval advanced it past Documentation, and
+        # submission requires Documentation - so no application could be
+        # created and the deal was stranded where nothing could reach it.
+        #
+        # A committee may still record its vote on an unsubmitted deal. It just
+        # does not move the deal, because the deal has not entered credit.
+        _has_case = bool(str(deal.get("lms_application_id") or "").strip())
+        if outcome == "APPROVED" and not _has_case:
+            _audit("API_COMMITTEE_NO_ADVANCE_NO_CASE", user,
+                   f"deal={deal_id}|committee={code}|"
+                   f"stage={deal.get('stage')!r} - recorded, not advanced")
+        if outcome == "APPROVED" and _has_case:
             try:
                 _flow = _stage_flow_for(deal.get("product_type")
                                         or deal.get("product", "")) or []
