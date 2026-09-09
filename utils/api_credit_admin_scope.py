@@ -28,6 +28,12 @@ from typing import List, Dict, Any, Set, Optional
 _re_cad = _re.compile(r"\bcad\b")
 
 
+# "Service Officer, TROPS" and "Team Leader-Trade & Trops" are how the register
+# writes the settlement team. Word-bounded, and it covers the TROOPS spelling
+# the codebase uses in places.
+_re_trops = _re.compile(r"\btro+ps\b")
+
+
 def _is_credit_admin_department_role(user: Dict[str, Any]) -> bool:
     """CA3a: the CREDIT/LEGAL department roles that own credit admin and must see
     its cases department-wide (not only via the originating RM's cascade). Matches
@@ -46,6 +52,12 @@ def _is_credit_admin_department_role(user: Dict[str, Any]) -> bool:
     # grants department-wide visibility, so a substring match would hand it to
     # roles it was never meant for.
     if _re_cad.search(role):
+        return True
+    # TROPS settle and disburse, so they need to see the cases that reach
+    # them. The register writes "Service Officer, TROPS" and "Team
+    # Leader-Trade & Trops" - matched as a word, since this grants
+    # department-wide visibility and a substring would be too generous.
+    if _re_trops.search(role):
         return True
     if "chief credit" in role or "credit admin" in role or "credit administrat" in role:
         return True

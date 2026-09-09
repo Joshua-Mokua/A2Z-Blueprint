@@ -39,9 +39,14 @@ def main():
         if not app_id or app_id not in apps:
             continue
         recs = d.get("committee_records") or {}
+        # ONLY A DEPARTMENT COMMITTEE, the same rule CS3 applies going
+        # forward. A branch committee's recommendation sends a case to the
+        # SEGMENT ANALYST - marking it here put branch cases back on credit
+        # risk's screen after they had been correctly taken off.
         approving = [(c, r) for c, r in recs.items()
                      if isinstance(r, dict)
-                     and str(r.get("outcome", "")).upper() in APPROVING]
+                     and str(r.get("outcome", "")).upper() in APPROVING
+                     and not str(c).upper().startswith("BCC_BRN")]
         if not approving:
             continue
         a = apps[app_id]
