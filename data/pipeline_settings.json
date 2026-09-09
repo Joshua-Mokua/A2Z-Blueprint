@@ -564,13 +564,14 @@
       }
     ],
     "product_promise": {
-      "Personal Loan": 10,
+      "Personal Loan": 12,
       "Business Loan": 26,
       "Current Account": 2,
       "Savings Account": 2,
       "Overdraft": 27,
-      "Working Capital": 16,
-      "Fixed Deposit": 1
+      "Working Capital": 48,
+      "Fixed Deposit": 1,
+      "Term Loan": 36
     },
     "due_soon_days": 2,
     "stage_step_map": {
@@ -595,7 +596,7 @@
       ],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2,
           "win_probability": 1
         },
@@ -734,7 +735,7 @@
       ],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2,
           "win_probability": 1
         },
@@ -811,7 +812,7 @@
       ],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2,
           "win_probability": 1
         },
@@ -1056,7 +1057,7 @@
       ],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 0.5,
           "win_probability": 50
         },
@@ -1091,7 +1092,7 @@
       ],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 1,
           "win_probability": 50
         },
@@ -1120,7 +1121,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead/Cutomer Instructions",
+          "stage": "Initiation",
           "target_days": 0.5,
           "win_probability": 50
         },
@@ -1146,7 +1147,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1179,7 +1180,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1212,7 +1213,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1245,7 +1246,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1278,7 +1279,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1311,7 +1312,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1344,7 +1345,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1434,7 +1435,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1467,7 +1468,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1500,7 +1501,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1533,7 +1534,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1566,7 +1567,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1599,7 +1600,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1632,7 +1633,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1665,7 +1666,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1708,7 +1709,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1741,7 +1742,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1774,7 +1775,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1807,7 +1808,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1840,7 +1841,7 @@
       "client_types": [],
       "stages": [
         {
-          "stage": "Lead",
+          "stage": "Initiation",
           "target_days": 2
         },
         {
@@ -1935,77 +1936,180 @@
         }
       ],
       "required_documents": [
-        "Bank Statements (6 months)",
-        "Branch Committee Decision",
-        "ID/Passport",
-        "CRB Report",
-        "KRA PIN",
+        {
+          "name": "Bank Statements (6 months)",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Branch Committee Decision",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "ID/Passport",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "CRB Report",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "KRA PIN",
+          "attached_by": "owner",
+          "mandatory": true
+        },
         {
           "name": "3 Months Payslip",
           "attached_by": "owner",
-          "mandatory": false
+          "mandatory": true
         },
         {
           "name": "Employer Introduction Letter",
           "attached_by": "owner",
-          "mandatory": false
+          "mandatory": true
         }
       ],
       "documents_required_at_stage": "Documentation",
       "committee_journey": []
     },
     "Term Loan": {
-      "client_types": [],
-      "committee_journey": [],
+      "client_types": [
+        "Commercial",
+        "CIB"
+      ],
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3
+          "target_days": 1,
+          "win_probability": 2
         },
         {
           "stage": "Negotiation",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": 2
         },
         {
           "stage": "Documentation",
-          "target_days": 1
+          "target_days": 5,
+          "win_probability": 15
         },
         {
           "stage": "Branch Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": 2
         },
         {
           "stage": "Department Credit Analysis",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": 15
         },
         {
           "stage": "Department Credit Committee Review",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": 15
         },
         {
           "stage": "Credit Analysis",
-          "target_days": 1
+          "target_days": 2,
+          "win_probability": 10
         },
         {
           "stage": "Offer Letter",
-          "target_days": 1
+          "target_days": 1,
+          "win_probability": 24
+        },
+        {
+          "stage": "Legal & Security Perfection",
+          "target_days": 20,
+          "win_probability": 5
         },
         {
           "stage": "Credit Administration",
-          "target_days": 3
+          "target_days": 1,
+          "win_probability": 5
         },
         {
           "stage": "Trops",
-          "target_days": 3
+          "target_days": 1,
+          "win_probability": 5
         },
         {
           "stage": "Closed Won",
-          "target_days": 0
+          "target_days": 0.5
         },
         {
           "stage": "Closed Lost",
-          "target_days": 0
+          "target_days": 0.5
         }
+      ],
+      "required_documents": [
+        {
+          "name": "Audited Accounts",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Bank Statements (6 months)",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Board Resolution",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Branch Committee Decision",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Business Registration",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Credit Report",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Certificate of Incorporation",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Credit Transaction Memo",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Financial Statements",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "KRA PIN",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Memorandum of Association",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Valuation report",
+          "attached_by": "owner",
+          "mandatory": true
+        }
+      ],
+      "documents_required_at_stage": "Documentation",
+      "committee_journey": [
+        "B4"
       ]
     },
     "Trade Finance": {
@@ -2141,15 +2245,15 @@
       "stages": [
         {
           "stage": "Initiation",
-          "target_days": 3
+          "target_days": 1
         },
         {
           "stage": "Negotiation",
-          "target_days": 1
+          "target_days": 3
         },
         {
           "stage": "Documentation",
-          "target_days": 1
+          "target_days": 5
         },
         {
           "stage": "Branch Credit Committee Review",
@@ -2165,11 +2269,15 @@
         },
         {
           "stage": "Credit Analysis",
-          "target_days": 1
+          "target_days": 5
         },
         {
           "stage": "Offer Letter",
           "target_days": 1
+        },
+        {
+          "stage": "Legal & Security Perfection",
+          "target_days": 25
         },
         {
           "stage": "Credit Administration",
@@ -2177,32 +2285,79 @@
         },
         {
           "stage": "Trops",
-          "target_days": 3
+          "target_days": 1
         },
         {
           "stage": "Closed Won",
-          "target_days": 0
+          "target_days": 0.5
         },
         {
           "stage": "Closed Lost",
-          "target_days": 0
+          "target_days": 0.5
         }
       ],
       "required_documents": [
-        "Audited Accounts",
-        "Bank Statements (6 months)",
-        "Branch Committee Decision",
-        "Business Registration",
-        "Certificate of Incorporation",
-        "Board Resolution",
-        "Financial Statements",
-        "KRA PIN",
-        "Valuation report",
-        "Credit Report",
-        "CRB Report"
+        {
+          "name": "Audited Accounts",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Bank Statements (6 months)",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Branch Committee Decision",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Business Registration",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Certificate of Incorporation",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Board Resolution",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Financial Statements",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "KRA PIN",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Valuation report",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "Credit Report",
+          "attached_by": "owner",
+          "mandatory": true
+        },
+        {
+          "name": "CRB Report",
+          "attached_by": "owner",
+          "mandatory": true
+        }
       ],
       "documents_required_at_stage": "Documentation",
-      "committee_journey": []
+      "committee_journey": [
+        "B4",
+        "B5"
+      ]
     }
   },
   "customer_segments": {
@@ -2355,6 +2510,9 @@
       },
       {
         "name": "Fixed Deposit Openned"
+      },
+      {
+        "name": "Legal & Security Perfection"
       }
     ]
   },
@@ -2453,6 +2611,54 @@
       },
       {
         "name": "{'name': 'Employer Introduction Letter', 'attached_by': 'owner', 'mandatory': False}"
+      },
+      {
+        "name": "{'name': 'Audited Accounts', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'Bank Statements (6 months)', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'Board Resolution', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'Branch Committee Decision', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'Business Registration', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'Credit Report', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'Certificate of Incorporation', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'Credit Transaction Memo', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'Financial Statements', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'KRA PIN', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'Memorandum of Association', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'Valuation report', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'ID/Passport', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'CRB Report', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': '3 Months Payslip', 'attached_by': 'owner', 'mandatory': True}"
+      },
+      {
+        "name": "{'name': 'Employer Introduction Letter', 'attached_by': 'owner', 'mandatory': True}"
       }
     ]
   },
@@ -2638,5 +2844,10 @@
         ]
       }
     ]
+  },
+  "segment_labels": {
+    "Mass / Retail": "Direct Banking",
+    "Core Middle": "Advantage Banking",
+    "Affluent": "Premier Banking"
   }
 }
