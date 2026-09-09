@@ -45,6 +45,9 @@ STATUSES_PERMITTING_ASSIGN: Set[str] = {
     'referred_to_committee',
     'approved',
     'analyst_confirmed',
+    # Credit risk is about to be two people. Without this they share a
+    # pool and both work the same case, or each assumes the other has.
+    'committee_recommended',
 }
 
 
