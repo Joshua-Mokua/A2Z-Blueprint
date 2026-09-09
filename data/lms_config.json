@@ -756,41 +756,48 @@
         "code": "BCC_BRN008",
         "name": "Nakuru Branch Credit Committee",
         "chaired_by": "WANJALA Geoffrey [EKE-Commercial]",
+        "branch": "Nakuru",
+        "kind": "branch",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
-        "branch": "Nakuru",
-        "kind": "branch",
         "members": [
           {
-            "staff_code": "KE1289",
             "name": "WANJALA Geoffrey [EKE-Commercial]",
             "role": "Branch Manager",
-            "id": "KE1289",
-            "member_id": "KE1289"
+            "staff_code": "KE1289",
+            "full_funnel": false,
+            "deputy_chair": false
           },
           {
-            "staff_code": "KE345",
             "name": "Josephine Gakii Gituma",
-            "role": "Customer Service Manager"
+            "role": "Customer Service Manager",
+            "staff_code": "KE345",
+            "full_funnel": false,
+            "deputy_chair": false
           },
           {
-            "staff_code": "KE1031",
             "name": "KARIARA Lazaro [EKE-Operations]",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "staff_code": "KE1031",
+            "full_funnel": false,
+            "deputy_chair": false
           },
           {
-            "staff_code": "KE1187",
-            "name": "Betty Chelagat Keter",
-            "role": "Relationship Officer"
+            "name": "Dinah Nekesa Makokha",
+            "role": "Direct Sales Agent",
+            "staff_code": "CN212",
+            "full_funnel": false,
+            "deputy_chair": false
           },
           {
-            "staff_code": "KE1224",
-            "name": "Simon Kamau Gatonye",
-            "role": "Relationship Manager"
+            "name": "KAMAU Naomi [EKE-Commercial Banking]",
+            "role": "Relationship Manager, SME",
+            "staff_code": "KE1364",
+            "full_funnel": false,
+            "deputy_chair": false
           }
-        ],
-        "chair_staff_code": "KE1289"
+        ]
       },
       {
         "code": "BCC_BRN009",
@@ -1104,41 +1111,55 @@
         "code": "BCC_BRN017",
         "name": "Plaza 2000 Branch Credit Committee",
         "chaired_by": "YEGO Faith",
+        "branch": "Plaza 2000",
+        "kind": "branch",
         "recording_mode": "voting",
         "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
-        "branch": "Plaza 2000",
-        "kind": "branch",
         "members": [
           {
-            "staff_code": "KE1349",
             "name": "YEGO Faith",
             "role": "Branch Manager",
-            "id": "KE1349",
-            "member_id": "KE1349"
+            "staff_code": "KE1349",
+            "full_funnel": false,
+            "deputy_chair": false
           },
           {
-            "staff_code": "KE955",
             "name": "MULUMIA Bertha [EKE-Operations]",
-            "role": "Customer Service Manager"
+            "role": "Customer Service Manager",
+            "staff_code": "KE955",
+            "full_funnel": false,
+            "deputy_chair": false
           },
           {
-            "staff_code": "KE1134",
             "name": "BUTT Roselyn [EKE-Operations]",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "staff_code": "KE1134",
+            "full_funnel": false,
+            "deputy_chair": false
           },
           {
-            "staff_code": "KE1307",
             "name": "Marieanne Ebby Kadatz Wanzare",
-            "role": "Relationship Manager, Local Corporate"
+            "role": "Relationship Manager, Local Corporate",
+            "staff_code": "KE1307",
+            "full_funnel": false,
+            "deputy_chair": false
           },
           {
-            "staff_code": "KE1350",
             "name": "NZUVE Beatrice",
-            "role": "Relationship Manager"
+            "role": "Relationship Manager",
+            "staff_code": "KE1350",
+            "full_funnel": false,
+            "deputy_chair": false
+          },
+          {
+            "name": "Caroline Taabu Were",
+            "role": "Branch DSA Team Lead",
+            "staff_code": "CN112",
+            "full_funnel": false,
+            "deputy_chair": false
           }
-        ],
-        "chair_staff_code": "KE1349"
+        ]
       },
       {
         "code": "BCC1",
@@ -1241,7 +1262,7 @@
     ],
     "role_statuses": {
       "credit risk": [
-        "approved"
+        "committee_recommended"
       ]
     }
   },

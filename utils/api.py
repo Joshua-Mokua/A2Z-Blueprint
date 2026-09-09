@@ -13521,6 +13521,12 @@ def _committee_quorum(committee: dict = None) -> int:
     return 2
 
 
+def _dt_now_iso() -> str:
+    """Timestamp for a committee recommendation written onto a case."""
+    import datetime as _d
+    return _d.datetime.now().isoformat(timespec="seconds")
+
+
 def _derive_outcome_from_votes(votes: list, voting_rule: str,
                                committee: dict = None) -> str:
     """Derive APPROVED/REJECTED from per-member votes and the voting rule.
@@ -13877,6 +13883,32 @@ def cast_committee_vote(deal_id: str, code: str,
             "recorded_at": datetime.now().isoformat(timespec="seconds"),
         }
         updates["committee_records"] = records
+
+        # ── AND SAY SO ON THE CREDIT CASE ────────────────────────────────────
+        # The committee's outcome was written onto the deal and nowhere else,
+        # so a case read 'referred_to_committee' whether the committee had met
+        # or not. Nothing downstream could tell a recommended case from one still
+        # waiting, and credit risk could not be pointed at a status because
+        # there was no status that meant "the committee recommended this".
+        #
+        # Best effort: a committee decision must never fail because the case
+        # could not be updated. But it is recorded either way.
+        if str(outcome).upper() in ("APPROVED", "RECOMMENDED", "SUPPORTED"):
+            _app_id = str(deal.get("lms_application_id") or "").strip()
+            if _app_id:
+                try:
+                    from utils.api_lms_routes import _lam as _lam_for_cttee
+                    _lam_for_cttee().update(_app_id, {
+                        "status": "committee_recommended",
+                        "committee_recommended_by": code,
+                        "committee_recommended_at": _dt_now_iso(),
+                    })
+                    _audit("API_COMMITTEE_CASE_APPROVED", user,
+                           f"app={_app_id}|committee={code}|deal={deal_id}")
+                except Exception as _exc:
+                    logger.warning(
+                        "committee %s approved %s but the case %s was not "
+                        "updated: %s", code, deal_id, _app_id, _exc)
         # ── A DECIDED CASE MOVES ITSELF ─────────────────────────────────────
         # RULING (2026-08-14): "once the branch committee vote is met there is
         # no need for the owner to log in to submit - it should automatically
