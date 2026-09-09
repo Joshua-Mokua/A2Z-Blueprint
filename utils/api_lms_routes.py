@@ -2249,7 +2249,19 @@ def lms_return_for_rework(
         "at": datetime.now().isoformat(timespec="seconds"),
     })
 
-    lam.update(app_id, {
+    # ── WHO IT GOES TO ────────────────────────────────────────────────────
+    # A return always went to the deal's owner. That is right when a document
+    # is missing and wrong when the work belongs to somebody else - credit
+    # risk asking the segment analyst to redo a DSR, or the analyst asking a
+    # recommender to revisit a condition. Both landed on the owner, who could
+    # do neither.
+    #
+    # return_to is a staff code from the people already on the case. Omitted,
+    # this behaves exactly as before.
+    _to_code = str(payload.get("return_to", "") or "").strip()
+    _to_name = str(payload.get("return_to_name", "") or "").strip()
+
+    _updates = {
         "status": "returned",
         "rework_history": history,
         "rework_reasons": reason,
@@ -2257,7 +2269,14 @@ def lms_return_for_rework(
         "returned_by_code": me,
         "returned_by_name": myname,
         "returned_at": datetime.now().isoformat(timespec="seconds"),
-    })
+    }
+    if _to_code:
+        _updates["return_to_code"] = _to_code
+        _updates["return_to_name"] = _to_name
+        # Assign it to them, so it lands on their screen rather than waiting
+        # to be found. The pool would otherwise hide it behind everything else.
+        _updates["analyst"] = {"code": _to_code, "name": _to_name, "role": ""}
+    lam.update(app_id, _updates)
     audit_log("LMS_RETURNED_FOR_REWORK", str(user.get("username", "") or ""),
               "%s|%s" % (app_id, reason[:80]))
     return {"application": lam.get(app_id), "status": "returned",
