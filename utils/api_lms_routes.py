@@ -888,9 +888,25 @@ def _maybe_handoff_to_credit_admin(lam, app_id: str, user: Dict[str, Any]) -> st
     try:
         from utils.core import CreditAdminManager
         decision = app.get("decision") or {}
+        # ── THE CONDITIONS CREDIT RISK ACTUALLY SET ─────────────────────────
+        # The decision writes app["pre_disbursement_conditions"] as
+        # [{text, met, kind}]. This read app["decision"]["conditions"], which
+        # nothing writes - so credit admin's tick-list arrived empty and the
+        # disbursement gate had nothing to hold.
+        #
+        # The older key is still honoured, so a case decided before this
+        # behaves as it did.
+        _pre_disb = app.get("pre_disbursement_conditions") or []
+        _conds = None
+        if _pre_disb:
+            _conds = [(c.get("text") if isinstance(c, dict) else str(c))
+                      for c in _pre_disb
+                      if (c.get("text") if isinstance(c, dict) else str(c))]
+        if not _conds:
+            _conds = decision.get("conditions") or None
         case_id = CreditAdminManager().create_case_from_application(
             app,
-            conditions=(decision.get("conditions") or None),
+            conditions=_conds,
             authority=str(decision.get("authority", "") or ""),
         )
         if case_id:
