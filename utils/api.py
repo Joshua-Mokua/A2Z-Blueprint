@@ -13893,7 +13893,17 @@ def cast_committee_vote(deal_id: str, code: str,
         #
         # Best effort: a committee decision must never fail because the case
         # could not be updated. But it is recorded either way.
-        if str(outcome).upper() in ("APPROVED", "RECOMMENDED", "SUPPORTED"):
+        # ── ONLY A DEPARTMENT COMMITTEE SENDS A CASE TO CREDIT RISK ─────────
+        # A branch committee recommends too, and its recommendation means the
+        # case goes to the SEGMENT ANALYST. Marking it ready for credit risk
+        # put seven branch cases on Korir's screen alongside the five that were
+        # his, and neither he nor the funnel could tell them apart.
+        #
+        # A branch committee still records its outcome and still advances the
+        # deal. It just does not mark the case ready for credit risk.
+        _is_branch_cttee = str(code or "").upper().startswith("BCC_BRN")
+        if (not _is_branch_cttee
+                and str(outcome).upper() in ("APPROVED", "RECOMMENDED", "SUPPORTED")):
             _app_id = str(deal.get("lms_application_id") or "").strip()
             if _app_id:
                 try:

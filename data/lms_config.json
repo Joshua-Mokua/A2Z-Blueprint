@@ -1295,5 +1295,31 @@
       "authority_limit_kes": null,
       "can_be_entry": true
     }
-  ]
+  ],
+  "condition_library": {
+    "pre_approval": [
+      "Satisfactory CRB report",
+      "Employer confirmation / callback verification",
+      "Certified and confirmed bank statements",
+      "Payslip and salary statement reconciled",
+      "DSR within policy",
+      "1/3 rule satisfied",
+      "Facility within the salary multiplier",
+      "Tenor within product terms",
+      "Pricing within the approved band",
+      "PEP screening cleared"
+    ],
+    "pre_disbursement": [
+      "Salary domiciliation confirmed",
+      "Signed offer letter on file",
+      "Loan agreement executed",
+      "Credit life insurance in place",
+      "Security perfected / charge registered",
+      "Existing facility offsets confirmed",
+      "Standing order or check-off instruction lodged",
+      "Account open and active",
+      "KYC complete and current",
+      "Disbursement account details verified"
+    ]
+  }
 }
