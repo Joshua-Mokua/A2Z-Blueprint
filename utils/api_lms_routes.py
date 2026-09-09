@@ -2293,6 +2293,41 @@ def lms_return_for_rework(
         # to be found. The pool would otherwise hide it behind everything else.
         _updates["analyst"] = {"code": _to_code, "name": _to_name, "role": ""}
     lam.update(app_id, _updates)
+    # ── AND BRING THE DEAL BACK ──────────────────────────────────────────────
+    # A return changed the case and left the deal where it stood - usually at a
+    # committee stage, past Documentation. Submission requires Documentation,
+    # so the owner attached everything asked for and the Submit button stayed
+    # dead. Benjamin reported it; D0644 was the same shape.
+    #
+    # Best effort: a return must never fail because the deal could not be
+    # moved. But it is recorded either way.
+    try:
+        _deal_id = str(app.get("pipeline_deal_id") or "").strip()
+        if _deal_id:
+            from utils.core import PipelineManager as _PM_rk
+            from utils.api import _product_document_config as _pdc, \
+                _stage_flow_for as _flow_rk
+            _pm_rk = _PM_rk()
+            _d = _pm_rk.get_deal(_deal_id)
+            if _d and not str(_d.get("stage", "")).lower().startswith("closed"):
+                _docs, _doc_stage = _pdc(_d)
+                _back = str(_doc_stage or "").strip()
+                if not _back:
+                    _fl = [str(x) for x in (_flow_rk(
+                        _d.get("product_type") or _d.get("product", "")) or [])]
+                    _back = "Documentation" if "Documentation" in _fl else ""
+                _cur = str(_d.get("stage", "") or "")
+                if _back and _back != _cur:
+                    _pm_rk.update_stage(
+                        _deal_id, _back,
+                        "Returned for rework - brought back so the documents "
+                        "can be resubmitted.",
+                        str(user.get("username", "") or ""))
+    except Exception as _exc:
+        audit_log("LMS_RETURN_DEAL_NOT_MOVED",
+                  str(user.get("username", "") or ""),
+                  "%s|%s" % (app_id, str(_exc)[:70]))
+
     audit_log("LMS_RETURNED_FOR_REWORK", str(user.get("username", "") or ""),
               "%s|%s" % (app_id, reason[:80]))
     return {"application": lam.get(app_id), "status": "returned",

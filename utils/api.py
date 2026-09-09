@@ -13952,9 +13952,21 @@ def cast_committee_vote(deal_id: str, code: str,
                    f"stage={deal.get('stage')!r} - recorded, not advanced")
         if outcome == "APPROVED" and _has_case:
             try:
-                _flow = _stage_flow_for(deal.get("product_type")
-                                        or deal.get("product", "")) or []
-                _cur = str(deal.get("stage", "") or "")
+                # ── FROM WHERE IT IS NOW ─────────────────────────────────
+                # `deal` was fetched when the request began. Where the deal
+                # moved in an EARLIER request - a submit, another vote - that
+                # copy is stale, and the next stage gets computed from a
+                # position the deal has left. D0868 advanced to the stage it
+                # was already standing on.
+                _now = None
+                try:
+                    _now = _pm.get_deal(deal_id)
+                except Exception:
+                    _now = None
+                _src = _now or deal
+                _flow = _stage_flow_for(_src.get("product_type")
+                                        or _src.get("product", "")) or []
+                _cur = str(_src.get("stage", "") or "")
                 if _flow and _cur in _flow:
                     _at = _flow.index(_cur)
                     _next = _flow[_at + 1] if _at + 1 < len(_flow) else ""
