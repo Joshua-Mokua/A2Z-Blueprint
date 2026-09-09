@@ -3503,3 +3503,46 @@ export async function amendDealValue(
     `/pipeline/deals/${encodeURIComponent(dealId)}/amend-value`,
     { value, reason });
 }
+
+// ── Credit risk workbench ─────────────────────────────────────────────────────
+// The decision endpoint has always accepted the two condition lists, and the
+// escalation has always existed. Nothing on screen offered them.
+//
+// ConditionLibrary and a /lms/config/conditions reader already existed above
+// as getConditionLibrary() - this workbench uses that one directly rather
+// than redeclaring the same interface under a second name.
+
+/** Approve, decline or return, with the conditions the decision carries. */
+export async function recordCreditRiskDecision(
+  appId: string,
+  body: {
+    verdict: 'approved' | 'declined' | 'returned';
+    authority: string;
+    reason: string;
+    pre_approval_conditions?: string[];
+    pre_disbursement_conditions?: string[];
+  },
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, typeof body>(
+    `/lms/applications/${encodeURIComponent(appId)}/decision`, body);
+}
+
+/** Send a case back, naming who it goes to. Omit return_to and it behaves as
+ *  it always has - back to the deal's owner. */
+export async function returnCaseForRework(
+  appId: string,
+  body: { reason: string; items?: string[]; return_to?: string; return_to_name?: string },
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, typeof body>(
+    `/lms/applications/${encodeURIComponent(appId)}/return-for-rework`, body);
+}
+
+/** Claim an unassigned case, so two people do not work the same one. */
+export async function claimCase(
+  appId: string, analystCode: string, analystName: string,
+): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse,
+                  { analyst_code: string; analyst_name: string }>(
+    `/lms/applications/${encodeURIComponent(appId)}/assign`,
+    { analyst_code: analystCode, analyst_name: analystName });
+}
