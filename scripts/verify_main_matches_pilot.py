@@ -38,7 +38,10 @@ FIXES = [
     ("CAD1 Head CAD", "utils/api_credit_admin_scope.py", "_re_cad"),
     ("TR1 trops", "utils/api_credit_admin_scope.py", "_re_trops"),
     ("claim after committee", "utils/api_lms_mutations.py", "once a committee has"),
-    ("WL1 palette carry", "utils/api.py", "existing_members"),
+    # Two versions exist and both work: main carries every unknown field,
+    # the pilot names three. Either counts.
+    ("WL1 palette carry", "utils/api.py",
+     ("existing_members", "KEEP WHAT THIS FUNCTION")),
     ("PI1 metric bounds", "utils/branch_log.py", "AN UNLISTED METRIC IS NOT"),
     ("DV2 delegation", "utils/org_validator.py", "_delegated_branches"),
     ("SC3 owner digits", "frontend/web/src/pages/PipelineDealDetail.tsx", "sameStaffCode"),
@@ -53,7 +56,11 @@ def on(ref, path, marker):
                        capture_output=True)
     if r.returncode != 0 or not r.stdout:
         return False
-    return marker in r.stdout.decode("utf-8", "replace")
+    text = r.stdout.decode("utf-8", "replace")
+    # A fix can have more than one accepted marker where two versions exist.
+    if isinstance(marker, tuple):
+        return any(m in text for m in marker)
+    return marker in text
 
 
 def main():
