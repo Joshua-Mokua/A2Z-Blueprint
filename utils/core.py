@@ -5561,12 +5561,80 @@ class LoanApplicationManager:
     def get(self, app_id: str) -> dict:
         return next((a for a in self.apps if a["id"] == app_id), {})
 
+    # ── WHERE A CASE STANDS, AND WHERE ITS DEAL SHOULD ───────────────────────
+    # The funnel reads deal.stage and the credit screens read case.status.
+    # Nothing kept them together, so the funnel reported progress nobody had
+    # made and hid progress that had been. Senior management reads the funnel;
+    # it cannot be a second opinion.
+    #
+    # The status is the truth: assignment, committee, decision and
+    # disbursement all hang off it. The stage is where that work has got to.
+    _STATUS_TO_STAGE = {
+        "submitted":              "Department Credit Analysis",
+        "assigned":               "Department Credit Analysis",
+        "in_review":              "Department Credit Analysis",
+        "info_requested":         "Department Credit Analysis",
+        "recommended":            "Department Credit Committee Review",
+        "ready_for_committee":    "Department Credit Committee Review",
+        "referred_to_committee":  "Department Credit Committee Review",
+        "committee_recommended":  "Credit Analysis",
+        "approved":               "Credit Analysis",
+        "credit_admin":           "Credit Administration",
+        "disbursed":              "Trops",
+    }
+
+    def _stage_for_status(self, status: str) -> str:
+        return self._STATUS_TO_STAGE.get(str(status or "").strip().lower(), "")
+
+    def _sync_deal_stage(self, app: dict, status: str) -> None:
+        """Bring the linked deal's stage into line with its case.
+
+        Forward only, never past a closing stage, and only to a stage the
+        product's own flow defines. Where the mapping cannot be made the deal
+        is left alone: a wrong stage is worse than a stale one.
+        """
+        want = self._stage_for_status(status)
+        deal_id = str(app.get("pipeline_deal_id") or "").strip()
+        if not want or not deal_id:
+            return
+        try:
+            from utils.core import PipelineManager as _PM
+            from utils.api import _stage_flow_for as _flow_for
+            pm = _PM()
+            d = pm.get_deal(deal_id)
+            if not d:
+                return
+            cur = str(d.get("stage", "") or "")
+            if cur.lower().startswith("closed"):
+                return
+            flow = [str(x) for x in (_flow_for(d.get("product_type")
+                                               or d.get("product", "")) or [])]
+            if want not in flow or cur not in flow:
+                return
+            if flow.index(want) <= flow.index(cur):
+                return          # forward only - a status never drags a deal back
+            pm.update_stage(deal_id, want,
+                            "Brought into line with the credit case (%s)."
+                            % str(status), "system")
+        except Exception as exc:
+            try:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "could not align deal %s with case %s: %s",
+                    deal_id, app.get("id"), exc)
+            except Exception:
+                pass
+
     def update(self, app_id: str, fields: dict):
         for i, a in enumerate(self.apps):
             if a["id"] == app_id:
+                _was = str(self.apps[i].get("status", "") or "")
                 self.apps[i].update(fields)
                 self.apps[i]["last_updated"] = datetime.now().date().isoformat()
                 self.save()
+                _now = str(self.apps[i].get("status", "") or "")
+                if _now and _now != _was:
+                    self._sync_deal_stage(self.apps[i], _now)
                 return True
         return False
 
