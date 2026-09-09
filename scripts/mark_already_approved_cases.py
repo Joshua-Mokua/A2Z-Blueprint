@@ -61,17 +61,25 @@ def main():
         _approved_at = str(_rec.get("closed_at") or _rec.get("recorded_at")
                            or _rec.get("decided_at") or "").strip()
         _returned_at = str(a.get("returned_at") or "").strip()
-        if _returned_at and _approved_at and _returned_at > _approved_at:
-            later_return.append((d, a, _returned_at, _approved_at))
-            continue
-        if _returned_at and not _approved_at:
-            unclear.append((d, a, "returned %s, but the approval carries no "
-                                  "timestamp" % _returned_at[:16]))
-            continue
-        if status == "returned" and not _returned_at:
-            unclear.append((d, a, "status is 'returned' and no returned_at "
-                                  "is recorded - the order cannot be told"))
-            continue
+        # THE CURRENT STATUS SETTLES IT. A case that is not 'returned' now has
+        # had its rework resolved, whatever the timestamps say - D0676 was
+        # returned on the 3rd and approved by B1 on the 7th, and an approval
+        # record with no timestamp made the first version give up on it.
+        #
+        # Only a case STILL out for rework needs the order comparing.
+        if status == "returned":
+            if _returned_at and _approved_at and _returned_at > _approved_at:
+                later_return.append((d, a, _returned_at, _approved_at))
+                continue
+            if not _approved_at:
+                unclear.append((d, a, "still out for rework and the approval "
+                                      "carries no timestamp - the order cannot "
+                                      "be told"))
+                continue
+            if not _returned_at:
+                unclear.append((d, a, "status is 'returned' and no returned_at "
+                                      "is recorded - the order cannot be told"))
+                continue
         found.append((d, a, _cttee, status))
 
     print("=" * 92)
