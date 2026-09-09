@@ -172,8 +172,17 @@ export async function getJson<T>(path: string): Promise<T> {
     throw new AuthExpiredError(path);
   }
   if (!res.ok) {
+    // The server explains its refusals. A 403 carrying "ask a manager to
+    // perform this move with a reason" was showing as "403 Forbidden", so a
+    // rule working correctly looked like a fault, and the time went into
+    // diagnosing something that was never wrong.
+    let detail = '';
+    try {
+      const body = await res.json();
+      if (body && typeof body.detail === 'string') detail = body.detail;
+    } catch { /* not JSON - fall back to the status */ }
     throw new Error(
-      `API ${path} failed: ${res.status} ${res.statusText}`,
+      detail || `API ${path} failed: ${res.status} ${res.statusText}`,
     );
   }
   return res.json() as Promise<T>;
@@ -275,8 +284,17 @@ async function postJson<TResponse, TBody = unknown>(
   }
 
   if (!res.ok) {
+    // The server explains its refusals. A 403 carrying "ask a manager to
+    // perform this move with a reason" was showing as "403 Forbidden", so a
+    // rule working correctly looked like a fault, and the time went into
+    // diagnosing something that was never wrong.
+    let detail = '';
+    try {
+      const body = await res.json();
+      if (body && typeof body.detail === 'string') detail = body.detail;
+    } catch { /* not JSON - fall back to the status */ }
     throw new Error(
-      `API ${path} failed: ${res.status} ${res.statusText}`,
+      detail || `API ${path} failed: ${res.status} ${res.statusText}`,
     );
   }
 
