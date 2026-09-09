@@ -181,6 +181,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               // segment analyst seeing both could not tell which was theirs,
               // and they have been working on each other's.
               && !(!/credit risk/i.test(user?.role ?? '')
+                   && !isAdmin && !isAdminOrMd
                    && item.label === 'Credit Analysis'),
           );
           if (!items.length) return null;
