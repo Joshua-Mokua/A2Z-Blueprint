@@ -19,7 +19,13 @@ be a small follow-up.
 """
 from __future__ import annotations
 
+import re as _re
 from typing import List, Dict, Any, Set, Optional
+
+
+# "Head, CAD" and "CAD Officer" are how the register abbreviates the Credit
+# Administration Department. Word-bounded so it cannot match academic or cadre.
+_re_cad = _re.compile(r"\bcad\b")
 
 
 def _is_credit_admin_department_role(user: Dict[str, Any]) -> bool:
@@ -35,6 +41,12 @@ def _is_credit_admin_department_role(user: Dict[str, Any]) -> bool:
     if not role:
         return False
     # credit-admin / credit-oversight
+    # CAD is the abbreviation the register uses - "Head, CAD", "CAD Officer".
+    # Matched as a WORD: "cad" sits inside academic, cadre and decade, and this
+    # grants department-wide visibility, so a substring match would hand it to
+    # roles it was never meant for.
+    if _re_cad.search(role):
+        return True
     if "chief credit" in role or "credit admin" in role or "credit administrat" in role:
         return True
     if "credit monitoring" in role or "credit reporting" in role or "credit analysis" in role:

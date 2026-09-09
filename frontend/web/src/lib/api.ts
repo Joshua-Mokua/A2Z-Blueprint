@@ -68,6 +68,55 @@ let _on401Callback: (() => void) | null        = null;
  */
 let _blobTokenRef: string | null = null;
 export function getCurrentTokenForBlob(): string | null { return _blobTokenRef; }
+/** Open a document that lives behind the bearer token.
+ *
+ *  The View link used to be a plain <a href> to the endpoint. A browser link
+ *  carries no Authorization header - the token is a module variable, not a
+ *  cookie - so the tab landed on
+ *
+ *      {"detail":"Missing or malformed Authorization header"}
+ *
+ *  This fetches WITH the header and opens the result, so the server sees an
+ *  authenticated request and answers with the document.
+ *
+ *  The blob URL is revoked afterwards: a blob holds the whole file in memory
+ *  for as long as the page lives, and a document list opened a few times would
+ *  keep every one of them.
+ */
+export async function openProtectedFile(path: string): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (_currentToken) headers['Authorization'] = `Bearer ${_currentToken}`;
+  const res = await fetch(`${API_BASE}${path}`, { headers });
+  if (!res.ok) {
+    let detail = `${res.status} ${res.statusText}`;
+    try {
+      const j = await res.json();
+      if (j?.detail) detail = String(j.detail);
+    } catch { /* not JSON - keep the status */ }
+    throw new Error(detail);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const disp = res.headers.get('Content-Disposition') || '';
+  const inline = disp.toLowerCase().startsWith('inline');
+  if (inline) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  } else {
+    // A Word or Excel file cannot be previewed by a browser whatever we send,
+    // so it is downloaded under its real name rather than opened into a tab
+    // that would only offer to save it anyway.
+    const m = /filename="([^"]+)"/.exec(disp);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = m ? m[1] : path.split('/').pop() || 'document';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  // Long enough for the tab or the download to take hold.
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
 export function setCurrentToken(token: string | null): void {
   _currentToken = token;
   _blobTokenRef = token;
@@ -3441,4 +3490,16 @@ export interface QualifyingResult {
 }
 export async function computeQualifyingAmount(body: { affordable_installment: number; monthly_rate_pct?: number; annual_rate_pct?: number; tenor_months: number }): Promise<QualifyingResult> {
   return postJson('/credit/qualifying-amount', body);
+}
+
+/** Change a deal's value, with a reason. The server decides who may: the owner
+ *  before the deal goes to credit, a manager after that, an admin at any time.
+ *  The reason lands on the case journey. */
+export async function amendDealValue(
+  dealId: string, value: number, reason: string,
+): Promise<{ deal_id: string; was?: number; value: number; changed: boolean }> {
+  return postJson<{ deal_id: string; was?: number; value: number; changed: boolean },
+                  { value: number; reason: string }>(
+    `/pipeline/deals/${encodeURIComponent(dealId)}/amend-value`,
+    { value, reason });
 }

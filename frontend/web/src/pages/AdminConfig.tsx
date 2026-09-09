@@ -56,6 +56,10 @@ const REQUIRABLE_FIELDS: { key: string; label: string }[] = [
   { key: 'deal_value', label: 'Deal value' },
   { key: 'stage', label: 'Initial stage' },
   { key: 'segment', label: 'Segment' },
+  // Business line (Consumer / Commercial / CIB) is read from this
+  // first. Without it a deal falls to Unclassified and the roll-up
+  // understates whichever line it belonged to.
+  { key: 'client_type', label: 'Customer type (Consumer / Commercial / CIB)' },
   { key: 'currency', label: 'Currency' },
   { key: 'relationship_status', label: 'Relationship status (NTB / Existing)' },
   { key: 'mou_id', label: 'Partnership / MOU' },

@@ -640,14 +640,31 @@ def lms_application_decision(
     taxonomy:
       LMS_DECISION_APPROVED / DECLINED / RETURNED
     """
-    # Tier check FIRST
-    if not is_manager(user):
+    # The assigned analyst, a manager, or an admin.
+    #
+    # This required manager authority while the permission engine granted
+    # can_record_decision to the ASSIGNED ANALYST - so the screen showed the
+    # Approve / Decline / Return panel and the endpoint refused it. An analyst
+    # picks a case and acts on it; there is no manager step in that flow.
+    #
+    # The scope check below still applies, so this does not let anybody decide
+    # a case that is not theirs.
+    lam = _lam()
+    _app_early = lam.get(app_id)
+    _mine = False
+    if _app_early:
+        _an = _app_early.get("analyst") or {}
+        if isinstance(_an, dict):
+            _mine = (str(_an.get("code", "") or "").strip()
+                     == str(user.get("staff_code", "") or "").strip()
+                     and bool(str(_an.get("code", "") or "").strip()))
+    if not (is_manager(user) or user.get("is_admin") or _mine):
         raise HTTPException(
             status_code=403,
-            detail="Manager authority required to record decisions",
+            detail=("This case is not assigned to you. Claim it from the pool "
+                    "first, or ask the analyst who has it."),
         )
 
-    lam = _lam()
     app = lam.get(app_id)
     if not app:
         raise HTTPException(
@@ -3403,6 +3420,50 @@ def lms_committee_readiness(
         pass
     audit_log("LMS_COMMITTEE_READINESS",
               str(user.get('username', '') or ''), f"{app_id}|{readiness['state']}")
+    # ── READY MEANS THE DEAL MOVES TOO ──────────────────────────────────────
+    # Setting readiness changed the application and nothing else. Committee
+    # visibility follows the DEAL's stage, so a case the analyst had finished
+    # stayed where it was and the committee never saw it - D0744 sat at
+    # Documentation with a recommendation on the case.
+    #
+    # Same pattern as the decline path above: PipelineManager, _write_deal,
+    # and a failure that is logged rather than swallowed.
+    if str(decision).strip().lower() == "ready":
+        try:
+            app_now = lam.get(app_id) or {}
+            deal_id = str(app_now.get("pipeline_deal_id") or "")
+            if deal_id:
+                from utils.api import _write_deal as _wd, _stage_flow_for
+                from utils.core import PipelineManager as _PM
+                pm = _PM()
+                d = pm.get_deal(deal_id)
+                if d and not str(d.get("stage", "")).lower().startswith("closed"):
+                    flow = [str(x) for x in (_stage_flow_for(
+                        d.get("product_type") or d.get("product", "")) or [])]
+                    cur = str(d.get("stage", "") or "")
+                    target = ""
+                    # The next COMMITTEE stage ahead of where the deal stands.
+                    if cur in flow:
+                        for nxt in flow[flow.index(cur) + 1:]:
+                            if "committee" in nxt.lower():
+                                target = nxt
+                                break
+                    if target and target != cur:
+                        _wd(pm, deal_id, {
+                            "stage": target,
+                            "advanced_reason": ("the analyst marked this ready "
+                                                "for committee"),
+                        }, str(user.get("username", "") or ""))
+                        audit_log("LMS_READY_ADVANCED_DEAL",
+                                  str(user.get("username", "") or ""),
+                                  "%s|%s: %s -> %s" % (app_id, deal_id, cur, target))
+        except Exception as exc:
+            # Never fail the readiness verdict over the deal's stage - but say
+            # so, or the committee waits for something nobody knows is stuck.
+            audit_log("LMS_READY_ADVANCE_FAILED",
+                      str(user.get("username", "") or ""),
+                      "%s|%s: %s" % (app_id, type(exc).__name__, str(exc)[:70]))
+
     return {"application": lam.get(app_id), "status": readiness["state"]}
 # === END C2: CORRECTNESS STAGING ===
 

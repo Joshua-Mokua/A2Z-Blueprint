@@ -73,9 +73,13 @@ export function Timeline({ events, emptyHint }: TimelineProps) {
       </div>
     );
   }
+  // Newest first. The event people open this for is the last one, and a long
+  // journey buries it. Reversed on a copy so the caller's array is untouched.
+  const ordered = [...events].reverse();
+
   return (
     <ol className="relative border-l border-gray-200 ml-3 space-y-4 py-1">
-      {events.map((e, i) => {
+      {ordered.map((e, i) => {
         const tone = eventTone(e.event);
         return (
         <li key={`${e.event}-${i}`} className="ml-4">

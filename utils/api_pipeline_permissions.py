@@ -216,9 +216,43 @@ def resolve_deal_permissions(
     if is_admin:
         is_manager_in_scope = True
     elif caller_is_manager:
-        is_manager_in_scope = (
-            bool(deal_staff) and deal_staff in visible_staff_codes
-        )
+        # ── THE CASCADE, OR THE CALLER'S OWN BRANCH ─────────────────────────
+        # BV2 widened the validate endpoint and BV3 widened the queue. This
+        # flag decides whether the BUTTON does anything, and it still asked
+        # only the cascade - so a branch manager-tier person saw the deals,
+        # the endpoint would have accepted them, and nothing happened when
+        # they clicked.
+        #
+        # This module's own docstring warns about exactly this shape: "the
+        # manager saw it and the button did nothing."
+        #
+        # BOTH SIDES MUST HAVE A BRANCH. A blank matches nothing - a wildcard
+        # would hand every unassigned deal to every manager.
+        _in_cascade = bool(deal_staff) and deal_staff in visible_staff_codes
+        _same_branch = False
+        if not _in_cascade:
+            try:
+                _mine = str(user.get("branch", "") or "").strip()
+                _theirs = str(deal.get("branch", "") or "").strip()
+                if not (_mine and _theirs):
+                    from utils.api_pipeline_scope import get_staff_roster as _gsr
+                    _r = _gsr()
+                    _col = "Branch" if "Branch" in _r.columns else "Unit"
+                    if not _mine and my_code:
+                        _me = _r[_r["Staff Code"].astype(str).str.strip() == my_code]
+                        if not _me.empty:
+                            _mine = str(_me.iloc[0].get(_col) or "").strip()
+                    if not _theirs and deal_staff:
+                        _ow = _r[_r["Staff Code"].astype(str).str.strip() == deal_staff]
+                        if not _ow.empty:
+                            _theirs = str(_ow.iloc[0].get(_col) or "").strip()
+                _same_branch = (bool(_mine) and bool(_theirs)
+                                and _mine.lower() == _theirs.lower())
+            except Exception:
+                # Never widen on an error - a failed lookup must leave the
+                # caller with exactly the cascade they had.
+                _same_branch = False
+        is_manager_in_scope = _in_cascade or _same_branch
     else:
         is_manager_in_scope = False
 

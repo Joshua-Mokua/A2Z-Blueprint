@@ -38,7 +38,10 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useBranding } from '@/hooks/useBranding';
 import { usePipelineDealMutations } from '@/hooks/usePipelineDealMutations';
 import { useToast } from '@/components/Toast';
-import { fetchPipelineDealDetail, fetchCreditChecklist, fetchNextStep, type NextStep, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, castCommitteeVote, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse,
+import { resubmitAfterRework,
+  openProtectedFile,
+  amendDealValue,
+  fetchPipelineDealDetail, fetchCreditChecklist, fetchNextStep, type NextStep, getDealCr, saveDealCr, getDealCommitteeRecords, recordDealCommitteeDecision, castCommitteeVote, appealCommitteeDecision, closeDealAsLost, type CommitteeGate, type CommitteeRecordsResponse, type CrView, type CrField, submitDealToCredit, referExistingDeal, fetchDealSla, ApiValidationError, AuthExpiredError, listDealDocuments, uploadDealDocument, deleteDealDocument, createValidationRequest, resolveValidationRequest, liftDealHold, fetchDealJourney, type ValidationRequest, type StaffMember, type SlaViolation, type DealDocumentsResponse,
   fetchRateState, requestRate, acceptCounterRate, declineCounterRate, type RateRequestState,
 } from '@/lib/api';
 import { Timeline } from '@/components/Timeline';
@@ -338,6 +341,7 @@ export function PipelineDealDetail() {
                                             onChanged={() => void reloadDeal()} /> }]
             : []),
           { id: 'documents', label: 'Documentation and Credit Review', color: '#0097A7', content: <CreditSubmissionPanel deal={deal} onChanged={() => void reloadDeal()} stageFlow={stageFlow} canEdit={canEditDocs} /> },
+          { id: 'amend', label: 'Amend value', color: '#7E57C2', content: <AmendValuePanel deal={deal} onChanged={() => void reloadDeal()} /> },
           { id: 'affordability', label: 'Affordability', color: '#00A65A', content: <AffordabilityAppraisal dealId={deal.id} /> },
           { id: 'cr', label: 'Transaction Memo', color: '#7E57C2', content: <DealCreditReportCard dealId={deal.id} canEdit={canEditDocs} /> },
           { id: 'committee', label: 'Credit Committee', color: '#EF6C00',  /* not 'Branch': a case may sit before B1 Consumer, B2 Commercial, B3 CIB, B4 or a branch committee, and the panel inside names which. */ content: <CommitteeJourneyCard dealId={deal.id} canEdit={canEditDocs} /> },
@@ -750,6 +754,78 @@ function CreditJourneyStepper({ checklist, stageFlow }: { checklist: CreditCheck
   );
 }
 
+
+// ── AMEND VALUE ──────────────────────────────────────────────────────────────
+// A value gets keyed wrong, or the customer's ability to service turns out
+// lower than they hoped. Both are ordinary and neither should need a script.
+function AmendValuePanel({ deal, onChanged }: { deal: PipelineDeal; onChanged: () => void }) {
+  const [value, setValue] = useState('');
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const current = Number(deal.amount_kes ?? deal.deal_value ?? 0);
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    try {
+      await amendDealValue(String(deal.id), Number(value), reason.trim());
+      setValue('');
+      setReason('');
+      onChanged();
+    } catch (e) {
+      // The server refuses with a reason - show it rather than a generic
+      // failure, because "a manager has to make this change" is actionable.
+      setError(e instanceof Error ? e.message : 'Could not amend the value.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const ready = Number(value) > 0 && reason.trim().length >= 5 && !busy;
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-600">
+        Current value <span className="font-semibold">
+          KES {current.toLocaleString()}</span>. A change is recorded on the
+        case journey with your name and the reason.
+      </p>
+      {error && (
+        <div className="rounded-lg bg-red-50 border border-red-300 p-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            New value (KES)
+          </label>
+          <input className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                 value={value} inputMode="numeric"
+                 onChange={(e) => setValue(e.target.value.replace(/[^0-9]/g, ''))}
+                 placeholder="100000" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Why is it changing?
+          </label>
+          <input className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                 value={reason}
+                 onChange={(e) => setReason(e.target.value)}
+                 placeholder="Keyed 1B instead of 100K" />
+        </div>
+      </div>
+      <div className="flex justify-end">
+        <button type="button" disabled={!ready} onClick={() => void save()}
+                className={`rounded-lg px-4 py-2 font-medium text-white
+                  ${ready ? 'bg-brand-primary' : 'bg-gray-300'}`}>
+          {busy ? 'Saving…' : 'Amend value'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function CreditSubmissionPanel({ deal, onChanged, stageFlow, canEdit = true }: CreditPanelProps & { stageFlow?: string[]; canEdit?: boolean }) {
   const { toast } = useToast();
   const [checklist,  setChecklist]  = useState<CreditChecklistResponse | null>(null);
@@ -894,11 +970,25 @@ function CreditSubmissionPanel({ deal, onChanged, stageFlow, canEdit = true }: C
     setSubmitting(true);
     setError(null);
     try {
-      const res = await submitDealToCredit(deal.id, checklist.required.filter((d) => docFiles[d]));
-      toast({
-        tone: 'success',
-        message: `✓ Submitted to credit — application ${res.application_id}.`,
-      });
+      // Back with the owner for rework? Then this is a RESUBMISSION, and it
+      // belongs to the analyst who returned it - they asked for the documents
+      // and they have the context. submitDealToCredit would put it in the pool
+      // as a fresh case for anybody to claim.
+      const appId = String((deal as { lms_application_id?: string })
+        .lms_application_id ?? '');
+      if (reopenedForDocs && appId) {
+        await resubmitAfterRework(appId, {});
+        toast({
+          tone: 'success',
+          message: '✓ Sent back to the analyst who asked for the documents.',
+        });
+      } else {
+        const res = await submitDealToCredit(deal.id, checklist.required.filter((d) => docFiles[d]));
+        toast({
+          tone: 'success',
+          message: `✓ Submitted to credit — application ${res.application_id}.`,
+        });
+      }
       onChanged();
     } catch (e) {
       if (e instanceof ApiValidationError) setError(e.detail);
@@ -2036,6 +2126,7 @@ function RateRequestPanel({ deal, canEdit, onChanged }: {
    card. Not the full documents panel: a committee needs to READ the papers,
    not manage them, and the upload controls belong to the branch. */
 function CommitteeDocumentStrip({ dealId }: { dealId: string }) {
+  const { toast } = useToast();
   const [files, setFiles] = useState<Record<string, { filename?: string }>>({});
   const [required, setRequired] = useState<string[]>([]);
   const [err, setErr] = useState('');
@@ -2079,13 +2170,26 @@ function CommitteeDocumentStrip({ dealId }: { dealId: string }) {
                   <span className="ml-2 text-gray-500">{files[n].filename}</span>
                 ) : null}
               </span>
-              <a
-                href={`/api/pipeline/deals/${encodeURIComponent(dealId)}/documents/${encodeURIComponent(n)}`}
-                target="_blank" rel="noopener noreferrer"
+              {/* NOT an <a href>. A browser link carries no Authorization
+                  header, so clicking View landed the tab on
+                  {"detail":"Missing or malformed Authorization header"}.
+                  openProtectedFile fetches with the token and opens the
+                  result. */}
+              <button
+                type="button"
+                onClick={() => {
+                  void openProtectedFile(
+                    `/pipeline/deals/${encodeURIComponent(dealId)}`
+                    + `/documents/${encodeURIComponent(n)}`,
+                  ).catch((e) => toast({
+                    tone: 'danger',
+                    message: `Could not open ${n}: ${e instanceof Error ? e.message : 'unknown error'}`,
+                  }));
+                }}
                 className="font-medium text-brand-primary hover:underline"
               >
                 View
-              </a>
+              </button>
             </div>
           ))}
           {required.filter((r) => !names.some((n) => n.toLowerCase() === r.toLowerCase()))

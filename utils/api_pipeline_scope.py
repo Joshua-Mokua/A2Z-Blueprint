@@ -128,7 +128,98 @@ def _load_staff_roster_fresh() -> "pd.DataFrame":  # type: ignore[name-defined]
     # comparisons fail silently otherwise.
     if "Staff Code" in df.columns:
         df["Staff Code"] = df["Staff Code"].astype(str)
+
+        # ── ONE ROW PER STAFF CODE, AND THE COMPLETE ONE ────────────────────
+        # Billy CN205, Josephat CN020 and Caroline all had deals nobody could
+        # validate because their code appears twice and one row has no branch.
+        # Whichever row a lookup reached first decided the answer; a blank
+        # branch matches nothing, so validation refused.
+        #
+        # Every lookup in the system reads this roster, so this is the one
+        # place worth fixing. The row with the most filled-in fields wins.
+        #
+        # This makes the system usable. It does not make the register correct -
+        # the duplicates are logged so they can be cleaned up properly.
+        try:
+            codes = df["Staff Code"].astype(str).str.strip()
+            dupes = codes[codes.duplicated(keep=False) & (codes != "")]
+            if not dupes.empty:
+                # THE FIELDS THAT DECIDE WHAT SOMEBODY SEES COUNT FOR MORE.
+                # Counting every column equally let a row full of incidental
+                # values beat the one carrying Department, Unit or Reports To -
+                # and scope is built from those. A head-office analyst sees
+                # their whole Department; lose it and their view empties.
+                SCOPE_COLS = ("Department", "Unit", "Branch", "Reports To",
+                              "Role", "Region")
+                filled = df.notna().sum(axis=1)
+                for col in df.columns:
+                    has = (df[col].astype(str).str.strip() != "").astype(int)
+                    filled = filled + (has * (25 if col in SCOPE_COLS else 1))
+                df = (df.assign(_code=codes, _filled=filled)
+                        .sort_values("_filled", ascending=False)
+                        .drop_duplicates(subset="_code", keep="first")
+                        .drop(columns=["_code", "_filled"])
+                        .sort_index())
+                try:
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        "staff register has %d duplicate code(s) - keeping the "
+                        "most complete row for each: %s",
+                        dupes.nunique(),
+                        ", ".join(sorted(set(dupes))[:12]))
+                except Exception:
+                    pass
+        except Exception as exc:
+            # Never lose the roster over this. A duplicate is a nuisance; no
+            # register at all stops the bank.
+            try:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "could not de-duplicate the staff register: %s", exc)
+            except Exception:
+                pass
     return df
+
+
+def row_for_staff_code(df, code, branch_col=None):
+    """The register row for a staff code, preferring one that has a branch.
+
+    FOUND 2026-09-07: CN205 has two rows in the user table - a complete one at
+    Kisumu and a stale one with no branch. A lookup by code took whichever came
+    first, got the blank, and every branch test on that officer's deals failed.
+
+    Two rows for one person is a data fault and should be cleaned up. Until it
+    is, taking the row that can answer the question is better than taking the
+    one that cannot - and where BOTH rows have a branch this still returns the
+    first, because that is a real ambiguity and a guess would be worse than a
+    refusal.
+    """
+    code = str(code or "").strip()
+    if not code:
+        return None
+    try:
+        hits = df[df["Staff Code"].astype(str).str.strip() == code]
+    except Exception:
+        return None
+    if hits.empty:
+        return None
+    if len(hits) == 1:
+        return hits.iloc[0]
+
+    col = branch_col or ("Branch" if "Branch" in df.columns else "Unit")
+    withb = [i for i in range(len(hits))
+             if str(hits.iloc[i].get(col) or "").strip()]
+    try:
+        import logging
+        logging.getLogger(__name__).warning(
+            "staff code %s appears %d times in the register - %d with a %s. "
+            "Using a complete row; the duplicate should be cleaned up.",
+            code, len(hits), len(withb), col.lower())
+    except Exception:
+        pass
+    if len(withb) == 1:
+        return hits.iloc[withb[0]]
+    return hits.iloc[0]
 
 
 def get_staff_roster() -> "pd.DataFrame":  # type: ignore[name-defined]

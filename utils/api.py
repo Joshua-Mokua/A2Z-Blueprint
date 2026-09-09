@@ -5730,7 +5730,7 @@ def pipeline_deal_refer(
     Conflict resolution path #1 (audit Section 15.4): the referring
     RM defers pursuit to the portfolio owner. A new deal record is
     created with ``is_referral=True``, ``deal_value=0``,
-    ``product_type="Referral"``, ``stage="Lead"``. The portfolio
+    ``product_type="Referral"``, ``stage="Initiation"``. The portfolio
     owner can later pick this up via their own deal queue and either
     pursue or decline.
 
@@ -5798,7 +5798,10 @@ def pipeline_deal_refer(
         "client_type":          str(getattr(payload, "client_type", "") or ""),
         "product_type":         "Referral",
         "deal_value":           0,
-        "stage":                "Lead",
+        # Initiation, not Lead. The flows start at Initiation and
+        # nothing else uses Lead - a referral landing there sits
+        # outside every funnel bucket and every stage rule.
+        "stage":                "Initiation",
         "probability":          0.05,
         "next_action":          (
             f"Referred to {payload.referred_to}: {payload.referral_note}"
@@ -7303,6 +7306,112 @@ def pipeline_deal_update(
     ).model_dump()
 
 
+@app.post("/api/pipeline/deals/{deal_id}/amend-value", tags=["pipeline"])
+def pipeline_deal_amend_value(
+    deal_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: dict = Depends(get_current_user),
+):
+    """Change a deal's value, with a reason, recorded on its journey.
+
+    Two ordinary things make a value wrong: it was keyed wrong, or the
+    customer's ability to service turned out lower than they hoped. Neither
+    should need an engineer.
+
+    The owner may amend while the deal has not gone to credit. After that it
+    takes a manager, because an analyst has assessed the old figure and
+    somebody senior should know it moved.
+    """
+    from utils.api_pipeline_scope import get_visible_staff_codes
+    from utils.api_pipeline_manager_actions import is_manager
+    from utils.api_pipeline_mutations import invalidate_pipeline_caches
+    from datetime import datetime as _dt
+
+    from utils.core import PipelineManager as _PM_for_amend
+    pm = _PM_for_amend()
+    deal = pm.get_deal(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail=f"Deal {deal_id} not found")
+
+    try:
+        new_value = float(payload.get("value"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400,
+                            detail="A new value is required, as a number.")
+    if new_value <= 0:
+        raise HTTPException(status_code=400,
+                            detail="A deal value must be more than zero.")
+
+    reason = str(payload.get("reason", "") or "").strip()
+    if len(reason) < 5:
+        raise HTTPException(
+            status_code=400,
+            detail=("Say why the value is changing. In six months somebody "
+                    "will ask, and the deal should answer."))
+
+    my_code = str(user.get("staff_code", "") or "").strip()
+    owner = str(deal.get("staff_code", "") or "").strip()
+    is_owner = bool(my_code) and my_code == owner
+    in_scope = owner in set(get_visible_staff_codes(user) or [])
+    mgr = is_manager(user) and (in_scope or bool(user.get("is_admin")))
+    gone_to_credit = bool(str(deal.get("lms_application_id") or "").strip())
+
+    if not (user.get("is_admin") or mgr or (is_owner and not gone_to_credit)):
+        _audit("API_DEAL_AMEND_VALUE_FORBIDDEN", user, f"deal_id={deal_id}")
+        if is_owner and gone_to_credit:
+            raise HTTPException(
+                status_code=403,
+                detail=("This deal is with credit. An analyst has assessed the "
+                        "current figure, so a manager has to make the change."))
+        raise HTTPException(status_code=403,
+                            detail="This deal is not yours to amend.")
+
+    old = deal.get("amount_kes") or deal.get("deal_value") or 0
+    try:
+        old_f = float(old or 0)
+    except (TypeError, ValueError):
+        old_f = 0.0
+    if abs(old_f - new_value) < 0.01:
+        return {"deal_id": deal_id, "value": new_value, "changed": False}
+
+    for k in ("amount_kes", "deal_value"):
+        if k in deal:
+            deal[k] = new_value
+    if "amount_kes" not in deal and "deal_value" not in deal:
+        deal["amount_kes"] = new_value
+    deal["value_amended_at"] = _dt.now().isoformat(timespec="seconds")
+    deal["value_amended_by"] = str(user.get("username", "") or "")
+
+    # On the journey, in the same shape as a stage change, so it reads in
+    # sequence with everything else that happened to this deal.
+    try:
+        pm.add_activity({
+            "deal_id": deal_id,
+            "staff_code": deal.get("staff_code", ""),
+            "staff_name": deal.get("staff_name", ""),
+            "activity_type": "Value amended",
+            "note": ("Value: %s -> %s. %s (by %s)"
+                     % (format(int(old_f), ","), format(int(new_value), ","),
+                        reason, user.get("full_name") or user.get("username"))),
+            "outcome": str(int(new_value)),
+        })
+    except Exception as exc:
+        logger.warning("could not write the amendment to the journey for %s: %s",
+                       deal_id, exc)
+
+    pm._save_deals()
+    _audit("API_DEAL_AMEND_VALUE", user,
+           f"deal_id={deal_id}|{old_f:.0f}->{new_value:.0f}|{reason[:80]}")
+    try:
+        _db_sync_pipeline_deal(deal)
+    except Exception as exc:
+        logger.warning("amended %s but could not sync to the database: %s",
+                       deal_id, exc)
+    invalidate_pipeline_caches()
+    return {"deal_id": deal_id, "was": old_f, "value": new_value,
+            "changed": True, "reason": reason}
+
+
 @app.post("/api/pipeline/deals/{deal_id}/advance")
 def pipeline_deal_advance(
     deal_id: str,
@@ -7373,8 +7482,9 @@ def pipeline_deal_advance(
 
     # Refuse to ENTER a credit-side stage by hand. Leaving one is not blocked -
     # a case can still be closed or returned from where it stands.
-    _target = str(getattr(payload, "stage", "") or getattr(payload, "to_stage", "")
-                  or "").strip()
+    # new_stage is what PipelineDealAdvance actually carries. Reading "stage"
+    # and "to_stage" left this empty and the guard below never fired.
+    _target = str(getattr(payload, "new_stage", "") or "").strip()
     _from = str(deal.get("stage", "") or "").strip()
     # INTO a credit stage FROM ANYWHERE - not only from outside. The audit
     # trail that prompted this shows the last hop as Department Credit Analysis
@@ -13872,7 +13982,37 @@ def cast_committee_vote(deal_id: str, code: str,
     #
     # QUORUM STILL APPLIES. This drops the requirement that a PARTICULAR person
     # voted, not the requirement that ENOUGH people did.
-    _chair_required = committee.get("chair_vote_required", True)
+    # ── A CHAIR WHO IS NOT ON THE COMMITTEE CANNOT BE WAITED FOR ────────────
+    # RULING (2026-09-04): "Jane still has to recommend at committee level even
+    # after removing her from the committee."
+    #
+    # chaired_by is a NAME on the committee and nothing tied it to membership.
+    # Removing her from members left it naming her, so the decision waited for
+    # a vote she could no longer cast - by any route, since a deputy stands in
+    # for an ABSENT chair, not a departed one.
+    #
+    # Failing OPEN is deliberate. Removing somebody from a committee is normal;
+    # the system must not deadlock every case in front of it until an admin
+    # notices there is a second field to clear.
+    _chair_on_committee = True
+    if _chair_name:
+        _mem_names = {str(_m.get("name", "") or "").strip().lower()
+                      for _m in (committee.get("members") or [])
+                      if isinstance(_m, dict)}
+        _mem_codes = {str(_m.get("staff_code", "") or "").strip()
+                      for _m in (committee.get("members") or [])
+                      if isinstance(_m, dict)}
+        _chair_on_committee = (_chair_name in _mem_names
+                               or (_chair_code and _chair_code in _mem_codes))
+        if not _chair_on_committee:
+            logger.warning(
+                "committee %s names %r as chair but they are not a member - "
+                "the chair requirement is dropped, or no case before this "
+                "committee could ever close",
+                committee.get("code"), committee.get("chaired_by"))
+
+    _chair_required = (committee.get("chair_vote_required", True)
+                       and _chair_on_committee)
     if isinstance(_chair_required, str):
         _chair_required = _chair_required.strip().lower() not in (
             "false", "no", "0", "off")
