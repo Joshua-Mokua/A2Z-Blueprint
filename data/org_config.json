@@ -833,5 +833,8 @@
     "/initiatives",
     "/profitability",
     "/sla"
+  ],
+  "all_view_roles": [
+    "credit risk manager"
   ]
 }

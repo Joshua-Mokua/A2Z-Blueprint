@@ -338,7 +338,18 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
 
     # Only true admins and MD see everyone — not just anyone with can_view_all
     # can_view_all is a legacy flag; tree_access is now role-based
+    # The bank can add a role without a code change. Added to the built-in
+    # set, never replacing it, so nothing that works today stops working.
+    _extra_all_view = set()
+    try:
+        from utils.config import load_org_config as _loc
+        _extra_all_view = {str(r).strip().lower()
+                           for r in ((_loc() or {}).get("all_view_roles") or [])
+                           if str(r).strip()}
+    except Exception:
+        pass
     if (is_admin or "admin" in role_l
+            or role_l in _extra_all_view
             or role_l in _ALL_VIEW_ROLES
             or role_l in _register_root_roles()      # B1: data-driven top role
             or role_l in _data_custodian_roles()):   # data custodians (Finance/HR)
