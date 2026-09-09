@@ -64,6 +64,7 @@ import { ToastProvider } from './components/Toast';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AppShell } from './components/AppShell';
 import About from './pages/About';
+import { CreditRiskWorkbench } from './pages/CreditRiskWorkbench';
 import { Dashboard } from './pages/Dashboard';
 import { Perform } from './pages/Perform';
 import { Profitability } from './pages/Profitability';
@@ -150,6 +151,8 @@ function App() {
                         RR6 ranks these automatically but explicit ordering
                         documents intent. */}
                     <Route path="/pipeline/new"     element={<PipelineCreate />} />
+                    {/* Credit risk decides on committee-recommended cases. The analysts' desk stays at /lms. */}
+                    <Route path="/credit-risk" element={<CreditRiskWorkbench />} />
                     <Route path="/pipeline/queues"  element={<PipelineManagerQueues />} />
                     <Route path="/pipeline/:dealId" element={<PipelineDealDetail />} />
                     <Route path="/analytics" element={<Analytics />} />

@@ -88,7 +88,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Credit Intelligence (CIS)',
     items: [
-      { path: '/lms',                 label: 'Credit Analysis',     matchActive: (p) => p === '/lms' || p.startsWith('/lms/'), visibleFor: (_m, _a, _c, _md, credit) => credit },
+      { path: '/credit-risk',                 label: 'Credit Analysis',     matchActive: (p) => p.startsWith('/credit-risk'), visibleFor: (_m, _a, _c, _md, credit) => credit },
       { path: '/committee/convening', label: 'Committee Convening', matchActive: (p) => p.startsWith('/committee/convening'), visibleFor: (_m, _a, _c, md) => md },
       { path: '/credit-admin',        label: 'Credit Admin',        matchActive: (p) => p === '/credit-admin' || p.startsWith('/credit-admin/'), visibleFor: (_m, _a, _c, _md, credit) => credit },
       { path: '/troops',              label: 'Trops Disbursement',  matchActive: (p) => p.startsWith('/troops'), visibleFor: (_m, _a, _c, _md, credit) => credit },
