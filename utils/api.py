@@ -13942,10 +13942,16 @@ def cast_committee_vote(deal_id: str, code: str,
             if _app_id:
                 try:
                     from utils.api_lms_routes import _lam as _lam_for_cttee
+                    # Her part is done. Leaving her name on it kept the case
+                    # under her My cases and out of every pool, so credit risk
+                    # could not see it - D0868 sat like that.
+                    _held = (_lam_for_cttee().get(_app_id) or {}).get("analyst") or {}
                     _lam_for_cttee().update(_app_id, {
                         "status": "committee_recommended",
                         "committee_recommended_by": code,
                         "committee_recommended_at": _dt_now_iso(),
+                        "analyst_before_recommendation": _held,
+                        "analyst": {},
                     })
                     _audit("API_COMMITTEE_CASE_APPROVED", user,
                            f"app={_app_id}|committee={code}|deal={deal_id}")
