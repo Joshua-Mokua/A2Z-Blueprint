@@ -22,6 +22,7 @@ import type { ElementType } from 'react';
 import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
 import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, escalateToChief, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse,
   getConditionLibrary,
+  respondToInputRequest,
 } from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -726,6 +727,11 @@ export function LmsApplicationDetail() {
         )}
 
 
+        {/* Shown only to somebody who has been asked for input on this case. */}
+        <InputRequestPanel
+          application={application as unknown as { id: string; input_requests?: unknown[] }}
+          onDone={refetch} />
+
         {/* ─────────── ACTION: Record Decision (if can_record_decision) ─────────── */}
         {permissions.can_record_decision && (
           <ActionPanelDecision
@@ -1120,6 +1126,81 @@ function ActionPanelUpdate({
 
 
 // ── ACTION PANEL: Record Decision ───────────────────────────────────────
+
+
+// ─── ANSWERING A REQUEST FOR INPUT ────────────────────────────────────────────
+// Credit risk can ask a named person what they think without returning the
+// case. The question landed on the journey and there was nowhere to reply, so
+// the answer happened in a corridor and the file recorded nothing.
+//
+// Shown only to somebody who has an open request on this case.
+function InputRequestPanel({ application, onDone }:
+    { application: { id: string; input_requests?: unknown[] }; onDone: () => Promise<void> | void }) {
+  const { user } = useRole();
+  const { toast } = useToast();
+  const [answer, setAnswer] = useState('');
+  const [stance, setStance] = useState<'supports' | 'opposes' | 'commented'>('supports');
+  const [busy, setBusy] = useState(false);
+
+  const me = String(user?.staff_code ?? '');
+  const reqs = (application.input_requests ?? []) as Array<Record<string, unknown>>;
+  const mine = reqs.filter((r) => !r.answered && String(r.to ?? '') === me);
+  if (!me || mine.length === 0) return null;
+  const q = mine[mine.length - 1];
+
+  async function send() {
+    if (answer.trim().length < 5) return;
+    setBusy(true);
+    try {
+      await respondToInputRequest(String(application.id),
+                                  { answer: answer.trim(), stance });
+      toast({ tone: 'success', message: 'Your input is on the case.' });
+      setAnswer('');
+      await onDone();
+    } catch (e) {
+      toast({ tone: 'danger',
+              message: e instanceof Error ? e.message : 'Could not record that.' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mb-4 rounded-lg border border-[#0097A7] bg-[#F0FBFC] p-4">
+      <div className="text-sm font-semibold text-[#003D57]">
+        {String(q.asked_by_name ?? 'Credit risk')} has asked for your input
+      </div>
+      <p className="mt-1 text-sm text-gray-800">{String(q.question ?? '')}</p>
+      <p className="mt-1 text-xs text-gray-500">
+        This is recorded on the case. It does not approve or decline anything —
+        credit risk still decides.
+      </p>
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-700">Your view</label>
+          <select className="mt-1 rounded-lg border px-3 py-2 text-sm" value={stance}
+                  onChange={(e) => setStance(e.target.value as typeof stance)}>
+            <option value="supports">I support it</option>
+            <option value="opposes">I do not support it</option>
+            <option value="commented">Comment only</option>
+          </select>
+        </div>
+        <div className="min-w-[22rem] flex-1">
+          <label className="block text-xs font-medium text-gray-700">Why</label>
+          <input className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                 value={answer} onChange={(e) => setAnswer(e.target.value)}
+                 placeholder="What you want on the record" />
+        </div>
+        <button type="button" disabled={answer.trim().length < 5 || busy}
+                onClick={() => void send()}
+                className={`rounded-lg px-4 py-2 text-sm font-medium text-white ${
+                  answer.trim().length >= 5 && !busy ? 'bg-[#0097A7]' : 'bg-gray-300'}`}>
+          {busy ? 'Recording…' : 'Record my input'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function ActionPanelDecision({ appId, open, setOpen, mutations, onSuccess, toast }: ActionPanelProps) {
   const [verdict, setVerdict] = useState<DecisionVerdict>('approved');

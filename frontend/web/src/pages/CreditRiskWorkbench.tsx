@@ -18,7 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   fetchLmsApplications, getConditionLibrary, recordCreditRiskDecision,
-  returnCaseForRework, escalateToChief, claimCase,
+  returnCaseForRework, escalateToChief, claimCase, seekInput,
 } from '@/lib/api';
 import type { ConditionLibrary } from '@/lib/api';
 import type { LoanApplication } from '@/types/lms';
@@ -46,7 +46,7 @@ function money(v?: number, ccy?: string) {
   return `${ccy ?? 'KES'} ${Number(v).toLocaleString()}`;
 }
 
-type Mode = 'approve' | 'escalate' | 'decline' | 'return';
+type Mode = 'approve' | 'escalate' | 'decline' | 'return' | 'input';
 
 export function CreditRiskWorkbench() {
   const { user } = useRole();
@@ -140,6 +140,13 @@ export function CreditRiskWorkbench() {
     try {
       if (mode === 'escalate') {
         await escalateToChief(id, { reason: reason.trim(), to: 'chief' });
+      } else if (mode === 'input') {
+        const to = peopleOn(a).find((p) => p.code === returnTo);
+        await seekInput(id, {
+          to: returnTo,
+          to_name: to?.label.split(' — ')[0],
+          question: reason.trim(),
+        });
       } else if (mode === 'return') {
         const to = peopleOn(a).find((p) => p.code === returnTo);
         await returnCaseForRework(id, {
@@ -182,7 +189,9 @@ export function CreditRiskWorkbench() {
   }
 
   const canRecord = reason.trim().length >= 5
-    && (mode !== 'return' || returnTo !== '');
+    && (mode !== 'return' || returnTo !== '')
+    // A request for input needs somebody to ask and something to ask them.
+    && (mode !== 'input' || (returnTo !== '' && reason.trim().length >= 10));
 
   return (
     <div className="p-6">
@@ -288,7 +297,9 @@ export function CreditRiskWorkbench() {
                       {([['approve', 'Approve'],
                          ['escalate', 'Approve — send up to the Chief'],
                          ['decline', 'Decline'],
-                         ['return', 'Return for rework']] as [Mode, string][])
+                         ['return', 'Return for rework'],
+                         // A question is not a rejection. The case stays here.
+                         ['input', 'Seek input']] as [Mode, string][])
                         .map(([m, label]) => (
                           <button key={m} type="button" onClick={() => setMode(m)}
                                   className={`rounded-lg px-3 py-1.5 text-sm ${
@@ -355,7 +366,7 @@ export function CreditRiskWorkbench() {
                       </div>
                     )}
 
-                    {mode === 'return' && (
+                    {(mode === 'return' || mode === 'input') && (
                       <div className="mt-4">
                         <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600">
                           Send it back to

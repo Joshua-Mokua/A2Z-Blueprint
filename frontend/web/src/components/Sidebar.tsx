@@ -177,11 +177,13 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               && (!item.visibleFor || item.visibleFor(isMgr, isAdmin, isCfgAdmin, isAdminOrMd, isCreditStaff, onCommittee))
               && !(/credit risk|credit admin|remedial|recover/i.test(user?.role ?? '')
                    && item.label === 'Department Review')
-              // And the mirror: Credit Analysis is credit risk's screen. A
-              // segment analyst seeing both could not tell which was theirs,
-              // and they have been working on each other's.
-              && !(!/credit risk/i.test(user?.role ?? '')
-                   && !isAdmin && !isAdminOrMd
+              // Credit Analysis is credit risk's screen. Hidden from the
+              // SEGMENT ANALYSTS only - they work on Department Review, and
+              // seeing both, they could not tell which was theirs.
+              //
+              // Stated as a rule about them, not about everybody else: the
+              // earlier shape hid it from admins and the MD's office too.
+              && !(/^credit analyst\b/i.test((user?.role ?? '').trim())
                    && item.label === 'Credit Analysis'),
           );
           if (!items.length) return null;

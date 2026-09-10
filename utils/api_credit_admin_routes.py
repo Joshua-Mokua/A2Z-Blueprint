@@ -37,6 +37,7 @@ from pydantic import BaseModel, ConfigDict
 from utils.auth_jwt import get_current_user
 from utils.core import CreditAdminManager
 from utils.core_audit import audit_log
+from utils.handover import notify as _hv_notify
 
 from utils.api_pipeline_scope import get_visible_staff_codes
 from utils.api_pipeline_manager_actions import is_manager
@@ -260,6 +261,87 @@ def _ca_manager_in_scope(user, case):
         return True
     visible = get_visible_staff_codes(user)
     return is_case_in_scope(case, visible)
+
+
+
+@router.post("/cases/{case_id}/request-from-branch")
+def credit_admin_request_from_branch(
+    case_id: str,
+    payload: Dict[str, Any] = None,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Ask the branch or the owner for something, without moving the case.
+
+    A signed offer letter, an account opened, a detail confirmed. Credit admin
+    keeps the case - the work waits here while somebody fetches a document -
+    and the request goes on the file with who asked and what for.
+
+    Body: to (a staff code, or a list of them), to_name, what.
+    """
+    payload = payload or {}
+    cam = _cam()
+    case = next((c for c in (cam.cases or []) if str(c.get("id")) == case_id), None)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+    if not _ca_manager_in_scope(user, case):
+        raise HTTPException(status_code=403,
+                            detail="This case is not in your scope.")
+
+    what = str(payload.get("what", "") or "").strip()
+    if len(what) < 5:
+        raise HTTPException(
+            status_code=400,
+            detail=("Say what you need. A request with no detail sends "
+                    "somebody looking for something they cannot identify."))
+
+    raw = payload.get("to")
+    to = []
+    if isinstance(raw, (list, tuple)):
+        to = [{"code": str((x or {}).get("code", x) or "").strip(),
+               "name": str((x or {}).get("name", "") or "").strip()}
+              for x in raw if str((x or {}).get("code", x) or "").strip()]
+    elif str(raw or "").strip():
+        to = [{"code": str(raw).strip(),
+               "name": str(payload.get("to_name", "") or "").strip()}]
+    if not to:
+        # Nobody named: the deal's owner, who submitted it.
+        owner = str(case.get("rm_code") or case.get("staff_code") or "").strip()
+        if owner:
+            to = [{"code": owner, "name": str(case.get("rm_name") or "")}]
+    if not to:
+        raise HTTPException(status_code=400,
+                            detail="Name who you are asking.")
+
+    import datetime as _d
+    reqs = list(case.get("branch_requests") or [])
+    entry = {
+        "what": what,
+        "to": to,
+        "asked_by": str(user.get("staff_code", "") or ""),
+        "asked_by_name": str(user.get("full_name", "") or ""),
+        "asked_at": _d.datetime.now().isoformat(timespec="seconds"),
+        "fulfilled": False,
+    }
+    reqs.append(entry)
+    case["branch_requests"] = reqs
+    case["awaiting_branch"] = True
+    try:
+        cam.save()
+    except Exception as exc:
+        raise HTTPException(status_code=500,
+                            detail="Could not record the request: %s" % str(exc)[:60])
+
+    for p in to:
+        _hv_notify(p["code"],
+                 "Credit admin needs something on %s" % case_id,
+                 "<p>%s has asked for this on <b>%s</b>:</p><p>%s</p>"
+                 % (entry["asked_by_name"] or "Credit admin", case_id, what))
+
+    audit_log("CREDIT_ADMIN_ASKED_BRANCH",
+              str(user.get("username", "") or ""),
+              "%s|to=%s|%s" % (case_id, ",".join(p["code"] for p in to), what[:60]))
+    return {"case_id": case_id, "asked": [p["code"] for p in to],
+            "awaiting_branch": True}
 
 
 @router.post("/cases/{case_id}/conditions/classify",

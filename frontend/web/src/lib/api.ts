@@ -3565,3 +3565,21 @@ export async function claimCase(
     { analyst_code: analystCode, analyst_name: analystName });
 }
 
+/** Ask a named person on the case for their input. The case does not move and
+ *  is not marked returned - a question is not a rejection. */
+export async function seekInput(
+  appId: string,
+  body: { to: string; to_name?: string; question: string },
+): Promise<{ application_id: string; asked: string }> {
+  return postJson<{ application_id: string; asked: string }, typeof body>(
+    `/lms/applications/${encodeURIComponent(appId)}/seek-input`, body);
+}
+
+/** Answer a request for input. Recorded on the journey; it decides nothing. */
+export async function respondToInputRequest(
+  appId: string,
+  body: { answer: string; stance?: 'supports' | 'opposes' | 'commented' },
+): Promise<{ application_id: string; input: string }> {
+  return postJson<{ application_id: string; input: string }, typeof body>(
+    `/lms/applications/${encodeURIComponent(appId)}/input-response`, body);
+}

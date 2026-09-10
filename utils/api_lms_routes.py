@@ -46,6 +46,7 @@ from pydantic import BaseModel
 from utils.auth_jwt import get_current_user, require_config_admin
 from utils.core import LoanApplicationManager
 from utils.core_audit import audit_log
+from utils.handover import notify as _hv_notify
 
 from utils.api_pipeline_scope import get_visible_staff_codes
 from utils.api_pipeline_manager_actions import is_manager
@@ -184,8 +185,23 @@ def lms_flow_by_stage(
     # surfaced separately so the live work-in-progress is clear.
     STAGE_ORDER = [
         ("intake",        "Intake / submitted",      {"submitted"}),
-        ("assessment",    "Under assessment",        {"assigned", "updated"}),
-        ("decision",      "Decisioned",              {"decision_approved", "decision_returned", "returned"}),
+        ("assessment",    "Under assessment",        {"assigned", "updated",
+                                                     "in_review",
+                                                     "info_requested"}),
+        # With the owner, not decided. `returned` sat under Decisioned, so a
+        # case sent back for rework read as one that had been decided.
+        ("rework",        "Returned for rework",     {"returned"}),
+        # Where most in-flight work actually sits, and it was in none of the
+        # buckets - 18 of 38 cases fell to "Other / unmapped".
+        ("committee",     "At committee",            {"referred_to_committee",
+                                                     "ready_for_committee",
+                                                     "recommended",
+                                                     "analyst_confirmed"}),
+        ("with_risk",     "With credit risk",        {"committee_recommended",
+                                                     "committee_approved",
+                                                     "approved"}),
+        ("decision",      "Decisioned",              {"decision_approved",
+                                                     "decision_returned"}),
         ("offer",         "Offer & acceptance",      {"offer_issued", "offer_signed", "offer_validated"}),
         ("credit_admin",  "Credit admin / security", {"credit_admin"}),
         ("disbursement",  "Cleared for disbursement",{"cleared_for_disbursement"}),
@@ -3299,6 +3315,121 @@ def lms_committee_set_require_mcc(
 
 
 # === DECLINE APPEAL ===
+@router.post("/applications/{app_id}/seek-input")
+
+def lms_seek_input(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Ask a named person for input, without returning the case.
+
+    A return says the work was deficient. A question is not that. The case
+    stays where it is and with whoever holds it; the person asked sees it, and
+    their answer goes on the journey beside everything else.
+
+    Body: to (staff code), to_name, question. A question is required - a
+    request with no question is an interruption, not a consultation.
+    """
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404,
+                            detail=f"Application '{app_id}' not found")
+    if not resolve_application_permissions(user, app).get("can_view"):
+        raise HTTPException(status_code=403,
+                            detail="Application is out of scope")
+
+    to_code = str(payload.get("to", "") or "").strip()
+    to_name = str(payload.get("to_name", "") or "").strip()
+    question = str(payload.get("question", "") or "").strip()
+    if not to_code:
+        raise HTTPException(status_code=400,
+                            detail="Name who you are asking.")
+    if len(question) < 10:
+        raise HTTPException(
+            status_code=400,
+            detail=("Say what you are asking them. A request with no question "
+                    "is an interruption rather than a consultation."))
+
+    reqs = list(app.get("input_requests") or [])
+    reqs.append({
+        "asked_by": str(user.get("staff_code", "") or ""),
+        "asked_by_name": str(user.get("full_name", "") or ""),
+        "to": to_code,
+        "to_name": to_name,
+        "question": question,
+        "asked_at": _dt_now_lms() if "_dt_now_lms" in globals()
+                    else datetime.now().isoformat(timespec="seconds"),
+        "answered": False,
+    })
+    # The status is deliberately untouched. The case has not moved and has not
+    # been rejected - somebody has been asked a question about it.
+    lam.update(app_id, {"input_requests": reqs,
+                        "awaiting_input_from": to_code})
+    audit_log("LMS_INPUT_SOUGHT", str(user.get("username", "") or ""),
+              "%s|from=%s|%s" % (app_id, to_code, question[:60]))
+    _hv_notify(to_code,
+          "Your input is wanted on %s" % app_id,
+          "<p>%s has asked for your input on <b>%s</b>.</p><p>%s</p>"
+          % (str(user.get("full_name", "") or "credit risk"), app_id,
+             question),
+          "seek-input")
+    return {"application_id": app_id, "asked": to_code, "status": app.get("status")}
+
+
+@router.post("/applications/{app_id}/input-response")
+def lms_input_response(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Answer a request for input. Recorded, not decisive.
+
+    The answer goes on the journey. It does not approve or decline anything -
+    credit risk still decides, now with the input they asked for.
+    """
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404,
+                            detail=f"Application '{app_id}' not found")
+    me = str(user.get("staff_code", "") or "").strip()
+    reqs = list(app.get("input_requests") or [])
+    mine = [r for r in reqs
+            if isinstance(r, dict) and not r.get("answered")
+            and str(r.get("to", "")).strip() == me]
+    if not mine:
+        raise HTTPException(
+            status_code=403,
+            detail="Nobody has asked you for input on this case.")
+
+    answer = str(payload.get("answer", "") or "").strip()
+    if len(answer) < 5:
+        raise HTTPException(status_code=400, detail="Say what your view is.")
+    stance = str(payload.get("stance", "") or "").strip().lower()
+
+    for r in reqs:
+        if r is mine[-1]:
+            r["answered"] = True
+            r["answer"] = answer
+            r["stance"] = stance or "commented"
+            r["answered_by_name"] = str(user.get("full_name", "") or "")
+            r["answered_at"] = datetime.now().isoformat(timespec="seconds")
+            break
+    lam.update(app_id, {"input_requests": reqs,
+                        "awaiting_input_from": ""})
+    audit_log("LMS_INPUT_GIVEN", str(user.get("username", "") or ""),
+              "%s|%s|%s" % (app_id, stance or "commented", answer[:60]))
+    _hv_notify(str((mine[-1] or {}).get("asked_by", "") or ""),
+          "Input given on %s" % app_id,
+          "<p>%s has answered on <b>%s</b>: %s</p><p>%s</p>"
+          % (str(user.get("full_name", "") or ""), app_id,
+             stance or "commented", answer),
+          "input-response")
+    return {"application_id": app_id, "input": stance or "commented"}
+
+
 @router.post("/applications/{app_id}/escalate-to-chief")
 def lms_escalate_to_chief(
     app_id: str,
@@ -3660,6 +3791,12 @@ def lms_rework_reasons(
 
 @router.post("/applications/{app_id}/committee-readiness",
              response_model=LoanAppMutationResponse)
+def _dt_now_lms() -> str:
+    """Timestamp for a rework return."""
+    import datetime as _d
+    return _d.datetime.now().isoformat(timespec="seconds")
+
+
 def lms_committee_readiness(
     app_id: str,
     payload: Dict[str, Any] = None,
@@ -3711,6 +3848,31 @@ def lms_committee_readiness(
                        str(_prev.get("at", ""))[:16])))
 
     _updates = {"committee_readiness": readiness}
+
+    # ── AND REWORK MEANS RETURNED ────────────────────────────────────────────
+    # One return path for every desk - see utils/handover.py. This used to
+    # carry its own copy of the logic, and credit admin carried another.
+    if decision == "rework":
+        try:
+            from utils.handover import send_back
+            _res = send_back(
+                app_id,
+                to=payload.get("return_to"),
+                reason=(str(payload.get("opinion", "") or "").strip()
+                        or "Returned for rework"),
+                user=user,
+                asked_from="analyst",
+                reasons=payload.get("reasons") or [])
+            _updates.update({k: v for k, v in {
+                "status": "returned",
+                "froze_at_stage": _res.get("froze_at_stage") or "",
+            }.items() if v or k == "status"})
+        except ValueError as _ve:
+            raise HTTPException(status_code=400, detail=str(_ve))
+        except Exception as _exc:
+            audit_log("LMS_REWORK_SEND_BACK_FAILED",
+                      str(user.get("username", "") or ""),
+                      "%s|%s" % (app_id, str(_exc)[:60]))
 
     # ── READY MEANS SUBMITTED ───────────────────────────────────────────────
     # RULING (2026-08-14): "when marked ready, it did not flow to the
