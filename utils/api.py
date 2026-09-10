@@ -5681,6 +5681,31 @@ def pipeline_drill(
     }
 
 
+def _stages_in_bucket(label: str) -> set:
+    """Every stage name a funnel bucket counts, by its label.
+
+    Empty when the label names no bucket - the caller then matches the stage
+    exactly, which is what it always did.
+    """
+    want = str(label or "").strip().lower()
+    if not want:
+        return set()
+    out = set()
+    try:
+        from utils.core import get_pipeline_settings
+        cfg = get_pipeline_settings() or {}
+        for _fam, buckets in (cfg.get("stage_buckets") or {}).items():
+            for b in (buckets or []):
+                lab = str(b.get("label") or b.get("key") or "").strip().lower()
+                if lab == want:
+                    for st in (b.get("steps") or []):
+                        if str(st).strip():
+                            out.add(str(st).strip())
+    except Exception:
+        return set()
+    return out
+
+
 @app.get("/api/pipeline/funnel/drill")
 def pipeline_funnel_drill(
     cls: str = "all",
@@ -5709,8 +5734,17 @@ def pipeline_funnel_drill(
             return False
         if not d.get("manager_validated"):
             return False
-        if stage and d.get("stage") != stage:
-            return False
+        # ── THE ROW IS A BUCKET, NOT A STAGE ──────────────────────────
+        # Credit Analysis counts deals at several stage names. Matching the
+        # label exactly opened a row of 11 to nothing, and the click looked
+        # dead. Falls back to the exact match when the label names no bucket.
+        if stage:
+            _in_bucket = _stages_in_bucket(stage)
+            if _in_bucket:
+                if str(d.get("stage") or "") not in _in_bucket:
+                    return False
+            elif d.get("stage") != stage:
+                return False
         if cls and cls != "all":
             if _classify_product(d.get("product_type") or d.get("product", "")) != cls:
                 return False
