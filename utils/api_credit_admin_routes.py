@@ -340,6 +340,16 @@ def credit_admin_request_from_branch(
     audit_log("CREDIT_ADMIN_ASKED_BRANCH",
               str(user.get("username", "") or ""),
               "%s|to=%s|%s" % (case_id, ",".join(p["code"] for p in to), what[:60]))
+    try:
+        _app_id = str(case.get("application_id") or case.get("app_id") or "")
+        if _app_id:
+            from utils.handover import journey as _journey
+            _journey(_app_id, "credit_admin_asked", user,
+                     "Credit admin needs: %s (from %s)"
+                     % (what, ", ".join(p["name"] or p["code"] for p in to)),
+                     to=[p["code"] for p in to])
+    except Exception:
+        pass
     return {"case_id": case_id, "asked": [p["code"] for p in to],
             "awaiting_branch": True}
 

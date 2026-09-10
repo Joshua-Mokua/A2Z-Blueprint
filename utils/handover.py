@@ -85,6 +85,45 @@ def _audit(action: str, detail: str) -> None:
         pass
 
 
+
+# ── WRITING IT ON THE JOURNEY ────────────────────────────────────────────────
+
+def journey(app_id: str, event: str, user: Dict[str, Any], note: str = "",
+            **extra: Any) -> None:
+    """Put one line on the case journey. Never raises.
+
+    The journey is what an analyst, a committee member and an auditor read
+    to know what happened to a case. Every handover this week wrote to the
+    audit log and none of them wrote here, so a case could be sent back,
+    asked about, and re-valued with nothing on its journey to say so.
+
+    `event` is a short snake_case name the Timeline can label. `note` is the
+    sentence a reader needs. Anything in extra is kept on the entry.
+    """
+    try:
+        from utils.api_lms_routes import _lam
+        lam = _lam()
+        app = lam.get(app_id)
+        if not app:
+            return
+        hist = list(app.get("history") or [])
+        entry = {
+            "event": str(event or "").strip(),
+            "by": str(user.get("staff_code", "") or ""),
+            "by_name": str(user.get("full_name", "") or ""),
+            "by_role": str(user.get("role", "") or ""),
+            "at": _dt.datetime.now().isoformat(timespec="seconds"),
+            "note": str(note or ""),
+        }
+        for k, v in (extra or {}).items():
+            if k not in entry and v not in (None, ""):
+                entry[k] = v
+        hist.append(entry)
+        lam.update(app_id, {"history": hist})
+    except Exception as exc:                                # pragma: no cover
+        _audit("JOURNEY_NOT_WRITTEN", "%s|%s|%s" % (app_id, event, str(exc)[:50]))
+
+
 # ── WHO IS BEING ASKED ───────────────────────────────────────────────────────
 
 def people_from(raw: Any, fallback_code: str = "",
@@ -197,6 +236,12 @@ def send_back(app_id: str, *, to: Any, reason: str, user: Dict[str, Any],
             updates["froze_at_stage"] = froze_at
 
     lam.update(app_id, updates)
+    journey(app_id, "sent_back", user,
+            "Sent back by %s to %s: %s"
+            % (asked_from, ", ".join(p["name"] or p["code"] for p in people),
+               reason),
+            to=[p["code"] for p in people], froze_at_stage=froze_at,
+            returned_from=asked_from)
     _audit("HANDOVER_SENT_BACK",
            "%s|from=%s|to=%s|%s"
            % (app_id, asked_from, ",".join(p["code"] for p in people),
@@ -292,6 +337,11 @@ def bring_back(app_id: str, user: Dict[str, Any]) -> Dict[str, Any]:
         "returned_by_code": "",
         "returned_by_name": "",
     })
+    journey(app_id, "brought_back", user,
+            "Work done - back to %s%s"
+            % (back_to or "the pool",
+               (", restored to %s" % restored) if restored else ""),
+            restored_stage=restored)
     if back_to:
         notify(back_to, "%s is back with you" % app_id,
                "<p><b>%s</b> has been worked and is back with you.</p>" % app_id,

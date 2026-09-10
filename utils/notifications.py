@@ -1,6 +1,7 @@
 """utils/notifications.py — In-app notification engine.
 Real-time notifications for: assignments, approvals, alerts, month-end actions.
 """
+import os
 import json
 from pathlib import Path
 from datetime import date, datetime
@@ -201,11 +202,34 @@ def send_email(to: str, subject: str, body: str = "",
         from email.mime.text import MIMEText
         from email.mime.multipart import MIMEMultipart
         from utils.core import _smtp_deliver, _from_header
-        msg = MIMEMultipart("alternative")
+        # "mixed" so real attachments can ride along; "alternative" was for text
+        # and html only, and silently dropped anything else.
+        msg = MIMEMultipart("mixed")
         msg["Subject"] = subject
         msg["From"]    = _from_header(cfg)
         msg["To"]      = to
-        msg.attach(MIMEText(body or subject, "html"))
+        # Where a reply goes. Without this every reply went to noreply and was
+        # never read - which is what a decision-by-email needs to work.
+        _reply_to = str(kwargs.get("reply_to") or cfg.get("reply_to") or "").strip()
+        if _reply_to:
+            msg["Reply-To"] = _reply_to
+        _is_html = "<" in (body or "") and ">" in (body or "")
+        msg.attach(MIMEText(body or subject, "html" if _is_html else "plain"))
+        # Attachments, if any were given. The parameter existed and was ignored.
+        for _p in (attachments or []):
+            try:
+                from email.mime.base import MIMEBase
+                from email import encoders as _enc
+                with open(_p, "rb") as _fh:
+                    _part = MIMEBase("application", "octet-stream")
+                    _part.set_payload(_fh.read())
+                _enc.encode_base64(_part)
+                _part.add_header("Content-Disposition",
+                                 "attachment; filename=\"%s\""
+                                 % os.path.basename(_p))
+                msg.attach(_part)
+            except Exception:
+                pass
         _smtp_deliver(cfg, msg, [to])
         _v471_logger.info(f"send_email sent: to={to} subj={subject!r}")
         return True

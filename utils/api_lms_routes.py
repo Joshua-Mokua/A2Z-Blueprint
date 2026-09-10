@@ -3369,6 +3369,10 @@ def lms_seek_input(
                         "awaiting_input_from": to_code})
     audit_log("LMS_INPUT_SOUGHT", str(user.get("username", "") or ""),
               "%s|from=%s|%s" % (app_id, to_code, question[:60]))
+    from utils.handover import journey as _journey
+    _journey(app_id, "input_sought", user,
+             "Asked %s for input: %s" % (to_name or to_code, question),
+             to=to_code)
     _hv_notify(to_code,
           "Your input is wanted on %s" % app_id,
           "<p>%s has asked for your input on <b>%s</b>.</p><p>%s</p>"
@@ -3421,6 +3425,12 @@ def lms_input_response(
                         "awaiting_input_from": ""})
     audit_log("LMS_INPUT_GIVEN", str(user.get("username", "") or ""),
               "%s|%s|%s" % (app_id, stance or "commented", answer[:60]))
+    from utils.handover import journey as _journey
+    _journey(app_id, "input_given", user,
+             "%s: %s" % ({"supports": "Supports it",
+                          "opposes": "Does not support it"}.get(
+                              stance or "", "Commented"), answer),
+             stance=stance or "commented")
     _hv_notify(str((mine[-1] or {}).get("asked_by", "") or ""),
           "Input given on %s" % app_id,
           "<p>%s has answered on <b>%s</b>: %s</p><p>%s</p>"

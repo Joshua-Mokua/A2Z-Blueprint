@@ -7694,6 +7694,17 @@ def pipeline_deal_amend_value(
     _audit("API_DEAL_AMEND_VALUE", user,
            f"deal_id={deal_id}|{old_f:.0f}->{new_value:.0f}|{reason[:80]}")
     try:
+        _app_id = str(deal.get("lms_application_id") or "").strip()
+        if _app_id:
+            from utils.handover import journey as _journey
+            _journey(_app_id, "value_amended", user,
+                     "Value %s -> %s: %s"
+                     % (format(int(old_f), ","), format(int(new_value), ","),
+                        reason),
+                     was=old_f, now=new_value)
+    except Exception:
+        pass
+    try:
         _db_sync_pipeline_deal(deal)
     except Exception as exc:
         logger.warning("amended %s but could not sync to the database: %s",
