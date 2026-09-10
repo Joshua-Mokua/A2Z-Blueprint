@@ -352,7 +352,9 @@
             "full_funnel": false
           }
         ],
-        "chair_vote_required": false
+        "chair_vote_required": false,
+        "min_quorum_count": 1,
+        "quorum_note": "department committee: one recommendation moves a case, set deliberately"
       },
       {
         "code": "B3",
@@ -361,7 +363,7 @@
         "branch": "",
         "kind": "",
         "recording_mode": "voting",
-        "voting_rule": "SIMPLE_MAJORITY",
+        "voting_rule": "SINGLE_APPROVER",
         "amount_threshold_kes": 0.0,
         "members": [
           {
@@ -388,14 +390,17 @@
             "staff_code": "KE840",
             "full_funnel": false
           }
-        ]
+        ],
+        "min_quorum_count": 1,
+        "chair_vote_required": false,
+        "quorum_note": "department committee: one recommendation moves a case, set deliberately"
       },
       {
         "code": "B4",
         "name": "Credit Committee",
         "chaired_by": "Thomas Okumu",
         "recording_mode": "voting",
-        "voting_rule": "SIMPLE_MAJORITY",
+        "voting_rule": "SINGLE_APPROVER",
         "amount_threshold_kes": 0.0,
         "members": [
           {
@@ -455,14 +460,17 @@
             "role": "Senior FX Trader"
           }
         ],
-        "chair_staff_code": "KE820"
+        "chair_staff_code": "KE820",
+        "min_quorum_count": 1,
+        "chair_vote_required": false,
+        "quorum_note": "department committee: one recommendation moves a case, set deliberately"
       },
       {
         "code": "B5",
         "name": "Board Credit Committee",
         "chaired_by": "",
         "recording_mode": "voting",
-        "voting_rule": "SIMPLE_MAJORITY",
+        "voting_rule": "SINGLE_APPROVER",
         "amount_threshold_kes": 0.0,
         "members": [
           {
@@ -477,7 +485,10 @@
             "staff_code": "",
             "full_funnel": true
           }
-        ]
+        ],
+        "min_quorum_count": 1,
+        "chair_vote_required": false,
+        "quorum_note": "department committee: one recommendation moves a case, set deliberately"
       },
       {
         "code": "BCC_BRN002",
@@ -1166,10 +1177,13 @@
         "name": "Branch Credit Committee (routes to the deal's branch)",
         "chaired_by": "",
         "recording_mode": "voting",
-        "voting_rule": "SIMPLE_MAJORITY",
+        "voting_rule": "SINGLE_APPROVER",
         "amount_threshold_kes": 0.0,
         "kind": "branch_placeholder",
-        "members": []
+        "members": [],
+        "min_quorum_count": 1,
+        "chair_vote_required": false,
+        "quorum_note": "department committee: one recommendation moves a case, set deliberately"
       }
     ],
     "dcc": {

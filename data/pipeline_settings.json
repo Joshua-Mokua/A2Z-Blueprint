@@ -447,6 +447,7 @@
     "asset": [
       "Initiation",
       "Documentation",
+      "Rework",
       "Branch Credit Committee",
       "Department Analyst",
       "Department Business Committee",
@@ -460,6 +461,7 @@
     "liability": [
       "Initiation",
       "Documentation",
+      "Rework",
       "Approval",
       "Opening",
       "Closed Won",
@@ -468,6 +470,7 @@
     "insurance": [
       "Initiation",
       "Documentation",
+      "Rework",
       "Approval",
       "Opening",
       "Closed Won",
@@ -476,6 +479,7 @@
     "other": [
       "Initiation",
       "Documentation",
+      "Rework",
       "Approval",
       "Opening",
       "Closed Won",
@@ -586,7 +590,8 @@
     }
   },
   "disbursement_roles": [
-    "Treasury Back Office"
+    "Treasury Back Office",
+    "trops"
   ],
   "product_flows": {
     "Business Loan": {
@@ -688,6 +693,11 @@
         {
           "stage": "Documentation",
           "target_days": 1
+        },
+        {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
         },
         {
           "stage": "Branch Credit Committee Review",
@@ -906,6 +916,11 @@
           "target_days": 1
         },
         {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
+        },
+        {
           "stage": "Branch Credit Committee Review",
           "target_days": 1
         },
@@ -958,6 +973,11 @@
         {
           "stage": "Documentation",
           "target_days": 1
+        },
+        {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
         },
         {
           "stage": "Branch Credit Committee Review",
@@ -1014,6 +1034,11 @@
           "target_days": 1
         },
         {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
+        },
+        {
           "stage": "Branch Credit Committee Review",
           "target_days": 1
         },
@@ -1067,6 +1092,11 @@
           "win_probability": 50
         },
         {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
+        },
+        {
           "stage": "Account Openned",
           "target_days": 1
         },
@@ -1100,6 +1130,11 @@
           "stage": "Documentation",
           "target_days": 1,
           "win_probability": 50
+        },
+        {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
         },
         {
           "stage": "Closed Won",
@@ -1167,6 +1202,11 @@
           "target_days": 4
         },
         {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
+        },
+        {
           "stage": "Closed Won",
           "target_days": 1
         },
@@ -1200,6 +1240,11 @@
           "target_days": 4
         },
         {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
+        },
+        {
           "stage": "Closed Won",
           "target_days": 1
         },
@@ -1231,6 +1276,11 @@
         {
           "stage": "Documentation",
           "target_days": 4
+        },
+        {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
         },
         {
           "stage": "Closed Won",
@@ -1390,6 +1440,11 @@
           "target_days": 1
         },
         {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
+        },
+        {
           "stage": "Branch Credit Committee",
           "target_days": 1
         },
@@ -1488,6 +1543,11 @@
           "target_days": 4
         },
         {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
+        },
+        {
           "stage": "Closed Won",
           "target_days": 1
         },
@@ -1519,6 +1579,11 @@
         {
           "stage": "Documentation",
           "target_days": 4
+        },
+        {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
         },
         {
           "stage": "Closed Won",
@@ -1554,6 +1619,11 @@
           "target_days": 4
         },
         {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
+        },
+        {
           "stage": "Closed Won",
           "target_days": 1
         },
@@ -1585,6 +1655,11 @@
         {
           "stage": "Documentation",
           "target_days": 4
+        },
+        {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
         },
         {
           "stage": "Closed Won",
@@ -1620,6 +1695,11 @@
           "target_days": 4
         },
         {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
+        },
+        {
           "stage": "Closed Won",
           "target_days": 1
         },
@@ -1653,6 +1733,11 @@
           "target_days": 4
         },
         {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
+        },
+        {
           "stage": "Closed Won",
           "target_days": 1
         },
@@ -1684,6 +1769,11 @@
         {
           "stage": "Documentation",
           "target_days": 4
+        },
+        {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
         },
         {
           "stage": "Closed Won",
@@ -1891,6 +1981,11 @@
           "win_probability": 9
         },
         {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
+        },
+        {
           "stage": "Branch Credit Committee Review",
           "target_days": 1,
           "win_probability": 30
@@ -1995,6 +2090,11 @@
           "stage": "Documentation",
           "target_days": 5,
           "win_probability": 15
+        },
+        {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
         },
         {
           "stage": "Branch Credit Committee Review",
@@ -2129,6 +2229,11 @@
           "target_days": 1
         },
         {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
+        },
+        {
           "stage": "Branch Credit Committee Review",
           "target_days": 1
         },
@@ -2183,6 +2288,11 @@
           "stage": "Documentation",
           "target_days": 1,
           "win_probability": 9
+        },
+        {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
         },
         {
           "stage": "Branch Credit Committee Review",
@@ -2254,6 +2364,11 @@
         {
           "stage": "Documentation",
           "target_days": 5
+        },
+        {
+          "stage": "Rework",
+          "sla_days": 3,
+          "probability": 15
         },
         {
           "stage": "Branch Credit Committee Review",
