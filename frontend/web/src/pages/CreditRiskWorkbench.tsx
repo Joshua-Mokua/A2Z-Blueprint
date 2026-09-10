@@ -55,7 +55,7 @@ export function CreditRiskWorkbench() {
 
   const [apps, setApps] = useState<LoanApplication[]>([]);
   const [lib, setLib] = useState<ConditionLibrary | null>(null);
-  const [tab, setTab] = useState<'mine' | 'pool'>('mine');
+  const [tab, setTab] = useState<'mine' | 'pool' | 'all'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -99,7 +99,11 @@ export function CreditRiskWorkbench() {
     [ready, myCode],
   );
   const pool = useMemo(() => ready.filter((a) => !assigneeOf(a).code), [ready]);
-  const shown = tab === 'mine' ? mine : pool;
+  // All: everything at this stage, whoever holds it. Without it a case
+  // assigned to somebody else was in neither tab, and eleven read as six.
+  const shown = tab === 'mine' ? mine : tab === 'pool' ? pool : ready;
+  const withOthers = ready.filter(
+    (a) => assigneeOf(a).code && assigneeOf(a).code !== myCode);
 
   // Who a case can be returned to: everyone already on it. Returning to
   // somebody who has never touched the case is how work goes missing.
@@ -212,6 +216,16 @@ export function CreditRiskWorkbench() {
                   tab === 'pool' ? 'bg-[#0097A7] text-white' : 'border bg-white'}`}>
           Pool ({pool.length})
         </button>
+        <button type="button" onClick={() => setTab('all')}
+                className={`rounded-lg px-4 py-2 text-sm font-medium ${
+                  tab === 'all' ? 'bg-[#0097A7] text-white' : 'border bg-white'}`}>
+          All ({ready.length})
+        </button>
+        {withOthers.length > 0 && (
+          <span className="text-xs text-gray-500">
+            {withOthers.length} held by somebody else
+          </span>
+        )}
         <div className="rounded-lg border bg-white px-4 py-2 text-sm">
           Their value{' '}
           <span className="font-semibold">
@@ -241,7 +255,9 @@ export function CreditRiskWorkbench() {
       ) : shown.length === 0 ? (
         <div className="mt-6 rounded-lg border bg-white p-10 text-center">
           <p className="text-gray-700">
-            {tab === 'mine' ? 'Nothing is assigned to you.' : 'The pool is empty.'}
+            {tab === 'mine' ? 'Nothing is assigned to you.'
+              : tab === 'pool' ? 'The pool is empty.'
+              : 'Nothing is at credit risk.'}
           </p>
           <p className="mt-1 text-sm text-gray-500">
             A case arrives here once a department committee has recommended it.
