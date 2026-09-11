@@ -282,36 +282,40 @@
         "branch": "",
         "kind": "",
         "recording_mode": "voting",
-        "voting_rule": "SINGLE_APPROVER",
+        "voting_rule": "SIMPLE_MAJORITY",
         "amount_threshold_kes": 0.0,
         "members": [
           {
             "name": "MAGERO Lunar [EKE-Consumer Banking]",
             "role": "Head of Sales",
             "staff_code": "KE1136",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "JELAGAT Jane [EKE-Consumer Banking]",
             "role": "Head of Consumer",
             "staff_code": "KE1158",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "MAINGI Robert [EKE-Consumer Banking]",
             "role": "Head, Digital Channels & Agency Network",
             "staff_code": "KE1159",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "MBANO Esther [EKE-Consumer]",
             "role": "Asset Product Manager",
             "staff_code": "KE1319",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_vote_required": false,
@@ -331,25 +335,29 @@
             "name": "Victor Mutabari Mbaabu",
             "role": "Head EFS",
             "staff_code": "KE959",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "WAMBUA Upendo [EKE-commercial Banking]",
             "role": "Head, SME",
             "staff_code": "KE1281",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "Livingstone Maina Kagio",
             "role": "Head, Local Corporates",
             "staff_code": "KE1252",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "MUTHAMA Joshua",
             "role": "Staff",
             "staff_code": "KE1533",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_vote_required": false,
@@ -370,7 +378,8 @@
             "name": "ORENGE Jaffrson [EKE-Corporate]",
             "role": "Relationship Manager, Regional Corporates",
             "staff_code": "KE1293",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "RONO Cyprian [EKE-Corporate Bank]",
@@ -382,13 +391,15 @@
             "name": "George Nyamai Jimmy",
             "role": "Corporate Credit Analyst",
             "staff_code": "KE1315",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "MAGOTHE Samuel [EKE-Corporate Bank]",
             "role": "Relationship Manager, Regional Corporates",
             "staff_code": "KE840",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "min_quorum_count": 1,
@@ -408,56 +419,72 @@
             "member_id": "KE1333",
             "staff_code": "KE1333",
             "name": "Rabecca Mbithi",
-            "role": "Managing Director"
+            "role": "Managing Director",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "id": "KE820",
             "member_id": "KE820",
             "staff_code": "KE820",
             "name": "Thomas Okumu",
-            "role": "Director, Credit Risk Management- Kenya & EAC"
+            "role": "Director, Credit Risk Management- Kenya & EAC",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "id": "KE1219",
             "member_id": "KE1219",
             "staff_code": "KE1219",
             "name": "Justus Kimutai Korir",
-            "role": "Credit Risk Manager"
+            "role": "Credit Risk Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "id": "KE1265",
             "member_id": "KE1265",
             "staff_code": "KE1265",
             "name": "RONO Cyprian [EKE-Corporate Bank]",
-            "role": "Director, Corporate Banking Kenya & EAC"
+            "role": "Director, Corporate Banking Kenya & EAC",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "id": "KE959",
             "member_id": "KE959",
             "staff_code": "KE959",
             "name": "Victor Mutabari Mbaabu",
-            "role": "Head EFS"
+            "role": "Head EFS",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "id": "KE555",
             "member_id": "KE555",
             "staff_code": "KE555",
             "name": "Mary Wangari Wanjiru",
-            "role": "Chief Finance Officer"
+            "role": "Chief Finance Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "id": "KE1141",
             "member_id": "KE1141",
             "staff_code": "KE1141",
             "name": "Mohamed Souleymane",
-            "role": "Director, Treasury & FICC, EAC"
+            "role": "Director, Treasury & FICC, EAC",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "id": "KE175",
             "member_id": "KE175",
             "staff_code": "KE175",
             "name": "Peninah Wanjiru Njenga",
-            "role": "Senior FX Trader"
+            "role": "Senior FX Trader",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_staff_code": "KE820",
@@ -505,32 +532,44 @@
             "name": "Hellen Wangui Gathii",
             "role": "Branch Manager",
             "id": "KE356",
-            "member_id": "KE356"
+            "member_id": "KE356",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE96",
             "name": "MWANGI Joyce  [EKE-Operations]",
-            "role": "Customer Service Manager"
+            "role": "Customer Service Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE792",
             "name": "Esther Wangari Mathenge",
-            "role": "Assistant Branch Service & Operations Manager"
+            "role": "Assistant Branch Service & Operations Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1153",
             "name": "RUBIA Grace [EKE-Operations]",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1228",
             "name": "CHISAKANE James [EKE-Consumer Banking]",
-            "role": "Relationship Manager"
+            "role": "Relationship Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1341",
             "name": "Vincent Gitonga Maina",
-            "role": "Relationship Manager"
+            "role": "Relationship Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_staff_code": "KE356"
@@ -550,22 +589,30 @@
             "name": "MURAYA Martha  [EKE-commercial Banking]",
             "role": "Branch Manager",
             "id": "KE150",
-            "member_id": "KE150"
+            "member_id": "KE150",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE968",
             "name": "ATIBU Honest [EKE-Operations]",
-            "role": "Customer Service Manager"
+            "role": "Customer Service Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1026",
             "name": "WAMBUA Rene [EKE-Operations]",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE827",
             "name": "LALARARI Veronica [EKE-Consumer Banking]",
-            "role": "Relationship Manager, Premier Banking"
+            "role": "Relationship Manager, Premier Banking",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_staff_code": "KE150"
@@ -585,22 +632,30 @@
             "name": "THAIRU Ruth  [EKE-commercial Banking]",
             "role": "Branch Manager",
             "id": "KE332",
-            "member_id": "KE332"
+            "member_id": "KE332",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE814",
             "name": "RIBUTHI Loise [EKE-Operations]",
-            "role": "Customer Service Manager"
+            "role": "Customer Service Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1090",
             "name": "OMOLO David [EKE-Operations]",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1301",
             "name": "ODHIAMBO Susan [EKE-Consumer Banking]",
-            "role": "Relationship Officer"
+            "role": "Relationship Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_staff_code": "KE332"
@@ -619,37 +674,43 @@
             "name": "OKWARO Thaddeus  [EKE-commercial Banking]",
             "role": "Branch Manager",
             "staff_code": "KE322",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "Hilda Nyaboke Osoro",
             "role": "Assistant Branch Service & Operations Manager",
             "staff_code": "KE801",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "Eric Odhiambo Onyango",
             "role": "Branch Operations Officer",
             "staff_code": "KE1352",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "AJOCK Jackline [EKE-Commercial]",
             "role": "Relationship Manager, SME",
             "staff_code": "KE1244",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "Jackson Nyakang'o",
             "role": "Relationship Officer",
             "staff_code": "KE1285",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "Geoffrey Kerandi Onywoki",
             "role": "Relationship Manager, SME",
             "staff_code": "KE1335",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ]
       },
@@ -668,47 +729,65 @@
             "name": "MONARI Violet  [EKE-commercial Banking]",
             "role": "Branch Manager",
             "id": "KE395",
-            "member_id": "KE395"
+            "member_id": "KE395",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE484",
             "name": "Mbuthia Florence [EKE-Operations]",
-            "role": "Customer Service Manager"
+            "role": "Customer Service Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE852",
             "name": "BUSOLO Faith [EKE-Commercial Banking]",
-            "role": "Assistant Branch Service & Operations Manager"
+            "role": "Assistant Branch Service & Operations Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1048",
             "name": "SIMIYU Maryanne [EKE-Operations]",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1204",
             "name": "NGUGI Michael [EKE-Commercial Banking]",
-            "role": "Relationship Manager, SME"
+            "role": "Relationship Manager, SME",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1330",
             "name": "DOLA Jenipher",
-            "role": "Relationship Manager"
+            "role": "Relationship Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1340",
             "name": "MUTISYA Mathew",
-            "role": "Relationship Manager"
+            "role": "Relationship Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE539",
             "name": "Lidahuli Lucy [EKE-Consumer Banking]",
-            "role": "Relationship Manager, Premier Banking"
+            "role": "Relationship Manager, Premier Banking",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE949",
             "name": "Gikonyo Monica [EKE-Consumer Banking]",
-            "role": "Relationship Officer"
+            "role": "Relationship Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_staff_code": "KE395"
@@ -728,37 +807,51 @@
             "name": "MEEME Joyce [EKE-Operations]",
             "role": "Branch Manager",
             "id": "KE632",
-            "member_id": "KE632"
+            "member_id": "KE632",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE708",
             "name": "Maryanne Njeri Chege",
-            "role": "Customer Service Manager"
+            "role": "Customer Service Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE662",
             "name": "KOECH Faith [EKE-Operations]",
-            "role": "Assistant Branch Service & Operations Manager"
+            "role": "Assistant Branch Service & Operations Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1039",
             "name": "ALLI Sharleen [EKE-Operations]",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1189",
             "name": "Edward Mwenda",
-            "role": "Relationship Manager, Premier Banking"
+            "role": "Relationship Manager, Premier Banking",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1310",
             "name": "MUSYOKI Lydiah [EKE-commercial Banking]",
-            "role": "Relationship Manager, SME"
+            "role": "Relationship Manager, SME",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE343",
             "name": "OYWER Nancy  [EKE-Consumer Banking]",
-            "role": "Relationship Officer"
+            "role": "Relationship Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_staff_code": "KE632"
@@ -777,36 +870,41 @@
             "name": "WANJALA Geoffrey [EKE-Commercial]",
             "role": "Branch Manager",
             "staff_code": "KE1289",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "Josephine Gakii Gituma",
             "role": "Customer Service Manager",
             "staff_code": "KE345",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "KARIARA Lazaro [EKE-Operations]",
             "role": "Branch Operations Officer",
             "staff_code": "KE1031",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "Dinah Nekesa Makokha",
             "role": "Direct Sales Agent",
             "staff_code": "CN212",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "KAMAU Naomi [EKE-Commercial Banking]",
             "role": "Relationship Manager, SME",
             "staff_code": "KE1364",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ]
       },
@@ -825,22 +923,30 @@
             "name": "MINING Ludy [EKE-Operations]",
             "role": "Branch Manager",
             "id": "KE439",
-            "member_id": "KE439"
+            "member_id": "KE439",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1170",
             "name": "Pauline Wangari Wacheru",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1316",
             "name": "NGETICH Philip [EKE-Commercial]",
-            "role": "Relationship Manager, SME"
+            "role": "Relationship Manager, SME",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1343",
             "name": "SANG Joan",
-            "role": "Relationship Officer"
+            "role": "Relationship Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_staff_code": "KE439"
@@ -860,27 +966,37 @@
             "name": "ADAM Amina [EKE-Operations]",
             "role": "Customer Service Manager",
             "id": "KE526",
-            "member_id": "KE526"
+            "member_id": "KE526",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE807",
             "name": "Fenella Mwamburi",
-            "role": "Assistant Branch Service & Operations Manager"
+            "role": "Assistant Branch Service & Operations Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1174",
             "name": "Msellem Ali Omar",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1288",
             "name": "Griffin Muendo William",
-            "role": "Relationship Manager, Local Corporate"
+            "role": "Relationship Manager, Local Corporate",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE445",
             "name": "MACHARIA Jennifer [EKE-Consumer Banking]",
-            "role": "Relationship Officer"
+            "role": "Relationship Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_staff_code": "KE526"
@@ -900,17 +1016,23 @@
             "name": "Betty Wachera Waiguru",
             "role": "Customer Service Manager",
             "id": "KE461",
-            "member_id": "KE461"
+            "member_id": "KE461",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1124",
             "name": "GITONGA Brenda [EKE-Operations]",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1286",
             "name": "WAWERU Viginia",
-            "role": "Relationship Officer"
+            "role": "Relationship Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_staff_code": "KE461"
@@ -930,32 +1052,44 @@
             "name": "Carolyne Nashipae Adewunmi",
             "role": "Branch Manager",
             "id": "KE1342",
-            "member_id": "KE1342"
+            "member_id": "KE1342",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE519",
             "name": "Wairimu Margaret [EKE-Operations]",
-            "role": "Customer Service Manager"
+            "role": "Customer Service Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE573",
             "name": "ONDIMU Divinah [EKE-Consumer Banking]",
-            "role": "Assistant Branch Service & Operations Manager"
+            "role": "Assistant Branch Service & Operations Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1129",
             "name": "ODUOR Tobias [EKE-Operations]",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1229",
             "name": "OUMA Eric [EKE-Consumer Banking]",
-            "role": "Relationship Officer"
+            "role": "Relationship Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1334",
             "name": "Ian Odiwuor Were",
-            "role": "Relationship Manager"
+            "role": "Relationship Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_staff_code": "KE1342"
@@ -975,22 +1109,30 @@
             "name": "Richard Nzioka",
             "role": "Branch Manager",
             "id": "KE1317",
-            "member_id": "KE1317"
+            "member_id": "KE1317",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE408",
             "name": "Mary Chepkemboi Lagat",
-            "role": "Customer Service Manager"
+            "role": "Customer Service Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1131",
             "name": "Dennis Onyango Ndonji",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1296",
             "name": "NYAWIRA Jane [EKE-Consumer Banking]",
-            "role": "Relationship Manager"
+            "role": "Relationship Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_staff_code": "KE1317"
@@ -1009,25 +1151,41 @@
             "name": "MIANO ELIZABETH [EKE-Operations]",
             "role": "Customer Service Manager",
             "staff_code": "KE546",
-            "full_funnel": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "MWIRIGI Esther [EKE-Operations]",
             "role": "Branch Operations Officer",
             "staff_code": "KE1044",
-            "full_funnel": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
+          },
+          {
+            "name": "WAMBUI Francis [EKE-Operations]",
+            "role": "Branch Operations Officer",
+            "staff_code": "KE1133",
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "KENDI Glory [EKE-Consumer]",
             "role": "Relationship Officer",
             "staff_code": "KE1262",
-            "full_funnel": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "GICHUHI Robert [EKE-Commercial Banking]",
             "role": "Branch Manager",
             "staff_code": "KE1363",
-            "full_funnel": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ]
       },
@@ -1045,31 +1203,36 @@
             "name": "RONO Brenda [EKE-Operations]",
             "role": "Customer Service Manager",
             "staff_code": "KE637",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "Ursula Wanjira Muthee",
             "role": "Branch Operations Officer",
             "staff_code": "KE1032",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "Kennedy Luseno Voreza",
             "role": "Relationship Manager",
             "staff_code": "KE1344",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "John Njogu Waithaka",
             "role": "Relationship Officer",
             "staff_code": "KE887",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "WAGURA Fredrick [EKE-Commercial Banking]",
             "role": "Branch Manager",
             "staff_code": "KE1362",
-            "full_funnel": false
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ]
       },
@@ -1088,32 +1251,44 @@
             "name": "OJIAMBO Dennis [EKE-Commercial Banking]",
             "role": "Branch Manager",
             "id": "KE1218",
-            "member_id": "KE1218"
+            "member_id": "KE1218",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE859",
             "name": "Jackline Nyakerario Mainye",
-            "role": "Customer Service Manager"
+            "role": "Customer Service Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE668",
             "name": "Billy Calary Arika",
-            "role": "Assistant Branch Service & Operations Manager"
+            "role": "Assistant Branch Service & Operations Manager",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1206",
             "name": "Caroline Njoki Nyoro",
-            "role": "Branch Operations Officer"
+            "role": "Branch Operations Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1238",
             "name": "OGENDO Amon [EKE-Commercial]",
-            "role": "Relationship Manager, SME"
+            "role": "Relationship Manager, SME",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "staff_code": "KE1318",
             "name": "ARAKA Edwin [EKE-Consumer Banking]",
-            "role": "Relationship Officer"
+            "role": "Relationship Officer",
+            "full_funnel": true,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ],
         "chair_staff_code": "KE1218"
@@ -1132,43 +1307,49 @@
             "name": "YEGO Faith",
             "role": "Branch Manager",
             "staff_code": "KE1349",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "MULUMIA Bertha [EKE-Operations]",
             "role": "Customer Service Manager",
             "staff_code": "KE955",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "BUTT Roselyn [EKE-Operations]",
             "role": "Branch Operations Officer",
             "staff_code": "KE1134",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "Marieanne Ebby Kadatz Wanzare",
             "role": "Relationship Manager, Local Corporate",
             "staff_code": "KE1307",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "NZUVE Beatrice",
             "role": "Relationship Manager",
             "staff_code": "KE1350",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           },
           {
             "name": "Caroline Taabu Were",
             "role": "Branch DSA Team Lead",
             "staff_code": "CN112",
-            "full_funnel": false,
-            "deputy_chair": false
+            "full_funnel": true,
+            "deputy_chair": false,
+            "full_funnel_note": "committee voter granted view of what they vote on"
           }
         ]
       },
