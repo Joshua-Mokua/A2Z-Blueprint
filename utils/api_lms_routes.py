@@ -1826,12 +1826,44 @@ def lms_application_document_download(
     if not resolve_application_permissions(user, app).get("can_view"):
         raise HTTPException(status_code=403, detail="Application is out of scope")
     meta = (app.get("document_files", {}) or {}).get(doc_name)
+    # Fall through to the DEAL's files. FX1 shows deal-attached documents in the
+    # case list, but they live in the deal's document_files, not the case's - so
+    # without this the committee sees a document it cannot open (Korir's 404).
+    if not meta:
+        try:
+            _did = str(app.get("pipeline_deal_id") or "").strip()
+            if _did:
+                from utils.core import PipelineManager as _PM_doc
+                _d = _PM_doc().get_deal(_did) or {}
+                meta = (_d.get("document_files", {}) or {}).get(doc_name)
+        except Exception:
+            meta = None
     if not meta:
         raise HTTPException(status_code=404, detail=f"Document '{doc_name}' not found")
     root = _P(__file__).resolve().parent.parent
     fpath = root / str(meta.get("path", ""))
     if not fpath.exists():
-        raise HTTPException(status_code=404, detail="Stored file missing")
+        # Last resort: match by filename anywhere the app or deal recorded it,
+        # so a moved/relative path does not become a dead link ("worked
+        # yesterday, 404 today").
+        _fn = str(meta.get("filename", "") or "")
+        _found = None
+        try:
+            for _base in (root / "data" / "documents", root / "uploads",
+                          root / "data" / "uploads"):
+                if _base.exists():
+                    for _c in _base.rglob(_fn if _fn else "*"):
+                        if _c.is_file():
+                            _found = _c
+                            break
+                if _found:
+                    break
+        except Exception:
+            _found = None
+        if _found:
+            fpath = _found
+        else:
+            raise HTTPException(status_code=404, detail="Stored file missing")
     data = fpath.read_bytes()
     return StreamingResponse(
         _io.BytesIO(data), media_type="application/octet-stream",
