@@ -4190,8 +4190,25 @@ class PipelineManager:
                     'note': f"Stage: {old_stage} → {new_stage}. {note}",
                     'outcome': new_stage,
                 })
+                self._synced_deal = d
                 break
         self._save_deals()
+        # The funnel reads Postgres; saving only JSON drifts the stores on every
+        # stage change. Push the changed deal now. Best-effort - JSON is what the
+        # app reads, so a Postgres hiccup must not fail the stage change.
+        _synced = getattr(self, "_synced_deal", None)
+        if _synced is not None:
+            try:
+                from utils.api import _db_sync_pipeline_deal as _sync
+                _sync(_synced)
+            except Exception as _exc:
+                try:
+                    from utils.core_audit import audit_log as _al
+                    _al("STAGE_NOT_SYNCED_TO_PG", "system",
+                        "%s|%s" % (deal_id, str(_exc)[:60]))
+                except Exception:
+                    pass
+            self._synced_deal = None
 
     def add_activity(self, a):
         a['id']          = f"A{len(self.activities)+1:04d}"

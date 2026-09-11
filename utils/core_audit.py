@@ -398,6 +398,39 @@ def get_visible_staff(user_data: dict, staff_scores) -> "pd.DataFrame":
             # HO staff in a banking department → that department's pipeline
             if _unit_ho and _dl in ("consumer banking", "commercial banking", "corporate banking"):
                 return staff_scores[_dept_l == _dl].copy()
+            # -- BRANCH COMMITTEE VOTER SCOPE (additive) ---------------------
+            # A branch credit committee member who is NOT head-office still
+            # needs to see the deals they vote on - the ones owned by staff at
+            # their branch. Without this a branch voter (e.g. a Branch
+            # Operations Officer with no cascade) sees nothing. Does NOT touch
+            # the head-office rule above.
+            try:
+                _is_voter = False
+                from utils.api import _read_committee_palette as _rcp
+                for _c in (_rcp() or []):
+                    for _m in (_c.get("members") or []):
+                        if str(_m.get("staff_code", "") or "").strip() == _my_code:
+                            _is_voter = True
+                            break
+                    if _is_voter:
+                        break
+                if _is_voter and "Unit" in staff_scores.columns:
+                    _mrow2 = staff_scores[staff_scores["Staff Code"].astype(str)
+                                          .str.strip() == _my_code]
+                    if len(_mrow2):
+                        # The branch is the Unit column (Karatina, Kisumu,
+                        # Valley Arcade...). There is no Branch column. A branch
+                        # voter sees everyone at their Unit - except Head Office,
+                        # which is the segment rule's job, not a branch.
+                        _my_unit = str(_mrow2.iloc[0].get("Unit", "") or "").strip()
+                        if _my_unit and _my_unit.lower() != "head office":
+                            _unit_l = (staff_scores["Unit"].astype(str)
+                                       .str.strip().str.lower())
+                            _rows = staff_scores[_unit_l == _my_unit.lower()]
+                            if len(_rows):
+                                return _rows.copy()
+            except Exception:
+                pass
     except Exception:
         pass  # any issue → fall through to the unchanged tree logic
 
