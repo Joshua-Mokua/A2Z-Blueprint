@@ -3972,7 +3972,11 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
     stage_required = ""
     if doc_stage:
         stage_required = doc_stage
-        stage_ok = (current_stage == doc_stage)
+        # Rework is where a returned deal is frozen. Submitting from there is a
+        # resubmission - the same act as submitting from the document stage, so
+        # it is allowed. Without this a returned deal could never resubmit.
+        stage_ok = (current_stage == doc_stage
+                    or str(current_stage).strip().lower() == "rework")
     # Batch 4b-5: CR + committee journey gating.
     journey_codes = _effective_committee_journey(deal)
     cr = deal.get("cr", {}) if isinstance(deal.get("cr"), dict) else {}

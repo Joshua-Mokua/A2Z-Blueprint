@@ -1567,9 +1567,27 @@ def lms_application_documents_list(
     except Exception:
         _required = []
 
+    # The documents that are actually on the deal now - not the copy taken at
+    # submit time. An analyst or credit risk who attaches a file after
+    # submission must be visible to the committee that reviews it.
+    _provided = list(app.get("documents_provided", []) or [])
+    try:
+        _did = str(app.get("pipeline_deal_id") or "").strip()
+        if _did:
+            from utils.core import PipelineManager as _PM_docs
+            _d = _PM_docs().get_deal(_did) or {}
+            _live = list(_d.get("documents_provided", []) or [])
+            _seen = {str(x.get("name") if isinstance(x, dict) else x) for x in _provided}
+            for _f in _live:
+                _key = str(_f.get("name") if isinstance(_f, dict) else _f)
+                if _key and _key not in _seen:
+                    _provided.append(_f)
+                    _seen.add(_key)
+    except Exception:
+        pass
     return {"required": _required,
             "files": app.get("document_files", {}) or {},
-            "provided": list(app.get("documents_provided", []) or []),
+            "provided": _provided,
             # What has been asked for and not yet supplied, so one call answers
             # "what is on file and what is still owed".
             "requested": list(app.get("documents_requested", []) or [])}
@@ -3993,9 +4011,25 @@ def lms_committee_readiness(
                         d.get("product_type") or d.get("product", "")) or [])]
                     cur = str(d.get("stage", "") or "")
                     target = ""
-                    # The next COMMITTEE stage ahead of where the deal stands.
-                    if cur in flow:
+                    # Marking ready means the DEPARTMENT committee - that is
+                    # what the act is, whatever stage the deal is on. Going to
+                    # the nearest committee ahead sent a case frozen at Rework
+                    # to the branch committee by mistake; and "if cur in flow"
+                    # left a deal on an unrecognised stage behind entirely.
+                    for nxt in flow:
+                        if ("department" in nxt.lower()
+                                and "committee" in nxt.lower()):
+                            target = nxt
+                            break
+                    # No department committee in this product's flow: the next
+                    # committee ahead, or the last committee it has.
+                    if not target and cur in flow:
                         for nxt in flow[flow.index(cur) + 1:]:
+                            if "committee" in nxt.lower():
+                                target = nxt
+                                break
+                    if not target:
+                        for nxt in flow:
                             if "committee" in nxt.lower():
                                 target = nxt
                                 break
