@@ -3958,7 +3958,25 @@ def _credit_submission_state(deal: dict, user: dict, visible_codes: set) -> dict
                          "forwarding memo"}
     missing = [d for d in required
                if d not in provided and str(d).strip().lower() not in _LATER_STAGE_DOCS]
-    already = bool(deal.get("lms_application_id"))
+    # `already` blocked every returned deal: a deal that has been to credit
+    # keeps its lms_application_id, so bool(...) stayed True forever and
+    # Submit was dead. A returned deal is being re-submitted, not
+    # submitted fresh - so a deal at Rework, or whose case is returned,
+    # is NOT 'already' in credit.
+    _cur_stage = str(deal.get("stage", "") or "").strip().lower()
+    _case_returned = False
+    try:
+        from utils.api_lms_routes import _lam as _lam_sub
+        _aid = str(deal.get("lms_application_id") or "").strip()
+        if _aid:
+            _capp = _lam_sub().get(_aid) or {}
+            _case_returned = (str(_capp.get("status", "")).strip().lower()
+                              in ("returned", "returned_for_rework"))
+    except Exception:
+        _case_returned = False
+    already = (bool(deal.get("lms_application_id"))
+               and _cur_stage != "rework"
+               and not _case_returned)
     perms = resolve_deal_permissions(deal, user, visible_codes)
     my_code = str(user.get("staff_code", "") or "").strip()
     is_admin_like = bool(user.get("is_admin")) or "admin" in str(user.get("role", "")).lower()
