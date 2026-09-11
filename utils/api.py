@@ -12885,9 +12885,39 @@ def upload_deal_document(deal_id: str, body: _DocUploadBody,
 def list_deal_documents(deal_id: str, user: dict = Depends(get_current_user)):
     """The deal's attached document metadata + the required list."""
     _pm, deal = _deal_for_docs(deal_id, user)
-    return {"files": deal.get("document_files", {}) or {},
+    # Start with the deal's own files (branch documents).
+    _files = dict(deal.get("document_files", {}) or {})
+    for _k, _m in _files.items():
+        if isinstance(_m, dict) and "attached_role" not in _m:
+            _m["attached_role"] = "branch"
+    _provided = list(deal.get("documents_provided", []) or [])
+    # Merge the LINKED CASE's files (analyst / credit uploads). Same deal object
+    # is already loaded, so we read the case once - no full-store reparse, which
+    # is what made this call take minutes.
+    _aid = str(deal.get("lms_application_id") or "").strip()
+    if _aid:
+        try:
+            from utils.api_lms_routes import _lam as _lam_docs
+            _app = _lam_docs().get(_aid) or {}
+            for _k, _m in (_app.get("document_files", {}) or {}).items():
+                if _k not in _files:
+                    _mm = dict(_m) if isinstance(_m, dict) else {"filename": str(_m)}
+                    # who attached it, for the committee to see at a glance
+                    _mm.setdefault("attached_role", "credit")
+                    _mm.setdefault("attached_by_name",
+                                   str(_app.get("analyst", {}).get("name", "")
+                                       or "Credit"))
+                    _files[_k] = _mm
+            for _p in (_app.get("documents_provided", []) or []):
+                _nm = str(_p.get("name") if isinstance(_p, dict) else _p)
+                if _nm and _nm not in [str(x.get("name") if isinstance(x, dict)
+                                           else x) for x in _provided]:
+                    _provided.append(_p)
+        except Exception:
+            pass
+    return {"files": _files,
             "required": _get_required_documents_for_deal(deal),
-            "provided": list(deal.get("documents_provided", []) or [])}
+            "provided": _provided}
 
 
 @app.get("/api/pipeline/deals/{deal_id}/documents/{doc_name:path}", tags=["pipeline"])
@@ -12899,11 +12929,41 @@ def download_deal_document(deal_id: str, doc_name: str,
     _pm, deal = _deal_for_docs(deal_id, user)
     files = deal.get("document_files", {}) or {}
     meta = files.get(doc_name)
+    # Fall through to the linked CASE's files. DOCS2 shows them in the list, so
+    # the committee can click View on one - and without this that View 404s.
+    if not meta:
+        try:
+            _aid = str(deal.get("lms_application_id") or "").strip()
+            if _aid:
+                from utils.api_lms_routes import _lam as _lam_dl
+                _app = _lam_dl().get(_aid) or {}
+                meta = (_app.get("document_files", {}) or {}).get(doc_name)
+        except Exception:
+            meta = None
     if not meta:
         raise HTTPException(status_code=404, detail=f"No file for '{doc_name}'")
     fpath = ROOT / meta.get("path", "")
     if not fpath.exists():
-        raise HTTPException(status_code=404, detail="stored file missing")
+        # Recover a moved file by name, so a shifted relative path is not a dead
+        # link ("worked yesterday, 404 today").
+        _fn = str(meta.get("filename", "") or "")
+        _found = None
+        try:
+            for _base in (ROOT / "data" / "documents", ROOT / "uploads",
+                          ROOT / "data" / "uploads"):
+                if _base.exists() and _fn:
+                    for _c in _base.rglob(_fn):
+                        if _c.is_file():
+                            _found = _c
+                            break
+                if _found:
+                    break
+        except Exception:
+            _found = None
+        if _found:
+            fpath = _found
+        else:
+            raise HTTPException(status_code=404, detail="stored file missing")
     data = fpath.read_bytes()
     _audit("API_DEAL_DOC_DOWNLOAD", user, f"deal={deal_id}|doc={doc_name}")
     # ── SERVE IT AS WHAT IT IS ──────────────────────────────────────────────
