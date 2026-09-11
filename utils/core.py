@@ -5570,10 +5570,6 @@ class LoanApplicationManager:
     # The status is the truth: assignment, committee, decision and
     # disbursement all hang off it. The stage is where that work has got to.
     _STATUS_TO_STAGE = {
-        # A returned case is frozen at Rework by the return. SOT1 must agree,
-        # or it fights the freeze and drifts the deal back to analysis.
-        "returned":              "Rework",
-        "returned_for_rework":   "Rework",
         "submitted":              "Department Credit Analysis",
         "assigned":               "Department Credit Analysis",
         "in_review":              "Department Credit Analysis",

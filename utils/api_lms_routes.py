@@ -3817,14 +3817,21 @@ def lms_rework_reasons(
     return {"rework_reasons": reasons}
 
 
-@router.post("/applications/{app_id}/committee-readiness",
-             response_model=LoanAppMutationResponse)
 def _dt_now_lms() -> str:
     """Timestamp for a rework return."""
     import datetime as _d
     return _d.datetime.now().isoformat(timespec="seconds")
 
 
+# This helper had been inserted BETWEEN the decorator and the endpoint, so
+# @router.post bound the route to _dt_now_lms(): every HTTP call to
+# "Recommend to committee" returned an ISO string, which
+# response_model=LoanAppMutationResponse rejected as
+# ResponseValidationError - the 500. lms_committee_readiness itself was
+# never reachable over HTTP, which is why calling it directly in Python
+# always worked. The decorator must sit immediately above its function.
+@router.post("/applications/{app_id}/committee-readiness",
+             response_model=LoanAppMutationResponse)
 def lms_committee_readiness(
     app_id: str,
     payload: Dict[str, Any] = None,
