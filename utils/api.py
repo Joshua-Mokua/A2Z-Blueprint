@@ -4137,6 +4137,7 @@ def pipeline_next_step(deal_id: str, user: dict = Depends(get_current_user)):
     split BY WHO OWES THEM - because "8 documents outstanding" is not
     actionable when six of them belong to an analyst who has not started.
     """
+    from utils.core import PipelineManager
     pm = PipelineManager()
     deal = pm.get_deal(deal_id)
     if not deal:
@@ -4151,9 +4152,21 @@ def pipeline_next_step(deal_id: str, user: dict = Depends(get_current_user)):
     # "Submit to Branch Credit Committee Review" - two labels for one action,
     # disagreeing, on the same screen.
     _prod_docs, _gate = _product_document_config(deal)
+    flow = _stage_flow_for(deal.get("product_type") or deal.get("product", "")) or []
+    cur = str(deal.get("stage", "") or "")
     anchor_stage = _gate if (_gate and _gate in flow) else cur
     nxt = ""
-    if anchor_stage in flow:
+    # Branch lending has a constitutional first credit gate.  Do not let a
+    # drifted stage list teach the UI that Documentation submits to "Rework"
+    # (or anything else) while silently stepping around the branch committee.
+    _branch_stage_for_submit = next(
+        (str(_s) for _s in flow
+         if "branch" in str(_s).lower() and "committee" in str(_s).lower()),
+        "",
+    )
+    if _deal_is_branch_originated(deal) and _branch_stage_for_submit:
+        nxt = _branch_stage_for_submit
+    elif anchor_stage in flow:
         i = flow.index(anchor_stage)
         if i + 1 < len(flow):
             nxt = flow[i + 1]
@@ -4310,6 +4323,51 @@ def pipeline_submit_to_credit(
             detail="Cannot submit to credit — this deal has not been validated "
                    "by a manager. A manager must validate the deal first.",
         )
+    # ── BRANCH COMMITTEE IS A HARD GOVERNANCE BOUNDARY ─────────────────────
+    # A branch-originated lending case must first park at its Branch Credit
+    # Committee.  The committee-vote endpoint already auto-advances the case
+    # after quorum recommends it; the owner must NOT be able to step around
+    # that gate because stage_flows drifted.
+    _submit_flow = [
+        str(_s) for _s in (
+            _stage_flow_for(deal.get("product_type") or deal.get("product", ""))
+            or []
+        )
+    ]
+    _submit_is_branch = _deal_is_branch_originated(deal)
+    _submit_branch_stage = next(
+        (_s for _s in _submit_flow
+         if "branch" in _s.lower() and "committee" in _s.lower()),
+        "",
+    )
+    _submit_has_downstream_credit = any(
+        ("department credit" in _s.lower()
+         or ("credit analysis" in _s.lower() and "committee" not in _s.lower())
+         or "credit administration" in _s.lower()
+         or "trops" in _s.lower())
+        for _s in _submit_flow
+    )
+    if (_submit_is_branch and _submit_has_downstream_credit
+            and not _submit_branch_stage):
+        _audit(
+            "API_PIPELINE_BRANCH_GATE_CONFIG_MISSING",
+            user,
+            "deal_id=%s|product=%s|flow=%s"
+            % (
+                deal_id,
+                deal.get("product_type") or deal.get("product", ""),
+                " > ".join(_submit_flow),
+            ),
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "This branch-originated credit flow has no Branch Credit "
+                "Committee stage. Submission is locked to protect the approval "
+                "chain. Ask an administrator to restore the product stage flow."
+            ),
+        )
+
     # Gate passed — create the linked credit application (canonical handoff).
     lam = LoanApplicationManager()
     app_id = lam.create_from_pipeline_deal(deal, str(user.get("username", "")))
@@ -4321,24 +4379,57 @@ def pipeline_submit_to_credit(
         "lms_application_id": app_id,
         "submitted_to_credit": True,
     }, str(user.get("username", "")))
-    # Debt #2 (v10.589): advance the deal one stage past Credit Assessment in
-    # its configured product-class flow, so the pipeline reflects that the deal
-    # has moved into the credit/offer phase rather than sitting frozen at
-    # Credit Assessment while its loan progresses. Config-driven via stage_flows;
-    # never auto-advances into a terminal Closed stage.
+    # Submission routing is config-driven EXCEPT for the governance invariant:
+    # a BRANCH-originated case parks at the Branch Credit Committee first.
+    #
+    # This is deliberately NOT "the next element after Documentation".  A
+    # bank-side flow once contained an intermediate Rework step, which let the
+    # owner create the credit case and the funnel later reconcile straight into
+    # Department Credit Analysis without a branch vote.  The committee itself
+    # already auto-advances after quorum; submission only has to get the case to
+    # the gate and then stop.
     _moved = False
     _why = ""
     try:
-        _flow = _stage_flow_for(deal.get("product_type") or deal.get("product", ""))
+        _flow = _submit_flow or _stage_flow_for(
+            deal.get("product_type") or deal.get("product", "")
+        )
         _cur = str(deal.get("stage", "") or "")
-        if _cur in _flow:
+
+        if _submit_is_branch and _submit_branch_stage:
+            _target_stage = _submit_branch_stage
+            if _cur == _target_stage:
+                _moved = True
+            else:
+                pm.update_stage(
+                    deal_id,
+                    _target_stage,
+                    (
+                        "Submitted to credit (app %s) and parked at the Branch "
+                        "Credit Committee governance gate. The case will "
+                        "auto-advance only after committee quorum recommends it."
+                        % app_id
+                    ),
+                    str(user.get("username", "") or ""),
+                )
+                _moved = True
+                _audit(
+                    "API_PIPELINE_SUBMIT_TO_BRANCH_COMMITTEE",
+                    user,
+                    "deal_id=%s|app=%s|from=%s|to=%s"
+                    % (deal_id, app_id, _cur, _target_stage),
+                )
+        elif _cur in _flow:
             _idx = _flow.index(_cur)
             if 0 <= _idx < len(_flow) - 1:
                 _next = str(_flow[_idx + 1])
                 if not _next.lower().startswith("closed"):
-                    pm.update_stage(deal_id, _next,
-                                    f"Auto-advanced on submit to credit (app {app_id}).",
-                                    str(user.get("username", "")))
+                    pm.update_stage(
+                        deal_id,
+                        _next,
+                        f"Auto-advanced on submit to credit (app {app_id}).",
+                        str(user.get("username", "")),
+                    )
                     _moved = True
                 else:
                     _why = ("the next stage is %r, which is a closing stage"
@@ -4347,17 +4438,11 @@ def pipeline_submit_to_credit(
                 _why = ("the deal is already at the last stage of its flow "
                         "(%r)" % _cur)
         else:
-            # THE LIKELIEST ONE. A deal sitting on a stage its product's flow
-            # does not define cannot be advanced - the next stage cannot be
-            # computed from a position that is not on the map. It is the same
-            # state that stops some deals being closed.
             _why = ("the deal's stage %r is not in the %r flow"
                     % (_cur, deal.get("product_type") or deal.get("product", "")))
     except Exception as exc:
-        # Stage sync is best-effort — never fail a successful submission on it.
-        # But "best-effort" is not "unrecorded": a deal that reached credit and
-        # did not move in the funnel leaves two screens telling a manager
-        # different things about the same case.
+        # Do not invent a second committee engine here. The vote endpoint remains
+        # authoritative. This block only records an unexpected routing failure.
         _why = "the stage sync raised: %s" % str(exc)[:120]
         logger.warning("submit-to-credit stage sync failed for %s: %s",
                        deal_id, exc)
@@ -7879,6 +7964,75 @@ def pipeline_deal_advance(
     # can't advance to a loan-only stage. Skips gracefully if no flow is
     # configured for the class (fallback to the prior global allowlist).
     _flow = _stage_flow_for(deal.get("product_type") or deal.get("product", ""))
+
+    # ── A BRANCH COMMITTEE CANNOT BE JUMPED OVER ─────────────────────────────
+    # Leaving the committee is already vote-gated below. This additional check
+    # covers a direct positional jump from BEFORE the branch committee to AFTER
+    # it. A future frontend must not be able to bypass the gate merely by naming
+    # a later stage.
+    if _flow and _deal_is_branch_originated(deal) and not user.get("is_admin"):
+        try:
+            _branch_gate = next(
+                (_s for _s in _flow
+                 if "branch" in str(_s).lower()
+                 and "committee" in str(_s).lower()),
+                "",
+            )
+            if (_branch_gate and _from in _flow and _target in _flow):
+                _from_i = _flow.index(_from)
+                _gate_i = _flow.index(_branch_gate)
+                _to_i = _flow.index(_target)
+                if _from_i < _gate_i < _to_i:
+                    _branch_codes = []
+                    for _c in _read_committee_palette():
+                        if str(_c.get("kind", "") or "").lower() == "branch":
+                            _code = str(_c.get("code", "") or "")
+                            if _code in (_effective_committee_journey(deal) or []):
+                                _branch_codes.append(_code)
+                    _records = deal.get("committee_records") or {}
+                    _approved = any(
+                        str((_records.get(_code) or {}).get("outcome", "")).upper()
+                        == "APPROVED"
+                        for _code in _branch_codes
+                    )
+                    if not _approved:
+                        _audit(
+                            "API_PIPELINE_BRANCH_GATE_JUMP_REFUSED",
+                            user,
+                            "deal_id=%s|from=%s|gate=%s|to=%s"
+                            % (deal_id, _from, _branch_gate, _target),
+                        )
+                        raise HTTPException(
+                            status_code=400,
+                            detail=(
+                                "This branch-originated case has not been "
+                                "recommended by its Branch Credit Committee. "
+                                "It cannot move beyond that governance gate."
+                            ),
+                        )
+        except HTTPException:
+            raise
+        except Exception as _branch_guard_exc:
+            # Governance checks fail CLOSED. A broken resolver is not permission
+            # to bypass a committee.
+            _audit(
+                "API_PIPELINE_BRANCH_GATE_CHECK_FAILED",
+                user,
+                "deal_id=%s|%s: %s"
+                % (
+                    deal_id,
+                    type(_branch_guard_exc).__name__,
+                    str(_branch_guard_exc)[:100],
+                ),
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    "The Branch Credit Committee gate could not be verified. "
+                    "The stage change has been blocked."
+                ),
+            )
+
     # ── A COMMITTEE STAGE CANNOT BE WALKED PAST ─────────────────────────────
     # FROM THE PILOT (2026-08-13): "from the action area I note that someone
     # can easily move a deal to the next stage and it records on the case

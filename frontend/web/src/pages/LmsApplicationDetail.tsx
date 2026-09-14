@@ -156,6 +156,156 @@ function formatDate(s: string | undefined | null): string {
   return s.slice(0, 10);
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function displayValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '';
+  return String(value);
+}
+
+function recommendationTone(value: string): 'success' | 'danger' | 'warning' | 'info' {
+  const v = value.toLowerCase();
+  if (/support|ready|approv/.test(v)) return 'success';
+  if (/oppose|reject|declin|return|rework/.test(v)) return 'danger';
+  if (/split|defer|pending/.test(v)) return 'warning';
+  return 'info';
+}
+
+function tallyText(value: unknown): string {
+  const tally = asRecord(value);
+  if (!tally) return '';
+  const yes = Number(tally.yes ?? 0);
+  const no = Number(tally.no ?? 0);
+  const abstain = Number(tally.abstain ?? 0);
+  return `Yes ${yes} · No ${no} · Abstain ${abstain}`;
+}
+
+function CreditRiskHandover({ application }: { application: LoanApplication }) {
+  const deptReview = asRecord(application.dept_analyst_review);
+  const dccOutcome = asRecord(application.dcc_outcome);
+  const readiness = application.committee_readiness ?? null;
+
+  const bccRecommendation =
+    displayValue(application.bcc_recommendation)
+    || displayValue(application.bcc_outcome);
+  const bccTally = tallyText(application.bcc_tally);
+  const bccBy = displayValue(application.bcc_resolved_by);
+  const bccAt = displayValue(application.bcc_resolved_at);
+  const approvedByBcc = application.approved_by_bcc;
+
+  const deptOpinion = displayValue(deptReview?.opinion);
+  const deptBy = displayValue(deptReview?.by_name) || displayValue(deptReview?.by);
+  const deptAt = displayValue(deptReview?.at);
+  const pepConfirmed = deptReview?.pep_confirmed === true;
+
+  const dccRecommendation = displayValue(dccOutcome?.recommendation);
+  const dccNote = displayValue(dccOutcome?.note);
+  const dccBy = displayValue(dccOutcome?.by_name) || displayValue(dccOutcome?.by);
+  const dccAt = displayValue(dccOutcome?.at);
+  const dccTally = tallyText(dccOutcome?.tally);
+
+  const row = (
+    title: string,
+    recommendation: string,
+    comment: string,
+    by: string,
+    at: string,
+    meta = '',
+  ) => (
+    <div className="rounded-md border border-gray-200 bg-white px-4 py-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">{title}</div>
+        {recommendation && (
+          <Badge tone={recommendationTone(recommendation)} size="sm">
+            {recommendation.replaceAll('_', ' ')}
+          </Badge>
+        )}
+      </div>
+      {comment && (
+        <div className="mt-2 whitespace-pre-wrap text-sm text-gray-800">{comment}</div>
+      )}
+      {(by || at || meta) && (
+        <div className="mt-2 text-xs text-gray-500">
+          {[by ? `By ${by}` : '', at ? String(at).slice(0, 16) : '', meta]
+            .filter(Boolean).join(' · ')}
+        </div>
+      )}
+    </div>
+  );
+
+  const hasAny =
+    Boolean(deptOpinion || deptBy)
+    || Boolean(readiness)
+    || Boolean(dccRecommendation || dccBy)
+    || Boolean(bccRecommendation || bccBy || typeof approvedByBcc === 'boolean');
+
+  return (
+    <Card stripe="primary">
+      <Card.Header>
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900">Case recommendations to Credit Risk</h3>
+          <p className="mt-0.5 text-xs text-gray-500">
+            Read-only handover: what the originating analysts and committees recommended before your decision.
+          </p>
+        </div>
+      </Card.Header>
+      <Card.Body>
+        {!hasAny ? (
+          <div className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            No upstream recommendation is recorded on this application yet.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {(deptOpinion || deptBy) && row(
+              'Department Analyst',
+              'Recommendation',
+              deptOpinion,
+              deptBy,
+              deptAt,
+              pepConfirmed ? 'PEP check confirmed' : '',
+            )}
+
+            {readiness && row(
+              'Department review readiness',
+              readiness.state === 'ready_for_committee'
+                ? 'Ready for committee'
+                : 'Returned for rework',
+              readiness.opinion
+                || (readiness.reasons?.length ? readiness.reasons.join('; ') : ''),
+              readiness.by_name,
+              readiness.at,
+            )}
+
+            {(dccRecommendation || dccBy) && row(
+              'Department Credit Committee',
+              dccRecommendation,
+              dccNote,
+              dccBy,
+              dccAt,
+              dccTally,
+            )}
+
+            {(bccRecommendation || bccBy || typeof approvedByBcc === 'boolean') && row(
+              'Business Credit Committee',
+              bccRecommendation
+                || (approvedByBcc === true ? 'Support'
+                  : approvedByBcc === false ? 'Not supported' : ''),
+              '',
+              bccBy,
+              bccAt,
+              bccTally,
+            )}
+          </div>
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+
 
 // ── Page component ──────────────────────────────────────────────────────
 
@@ -490,6 +640,10 @@ export function LmsApplicationDetail() {
           ...(permissions.can_record_decision ? [{
             id: 'crr', label: 'Credit Risk Review', color: '#C62828', content: (
               <div className="space-y-4">
+                <CreditRiskHandover application={application} />
+
+                <BranchCommitteeDecisionsCard appId={application.id} />
+
                 {/* THE PAPERS FIRST (ruling 2026-08-18): "he should actually
                     first be seeing the attached documents for view." A credit
                     decision is made on the documents; putting the form above
@@ -588,7 +742,7 @@ export function LmsApplicationDetail() {
 
                 <LmsTravelledDocuments
                   appId={application.id}
-                  canDownload={!!permissions.can_update}
+                  canDownload={!!permissions.can_view}
                   canAttach={!!(permissions.can_view ?? true)}
                   onAttached={refetch} />
                 <ActionPanelDecision

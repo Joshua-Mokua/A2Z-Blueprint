@@ -38,6 +38,13 @@ function formatDate(s: string | undefined): string {
   return s.slice(0, 10);
 }
 
+// Staff codes are identifiers. Normalise at the comparison boundary so an
+// otherwise valid assignment cannot disappear from "My cases" because one
+// source contains whitespace or different casing.
+function normaliseStaffCode(value: unknown): string {
+  return String(value ?? '').trim().toLowerCase();
+}
+
 
 // ── Page component ──────────────────────────────────────────────────────
 
@@ -59,7 +66,7 @@ export function Lms() {
   const [segFilter, setSegFilter] = useState<'all' | 'consumer' | 'commercial' | 'cib'>('all');
   const [searchTerm,   setSearchTerm]   = useState<string>('');
   // B1: workload tabs. Analysts default to their own cases; managers to All.
-  const myCode = String(user?.staff_code ?? '');
+  const myCode = normaliseStaffCode(user?.staff_code);
   const roleLc = String(user?.role ?? '').toLowerCase();
   const worksCasesDirectly = /credit risk|credit analys|credit admin|remedial|recover/.test(roleLc);
   const isPureAnalyst = (roleLc.includes('analyst') || worksCasesDirectly) && !isAdmin
@@ -89,9 +96,23 @@ export function Lms() {
   const doPick = async (appId: string) => {
     setRequestBusy(appId);
     try {
-      await pickLmsApplication(appId);
-      toast({ tone: 'success', message: 'Picked — it is in My cases now.' });
+      const picked = await pickLmsApplication(appId);
+      const assignedCode = normaliseStaffCode(picked.application?.analyst?.code);
+
+      if (!myCode || assignedCode !== myCode) {
+        throw new Error(
+          `The case was picked but the returned assignment does not match your staff code (${user?.staff_code ?? 'missing'}). Refresh and ask an administrator to check the assignment audit trail.`,
+        );
+      }
+
       await refetch();
+      setStatusFilter('all');
+      setSegFilter('all');
+      setSearchTerm('');
+      setPage(0);
+      setTab('mine');
+
+      toast({ tone: 'success', message: 'Picked — the case is now in My cases.' });
     } catch (e) {
       toast({ tone: 'danger',
         message: e instanceof Error ? e.message : 'Could not pick this case' });
@@ -160,7 +181,7 @@ export function Lms() {
     }
     // B1: workload tab filter.
     if (tab === 'mine') {
-      result = result.filter((a) => String(a.analyst?.code ?? '') === myCode);
+      result = result.filter((a) => normaliseStaffCode(a.analyst?.code) === myCode);
     } else if (tab === 'pool') {
       result = result.filter((a) => !a.analyst?.code
         && ['submitted'].includes((a.status || '').toLowerCase()));
@@ -179,7 +200,7 @@ export function Lms() {
   // delete a row of buttons.
 
   const tabCounts = useMemo(() => ({
-    mine: applications.filter((a) => String(a.analyst?.code ?? '') === myCode).length,
+    mine: applications.filter((a) => normaliseStaffCode(a.analyst?.code) === myCode).length,
     pool: applications.filter((a) => !a.analyst?.code && (a.status || '').toLowerCase() === 'submitted').length,
     all: applications.length,
   }), [applications, myCode]);

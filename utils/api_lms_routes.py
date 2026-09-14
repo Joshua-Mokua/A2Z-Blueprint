@@ -831,15 +831,43 @@ def lms_application_decision(
             _pre = list(getattr(payload, "pre_approval_conditions", None)
                         or getattr(payload, "conditions", None) or [])
             _dis = list(getattr(payload, "pre_disbursement_conditions", None) or [])
+            # Build the actual CALMS work item NOW. Previously this block
+            # changed only the LMS status to "credit_admin"; Credit Admin reads
+            # CreditAdminManager.cases, so the application could look progressed
+            # while no case existed in the receiving workbench.
+            #
+            # Reuse the canonical idempotent creator (CA + application id). A retry
+            # returns the same case id and never resets fulfilled conditions.
+            _conds = _pre + _dis
+            from utils.core import CreditAdminManager
+            _app_for_handoff = lam.get(app_id) or app
+            _case_id = CreditAdminManager().create_case_from_application(
+                _app_for_handoff,
+                conditions=_conds,
+                authority=str(getattr(payload, "authority", "") or ""),
+            )
+            if not _case_id:
+                audit_log(
+                    "LMS_CREDIT_ADMIN_HANDOFF_FAILED",
+                    str(user.get("username", "") or ""),
+                    "%s|creator returned empty case id" % app_id,
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        "Approval was recorded but the Credit Admin work item "
+                        "could not be created. The case has NOT been presented as "
+                        "successfully handed off; contact system support."
+                    ),
+                )
+
             lam.update(app_id, {
                 "status": "credit_admin",
                 "awaiting_credit_admin": True,
+                "credit_admin_case_id": _case_id,
                 "approved_at": datetime.now().isoformat(timespec="seconds"),
                 "approved_by_name": str(user.get("full_name", "") or ""),
                 "decision_conditions": _pre,
-                # Each condition is an object, not a string, so a tick can be
-                # recorded against it with who and when. A bare string has
-                # nowhere to put that.
                 "pre_approval_conditions": [
                     {"text": c, "met": False, "kind": "pre_approval"}
                     for c in _pre],
@@ -847,10 +875,31 @@ def lms_application_decision(
                     {"text": c, "met": False, "kind": "pre_disbursement"}
                     for c in _dis],
             })
-            _conds = _pre + _dis
-            audit_log("LMS_APPROVED_TO_CREDIT_ADMIN",
-                      str(user.get("username", "") or ""),
-                      "%s|%d condition(s)" % (app_id, len(_conds)))
+            try:
+                lam._log_event(
+                    app_id,
+                    "handoff_to_credit_admin",
+                    str(user.get("username", "") or ""),
+                    "CALMS case %s" % _case_id,
+                )
+            except Exception as _journey_exc:
+                audit_log(
+                    "LMS_CREDIT_ADMIN_JOURNEY_LOG_FAILED",
+                    str(user.get("username", "") or ""),
+                    "%s|%s: %s" % (
+                        app_id,
+                        type(_journey_exc).__name__,
+                        str(_journey_exc)[:80],
+                    ),
+                )
+
+            audit_log(
+                "LMS_APPROVED_TO_CREDIT_ADMIN",
+                str(user.get("username", "") or ""),
+                "%s|case=%s|%d condition(s)" % (
+                    app_id, _case_id, len(_conds)
+                ),
+            )
         elif verdict_normalized == "declined":
             lam.update(app_id, {
                 "status": "declined",
@@ -879,7 +928,9 @@ def lms_application_decision(
     return {
         "application": updated,
         "status": f"decision_{verdict_normalized}",
-        "credit_admin_case_id": "",
+        "credit_admin_case_id": str(
+            (updated or {}).get("credit_admin_case_id", "") or ""
+        ),
     }
 
 
