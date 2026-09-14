@@ -247,9 +247,9 @@ function CreditRiskHandover({ application }: { application: LoanApplication }) {
     <Card stripe="primary">
       <Card.Header>
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Case recommendations to Credit Risk</h3>
+          <h3 className="text-sm font-semibold text-gray-900">Credit Risk decision pack</h3>
           <p className="mt-0.5 text-xs text-gray-500">
-            Read-only handover: what the originating analysts and committees recommended before your decision.
+            Review the upstream recommendations, committee outcomes and supporting evidence before recording your decision.
           </p>
         </div>
       </Card.Header>
@@ -260,6 +260,15 @@ function CreditRiskHandover({ application }: { application: LoanApplication }) {
           </div>
         ) : (
           <div className="space-y-3">
+            <div className="rounded-md border border-gray-200 bg-gray-50 px-4 py-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Review sequence
+              </div>
+              <div className="mt-1 text-sm text-gray-700">
+                Branch Committee → Department Analyst → Department Credit Committee → Credit Risk
+              </div>
+            </div>
+
             {(deptOpinion || deptBy) && row(
               'Department Analyst',
               'Recommendation',
