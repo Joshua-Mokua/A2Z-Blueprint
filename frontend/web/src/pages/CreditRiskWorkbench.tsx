@@ -26,6 +26,11 @@ import { useRole } from '@/hooks/useRole';
 
 // What a department committee recommendation looks like. The older spelling is
 // accepted so a case marked before the rename still appears.
+
+function normaliseCreditRiskStaffCode(value: unknown): string {
+  return String(value ?? '').trim().toLowerCase();
+}
+
 const READY = ['committee_recommended', 'committee_approved'];
 
 const DECLINE_REASONS = [
@@ -51,7 +56,7 @@ type Mode = 'approve' | 'escalate' | 'decline' | 'return' | 'input';
 export function CreditRiskWorkbench() {
   const { user } = useRole();
   const navigate = useNavigate();
-  const myCode = String(user?.staff_code ?? '');
+  const myCode = normaliseCreditRiskStaffCode(user?.staff_code ?? '');
 
   const [apps, setApps] = useState<LoanApplication[]>([]);
   const [lib, setLib] = useState<ConditionLibrary | null>(null);
@@ -92,7 +97,7 @@ export function CreditRiskWorkbench() {
   );
   const assigneeOf = (a: LoanApplication) => {
     const an = (a as { analyst?: { code?: string; name?: string } }).analyst;
-    return { code: String(an?.code ?? ''), name: String(an?.name ?? '') };
+    return { code: normaliseCreditRiskStaffCode(an?.code), name: String(an?.name ?? '') };
   };
   const mine = useMemo(
     () => ready.filter((a) => assigneeOf(a).code === myCode && myCode !== ''),
@@ -182,7 +187,13 @@ export function CreditRiskWorkbench() {
     setBusy(id);
     setError(null);
     try {
-      await claimCase(id, myCode, String(user?.full_name ?? ''));
+      const picked = await claimCase(id, myCode, String(user?.full_name ?? ''));
+      const assignedCode = normaliseCreditRiskStaffCode(picked.application?.analyst?.code);
+      if (!myCode || assignedCode !== myCode) {
+        throw new Error(
+          `Claim completed but the returned assignment does not match your staff code. Signed in: ${myCode || 'missing'}; assigned: ${assignedCode || 'missing'}`
+        );
+      }
       setTab('mine');
       await load();
     } catch (e) {
