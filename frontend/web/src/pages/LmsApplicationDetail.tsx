@@ -346,7 +346,8 @@ export function LmsApplicationDetail() {
   // credit risk. Leaving them invites a reviewer to redo a completed step and
   // buries the one step that is not done.
   const _viewerRole = String(user?.role ?? '').toLowerCase();
-  const isCreditRisk = /credit risk|credit admin|remedial|recover/.test(_viewerRole);
+  const creditRiskExclusiveMode = new URLSearchParams(window.location.search).get('creditRisk') === '1';
+  const isCreditRisk = creditRiskExclusiveMode || /credit risk|credit admin|remedial|recover/.test(_viewerRole);
   // Affordability is BACK (ruling 2026-08-18): "one button I want to
   // reintroduce is the Affordability, since I believe we can build on this -
   // reading from the statements being uploaded and the payslips to calculate
@@ -982,7 +983,7 @@ export function LmsApplicationDetail() {
 
             </div>
           ) },
-        ].filter((t) => !isCreditRisk || !HIDE_FOR_CREDIT_RISK.includes(t.id))}
+        ].filter((t) => creditRiskExclusiveMode ? t.id === 'crr' : (!isCreditRisk || !HIDE_FOR_CREDIT_RISK.includes(t.id)))}
       />
       </main>
     </div>

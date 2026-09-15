@@ -299,7 +299,7 @@ export function CreditRiskWorkbench() {
                   </div>
                   <div className="flex gap-2">
                     <button type="button"
-                            onClick={() => navigate(`/lms/${encodeURIComponent(id)}`)}
+                            onClick={() => navigate(`/lms/${encodeURIComponent(id)}?creditRisk=1`)}
                             className="rounded border px-3 py-1.5 text-xs">
                       Open the case
                     </button>
