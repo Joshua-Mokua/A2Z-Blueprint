@@ -343,6 +343,23 @@ def filter_apps_by_visibility(
                 if analyst_code and analyst_code == caller_staff_code:
                     visible.append(a)
                     continue
+
+            # Post-approval verification is a direct assignment back to the
+            # original Department Analyst. It is deliberately NOT a pool:
+            # only the persisted verification assignee receives this override.
+            verification_assignee = (
+                a.get('post_approval_verification_assignee') or {}
+            )
+            if isinstance(verification_assignee, dict):
+                verification_code = str(
+                    verification_assignee.get('code', '') or ''
+                ).strip()
+                if (
+                    verification_code
+                    and verification_code == str(caller_staff_code).strip()
+                ):
+                    visible.append(a)
+                    continue
         if pool_ok:
             status = str(a.get('status', '') or '').strip().lower()
             if status in pool_statuses:
@@ -402,6 +419,21 @@ def is_app_in_scope(
         if isinstance(analyst, dict):
             analyst_code = str(analyst.get('code', '') or '')
             if analyst_code and analyst_code == caller_staff_code:
+                return True
+
+        # Mirror the list filter: the original Department Analyst may open a
+        # case explicitly assigned back for post-approval verification.
+        verification_assignee = (
+            app.get('post_approval_verification_assignee') or {}
+        )
+        if isinstance(verification_assignee, dict):
+            verification_code = str(
+                verification_assignee.get('code', '') or ''
+            ).strip()
+            if (
+                verification_code
+                and verification_code == str(caller_staff_code).strip()
+            ):
                 return True
     if caller_role:
         pool_cfg = get_pool_visibility_config()

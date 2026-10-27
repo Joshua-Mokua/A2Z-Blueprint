@@ -3583,3 +3583,61 @@ export async function respondToInputRequest(
   return postJson<{ application_id: string; input: string }, typeof body>(
     `/lms/applications/${encodeURIComponent(appId)}/input-response`, body);
 }
+
+// Module C — CAD Availment Memo API
+import type {
+  AvailmentResponse,
+  AvailmentDraftRequest,
+  AvailmentApprovalRequest,
+  AvailmentReturnRequest,
+} from '@/types/availment';
+
+function availmentPath(caseId: string): string {
+  return `/credit-admin/cases/${encodeURIComponent(caseId)}/availment-memo`;
+}
+
+export function fetchAvailmentMemo(caseId: string): Promise<AvailmentResponse> {
+  return getJson<AvailmentResponse>(availmentPath(caseId));
+}
+
+export function createAvailmentMemo(caseId: string): Promise<AvailmentResponse> {
+  return postJson<AvailmentResponse>(availmentPath(caseId), {});
+}
+
+export function saveAvailmentDraft(caseId: string, body: AvailmentDraftRequest): Promise<AvailmentResponse> {
+  return postJson<AvailmentResponse, AvailmentDraftRequest>(`${availmentPath(caseId)}/draft`, body, 'PUT');
+}
+
+export function requestAvailmentApproval(caseId: string, body: AvailmentApprovalRequest): Promise<AvailmentResponse> {
+  return postJson<AvailmentResponse, AvailmentApprovalRequest>(`${availmentPath(caseId)}/request-approval`, body);
+}
+
+export function approveAvailmentMemo(caseId: string): Promise<AvailmentResponse> {
+  return postJson<AvailmentResponse>(`${availmentPath(caseId)}/approve`, {});
+}
+
+export function returnAvailmentForCorrection(caseId: string, body: AvailmentReturnRequest): Promise<AvailmentResponse> {
+  return postJson<AvailmentResponse, AvailmentReturnRequest>(`${availmentPath(caseId)}/return-for-correction`, body);
+}
+
+export interface CreditAdminAuthorizer {
+  staff_code: string;
+  full_name: string;
+  role: string;
+  department?: string;
+}
+
+export interface CreditAdminAuthorizersResponse {
+  authorizers: CreditAdminAuthorizer[];
+  count: number;
+}
+
+export async function fetchCreditAdminAuthorizers(): Promise<CreditAdminAuthorizersResponse> {
+  return getJson<CreditAdminAuthorizersResponse>('/credit-admin/authorizers');
+}
+
+export async function printReleasedAvailmentMemo(caseId: string): Promise<void> {
+  const result = await getJson<{ case_id: string; version: number; released_by: string; released_at: string; snapshot: Record<string, unknown> }>(`/credit-admin/cases/${encodeURIComponent(caseId)}/troops/availment-memo/print`);
+  const { printApprovedAvailmentMemo } = await import('@/lib/availmentMemoPrint');
+  printApprovedAvailmentMemo(result);
+}

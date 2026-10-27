@@ -11966,6 +11966,10 @@ app.include_router(lms_router)
 from utils.api_credit_admin_routes import router as credit_admin_router
 app.include_router(credit_admin_router)
 
+# Credit availment dual-validation endpoints
+from utils.availment_validation_routes_stage11 import router as availment_validation_router
+app.include_router(availment_validation_router)
+
 
 # v10.530 Phase 5 Batch gamma1 -- CBS lookup routes
 from utils.api_cbs_routes import router as cbs_router

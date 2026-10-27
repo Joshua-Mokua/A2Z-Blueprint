@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useBranding } from '@/hooks/useBranding';
-import { fetchTroopsFlowByStage, fetchTroopsQueue, troopsBook, troopsValueDate, troopsDisburse, type TroopsFlowByStageResponse, type TroopsQueueCase } from '@/lib/api';
+import { fetchTroopsFlowByStage, fetchTroopsQueue, troopsBook, troopsValueDate, troopsDisburse, printReleasedAvailmentMemo, type TroopsFlowByStageResponse, type TroopsQueueCase } from '@/lib/api';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { useToast } from '@/components/Toast';
@@ -221,6 +221,7 @@ function TroopsActionQueue() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button size="sm" disabled={busy === c.case_id} onClick={() => void act(c.case_id, () => printReleasedAvailmentMemo(c.case_id), 'Released Availment Memo opened for printing.')}>Print Availment Memo</Button>
                   {st === 'queued' && (
                     <Button size="sm" disabled={busy === c.case_id}
                       onClick={() => void act(c.case_id, () => troopsBook(c.case_id), 'Facility booked to core banking.')}>

@@ -126,3 +126,26 @@ def resolve_case_permissions(
         "can_request_authorization": bool(can_request_authorization),
         "can_authorize": bool(can_authorize),
     }
+
+import re
+
+def is_credit_admin_staff(user: Dict[str, Any]) -> bool:
+    if not user: return False
+    if user.get("is_admin"): return True
+    role=str(user.get("role","") or "").strip().lower()
+    dept=str(user.get("department","") or "").strip().lower()
+    return dept == "cad" or "credit administration" in role or bool(re.search(r"\bcad\b", role))
+
+
+def is_credit_admin_checker(user: Dict[str, Any]) -> bool:
+    if not user: return False
+    if user.get("is_admin"): return True
+    role=str(user.get("role","") or "").strip().lower()
+    return is_credit_admin_staff(user) and bool(re.search(r"\b(head|manager|chief|director)\b", role))
+
+
+def is_selected_authorizer(user: Dict[str, Any], case: Dict[str, Any]) -> bool:
+    if user.get("is_admin"): return True
+    mine=str(user.get("staff_code") or user.get("username") or "").strip()
+    selected=str(case.get("authorization_assignee_code") or "").strip()
+    return bool(mine and selected and mine == selected and is_credit_admin_checker(user))

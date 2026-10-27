@@ -238,8 +238,8 @@ class DisburseCaseRequest(BaseModel):
     """
     model_config = ConfigDict(extra="allow")
 
-    authority: str = Field(
-        min_length=1,
+    authority: Optional[str] = Field(
+        default=None,
         description="Decision-maker role/title clearing the case "
                     "(e.g. 'Credit Manager', 'Branch Manager', "
                     "'Managing Director'). Recorded for audit."

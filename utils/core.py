@@ -6937,7 +6937,15 @@ class CreditAdminManager:
             return True
         return False
 
-    def clear_for_disbursement(self, case_id: str) -> bool:
+    def clear_for_disbursement(self, case_id: str, release_actor=None) -> bool:
+        import os
+        if os.getenv("A2Z_AVAILMENT_TROPS_GATE", "").strip() == "enabled":
+            from fastapi import HTTPException
+            actor = release_actor if isinstance(release_actor, dict) else {}
+            if not str(actor.get("staff_code") or "").strip() or not str(actor.get("name") or "").strip() or not str(actor.get("role") or "").strip():
+                raise HTTPException(status_code=403, detail="Authenticated releasing officer identity is required")
+        from utils.availment_trops_gate import require_availment_validation_for_release
+        require_availment_validation_for_release(case_id)
         for case in self.cases:
             if case["id"] == case_id and case.get("ready_for_disbursement"):
                 # RELEASE to Treasury Back Office (Troops) for actual
@@ -6954,6 +6962,8 @@ class CreditAdminManager:
         return False
 
     def troops_book(self, case_id, cbs_account_no, user_name, now):
+        from utils.availment_trops_gate import require_availment_validation_for_release
+        require_availment_validation_for_release(case_id, require_released=True)
         """Treasury step 1 — book to core banking. Serialized via the CA-2
         FOR UPDATE wrapper (registered in _MUTATION_METHODS)."""
         case = self.get(case_id)
@@ -6972,6 +6982,8 @@ class CreditAdminManager:
         return {"ok": True, "cbs_account_no": cbs_account_no}
 
     def troops_set_value_date(self, case_id, value_date, user_name, now):
+        from utils.availment_trops_gate import require_availment_validation_for_release
+        require_availment_validation_for_release(case_id, require_released=True)
         """Treasury step 2 — set value date (requires booked). Serialized."""
         case = self.get(case_id)
         if not case:
@@ -6986,6 +6998,8 @@ class CreditAdminManager:
         return {"ok": True, "value_date": value_date}
 
     def troops_disburse(self, case_id, gl_reference, user_name, now):
+        from utils.availment_trops_gate import require_availment_validation_for_release
+        require_availment_validation_for_release(case_id, require_released=True)
         """Treasury step 3 — post to GL and complete. Serialized via FOR UPDATE:
         the guard reads the row-locked, fresh state, so exactly one concurrent
         caller flips disbursed=True; the rest get 'already disbursed'."""

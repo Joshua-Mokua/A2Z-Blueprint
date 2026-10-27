@@ -181,42 +181,97 @@ def _wrap_mutation(method):
     def wrapper(self, case_id, *args, **kwargs):
         try:
             from utils.db import db as _db
-        except Exception:
+        except Exception as exc:
+            if __import__("os").environ.get("A2Z_AVAILMENT_TROPS_GATE", "").strip() == "enabled":
+                from fastapi import HTTPException
+                raise HTTPException(status_code=503, detail="PostgreSQL required for Availment-controlled operations") from exc
             return method(self, case_id, *args, **kwargs)
         if not _db.table_uses_db("credit_admin"):
+            if __import__("os").environ.get("A2Z_AVAILMENT_TROPS_GATE", "").strip() == "enabled":
+                from fastapi import HTTPException
+                raise HTTPException(status_code=503, detail="PostgreSQL required for Availment-controlled operations")
             return method(self, case_id, *args, **kwargs)   # JSON-only legacy path
 
-        with _db.transaction() as conn:
-            # Lock + fresh-read the target case; replace any stale snapshot.
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT data FROM credit_admin WHERE id = %s FOR UPDATE",
-                    (str(case_id),))
-                got = cur.fetchone()
-            if got is not None:
-                data = got[0]
-                fresh = data if isinstance(data, dict) else _json.loads(data)
-                self.cases = [c for c in self.cases if c.get("id") != case_id]
-                self.cases.append(fresh)
+        original_cases = __import__("copy").deepcopy(self.cases)
+        original_snapshot = __import__("copy").deepcopy(getattr(self, "_ca_snapshot", None))
+        try:
+            with _db.transaction() as conn:
+                # Lock + fresh-read the target case; replace any stale snapshot.
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT data FROM credit_admin WHERE id = %s FOR UPDATE",
+                        (str(case_id),))
+                    got = cur.fetchone()
+                if got is None and __import__("os").environ.get("A2Z_AVAILMENT_TROPS_GATE", "").strip() == "enabled":
+                    from fastapi import HTTPException
+                    raise HTTPException(status_code=409, detail="Credit Admin case missing from PostgreSQL; controlled mutation blocked")
+                if got is not None:
+                    data = got[0]
+                    fresh = data if isinstance(data, dict) else _json.loads(data)
+                    self.cases = [c for c in self.cases if c.get("id") != case_id]
+                    self.cases.append(fresh)
 
-            self._in_rmw = True   # tells save() to skip its own PG-sync (we do it in-txn)
-            try:
-                result = method(self, case_id, *args, **kwargs)   # mutate + JSON mirror
-            finally:
-                self._in_rmw = False
-
-            mutated = self.get(case_id)
-            if mutated:
-                # swallow=False: a failed PG write must roll the txn back, not
-                # leave JSON and PG silently diverged.
-                _db_sync_credit_admin_case(
-                    mutated, conflict="update", swallow=False, conn=conn)
+                self._in_rmw = True   # tells save() to skip its own PG-sync (we do it in-txn)
                 try:
-                    snap = getattr(self, "_ca_snapshot", None)
-                    if snap is not None:
-                        snap[case_id] = _case_hash(mutated)
-                except Exception:
-                    pass
+                    result = method(self, case_id, *args, **kwargs)   # mutate + JSON mirror
+                finally:
+                    self._in_rmw = False
+
+                mutated = self.get(case_id)
+                if method.__name__ == "clear_for_disbursement" and __import__("os").environ.get("A2Z_AVAILMENT_TROPS_GATE", "").strip() == "enabled" and result is True:
+                    from fastapi import HTTPException
+                    actor = kwargs.get("release_actor") if isinstance(kwargs.get("release_actor"), dict) else {}
+                    staff_code = str(actor.get("staff_code") or "").strip()
+                    if not staff_code:
+                        raise HTTPException(status_code=403, detail="Releasing officer identity required")
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT id, status, current_version, approval_assignee_code, created_by_code, approval_requested_by_code, sent_to_trops_at, data, application_id FROM credit.availment_memos WHERE credit_admin_case_id=%s FOR UPDATE", (case_id,))
+                        memo = cur.fetchone()
+                    if not memo or str(memo[1]).lower() != "approved" or int(memo[2] or 0) < 1 or memo[6] is not None:
+                        raise HTTPException(status_code=409, detail="Approved, unreleased Availment Memo version required")
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT snapshot FROM credit.availment_versions WHERE memo_id=%s AND version=%s", (memo[0], memo[2]))
+                        approved_row = cur.fetchone()
+                    snapshot = approved_row[0] if approved_row else None
+                    if isinstance(snapshot, str):
+                        snapshot = _json.loads(snapshot)
+                    if not isinstance(snapshot, dict) or not isinstance(snapshot.get("approval"), dict) or not isinstance(snapshot.get("memo"), dict) or snapshot.get("version") != int(memo[2]):
+                        raise HTTPException(status_code=409, detail="Valid approved Availment Memo snapshot required")
+                    locked_data = memo[7] if isinstance(memo[7], dict) else _json.loads(memo[7])
+                    approved_data = snapshot["memo"].get("data")
+                    if not isinstance(locked_data, dict) or approved_data != locked_data or snapshot["memo"].get("application_id") != memo[8]:
+                        raise HTTPException(status_code=409, detail="Approved Availment Memo snapshot differs from locked memo data")
+                    actual_approver = str(snapshot["approval"].get("approved_by_code") or "").strip()
+                    if not actual_approver or snapshot["memo"].get("id") != memo[0] or snapshot["memo"].get("credit_admin_case_id") != case_id:
+                        raise HTTPException(status_code=409, detail="Approved Availment Memo identity verification failed")
+                    if staff_code.casefold() in {str(value or "").strip().casefold() for value in (memo[3], memo[4], memo[5], actual_approver, snapshot["memo"].get("created_by_code"), snapshot["approval"].get("requested_by_code"))}:
+                        raise HTTPException(status_code=403, detail="Releasing officer must be independent of memo maker, requester and actual approver")
+                    _db.execute("UPDATE credit.availment_memos SET sent_to_trops_by=%s, sent_to_trops_at=now() WHERE id=%s", (staff_code, memo[0]), conn=conn)
+                    if mutated is not None:
+                        mutated["availment_released_version"] = int(memo[2])
+                        mutated["availment_released_by"] = staff_code
+                if mutated:
+                    # swallow=False: a failed PG write must roll the txn back, not
+                    # leave JSON and PG silently diverged.
+                    _db_sync_credit_admin_case(
+                        mutated, conflict="update", swallow=False, conn=conn)
+        except BaseException:
+            self.cases = original_cases
+            if original_snapshot is None:
+                self.__dict__.pop("_ca_snapshot", None)
+            else:
+                self._ca_snapshot = original_snapshot
+            raise
+        if mutated:
+            snap = getattr(self, "_ca_snapshot", None)
+            if snap is not None:
+                snap[case_id] = _case_hash(mutated)
+        # PostgreSQL committed successfully; refresh the legacy JSON mirror.
+        # Mirror failures must not reverse or misreport the committed DB mutation.
+        try:
+            self.save()
+        except Exception:
+            _log.exception("Credit Admin JSON mirror refresh failed after PostgreSQL commit")
         return result
     return wrapper
 
@@ -257,9 +312,9 @@ def install_credit_admin_concurrency(cls) -> None:
     _orig_save = cls.save
 
     def _save_with_sync(self):
-        _orig_save(self)   # JSON mirror — always
         if getattr(self, "_in_rmw", False):
-            return
+            return  # Defer JSON mirror until the PostgreSQL transaction commits.
+        _orig_save(self)
         try:
             from utils.db import db as _db
             if not _db.table_uses_db("credit_admin"):

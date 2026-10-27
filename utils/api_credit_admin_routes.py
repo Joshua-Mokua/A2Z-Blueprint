@@ -31,6 +31,7 @@ from __future__ import annotations
 
 from typing import Dict, Any, Optional
 
+from utils.availment_trops_gate import require_availment_validation_for_release
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 
@@ -839,13 +840,19 @@ def credit_admin_disburse(
         })
 
     # Payload validation
+    _actor_name = str(user.get('full_name') or user.get('username') or '').strip()
+    _actor_role = str(user.get('role') or '').strip()
+    _clearing_authority = (_actor_name + ' (' + _actor_role + ')') if _actor_name and _actor_role else (_actor_name or _actor_role)
+    if not _clearing_authority: raise HTTPException(status_code=403, detail='Authenticated clearing identity unavailable')
     payload_dict = payload.model_dump()
+    payload_dict['authority'] = _clearing_authority
     ok, reason = validate_disburse_payload(payload_dict)
     if not ok:
         raise HTTPException(status_code=400, detail=reason)
 
     # Apply
-    success = cam.clear_for_disbursement(case_id)
+    require_availment_validation_for_release(case_id)
+    success = cam.clear_for_disbursement(case_id, release_actor={"staff_code": str(user.get("staff_code") or user.get("username") or "").strip(), "name": _actor_name, "role": _actor_role})
     if not success:
         raise HTTPException(
             status_code=500,
@@ -860,13 +867,13 @@ def credit_admin_disburse(
             _c["disbursed_under_override"] = True
             cam.save()
         audit_log("CREDIT_ADMIN_DISBURSED_UNDER_OVERRIDE",
-                  str(user.get('username', '') or ''), f"{case_id}|{payload.authority}")
+                  str(user.get('username', '') or ''), f"{case_id}|{_clearing_authority}")
 
     # Audit
     audit_log(
         "CREDIT_ADMIN_DISBURSED",
         str(user.get('username', '') or ''),
-        f"{case_id}|{payload.authority}",
+        f"{case_id}|{_clearing_authority}",
     )
 
     # P1 (2026-06-12): recompute BSC actuals from operational modules.
@@ -978,6 +985,40 @@ class TroopsDisburseRequest(BaseModel):
     note: Optional[str] = ""
 
 
+@router.get("/cases/{case_id}/troops/availment-memo/print")
+def troops_released_availment_memo(case_id: str, user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    """Read-only immutable approved memo, available only after formal CAD release."""
+    user = _authoritative_availment_user(user)
+    if not _is_troops(user):
+        raise HTTPException(status_code=403, detail="Treasury Back Office authority required")
+    require_availment_validation_for_release(case_id, require_released=True)
+    import json
+    from utils.db import db
+    try:
+        row = db.fetch_one("SELECT id, current_version, sent_to_trops_by, sent_to_trops_at, data, application_id FROM credit.availment_memos WHERE credit_admin_case_id=%s AND status=%s", (case_id, "approved"))
+        if not row or not row.get("sent_to_trops_at"):
+            raise HTTPException(status_code=409, detail="Released approved Availment Memo not found")
+        version = int(row["current_version"])
+        approved = db.fetch_one("SELECT snapshot FROM credit.availment_versions WHERE memo_id=%s AND version=%s", (row["id"], version))
+        if not approved:
+            raise HTTPException(status_code=409, detail="Approved memo snapshot missing")
+        snapshot = approved["snapshot"]
+        if isinstance(snapshot, str):
+            snapshot = json.loads(snapshot)
+        if not isinstance(snapshot, dict) or snapshot.get("version") != version or not isinstance(snapshot.get("memo"), dict) or snapshot["memo"].get("id") != row["id"] or snapshot["memo"].get("credit_admin_case_id") != case_id:
+            raise HTTPException(status_code=409, detail="Approved memo snapshot mismatch")
+        current_data = row["data"]
+        if isinstance(current_data, str):
+            current_data = json.loads(current_data)
+        if snapshot["memo"].get("data") != current_data or snapshot["memo"].get("application_id") != row["application_id"]:
+            raise HTTPException(status_code=409, detail="Approved memo content mismatch")
+        return {"case_id": case_id, "version": version, "released_by": row["sent_to_trops_by"], "released_at": str(row["sent_to_trops_at"]), "snapshot": snapshot}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Released Availment Memo retrieval unavailable") from exc
+
+
 @router.get("/troops/queue")
 def troops_queue(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
     """Cases cleared for disbursement but not yet disbursed — the Treasury
@@ -1052,6 +1093,7 @@ def troops_book(case_id: str, payload: TroopsBookRequest,
     cam = _cam()
     acct = (payload.cbs_account_no or "").strip() or f"ECO{str(case_id)[-10:].zfill(10)}"
     uname = str(user.get("username", "") or "")
+    require_availment_validation_for_release(case_id, require_released=True)
     res = cam.troops_book(case_id, acct, uname, _now_iso())  # serialized (CA-3)
     if not res.get("ok"):
         raise HTTPException(status_code=res["code"], detail=res["detail"])
@@ -1070,6 +1112,7 @@ def troops_value_date(case_id: str, payload: TroopsValueDateRequest,
         raise HTTPException(status_code=400, detail="value_date is required")
     cam = _cam()
     uname = str(user.get("username", "") or "")
+    require_availment_validation_for_release(case_id, require_released=True)
     res = cam.troops_set_value_date(case_id, vd, uname, _now_iso())  # serialized (CA-3)
     if not res.get("ok"):
         raise HTTPException(status_code=res["code"], detail=res["detail"])
@@ -1087,6 +1130,7 @@ def troops_disburse(case_id: str, payload: TroopsDisburseRequest,
     cam = _cam()
     gl = (payload.gl_reference or "").strip() or f"GL{_now_iso()[:19].replace('-', '').replace(':', '').replace('T', '')}"
     uname = str(user.get("username", "") or "")
+    require_availment_validation_for_release(case_id, require_released=True)
     res = cam.troops_disburse(case_id, gl, uname, _now_iso())  # serialized (CA-3): one winner
     if not res.get("ok"):
         raise HTTPException(status_code=res["code"], detail=res["detail"])
@@ -1293,3 +1337,280 @@ def credit_admin_legal_charging_queue(user: Dict[str, Any] = Depends(get_current
     return {"cases": out, "count": len(out)}
 # === END CA2 ===
 
+from utils.availment_memo import AvailmentConflict, AvailmentPersistenceUnavailable, build_source_projection, create_memo, get_memo, save_draft, request_approval, approve_memo, return_for_correction
+from utils.api_credit_admin_permissions import is_credit_admin_staff, is_credit_admin_checker, is_selected_authorizer
+
+class AvailmentDraftRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    fields: Dict[str, Any]
+    instructions: list[Dict[str, Any]]
+
+
+class AvailmentApprovalRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    approver_code: str
+    note: Optional[str] = ""
+
+
+class AvailmentReturnRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str
+
+
+# Module C â€” CAD Availment Memo (additive sidecar; no disbursement gate)
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+
+def _authoritative_availment_user(claims: Dict[str, Any]) -> Dict[str, Any]:
+    """Resolve current user authority; JWT claims identify, but do not authorize."""
+    from utils.core import UserManager
+
+    username = str((claims or {}).get("username") or "").strip()
+    if not username:
+        raise HTTPException(status_code=403, detail="Active user account required")
+    roster = UserManager().users
+    stored = roster.get(username)
+    if not isinstance(stored, dict) or stored.get("active") is not True:
+        raise HTTPException(status_code=403, detail="Active user account required")
+    # No claim-supplied roles, privileges, or scope attributes are carried over.
+    return {**stored, "username": username}
+
+
+def _resolve_availment_approver(roster: Dict[str, Any], requested_code: str) -> Optional[Dict[str, Any]]:
+    target = str(requested_code or "").strip().casefold()
+    if not target:
+        return None
+    for roster_key, raw in (roster or {}).items():
+        if not isinstance(raw, dict):
+            continue
+        candidate = dict(raw)
+        username = str(candidate.get("username") or roster_key or "").strip()
+        staff_code = str(candidate.get("staff_code") or "").strip()
+        if target in {username.casefold(), staff_code.casefold()}:
+            candidate.setdefault("username", username)
+            return candidate
+    return None
+
+
+def _availment_case_and_application(case_id: str, user: Dict[str, Any]):
+    cam = _cam()
+    case = cam.get(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found")
+
+    visible_codes = get_visible_staff_codes(user)
+    if not user.get("is_admin") and not is_case_in_scope(case, visible_codes, user):
+        raise HTTPException(status_code=403, detail="Case not in your cascade scope")
+
+    application_id = str(case.get("application_id") or "").strip()
+    if not application_id:
+        raise HTTPException(status_code=409, detail="CAD case has no linked loan application")
+
+    from utils.core import LoanApplicationManager
+    application = LoanApplicationManager().get(application_id)
+    if not application:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Linked loan application '{application_id}' not found",
+        )
+
+    return case, application
+
+
+def _availment_response(memo, case, application):
+    source = build_source_projection(case, application)
+    if not memo:
+        return {
+            "credit_admin_case_id": str(case.get("id") or ""),
+            "application_id": str(case.get("application_id") or ""),
+            "status": "not_started",
+            "memo": None,
+            "source": source,
+        }
+    return {
+        "credit_admin_case_id": str(case.get("id") or ""),
+        "application_id": str(case.get("application_id") or ""),
+        "status": str(memo.get("status") or "draft"),
+        "memo": memo,
+        "source": source,
+    }
+
+
+@router.get("/cases/{case_id}/availment-memo")
+def credit_admin_get_availment_memo(
+    case_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    user = _authoritative_availment_user(user)
+    case, application = _availment_case_and_application(case_id, user)
+    try:
+        memo = get_memo(case_id)
+    except AvailmentPersistenceUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return _availment_response(memo, case, application)
+
+
+@router.post("/cases/{case_id}/availment-memo")
+def credit_admin_create_availment_memo(
+    case_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    user = _authoritative_availment_user(user)
+    case, application = _availment_case_and_application(case_id, user)
+    if not _ca_owner_or_manager_in_scope(user, case):
+        raise HTTPException(status_code=403, detail="Only the Credit Admin case owner or a Credit Admin manager may process this case")
+    try:
+        memo = create_memo(case, application, user)
+    except AvailmentPersistenceUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except AvailmentConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return _availment_response(memo, case, application)
+
+
+@router.put("/cases/{case_id}/availment-memo/draft")
+def credit_admin_save_availment_draft(
+    case_id: str,
+    payload: AvailmentDraftRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    user = _authoritative_availment_user(user)
+    case, application = _availment_case_and_application(case_id, user)
+    if not _ca_owner_or_manager_in_scope(user, case):
+        raise HTTPException(status_code=403, detail="Only the Credit Admin case owner or a Credit Admin manager may process this case")
+    try:
+        memo = save_draft(
+            case_id,
+            payload.fields,
+            payload.instructions,
+            user,
+        )
+    except AvailmentPersistenceUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc.args[0])) from exc
+    except AvailmentConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    audit_log(
+        "CREDIT_ADMIN_AVAILMENT_DRAFT_SAVED",
+        str(user.get("username") or ""),
+        case_id,
+    )
+    return _availment_response(memo, case, application)
+
+@router.post("/cases/{case_id}/availment-memo/request-approval")
+def credit_admin_request_availment_approval(
+    case_id: str,
+    payload: AvailmentApprovalRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    user = _authoritative_availment_user(user)
+    case, application = _availment_case_and_application(case_id, user)
+    if not _ca_owner_or_manager_in_scope(user, case):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the Credit Admin case owner or a Credit Admin manager may submit the Availment Memo for approval",
+        )
+
+    from utils.core import UserManager
+    selected = _resolve_availment_approver(UserManager().users, payload.approver_code)
+    if not selected or selected.get("active") is not True or not is_credit_admin_checker(selected):
+        raise HTTPException(
+            status_code=400,
+            detail="Selected staff member is not an eligible Credit Admin approver",
+        )
+
+    source = build_source_projection(case, application)
+    try:
+        memo = request_approval(
+            case_id,
+            source,
+            user,
+            selected,
+            note=payload.note or "",
+        )
+    except AvailmentPersistenceUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc.args[0])) from exc
+    except AvailmentConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    audit_log(
+        "CREDIT_ADMIN_AVAILMENT_APPROVAL_REQUESTED",
+        str(user.get("username") or ""),
+        case_id,
+    )
+    return _availment_response(memo, case, application)
+
+
+@router.post("/cases/{case_id}/availment-memo/approve")
+def credit_admin_approve_availment_memo(
+    case_id: str,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    user = _authoritative_availment_user(user)
+    case, application = _availment_case_and_application(case_id, user)
+    if not is_credit_admin_checker(user):
+        raise HTTPException(
+            status_code=403,
+            detail="Credit Admin checker authority required to approve an Availment Memo",
+        )
+
+    source = build_source_projection(case, application)
+    try:
+        memo = approve_memo(case_id, source, user)
+    except AvailmentPersistenceUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc.args[0])) from exc
+    except AvailmentConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    audit_log(
+        "CREDIT_ADMIN_AVAILMENT_APPROVED",
+        str(user.get("username") or ""),
+        case_id,
+    )
+    return _availment_response(memo, case, application)
+
+
+@router.post("/cases/{case_id}/availment-memo/return-for-correction")
+def credit_admin_return_availment_for_correction(
+    case_id: str,
+    payload: AvailmentReturnRequest,
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    user = _authoritative_availment_user(user)
+    case, application = _availment_case_and_application(case_id, user)
+    if not is_credit_admin_checker(user):
+        raise HTTPException(
+            status_code=403,
+            detail="Credit Admin checker authority required to return an Availment Memo",
+        )
+
+    try:
+        memo = return_for_correction(case_id, user, payload.reason)
+    except AvailmentPersistenceUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc.args[0])) from exc
+    except AvailmentConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    audit_log(
+        "CREDIT_ADMIN_AVAILMENT_RETURNED_FOR_CORRECTION",
+        str(user.get("username") or ""),
+        case_id,
+    )
+    return _availment_response(memo, case, application)
