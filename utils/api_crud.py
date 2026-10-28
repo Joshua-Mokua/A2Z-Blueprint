@@ -230,7 +230,7 @@ def make_crud_router(
     # ──────────────────────────────────────────────────────────────────
     @router.get("/{row_id}", summary=f"Get one {module} row by id")
     def get_row(
-        row_id: primary_key_type,
+        row_id: str,
         user:   dict = Depends(get_current_user),
     ):
         _audit(f"API_V1_{module.upper()}_GET", user, f"id={row_id}")
@@ -323,7 +323,7 @@ def make_crud_router(
     # ──────────────────────────────────────────────────────────────────
     @router.put("/{row_id}", summary=f"Upsert a {module} row")
     async def update_row(
-        row_id:  primary_key_type,
+        row_id:  str,
         request: Request,
         user:    dict = Depends(get_current_user),
     ):
@@ -385,7 +385,7 @@ def make_crud_router(
     # ──────────────────────────────────────────────────────────────────
     @router.delete("/{row_id}", summary=f"Delete a {module} row")
     def delete_row(
-        row_id: primary_key_type,
+        row_id: str,
         user:   dict = Depends(get_current_user),
     ):
         _audit(f"API_V1_{module.upper()}_DELETE", user, f"id={row_id}")
