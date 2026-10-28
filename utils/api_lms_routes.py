@@ -831,60 +831,88 @@ def lms_application_decision(
             _pre = list(getattr(payload, "pre_approval_conditions", None)
                         or getattr(payload, "conditions", None) or [])
             _dis = list(getattr(payload, "pre_disbursement_conditions", None) or [])
-            # Build the actual CALMS work item NOW. Previously this block
-            # changed only the LMS status to "credit_admin"; Credit Admin reads
-            # CreditAdminManager.cases, so the application could look progressed
-            # while no case existed in the receiving workbench.
-            #
-            # Reuse the canonical idempotent creator (CA + application id). A retry
-            # returns the same case id and never resets fulfilled conditions.
-            _conds = _pre + _dis
-            from utils.core import CreditAdminManager
-            _app_for_handoff = lam.get(app_id) or app
-            _case_id = CreditAdminManager().create_case_from_application(
-                _app_for_handoff,
-                conditions=_conds,
-                authority=str(getattr(payload, "authority", "") or ""),
-            )
-            if not _case_id:
+            # Final approval now enters a narrow implementation-readiness
+            # verification before Credit Administration. Route it to the
+            # Department Analyst who originally submitted the case to DCC.
+            _dept_review = dict(app.get("dept_analyst_review") or {})
+            _verification_code = str(
+                _dept_review.get("by", "") or ""
+            ).strip()
+            _verification_name = str(
+                _dept_review.get("by_name", "") or ""
+            ).strip()
+
+            if not _verification_code:
+                # The credit decision is already authoritative at this point.
+                # Do not throw into the broad movement catcher and then pretend
+                # routing succeeded. Persist an explicit recoverable routing
+                # state: approved, not in CAD, and visibly requiring support.
+                _routing_now = datetime.now().isoformat(timespec="seconds")
+                lam.update(app_id, {
+                    "status": "post_approval_verification",
+                    "awaiting_credit_admin": False,
+                    "post_approval_verification_required": True,
+                    "post_approval_verification_status": "routing_error",
+                    "post_approval_verification_routing_error":
+                        "Original Department Analyst is missing from dept_analyst_review.by",
+                    "post_approval_verification_requested_at": _routing_now,
+                })
                 audit_log(
-                    "LMS_CREDIT_ADMIN_HANDOFF_FAILED",
+                    "LMS_POST_APPROVAL_VERIFICATION_ROUTE_FAILED",
                     str(user.get("username", "") or ""),
-                    "%s|creator returned empty case id" % app_id,
+                    "%s|missing dept_analyst_review.by" % app_id,
                 )
-                raise HTTPException(
-                    status_code=500,
-                    detail=(
-                        "Approval was recorded but the Credit Admin work item "
-                        "could not be created. The case has NOT been presented as "
-                        "successfully handed off; contact system support."
-                    ),
-                )
+                return {
+                    "application": lam.get(app_id),
+                    "status": "post_approval_verification_routing_error",
+                    "credit_admin_case_id": "",
+                }
 
             lam.update(app_id, {
-                "status": "credit_admin",
-                "awaiting_credit_admin": True,
-                "credit_admin_case_id": _case_id,
-                "approved_at": datetime.now().isoformat(timespec="seconds"),
-                "approved_by_name": str(user.get("full_name", "") or ""),
+                "status": "post_approval_verification",
+                "awaiting_credit_admin": False,
+                "post_approval_verification_required": True,
+                "post_approval_verification_status": "pending",
+                "post_approval_verification_assignee": {
+                    "code": _verification_code,
+                    "name": _verification_name,
+                },
+                "post_approval_verification_requested_at":
+                    datetime.now().isoformat(timespec="seconds"),
+                "approved_at":
+                    datetime.now().isoformat(timespec="seconds"),
+                "approved_by_name":
+                    str(user.get("full_name", "") or ""),
                 "decision_conditions": _pre,
                 "pre_approval_conditions": [
-                    {"text": c, "met": False, "kind": "pre_approval"}
-                    for c in _pre],
+                    {
+                        "text": c,
+                        "met": False,
+                        "kind": "pre_approval",
+                    }
+                    for c in _pre
+                ],
                 "pre_disbursement_conditions": [
-                    {"text": c, "met": False, "kind": "pre_disbursement"}
-                    for c in _dis],
+                    {
+                        "text": c,
+                        "met": False,
+                        "kind": "pre_disbursement",
+                    }
+                    for c in _dis
+                ],
             })
+
             try:
                 lam._log_event(
                     app_id,
-                    "handoff_to_credit_admin",
+                    "post_approval_verification_required",
                     str(user.get("username", "") or ""),
-                    "CALMS case %s" % _case_id,
+                    "Assigned to Department Analyst %s"
+                    % _verification_code,
                 )
             except Exception as _journey_exc:
                 audit_log(
-                    "LMS_CREDIT_ADMIN_JOURNEY_LOG_FAILED",
+                    "LMS_POST_APPROVAL_VERIFICATION_JOURNEY_LOG_FAILED",
                     str(user.get("username", "") or ""),
                     "%s|%s: %s" % (
                         app_id,
@@ -894,10 +922,12 @@ def lms_application_decision(
                 )
 
             audit_log(
-                "LMS_APPROVED_TO_CREDIT_ADMIN",
+                "LMS_APPROVED_TO_POST_APPROVAL_VERIFICATION",
                 str(user.get("username", "") or ""),
-                "%s|case=%s|%d condition(s)" % (
-                    app_id, _case_id, len(_conds)
+                "%s|analyst=%s|%d condition(s)" % (
+                    app_id,
+                    _verification_code,
+                    len(_pre) + len(_dis),
                 ),
             )
         elif verdict_normalized == "declined":
@@ -942,12 +972,260 @@ def lms_application_decision(
 # before the offer is signed. This helper centralizes that so every
 # offer-progress endpoint agrees on where the handoff fires.
 
+
+def _post_approval_verification_actor(app: dict, user: Dict[str, Any]) -> tuple[str, str]:
+    """Return the original Department Analyst identity and enforce ownership."""
+    assignment = dict(app.get("post_approval_verification_assignee") or {})
+    code = str(assignment.get("code", "") or "").strip()
+    name = str(assignment.get("name", "") or "").strip()
+
+    if not code:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "This approved case has no Department Analyst assigned for "
+                "post-approval verification; contact system support."
+            ),
+        )
+
+    caller_code = str(user.get("staff_code", "") or "").strip()
+    if caller_code.lower() != code.lower():
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Post-approval verification belongs to the Department Analyst "
+                "who originally submitted this case to committee."
+            ),
+        )
+
+    return code, name
+
+
+def _post_approval_condition_rows(app: dict, payload: dict) -> list[dict]:
+    """Build the implementation-condition ledger from the final approval.
+
+    The final decision remains authoritative. The analyst may record fulfilment,
+    evidence and notes, but cannot add/change the approved condition text here.
+    """
+    supplied = payload.get("conditions") or []
+    supplied_map = {}
+    for row in supplied if isinstance(supplied, list) else []:
+        if not isinstance(row, dict):
+            continue
+        key = str(row.get("key", "") or "").strip()
+        if key:
+            supplied_map[key] = row
+
+    result = []
+    for kind, source in (
+        ("pre_approval", list(app.get("pre_approval_conditions") or [])),
+        ("pre_disbursement", list(app.get("pre_disbursement_conditions") or [])),
+    ):
+        for index, item in enumerate(source):
+            text = str(item.get("text", "") if isinstance(item, dict) else item or "").strip()
+            if not text:
+                continue
+            key = "%s:%d" % (kind, index)
+            incoming = supplied_map.get(key, {})
+            status = str(incoming.get("status", "pending") or "pending").strip().lower()
+            if status not in {"pending", "fulfilled", "waived", "not_applicable"}:
+                status = "pending"
+            evidence = incoming.get("evidence") or []
+            if not isinstance(evidence, list):
+                evidence = []
+            note = str(incoming.get("note", "") or "").strip()
+            result.append({
+                "key": key, "kind": kind, "text": text, "status": status,
+                "evidence": [str(x).strip() for x in evidence if str(x).strip()],
+                "note": note,
+            })
+    return result
+
+
+def _post_approval_fulfilment(app: dict, payload: dict) -> tuple[dict, list[str]]:
+    """Normalize fulfilment input and calculate release blockers server-side."""
+    payload = payload if isinstance(payload, dict) else {}
+    conditions = _post_approval_condition_rows(app, payload)
+    blockers = []
+    document_files = dict(app.get("document_files") or {})
+    document_names = {str(name).strip() for name in document_files.keys() if str(name).strip()}
+    for row in conditions:
+        status = row["status"]
+        if status == "pending":
+            blockers.append("Condition pending: %s" % row["text"])
+        elif status in {"waived", "not_applicable"}:
+            blockers.append("Condition cannot be %s by Post-Approval Verification; authorized exception/waiver is required: %s" % (status.replace("_", " "), row["text"]))
+        elif status == "fulfilled":
+            if not row["evidence"]:
+                blockers.append("Fulfilled condition requires attached evidence: %s" % row["text"])
+            else:
+                missing = [ref for ref in row["evidence"] if ref not in document_names]
+                if missing:
+                    blockers.append("Condition evidence is not attached to this application (%s): %s" % (", ".join(missing), row["text"]))
+
+    dsr = payload.get("dsr") if isinstance(payload.get("dsr"), dict) else {}
+    dsr_applicable = bool(dsr.get("applicable"))
+    dsr_account = str(dsr.get("account", "") or "").strip()
+    dsr_note = str(dsr.get("note", "") or "").strip()
+    if dsr_applicable and not dsr_account:
+        blockers.append("DSR/repayment account is applicable but no account has been captured.")
+
+    docs = payload.get("documents") if isinstance(payload.get("documents"), dict) else {}
+    normalized_docs = {}
+    for key, label in (
+        ("tcc", "Total Credit Cost (TCC)"),
+        ("amortization", "Amortization Schedule"),
+        ("insurance", "Insurance Form / Evidence"),
+        ("addendum", "Post-Approval Addendum"),
+        ("condition_evidence", "Condition Fulfilment Evidence"),
+    ):
+        rec = docs.get(key) if isinstance(docs.get(key), dict) else {}
+        previous = (app.get("post_approval_verification") or {}).get("documents") or {}
+        previous_rec = previous.get(key) if isinstance(previous.get(key), dict) else {}
+        required = bool(rec.get("required")) or bool(previous_rec.get("required"))
+        present = label in document_files
+        normalized_docs[key] = {"label": label, "required": required, "present": present}
+        if required and not present:
+            blockers.append("Required post-approval document missing: %s" % label)
+
+    previous_verification = app.get("post_approval_verification") or {}
+    terms_changed = bool(payload.get("terms_changed")) or bool(previous_verification.get("terms_changed"))
+    if terms_changed:
+        if "Post-Approval Addendum" not in document_files:
+            blockers.append("Approved terms changed: a Post-Approval Addendum must be attached.")
+        blockers.append("Approved terms changed after the final decision: authorized resolution/reapproval is required before release to Credit Administration.")
+
+    fulfilment = {
+        "dsr": {"applicable": dsr_applicable, "account": dsr_account, "note": dsr_note},
+        "conditions": conditions,
+        "documents": normalized_docs,
+        "terms_changed": terms_changed,
+        "note": str(payload.get("note", "") or "").strip(),
+        "ready": not blockers,
+        "blockers": blockers,
+        "updated_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    return fulfilment, blockers
+
+
+def _post_approval_open_app(app_id: str, user: Dict[str, Any]) -> tuple[Any, dict, str, str]:
+    lam = _lam()
+    app = lam.get(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail=f"Application '{app_id}' not found")
+    if str(app.get("status", "") or "") != "post_approval_verification":
+        raise HTTPException(status_code=409, detail="This application is not awaiting post-approval verification.")
+    verification_status = str(app.get("post_approval_verification_status", "") or "").strip().lower()
+    if verification_status not in {"pending", "held", "ready"}:
+        raise HTTPException(status_code=409, detail="Post-approval verification is not open on this application.")
+    analyst_code, analyst_name = _post_approval_verification_actor(app, user)
+    return lam, app, analyst_code, analyst_name
+
+
+@router.post("/applications/{app_id}/post-approval-verification/save")
+def lms_post_approval_verification_save(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Save fulfilment progress without changing the final approval or releasing to CAD."""
+    lam, app, analyst_code, analyst_name = _post_approval_open_app(app_id, user)
+    fulfilment, blockers = _post_approval_fulfilment(app, payload or {})
+    fulfilment.update({"by": analyst_code, "by_name": analyst_name or str(user.get("full_name", "") or "")})
+    lam.update(app_id, {
+        "post_approval_verification": fulfilment,
+        "post_approval_verification_status": "pending" if blockers else "ready",
+        "post_approval_verification_required": True,
+    })
+    audit_log("LMS_POST_APPROVAL_VERIFICATION_SAVED", str(user.get("username", "") or ""),
+              "%s|analyst=%s|blockers=%d" % (app_id, analyst_code, len(blockers)))
+    return {"application": lam.get(app_id), "status": "ready" if not blockers else "pending",
+            "ready": not blockers, "blockers": blockers}
+
+
+@router.post(
+    "/applications/{app_id}/post-approval-verification/verify",
+    response_model=LoanAppMutationResponse,
+)
+def lms_post_approval_verification_verify(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Verify approved-condition fulfilment and proceed to existing offer controls."""
+    lam, app, analyst_code, analyst_name = _post_approval_open_app(app_id, user)
+    fulfilment, blockers = _post_approval_fulfilment(app, payload or {})
+    if blockers:
+        fulfilment.update({"by": analyst_code, "by_name": analyst_name or str(user.get("full_name", "") or "")})
+        lam.update(app_id, {"post_approval_verification": fulfilment,
+                            "post_approval_verification_status": "pending",
+                            "post_approval_verification_required": True})
+        raise HTTPException(status_code=409, detail="Cannot complete post-approval verification: " + " | ".join(blockers))
+
+    if not (app.get("offer") or {}).get("issued_at"):
+        raise HTTPException(status_code=409, detail="Offer record missing; verification cannot proceed to signing.")
+    now = datetime.now().isoformat(timespec="seconds")
+    fulfilment.update({"status": "verified", "by": analyst_code,
+                       "by_name": analyst_name or str(user.get("full_name", "") or ""), "at": now})
+    lam.update(app_id, {"status": "offer_issued",
+                        "post_approval_verification_required": False,
+                        "post_approval_verification_status": "verified",
+                        "post_approval_verification": fulfilment,
+                        "post_approval_verification_verified_at": now})
+    try:
+        lam._log_event(app_id, "post_approval_verification_verified", str(user.get("username", "") or ""),
+                       "Verified by Department Analyst %s; proceeding to offer controls" % analyst_code)
+    except Exception as journey_exc:
+        audit_log("LMS_POST_APPROVAL_VERIFICATION_JOURNEY_LOG_FAILED", str(user.get("username", "") or ""),
+                  "%s|%s: %s" % (app_id, type(journey_exc).__name__, str(journey_exc)[:80]))
+    audit_log("LMS_POST_APPROVAL_VERIFICATION_VERIFIED", str(user.get("username", "") or ""),
+              "%s|analyst=%s" % (app_id, analyst_code))
+    return {"application": lam.get(app_id), "status": "offer_issued"}
+
+
+@router.post(
+    "/applications/{app_id}/post-approval-verification/hold",
+    response_model=LoanAppMutationResponse,
+)
+def lms_post_approval_verification_hold(
+    app_id: str,
+    payload: dict = Body(default_factory=dict),
+    user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Hold an approved case while a post-approval requirement is outstanding."""
+    lam, app, analyst_code, analyst_name = _post_approval_open_app(app_id, user)
+    note = str((payload or {}).get("note", "") or "").strip()
+    if not note:
+        raise HTTPException(status_code=400, detail="A hold reason is required.")
+    fulfilment, blockers = _post_approval_fulfilment(app, payload or {})
+    now = datetime.now().isoformat(timespec="seconds")
+    fulfilment.update({"status": "held", "by": analyst_code,
+                       "by_name": analyst_name or str(user.get("full_name", "") or ""),
+                       "at": now, "note": note})
+    lam.update(app_id, {"post_approval_verification_required": True,
+                        "post_approval_verification_status": "held",
+                        "post_approval_verification": fulfilment,
+                        "post_approval_verification_held_at": now})
+    try:
+        lam._log_event(app_id, "post_approval_verification_held", str(user.get("username", "") or ""), note)
+    except Exception as journey_exc:
+        audit_log("LMS_POST_APPROVAL_VERIFICATION_JOURNEY_LOG_FAILED", str(user.get("username", "") or ""),
+                  "%s|%s: %s" % (app_id, type(journey_exc).__name__, str(journey_exc)[:80]))
+    audit_log("LMS_POST_APPROVAL_VERIFICATION_HELD", str(user.get("username", "") or ""),
+              "%s|analyst=%s|%s" % (app_id, analyst_code, note[:120]))
+    return {"application": lam.get(app_id), "status": "post_approval_verification"}
+
+
 def _maybe_handoff_to_credit_admin(lam, app_id: str, user: Dict[str, Any]) -> str:
     """If the app has reached the configured handoff trigger status, create
     the CALMS case and move it to credit_admin. Idempotent + best-effort —
     a handoff failure must not fail the workflow action that preceded it."""
     cfg = get_credit_workflow_config()
     app = lam.get(app_id) or {}
+    # Post-approval verification owns the CAD boundary for newly approved cases
+    # routed through that stage. Legacy offer-trigger handoff must not bypass it.
+    if app.get("post_approval_verification_required"):
+        return ""
     if app.get("status") != handoff_trigger_status(cfg):
         return ""
     if app.get("credit_admin_case_id"):
@@ -963,12 +1241,14 @@ def _maybe_handoff_to_credit_admin(lam, app_id: str, user: Dict[str, Any]) -> st
         #
         # The older key is still honoured, so a case decided before this
         # behaves as it did.
-        _pre_disb = app.get("pre_disbursement_conditions") or []
-        _conds = None
-        if _pre_disb:
-            _conds = [(c.get("text") if isinstance(c, dict) else str(c))
-                      for c in _pre_disb
-                      if (c.get("text") if isinstance(c, dict) else str(c))]
+        _approved = (app.get("pre_approval_conditions") or []) + (app.get("pre_disbursement_conditions") or [])
+        _conds = []
+        _seen = set()
+        for item in _approved:
+            text = str(item.get("text", "") if isinstance(item, dict) else item).strip()
+            if text and text.casefold() not in _seen:
+                _seen.add(text.casefold())
+                _conds.append(text)
         if not _conds:
             _conds = decision.get("conditions") or None
         case_id = CreditAdminManager().create_case_from_application(
@@ -1127,6 +1407,8 @@ def lms_confirm_to_credit_admin(
     if not user.get('is_admin') and not is_app_in_scope(
             app, get_visible_staff_codes(user), str(user.get('staff_code', '') or '')):
         raise HTTPException(status_code=403, detail="Application is out of scope")
+    if str(app.get("status", "")) == "offer_signed" and get_credit_workflow_config().get("require_line_manager_offer_validation", True):
+        raise HTTPException(status_code=409, detail="Line-manager offer validation is required before analyst confirmation.")
     if not is_valid_lms_transition(str(app.get("status", "")), "analyst_confirmed"):
         raise HTTPException(status_code=400,
                             detail=f"Cannot confirm to credit admin from status '{app.get('status')}'")
@@ -4340,4 +4622,3 @@ def lms_committee_convene(
     audit_log("LMS_COMMITTEE_CONVENED", str(user.get('username', '') or ''), app_id)
     return {"application": lam.get(app_id), "status": "referred_to_committee"}
 # === END C4 ===
-

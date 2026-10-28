@@ -1,3 +1,4 @@
+import type { LoanApplication } from '@/types/lms';
 // v10.500 Phase 1 Batch 3a — Typed API client.
 // v10.510 Phase 4 Batch β1 — extended with pipeline fetchers.
 // v10.511 Phase 4 Batch β2 — extended with postJson + pipeline mutations.
@@ -3640,4 +3641,25 @@ export async function printReleasedAvailmentMemo(caseId: string): Promise<void> 
   const result = await getJson<{ case_id: string; version: number; released_by: string; released_at: string; snapshot: Record<string, unknown> }>(`/credit-admin/cases/${encodeURIComponent(caseId)}/troops/availment-memo/print`);
   const { printApprovedAvailmentMemo } = await import('@/lib/availmentMemoPrint');
   printApprovedAvailmentMemo(result);
+}
+
+// ── Post-approval verification & fulfilment ──────────────────────────────
+export interface PostApprovalFulfilmentPayload {
+  dsr: { applicable: boolean; account: string; note?: string };
+  conditions: Array<{ key: string; status: 'pending' | 'fulfilled'; evidence: string[]; note?: string }>;
+  documents: Record<string, { required: boolean }>;
+  terms_changed: boolean;
+  note?: string;
+}
+export async function savePostApprovalVerification(appId: string, body: PostApprovalFulfilmentPayload) {
+  return postJson<{ application: LoanApplication; status: string; ready: boolean; blockers: string[] }, PostApprovalFulfilmentPayload>(
+    `/lms/applications/${encodeURIComponent(appId)}/post-approval-verification/save`, body);
+}
+export async function verifyPostApprovalVerification(appId: string, body: PostApprovalFulfilmentPayload): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, PostApprovalFulfilmentPayload>(
+    `/lms/applications/${encodeURIComponent(appId)}/post-approval-verification/verify`, body);
+}
+export async function holdPostApprovalVerification(appId: string, body: PostApprovalFulfilmentPayload): Promise<LoanAppMutationResponse> {
+  return postJson<LoanAppMutationResponse, PostApprovalFulfilmentPayload>(
+    `/lms/applications/${encodeURIComponent(appId)}/post-approval-verification/hold`, body);
 }

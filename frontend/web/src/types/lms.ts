@@ -55,6 +55,19 @@ export interface LoanApplicationAnalyst {
   name?:                  string;
 }
 
+export type PostApprovalConditionStatus = 'pending' | 'fulfilled' | 'waived' | 'not_applicable';
+export interface PostApprovalCondition {
+  key: string; kind: 'pre_approval' | 'pre_disbursement'; text: string;
+  status: PostApprovalConditionStatus; evidence: string[]; note?: string;
+}
+export interface PostApprovalVerification {
+  status?: string; by?: string; by_name?: string; at?: string; updated_at?: string;
+  dsr?: { applicable?: boolean; account?: string; note?: string };
+  conditions?: PostApprovalCondition[];
+  documents?: Record<string, { label?: string; required?: boolean; present?: boolean }>;
+  terms_changed?: boolean; note?: string; ready?: boolean; blockers?: string[];
+}
+
 export interface LoanApplicationDecisionRecord {
   verdict?:               string;
   date?:                  string;
@@ -256,6 +269,14 @@ export interface LoanApplication {
   } | null;
   committee?:             LoanAppCommittee | null;
   credit_admin_case_id?:  string;
+  post_approval_verification_required?: boolean;
+  post_approval_verification_status?: string;
+  post_approval_verification_assignee?: LoanApplicationAnalyst | null;
+  post_approval_verification?: PostApprovalVerification | null;
+  post_approval_verification_requested_at?: string;
+  post_approval_verification_verified_at?: string;
+  pre_approval_conditions?: Array<{ text?: string; met?: boolean; kind?: string } | string>;
+  pre_disbursement_conditions?: Array<{ text?: string; met?: boolean; kind?: string } | string>;
 
   // Extra fields tolerated
   [key: string]:          unknown;
@@ -336,6 +357,7 @@ export const APPLICATION_STATUSES = [
   'offer_signed',
   'offer_validated',
   'analyst_confirmed',
+  'post_approval_verification',
   'credit_admin',
   'disbursed',
 ] as const;
@@ -365,6 +387,7 @@ export function statusTone(status: string | undefined): 'neutral' | 'brand' | 'w
   if (s === 'offer_signed')   return 'brand';
   if (s === 'offer_validated') return 'brand';
   if (s === 'analyst_confirmed') return 'brand';
+  if (s === 'post_approval_verification') return 'warning';
   return 'neutral';
 }
 
@@ -374,6 +397,8 @@ export function statusTone(status: string | undefined): 'neutral' | 'brand' | 'w
  */
 export const DECISION_VERDICTS = ['approved', 'declined', 'returned'] as const;
 export type DecisionVerdict = typeof DECISION_VERDICTS[number];
+
+
 
 /**
  * Common decision-authority labels for the dropdown. Backend accepts

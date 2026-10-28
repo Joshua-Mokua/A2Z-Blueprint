@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, date
 import datetime as _dt
 import hashlib
 import json
+from copy import deepcopy
 import logging
 import re
 import io
@@ -7083,6 +7084,7 @@ class CreditAdminManager:
             "rm_name":                app.get("rm_name", ""),
             "approval_date":          today,
             "conditions":             case_conditions,
+            "post_approval_verification_snapshot": deepcopy(app.get("post_approval_verification") or {}),
             "all_conditions_met":     all_met,
             # P4-2: facility security classification (drives perfection routing,
             # enforced at the disburse gate in P4-6). Derived default from the

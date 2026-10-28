@@ -23,6 +23,8 @@ import { AffordabilityAppraisal } from '@/components/AffordabilityAppraisal';
 import { getApplicationWorkbench, refreshWorkbench, addWorkbenchNote, pickLmsApplication, submitLmsToDcc, listLmsDocuments, downloadLmsDocument, uploadLmsDocument, requestLmsDocument, getDccRoster, recordDccVote, resolveDcc, handToCreditAnalyst, uploadCallbackMemo, escalateToChief, type WorkbenchView, type LmsDocumentsResponse, type DccRosterResponse,
   getConditionLibrary,
   respondToInputRequest,
+  savePostApprovalVerification, verifyPostApprovalVerification, holdPostApprovalVerification,
+  type PostApprovalFulfilmentPayload,
 } from '@/lib/api';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -237,11 +239,14 @@ function CreditRiskHandover({ application }: { application: LoanApplication }) {
     </div>
   );
 
+  const verification = application.post_approval_verification;
+  const verificationStatus = displayValue(application.post_approval_verification_status || verification?.status);
   const hasAny =
     Boolean(deptOpinion || deptBy)
     || Boolean(readiness)
     || Boolean(dccRecommendation || dccBy)
-    || Boolean(bccRecommendation || bccBy || typeof approvedByBcc === 'boolean');
+    || Boolean(bccRecommendation || bccBy || typeof approvedByBcc === 'boolean')
+    || Boolean(verificationStatus);
 
   return (
     <Card stripe="primary">
@@ -307,6 +312,15 @@ function CreditRiskHandover({ application }: { application: LoanApplication }) {
               bccBy,
               bccAt,
               bccTally,
+            )}
+
+            {verificationStatus && row(
+              'Post-Approval Verification',
+              verificationStatus,
+              displayValue(verification?.note),
+              displayValue(verification?.by_name) || displayValue(verification?.by),
+              displayValue(verification?.at || verification?.updated_at),
+              verification?.ready ? 'Implementation pack ready' : '',
             )}
           </div>
         )}
@@ -829,6 +843,12 @@ export function LmsApplicationDetail() {
         )}
 
 
+        {application.status === 'post_approval_verification' &&
+         String(application.post_approval_verification_assignee?.code ?? '').trim().toLowerCase() ===
+           String(user?.staff_code ?? '').trim().toLowerCase() && (
+          <PostApprovalVerificationPanel application={application} onDone={refetch} toast={toast} />
+        )}
+
         {/* ─────────── ACTION: Hand to Credit Analyst (if can_hand_to_credit_analyst) ─────────── */}
         {permissions.can_hand_to_credit_analyst && (
           <HandToCreditAnalystPanel appId={application.id} onDone={refetch} toast={toast} />
@@ -970,7 +990,8 @@ export function LmsApplicationDetail() {
         {!permissions.can_assign && !permissions.can_update && !permissions.can_record_decision &&
          !permissions.can_request_info && !permissions.can_provide_info && !permissions.can_sign_offer &&
          !permissions.can_validate_offer && !permissions.can_confirm_to_credit_admin &&
-         !permissions.can_refer_committee && !permissions.can_vote_committee && !permissions.can_resolve_committee && (
+         !permissions.can_refer_committee && !permissions.can_vote_committee && !permissions.can_resolve_committee &&
+         application.status !== 'post_approval_verification' && (
           <Card>
             <Card.Body>
               <div className="text-xs text-gray-500 italic">
@@ -3105,6 +3126,83 @@ function CommitteePreReadPanel({ appId, toast }: {
           </div>
         )}
       </Card.Body>
+    </Card>
+  );
+}
+
+function PostApprovalVerificationPanel({ application, onDone, toast }: {
+  application: LoanApplication; onDone: () => Promise<unknown> | unknown;
+  toast: (x: { tone: 'success' | 'danger' | 'warning' | 'info'; message: string }) => void;
+}) {
+  const prior = application.post_approval_verification;
+  const sourceConditions = [
+    ...(application.pre_approval_conditions || []).map((x, i) => ({ key: `pre_approval:${i}`, kind: 'pre_approval', text: typeof x === 'string' ? x : String(x.text || '') })),
+    ...(application.pre_disbursement_conditions || []).map((x, i) => ({ key: `pre_disbursement:${i}`, kind: 'pre_disbursement', text: typeof x === 'string' ? x : String(x.text || '') })),
+  ].filter((x) => x.text);
+  const oldByKey = new Map((prior?.conditions || []).map((x) => [x.key, x]));
+  const [conditions, setConditions] = useState(sourceConditions.map((x) => ({
+    ...x, status: (oldByKey.get(x.key)?.status === 'fulfilled' ? 'fulfilled' : 'pending') as 'pending' | 'fulfilled',
+    evidence: oldByKey.get(x.key)?.evidence || [], note: oldByKey.get(x.key)?.note || '',
+  })));
+  const [dsrApplicable, setDsrApplicable] = useState(Boolean(prior?.dsr?.applicable));
+  const [dsrAccount, setDsrAccount] = useState(prior?.dsr?.account || '');
+  const [dsrNote, setDsrNote] = useState(prior?.dsr?.note || '');
+  const [termsChanged, setTermsChanged] = useState(Boolean(prior?.terms_changed));
+  const [note, setNote] = useState(prior?.note || '');
+  const [docs, setDocs] = useState<Record<string, boolean>>({
+    tcc: Boolean(prior?.documents?.tcc?.required), amortization: Boolean(prior?.documents?.amortization?.required),
+    insurance: Boolean(prior?.documents?.insurance?.required), addendum: Boolean(prior?.documents?.addendum?.required),
+    condition_evidence: Boolean(prior?.documents?.condition_evidence?.required),
+  });
+  const [busy, setBusy] = useState(false);
+  const docDefs = [
+    ['tcc', 'Total Credit Cost (TCC)'], ['amortization', 'Amortization Schedule'],
+    ['insurance', 'Insurance Form / Evidence'], ['addendum', 'Post-Approval Addendum'],
+    ['condition_evidence', 'Condition Fulfilment Evidence'],
+  ] as const;
+  const payload = (): PostApprovalFulfilmentPayload => ({
+    dsr: { applicable: dsrApplicable, account: dsrAccount.trim(), note: dsrNote.trim() },
+    conditions: conditions.map((x) => ({ key: x.key, status: x.status, evidence: x.evidence, note: x.note })),
+    documents: Object.fromEntries(Object.entries(docs).map(([k, required]) => [k, { required }])),
+    terms_changed: termsChanged, note: note.trim(),
+  });
+  const run = async (kind: 'save' | 'hold' | 'verify') => {
+    if (kind === 'hold' && !note.trim()) { toast({ tone: 'warning', message: 'Enter the reason the case is being held.' }); return; }
+    setBusy(true);
+    try {
+      if (kind === 'save') {
+        const r = await savePostApprovalVerification(application.id, payload());
+        toast({ tone: r.ready ? 'success' : 'info', message: r.ready ? 'Saved — implementation pack is ready for release.' : `Saved — ${r.blockers.length} requirement(s) remain.` });
+      } else if (kind === 'hold') {
+        await holdPostApprovalVerification(application.id, payload()); toast({ tone: 'warning', message: 'Case held in Post-Approval Verification.' });
+      } else {
+        await verifyPostApprovalVerification(application.id, payload()); toast({ tone: 'success', message: 'Post-approval verification completed. Proceed to offer signing and required approvals.' });
+      }
+      await onDone();
+    } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Post-approval action failed.' }); }
+    finally { setBusy(false); }
+  };
+  const attach = async (docName: string, file: File) => {
+    setBusy(true);
+    try {
+      const b64 = await new Promise<string>((resolve, reject) => { const r = new FileReader(); r.onload=()=>resolve(String(r.result).split(',')[1] || ''); r.onerror=()=>reject(new Error('Could not read file')); r.readAsDataURL(file); });
+      await uploadLmsDocument(application.id, docName, file.name, b64);
+      toast({ tone: 'success', message: `${docName} attached.` }); await onDone();
+    } catch (e) { toast({ tone: 'danger', message: e instanceof Error ? e.message : 'Upload failed.' }); }
+    finally { setBusy(false); }
+  };
+  return (
+    <Card stripe="accent" className="mb-4">
+      <Card.Header><div><h3 className="text-base font-semibold text-gray-900">Post-Approval Verification & Fulfilment</h3><p className="text-xs text-gray-500 mt-1">Final approval is immutable here. Fulfil conditions, attach evidence and prepare the case for Credit Administration.</p></div></Card.Header>
+      <Card.Body><div className="space-y-5">
+        <div className="rounded-md border p-3"><div className="font-medium text-sm">DSR / repayment account</div><label className="mt-2 flex gap-2 text-sm"><input type="checkbox" checked={dsrApplicable} onChange={(e)=>setDsrApplicable(e.target.checked)} />Applicable to this facility</label>{dsrApplicable && <><Input value={dsrAccount} onChange={(e)=>setDsrAccount(e.target.value)} placeholder="DSR / repayment account" /><Input value={dsrNote} onChange={(e)=>setDsrNote(e.target.value)} placeholder="Account verification note (optional)" /></>}</div>
+        <div><div className="font-medium text-sm mb-2">Approval conditions</div>{conditions.length===0 ? <div className="text-xs text-gray-500">No final approval conditions recorded.</div> : <div className="space-y-2">{conditions.map((c,i)=><div key={c.key} className="rounded-md border p-3"><div className="text-sm font-medium">{c.text}</div><div className="mt-2 flex flex-wrap gap-2"><select className="rounded border px-2 py-1 text-sm" value={c.status} onChange={(e)=>setConditions(v=>v.map((x,j)=>j===i?{...x,status:e.target.value as typeof x.status}:x))}><option value="pending">Pending</option><option value="fulfilled">Fulfilled</option></select><Input value={c.evidence.join(', ')} onChange={(e)=>setConditions(v=>v.map((x,j)=>j===i?{...x,evidence:e.target.value.split(',').map(z=>z.trim()).filter(Boolean)}:x))} placeholder="Attached evidence document name(s), comma separated" /><Input value={c.note} onChange={(e)=>setConditions(v=>v.map((x,j)=>j===i?{...x,note:e.target.value}:x))} placeholder="Verification note (does not replace evidence)" /></div></div>)}</div>}</div>
+        <div><div className="font-medium text-sm mb-2">Post-approval documents</div><div className="grid gap-2 md:grid-cols-2">{docDefs.map(([key,label])=><div key={key} className="rounded-md border p-3"><label className="flex gap-2 text-sm"><input type="checkbox" checked={Boolean(docs[key])} onChange={(e)=>setDocs(v=>({...v,[key]:e.target.checked}))} />Required / applicable</label><div className="mt-2 text-sm font-medium">{label}</div><input className="mt-2 block w-full text-xs" type="file" disabled={busy} onChange={(e)=>{const f=e.target.files?.[0]; if(f) void attach(label,f); e.currentTarget.value='';}} /></div>)}</div></div>
+        <label className="flex gap-2 text-sm"><input type="checkbox" checked={termsChanged} onChange={(e)=>{setTermsChanged(e.target.checked); if(e.target.checked) setDocs(v=>({...v,addendum:true}));}} />Approved amount / tenor / rate or other approved terms changed after the decision (addendum + authorized resolution/reapproval required before CAD)</label>
+        <textarea className="w-full rounded border p-2 text-sm" rows={3} value={note} onChange={(e)=>setNote(e.target.value)} placeholder="Verification note / hold reason" />
+        {prior?.blockers?.length ? <div className="rounded bg-amber-50 p-3 text-xs text-amber-800"><div className="font-semibold">Outstanding requirements</div><ul className="list-disc pl-5 mt-1">{prior.blockers.map((b,i)=><li key={i}>{b}</li>)}</ul></div> : null}
+        <div className="flex flex-wrap gap-2"><Button disabled={busy} onClick={()=>void run('save')}>Save progress</Button><Button variant="ghost" disabled={busy} onClick={()=>void run('hold')}>Hold for fulfilment</Button><Button disabled={busy} onClick={()=>void run('verify')}>Verify & Proceed to Offer</Button></div>
+      </div></Card.Body>
     </Card>
   );
 }

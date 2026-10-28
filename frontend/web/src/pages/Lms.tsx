@@ -71,7 +71,7 @@ export function Lms() {
   const worksCasesDirectly = /credit risk|credit analys|credit admin|remedial|recover/.test(roleLc);
   const isPureAnalyst = (roleLc.includes('analyst') || worksCasesDirectly) && !isAdmin
     && !/chief|head|manager|officer|director|managing/.test(roleLc);
-  const [tab, setTab] = useState<'mine' | 'pool' | 'all'>('all');
+  const [tab, setTab] = useState<'mine' | 'pool' | 'verification' | 'all'>('all');
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 25;
   const { toast } = useToast();
@@ -185,6 +185,10 @@ export function Lms() {
     } else if (tab === 'pool') {
       result = result.filter((a) => !a.analyst?.code
         && ['submitted'].includes((a.status || '').toLowerCase()));
+    } else if (tab === 'verification') {
+      result = result.filter((a) => (a.status || '').toLowerCase() === 'post_approval_verification'
+        && normaliseStaffCode(a.post_approval_verification_assignee?.code) === myCode
+        && ['pending', 'held', 'ready'].includes(String(a.post_approval_verification_status || '').toLowerCase()));
     }
     return result;
   }, [applications, statusFilter, segFilter, searchTerm, tab, myCode]);
@@ -202,6 +206,7 @@ export function Lms() {
   const tabCounts = useMemo(() => ({
     mine: applications.filter((a) => normaliseStaffCode(a.analyst?.code) === myCode).length,
     pool: applications.filter((a) => !a.analyst?.code && (a.status || '').toLowerCase() === 'submitted').length,
+    verification: applications.filter((a) => (a.status || '').toLowerCase() === 'post_approval_verification' && normaliseStaffCode(a.post_approval_verification_assignee?.code) === myCode && ['pending', 'held', 'ready'].includes(String(a.post_approval_verification_status || '').toLowerCase())).length,
     all: applications.length,
   }), [applications, myCode]);
 
@@ -318,7 +323,7 @@ export function Lms() {
                   "All" was a third view of the same cases that answered no
                   question an analyst asks. What is waiting for anyone, and
                   what is mine - those are the two. */}
-              {([['mine', 'My cases'], ['pool', 'Pool']] as const).map(([key, label]) => (
+              {([['mine', 'My cases'], ['pool', 'Pool'], ['verification', 'Approved - Verification']] as const).map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
